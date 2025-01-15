@@ -81,4 +81,4 @@ To generate a new ```trajectory.txt``` file, run the simulation with ```traj_out
 - [ ] Implement 6-dof RV model
 
 ## BUG REPORTS: 
-- Mislabeled scatterplot legends
+None

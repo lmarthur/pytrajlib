@@ -76,7 +76,7 @@ def impact_plot(run_path, run_params):
     
     a0.scatter(impact_x_local, impact_y_local, c='grey', marker='x', label='Impact Points', s=20, alpha=0.5, linewidths=1)
     a0.plot(x, y, c='k', label='CEP', linestyle='--', linewidth=1.5)
-    a0.legend(['CEP', 'Impact Points'], frameon=False, framealpha=0)
+    a0.legend(['Impact Points', 'CEP'], frameon=False, framealpha=0)
 
     # center the plot on (0,0)
     a0.set_xlim(-plotrange, plotrange)
@@ -142,4 +142,5 @@ def impact_plot(run_path, run_params):
     a1.tick_params(axis='y', which='major', pad=1)  # Adjust pad for y-axis ticks (if y-axis is used)
     a1.set_xlabel('Miss Distance Histogram (m)', labelpad=1)  # Adjust labelpad for x-axis label
     plt.savefig(run_path + "impact_plot.jpg", dpi=1000)
+    plt.savefig(run_path + "impact_plot.pdf")
     plt.close()
