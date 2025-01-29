@@ -100,7 +100,7 @@ def impact_plot(run_path, run_params):
     elif str(run_params.run_name, 'utf-8') == 'run_3':
         a0.set_title('Minuteman III: Perfectly Maneuverable RV, INS+GNSS')
     elif str(run_params.run_name, 'utf-8') == 'run_4':
-        a0.set_title('Minuteman III: Ballistic RV, INS+GNSS')
+        a0.set_title('Minuteman III: Maneuverable RV, INS+GNSS')
     elif str(run_params.run_name, 'utf-8') != 'test':
         print('Warning: run_name ' + str(run_params.run_name, 'utf-8') + ' not recognized')
 

@@ -3,6 +3,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+params = {
+    'axes.labelsize': 18,
+    'font.size': 18,
+    'font.family': 'serif',
+    'legend.fontsize': 18,
+    'xtick.labelsize': 18,
+    'ytick.labelsize': 18,
+}
+plt.rcParams.update(params)
+
 def traj_plot(run_path):
     """
     Function to plot the trajectory of the vehicle.
@@ -92,30 +102,46 @@ def traj_plot(run_path):
     # orbit plot
     earth_radius = 6371e3
     plt.figure(figsize=(10,10))
+
+    # add shaded region for Earth's atmosphere
+    earth_atmosphere = plt.Circle((0, 0), earth_radius + 200e3, color='lightblue', label="Atmosphere")
+    plt.gca().add_artist(earth_atmosphere)
+
     # plot the Earth
     earth = plt.Circle((0, 0), earth_radius, color='blue', label="Earth")
     plt.gca().add_artist(earth)
     # set range for x and y axes to 2*earth_radius
-    plt.xlim(-2*earth_radius, 2*earth_radius)
-    plt.ylim(-2*earth_radius, 2*earth_radius)
+    plt.xlim(-0.7*earth_radius, 1.5*earth_radius)
+    plt.ylim(-0.7*earth_radius, 1.5*earth_radius)
 
     # plot the vehicle's trajectory in the x-y plane
     plt.plot(true_x, true_y, 'r', label="True Trajectory")
-    plt.xlabel("x (m)")
-    plt.ylabel("y (m)")
-    plt.title("Position (x-y plane)")
-    plt.grid()
+    # turn off the axis labels
+    plt.axis('off')
+
+    # plt.xlabel("x (m)")
+    # plt.ylabel("y (m)")
+    # plt.title("Position (x-y plane)")
     plt.savefig(run_path + "orbit.pdf")
     plt.close()
 
     # altitude vs. time
     plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_altitude)
-    plt.plot(true_t, est_altitude)
+    plt.plot(true_t, true_altitude/1000)
     plt.xlabel("Time (s)")
-    plt.ylabel("Altitude (m)")
-    plt.title("Altitude")
-    plt.grid()
+    plt.ylabel("Altitude (km)")
+    # remove top and right spines
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    # shade under the curve from 0 to 160 seconds
+    plt.fill_between(true_t, true_altitude/1000, 0, where=(true_t < 188), color='lightblue', alpha=0.5)
+    # add "guided" label to shaded region with arrow
+    plt.annotate('Boost (INS)', xy=(188, 40), xytext=(500, 50), arrowprops=dict(facecolor='black', arrowstyle='->'))
+    # add "ballistic phase"
+    plt.annotate('Ballistic Phase\n (No Control, GNSS)', xy=(1500, 1500), ha='center')
+    # shade under the curve for altitude < 100 and t < 1000
+    plt.fill_between(true_t, true_altitude/1000, 0, where=(true_t > 2915), color='red', alpha=0.5)
+    plt.annotate('Reentry\n (INS)', xy=(2910, 40), xytext=(2200, 250), arrowprops=dict(facecolor='black', arrowstyle='->'), ha='center')
     plt.savefig(run_path + "altitude.pdf")
     plt.close()
 

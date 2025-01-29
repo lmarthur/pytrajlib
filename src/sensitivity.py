@@ -8,7 +8,7 @@ import scienceplots
 
 plt.style.use(['science'])
 plt.style.use(['no-latex'])
-plt.style.use(['grayscale'])
+# plt.style.use(['grayscale'])
 sys.path.append('.')
 import numpy as np
 from src.pylib import *
@@ -58,6 +58,7 @@ plt.rcParams.update(params)
 # set color palette
 colors = plt.cm.viridis(np.linspace(0, 1, 7))
 
+
 plt.errorbar(x, cep_pos, cep_pos/np.sqrt(num_runs), label='Initial Position')
 plt.errorbar(x, cep_vel, cep_vel/np.sqrt(num_runs), label='Initial Velocity')
 plt.errorbar(x, cep_ang, cep_ang/np.sqrt(num_runs), label='Initial Angle')
@@ -72,6 +73,8 @@ plt.yscale('log')
 # Add categorical xticks
 plt.xscale('log')
 # plt.xticks(x, ['0.1', '1', '10'])
+# Add y ticks
+plt.yticks([5e1, 1e2, 5e2], ['$5 \\times 10^1$', '$10^2$', '$5 \\times 10^2$'])
 
 plt.xlabel('Estimated Parameter (E)')
 plt.ylabel('CEP (m)')
@@ -87,7 +90,7 @@ plt.annotate('Gyro Noise', (x[-1], cep_gyron[-1]), xytext=(-35,20), textcoords =
 plt.annotate('Total', (x[-2], cep_total[-2]), textcoords="offset points", xytext=(-50,20), arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=-.2', color='black'))
 
 plt.tight_layout()
-plt.savefig('./output/' + name + '/sensitivity_plot.jpg', dpi=1000)
+plt.savefig('./output/' + name + '/sensitivity_plot.pdf')
 plt.close()
 
 # Repeat for run_2
@@ -165,7 +168,7 @@ if run_2_params.gnss_nav:
 plt.annotate('Total', (x[2], cep_total[2]), textcoords="offset points", xytext=(-50,20), arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=-.2', color='black'))
 
 plt.tight_layout()
-plt.savefig('./output/' + name + '/sensitivity_plot.jpg', dpi=1000)
+plt.savefig('./output/' + name + '/sensitivity_plot.pdf')
 plt.close()
 
 # Repeat for run_3
@@ -240,9 +243,9 @@ plt.annotate('Acc. Scale', (x[-3], cep_acc[-3]), xytext=(-30, -20), textcoords =
 plt.annotate('Gyro Bias', (x[-2], cep_gyrob[-2]), xytext=(15, 20), textcoords = "offset points", arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=-.2', color='black'))
 plt.annotate('Gyro Noise', (x[3], cep_gyron[3]), xytext=(10,-25), textcoords = "offset points", arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=-.2', color='black'))
 if run_3_params.gnss_nav:
-    plt.annotate('GNSS Noise', (x[2], cep_gnssn[2]), xytext=(-10, -25), textcoords = "offset points", arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=-.2', color='black'))
+    plt.annotate('GNSS Error', (x[2], cep_gnssn[2]), xytext=(-10, -25), textcoords = "offset points", arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=-.2', color='black'))
 plt.annotate('Total', (x[3], cep_total[3]), textcoords="offset points", xytext=(-50,20), arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=-.2', color='black'))
 
 plt.tight_layout()
-plt.savefig('./output/' + name + '/sensitivity_plot.jpg', dpi=1000)
+plt.savefig('./output/' + name + '/sensitivity_plot.pdf')
 plt.close()

@@ -1,15 +1,16 @@
 [RUN]
 run_name = run_4
 output_path = ./output
-num_runs = 1000
+num_runs = 2
 time_step_main = 1.0
 time_step_reentry = 0.01
-traj_output = 0
+traj_output = 1
 # Note that the aimpoint coords are currently superseded by the thrust angle
 x_aim = 0
 y_aim = 0
 z_aim = 0
-theta_long = 1.04719755
+# theta_long = 1.04719755
+theta_long = 0.7853981633974483
 theta_lat = 0.0
 
 [FLIGHT]
@@ -22,7 +23,7 @@ gnss_nav = 1
 # If set to 0, indicates perfect state measurements
 ins_nav = 1
 # If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability
-rv_maneuv = 0
+rv_maneuv = 1
 
 [VEHICLE]
 rv_type = 1
@@ -35,4 +36,4 @@ initial_angle_error = 1e-6
 acc_scale_stability = 1e-6
 gyro_bias_stability = 1e-8
 gyro_noise = 1e-8
-gnss_noise = 0
+gnss_noise = 1e-1
