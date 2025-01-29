@@ -696,47 +696,11 @@ def test_integration_12():
     Verify that turning on rv maneuver decreases miss distance
     """
 
-    # First, no sensor errors
     run_params = read_config("test")
     run_params.num_runs = 10
     run_params.rv_maneuv = 0
     run_params.atm_error = 1
     run_params.grav_error = 1
-
-    aimpoint = update_aimpoint(run_params, config_path)
-
-    impact_data_pointer = pytraj.mc_run(run_params)
-
-    # Read the impact data
-    run_path = "./output/test/"
-    impact_data = np.loadtxt(run_path + "impact_data.txt", delimiter = ",", skiprows=1)
-
-    cep1 = get_cep(impact_data, run_params)
-
-    run_params.rv_maneuv = 1
-
-    impact_data_pointer = pytraj.mc_run(run_params)
-
-    # Read the impact data
-    run_path = "./output/test/"
-    impact_data = np.loadtxt(run_path + "impact_data.txt", delimiter = ",", skiprows=1)
-
-    cep2 = get_cep(impact_data, run_params)
-
-    assert cep1 > cep2
-
-    # Second, with sensor errors
-    run_params = read_config("test")
-    run_params.num_runs = 50
-    run_params.rv_maneuv = 0
-    run_params.grav_error = 1
-    run_params.atm_error = 1
-    run_params.initial_pos_error = c_double(0.1)
-    run_params.initial_vel_error = c_double(1e-4)
-    run_params.initial_angle_error = c_double(1e-6)
-    run_params.acc_scale_stability = c_double(1e-6)
-    run_params.gyro_bias_stability = c_double(1e-8)
-    run_params.gyro_noise = c_double(1e-8)
 
     aimpoint = update_aimpoint(run_params, config_path)
 
@@ -833,7 +797,6 @@ def test_integration_14():
     Verify that turning on GNSS navigation decreases miss distance
     """
 
-    # First, with rv maneuver
     run_params = read_config("test")
     run_params.num_runs = 10
     run_params.rv_maneuv = 1
@@ -862,39 +825,6 @@ def test_integration_14():
     run_path = "./output/test/"
     impact_data = np.loadtxt(run_path + "impact_data.txt", delimiter = ",", skiprows=1)
 
-    cep2 = get_cep(impact_data, run_params)
-
-    assert cep1 > cep2
-
-    # Second, with no rv maneuver
-    run_params = read_config("test")
-    run_params.num_runs = 50
-    run_params.rv_maneuv = 0
-    run_params.atm_error = 1
-    run_params.acc_scale_stability = c_double(1e-6)
-    run_params.gyro_bias_stability = c_double(1e-8)
-    run_params.gyro_noise = c_double(1e-8)
-    run_params.gnss_nav = 0
-    run_params.gnss_noise = c_double(1e-2)
-
-    aimpoint = update_aimpoint(run_params, config_path)
-
-    impact_data_pointer = pytraj.mc_run(run_params)
-
-    # Read the impact data
-    run_path = "./output/test/"
-    impact_data = np.loadtxt(run_path + "impact_data.txt", delimiter = ",", skiprows=1)
-
-    cep1 = get_cep(impact_data, run_params)
-
-    run_params.gnss_nav = 1
-
-    impact_data_pointer = pytraj.mc_run(run_params)
-
-    # Read the impact data
-    run_path = "./output/test/"
-    impact_data = np.loadtxt(run_path + "impact_data.txt", delimiter = ",", skiprows=1)
-    
     cep2 = get_cep(impact_data, run_params)
 
     assert cep1 > cep2

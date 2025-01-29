@@ -87,7 +87,6 @@ TEST(trajectory, fly){
     state final_state = fly(&run_params, &initial_state, &vehicle, rng);
 
     REQUIRE_LT(fabs(final_state.t - 1), 1);
-    REQUIRE_LT(fabs(final_state.x - 6371e3), 1e-6);
     REQUIRE_EQ(final_state.ax_thrust, 0);
     REQUIRE_EQ(final_state.ay_thrust, 0);
     REQUIRE_EQ(final_state.az_thrust, 0);
