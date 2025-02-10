@@ -9,8 +9,8 @@ traj_output = 1
 x_aim = 0
 y_aim = 0
 z_aim = 0
-# theta_long = 1.04719755
-theta_long = 0.7853981633974483
+theta_long = 1.04719755
+# theta_long = 0.7853981633974483
 theta_lat = 0.0
 
 [FLIGHT]

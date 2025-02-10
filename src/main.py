@@ -4,7 +4,7 @@ from ctypes import *
 from traj_plot import *
 from impact_plot import *
 # Specify the input file name (without the extension)
-config_file = "run_4"
+config_file = "run_0"
 
 # Check for the existence of the input file
 config_path = f"./input/{config_file}.toml"

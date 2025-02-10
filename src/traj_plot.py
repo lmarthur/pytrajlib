@@ -111,8 +111,8 @@ def traj_plot(run_path):
     earth = plt.Circle((0, 0), earth_radius, color='blue', label="Earth")
     plt.gca().add_artist(earth)
     # set range for x and y axes to 2*earth_radius
-    plt.xlim(-0.7*earth_radius, 1.5*earth_radius)
-    plt.ylim(-0.7*earth_radius, 1.5*earth_radius)
+    plt.xlim(-1.2*earth_radius, 1.5*earth_radius)
+    plt.ylim(-1.2*earth_radius, 1.5*earth_radius)
 
     # plot the vehicle's trajectory in the x-y plane
     plt.plot(true_x, true_y, 'r', label="True Trajectory")
@@ -136,12 +136,12 @@ def traj_plot(run_path):
     # shade under the curve from 0 to 160 seconds
     plt.fill_between(true_t, true_altitude/1000, 0, where=(true_t < 188), color='lightblue', alpha=0.5)
     # add "guided" label to shaded region with arrow
-    plt.annotate('Boost (INS)', xy=(188, 40), xytext=(500, 50), arrowprops=dict(facecolor='black', arrowstyle='->'))
+    # plt.annotate('Boost (INS)', xy=(188, 40), xytext=(500, 50), arrowprops=dict(facecolor='black', arrowstyle='->'))
     # add "ballistic phase"
-    plt.annotate('Ballistic Phase\n (No Control, GNSS)', xy=(1500, 1500), ha='center')
+    # plt.annotate('Ballistic Phase\n (No Control, GNSS)', xy=(1500, 1500), ha='center')
     # shade under the curve for altitude < 100 and t < 1000
-    plt.fill_between(true_t, true_altitude/1000, 0, where=(true_t > 2915), color='red', alpha=0.5)
-    plt.annotate('Reentry\n (INS)', xy=(2910, 40), xytext=(2200, 250), arrowprops=dict(facecolor='black', arrowstyle='->'), ha='center')
+    # plt.fill_between(true_t, true_altitude/1000, 0, where=(true_t > 2915), color='red', alpha=0.5)
+    # plt.annotate('Reentry\n (INS)', xy=(2910, 40), xytext=(2200, 250), arrowprops=dict(facecolor='black', arrowstyle='->'), ha='center')
     plt.savefig(run_path + "altitude.pdf")
     plt.close()
 
