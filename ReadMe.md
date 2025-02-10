@@ -76,7 +76,6 @@ To generate a new ```trajectory.txt``` file, run the simulation with ```traj_out
 - [X] Write function to generate sensitivity plots
 - [X] Organize runs
 - [X] Add non-commercial license
-- [ ] Set up documentation
 - [ ] Set up EG16 atmosphere
 - [ ] Implement 6-dof RV model
 

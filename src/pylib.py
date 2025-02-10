@@ -24,6 +24,7 @@ class runparams(Structure):
         ("theta_lat", c_double),
         
         ("grav_error", c_int),
+        ("atm_model", c_int),
         ("atm_error", c_int),
         ("gnss_nav", c_int),
         ("ins_nav", c_int),
@@ -91,6 +92,7 @@ def read_config(run_name):
 
     # set the flight parameters
     run_params.grav_error = c_int(int(config['FLIGHT']['grav_error']))
+    run_params.atm_model = c_int(int(config['FLIGHT']['atm_model']))
     run_params.atm_error = c_int(int(config['FLIGHT']['atm_error']))
     run_params.gnss_nav = c_int(int(config['FLIGHT']['gnss_nav']))
     run_params.ins_nav = c_int(int(config['FLIGHT']['ins_nav']))

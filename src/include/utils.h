@@ -20,6 +20,7 @@ typedef struct runparams{
     double theta_lat; // thrust angle in the latitudinal direction in radians
 
     int grav_error; // flag to include gravitational perturbations
+    int atm_model; // flag to select the atmospheric model
     int atm_error; // flag to include atmospheric perturbations
     int gnss_nav; // flag to include GNSS navigation
     int ins_nav; // flag to include INS navigation

@@ -14,6 +14,8 @@ theta_lat = 0.0
 [FLIGHT]
 # Gravitational error model
 grav_error = 0
+# Atmospheric model
+atm_model = 0
 # Atmospheric perturbations
 atm_error = 0
 # Positioning updates during exoatmospheric flight

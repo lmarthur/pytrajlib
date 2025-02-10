@@ -4,6 +4,7 @@
 TEST(atmosphere, init_atm){
     // Initialize the run parameters
     runparams run_params;
+    run_params.atm_model = 0;
     run_params.atm_error = 0;
 
     // Initialize the random number generator
@@ -57,6 +58,7 @@ TEST(atmosphere, init_atm){
 TEST(atmosphere, get_exp_atm_cond){
     // Initialize the run parameters
     runparams run_params;
+    run_params.atm_model = 0;
     run_params.atm_error = 0;
 
     // Initialize the random number generator
@@ -196,6 +198,7 @@ TEST(atmosphere, get_exp_atm_cond){
 TEST(atmosphere, get_pert_atm_cond){
     // Initialize the run parameters
     runparams run_params;
+    run_params.atm_model = 0;
     run_params.atm_error = 0;
 
     // Initialize the random number generator
@@ -326,6 +329,7 @@ TEST(atmosphere, get_pert_atm_cond){
 
 TEST(atmosphere, get_atm_cond){
     runparams run_params;
+    run_params.atm_model = 0;
     run_params.atm_error = 0;
 
     // Initialize the random number generator
@@ -360,5 +364,4 @@ TEST(atmosphere, get_atm_cond){
     REQUIRE_NE(atm_conditions.zonal_wind, 0);
     REQUIRE_NE(atm_conditions.vertical_wind, 0);
     
-        
 }

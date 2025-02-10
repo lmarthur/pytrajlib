@@ -58,48 +58,59 @@ atm_model init_atm(runparams *run_params, gsl_rng *rng){
     atm_model.scale_height = 8000; // scale height in meters
     atm_model.sea_level_density = 1.225; // sea level density in kg/m^3
 
-    // Non-perturbed branch
-    if (run_params->atm_error == 0){
+    // Branch based on atmospheric model
 
-        for (int i = 0; i < 4; i++){
-            atm_model.std_densities[i] = 0;
-            atm_model.std_winds[i] = 0;
-            atm_model.std_vert_winds[i] = 0;
-            atm_model.pert_densities[i] = 0;
-            atm_model.pert_zonal_winds[i] = 0;
-            atm_model.pert_meridional_winds[i] = 0;
-            atm_model.pert_vert_winds[i] = 0;
+    // Exponential branch
+    if (run_params->atm_model == 0){
+        // Non-perturbed branch
+        if (run_params->atm_error == 0){
+
+            for (int i = 0; i < 4; i++){
+                atm_model.std_densities[i] = 0;
+                atm_model.std_winds[i] = 0;
+                atm_model.std_vert_winds[i] = 0;
+                atm_model.pert_densities[i] = 0;
+                atm_model.pert_zonal_winds[i] = 0;
+                atm_model.pert_meridional_winds[i] = 0;
+                atm_model.pert_vert_winds[i] = 0;
+            }
+
         }
+        else{
+            // Density standard deviations
+            atm_model.std_densities[0] = 0.00009;
+            atm_model.std_densities[1] = 0.00001;
+            atm_model.std_densities[2] = 0.00262;
+            atm_model.std_densities[3] = 0.00662;
 
+            // Wind standard deviations
+            atm_model.std_winds[0] = 0.223;
+            atm_model.std_winds[1] = 0.098;
+            atm_model.std_winds[2] = 1.13;
+            atm_model.std_winds[3] = 2.23;
+
+            // Vertical wind standard deviations
+            atm_model.std_vert_winds[0] = 0.058;
+            atm_model.std_vert_winds[1] = 0.016;
+            atm_model.std_vert_winds[2] = 0.070;
+            atm_model.std_vert_winds[3] = 0.244;
+
+            for (int i = 0; i < 4; i++){
+                // Generate perturbations, which are then used by the get_atm_cond function to generate the true conditions
+                atm_model.pert_densities[i] = atm_model.std_densities[i] * gsl_ran_gaussian(rng, 1);
+                atm_model.pert_zonal_winds[i] = atm_model.std_winds[i] * gsl_ran_gaussian(rng, 1);
+                atm_model.pert_meridional_winds[i] = atm_model.std_winds[i] * gsl_ran_gaussian(rng, 1);
+                atm_model.pert_vert_winds[i] = atm_model.std_vert_winds[i] * gsl_ran_gaussian(rng, 1);
+            }
+
+        }
     }
     else{
-        // Density standard deviations
-        atm_model.std_densities[0] = 0.00009;
-        atm_model.std_densities[1] = 0.00001;
-        atm_model.std_densities[2] = 0.00262;
-        atm_model.std_densities[3] = 0.00662;
+        // EarthGRAM linterp branch
 
-        // Wind standard deviations
-        atm_model.std_winds[0] = 0.223;
-        atm_model.std_winds[1] = 0.098;
-        atm_model.std_winds[2] = 1.13;
-        atm_model.std_winds[3] = 2.23;
-
-        // Vertical wind standard deviations
-        atm_model.std_vert_winds[0] = 0.058;
-        atm_model.std_vert_winds[1] = 0.016;
-        atm_model.std_vert_winds[2] = 0.070;
-        atm_model.std_vert_winds[3] = 0.244;
-
-        for (int i = 0; i < 4; i++){
-            // Generate perturbations, which are then used by the get_atm_cond function to generate the true conditions
-            atm_model.pert_densities[i] = atm_model.std_densities[i] * gsl_ran_gaussian(rng, 1);
-            atm_model.pert_zonal_winds[i] = atm_model.std_winds[i] * gsl_ran_gaussian(rng, 1);
-            atm_model.pert_meridional_winds[i] = atm_model.std_winds[i] * gsl_ran_gaussian(rng, 1);
-            atm_model.pert_vert_winds[i] = atm_model.std_vert_winds[i] * gsl_ran_gaussian(rng, 1);
-        }
-
+        // Read in the EarthGRAM data and store in a struct
     }
+    
     
     return atm_model;
 }
