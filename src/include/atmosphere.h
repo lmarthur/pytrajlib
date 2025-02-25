@@ -36,6 +36,17 @@ typedef struct atm_model{
 
 } atm_model;
 
+// Define an eg16_profile struct to store the atmospheric profile data
+typedef struct eg16_profile{
+    int profile_num; // profile number
+    double alt_data[100]; // altitude data
+    double density_data[100]; // density data
+    double meridional_wind_data[100]; // meridional wind data
+    double zonal_wind_data[100]; // zonal wind data
+    double vertical_wind_data[100]; // vertical wind data
+
+} eg16_profile;
+
 atm_model init_atm(runparams *run_params, gsl_rng *rng){
     /*
     Initializes the atmospheric model
@@ -213,7 +224,49 @@ atm_cond get_pert_atm_cond(double altitude, atm_model *atm_model){
     return atm_conditions;
 }
 
-atm_cond get_atm_cond(double altitude, atm_model *atm_model, runparams *run_params){
+atm_cond get_eg_atm_cond(double altitude, eg16_profile *atm_profile){
+    /*
+    Calculates the atmospheric conditions at a given altitude using an EarthGRAM 2016 profile
+
+    INPUTS:
+    ----------
+        altitude: double
+            altitude in meters
+        atm_profile: eg16_profile *
+            pointer to the EarthGRAM 2016 profile
+    OUTPUT:
+    ----------
+        atm_conditions: atm_cond
+            local atmospheric conditions
+    */
+
+    atm_cond atm_conditions;
+    altitude = altitude/1000;
+    
+    if (altitude < 0){
+        altitude = 0;
+    }
+
+    atm_conditions.altitude = altitude;
+
+    if (altitude > 99){
+        atm_conditions.density = 0;
+        atm_conditions.meridional_wind = 0;
+        atm_conditions.zonal_wind = 0;
+        atm_conditions.vertical_wind = 0;
+        return atm_conditions;
+    }
+
+    // Use linear interpolation to get the atmospheric conditions
+    atm_conditions.density = linterp(altitude, atm_profile->alt_data, atm_profile->density_data, 100);
+    atm_conditions.meridional_wind = linterp(altitude, atm_profile->alt_data, atm_profile->meridional_wind_data, 100);
+    atm_conditions.zonal_wind = linterp(altitude, atm_profile->alt_data, atm_profile->zonal_wind_data, 100);
+    atm_conditions.vertical_wind = linterp(altitude, atm_profile->alt_data, atm_profile->vertical_wind_data, 100);
+    
+    return atm_conditions;
+}
+
+atm_cond get_atm_cond(double altitude, atm_model *atm_model, runparams *run_params, eg16_profile *atm_profile){
     /*
     Calculates the atmospheric conditions at a given altitude
 
@@ -232,13 +285,86 @@ atm_cond get_atm_cond(double altitude, atm_model *atm_model, runparams *run_para
     */
 
     atm_cond atm_conditions;
+
     if (run_params->atm_error == 0){
         atm_conditions = get_exp_atm_cond(altitude, atm_model);
     }
     else{
-        atm_conditions = get_pert_atm_cond(altitude, atm_model);
+        if (run_params->atm_model == 0){
+            atm_conditions = get_pert_atm_cond(altitude, atm_model);
+        }
+        else{
+            // EarthGRAM branch
+
+            atm_conditions = get_eg_atm_cond(altitude, atm_profile);
+        }
+
     }
     
     return atm_conditions;
 }
+
+eg16_profile parse_atm(char* atmprofilepath, int profilenum){
+    /*
+    Parses the atmospheric profile data and updates the 2d atm_data array by selecting only the requested profile
+
+    INPUTS:
+    ----------
+        atmprofilepath: char *
+            path to the atmospheric profile file
+        profilenum: int
+            index number of the atmospheric profile to use
+    OUTPUTS:
+    ----------
+        atm_profile: eg16_profile
+            atmospheric profile struct
+        
+    */
+    // Initialize the atmospheric profile struct
+    double atm_data[10000][6];
+    eg16_profile atm_profile;
+    atm_profile.profile_num = profilenum;
+
+    // Open the atmospheric profile file
+    FILE *fp = fopen(atmprofilepath, "r");
+    if (fp == NULL){
+        printf("Error opening atmospheric profile file\n");
+    }
+
+    // read the atmospheric profile data delimited by spaces
+    for (int i = 0; i < 100*100; i++){
+        for (int j = 0; j < 6; j++){
+            fscanf(fp, "%lfe", &atm_data[i][j]);
+        }
+    }
+
+    // print the atmospheric profile data
+    // for (int i = 0; i < 100*100; i++){
+    //     for (int j = 0; j < 6; j++){
+    //         printf("%lf ", atm_data[i][j]);
+    //     }
+    //     printf("\n");
+    // }
+    
+    // Update the atmospheric profile struct by iterating over only the requested profile
+    for (int i = 0; i < 100; i++){
+        atm_profile.alt_data[i] = atm_data[100*profilenum+i][1];
+        atm_profile.density_data[i] = atm_data[100*profilenum+i][2];
+        atm_profile.meridional_wind_data[i] = atm_data[100*profilenum+i][3];
+        atm_profile.zonal_wind_data[i] = atm_data[100*profilenum+i][4];
+        atm_profile.vertical_wind_data[i] = atm_data[100*profilenum+i][5];
+    }
+
+
+    // Print the atmospheric profile data
+    // printf("Profile number: %d\n", atm_profile.profile_num);
+    // for (int i = 0; i < 100; i++){
+    //     printf("Data: %lf %lf %lf %lf %lf\n", atm_profile.alt_data[i], atm_profile.density_data[i], atm_profile.meridional_wind_data[i], atm_profile.zonal_wind_data[i], atm_profile.vertical_wind_data[i]);
+    // }
+
+    fclose(fp);
+
+    return atm_profile;
+}
+
 #endif

@@ -342,8 +342,10 @@ TEST(atmosphere, get_atm_cond){
     // Initialize the atmospheric model
     atm_model atm_model = init_atm(&run_params, rng);
 
+    eg16_profile atm_profile;
+
     // Get the atmospheric conditions at sea level
-    atm_cond atm_conditions = get_atm_cond(0, &atm_model, &run_params);
+    atm_cond atm_conditions = get_atm_cond(0, &atm_model, &run_params, &atm_profile);
 
     // Check that the wind components are zero
     REQUIRE_EQ(atm_conditions.meridional_wind, 0);
@@ -357,11 +359,94 @@ TEST(atmosphere, get_atm_cond){
     atm_model = init_atm(&run_params, rng);
 
     // Get the atmospheric conditions at sea level
-    atm_conditions = get_atm_cond(0, &atm_model, &run_params);
+    
+    atm_conditions = get_atm_cond(0, &atm_model, &run_params, &atm_profile);
 
     // Check that the wind components are not zero
     REQUIRE_NE(atm_conditions.meridional_wind, 0);
     REQUIRE_NE(atm_conditions.zonal_wind, 0);
     REQUIRE_NE(atm_conditions.vertical_wind, 0);
     
+}
+
+TEST(atmosphere, parse_atm){
+    int profilenum = 0;
+    char* atmprofile = "input/atmprofiles.txt";
+    
+    eg16_profile atm_data = parse_atm(atmprofile, profilenum);
+    REQUIRE_EQ(atm_data.profile_num, 0);
+    REQUIRE_EQ(atm_data.alt_data[0], 0.0);
+    REQUIRE_EQ(atm_data.alt_data[1], 1.0);
+    REQUIRE_GT(atm_data.density_data[0], 1);
+    REQUIRE_LT(atm_data.density_data[0], 1.35);
+
+    double density_0 = atm_data.density_data[0];
+    double density_1 = atm_data.density_data[1];
+    REQUIRE_GT(density_0, density_1);
+
+    profilenum = 1;
+
+    atm_data = parse_atm(atmprofile, profilenum);
+    density_1 = atm_data.density_data[0];
+    REQUIRE_EQ(atm_data.profile_num, 1);
+    REQUIRE_EQ(atm_data.alt_data[0], 0.0);
+    REQUIRE_EQ(atm_data.alt_data[1], 1.0);
+    REQUIRE_GT(atm_data.density_data[0], 1);
+    REQUIRE_LT(atm_data.density_data[0], 1.35);
+
+    REQUIRE_NE(density_0, density_1);
+}
+
+TEST(atmosphere, get_eg_atm_cond){
+    // Test the get_eg_atm_cond function
+
+    int profilenum = 0;
+    char* atmprofile = "input/atmprofiles.txt";
+    
+    eg16_profile atm_data = parse_atm(atmprofile, profilenum);
+
+    // Test for altitude = -1
+    double altitude = -1;
+    atm_cond atm_conditions = get_eg_atm_cond(altitude, &atm_data);
+
+    REQUIRE_EQ(atm_conditions.altitude, 0);
+    REQUIRE_LT(fabs(atm_conditions.density-atm_data.density_data[0]), 1e-6);
+
+    // Test for altitude = 0
+    altitude = 0;
+    atm_conditions = get_eg_atm_cond(altitude, &atm_data);
+    
+    REQUIRE_EQ(atm_conditions.altitude, 0);
+    REQUIRE_LT(fabs(atm_conditions.density-atm_data.density_data[0]), 1e-6);
+
+    // Test for altitude = 0.5
+    altitude = 500;
+    atm_conditions = get_eg_atm_cond(altitude, &atm_data);
+
+    REQUIRE_EQ(atm_conditions.altitude, 0.5);
+    REQUIRE_LT(atm_data.alt_data[0], atm_conditions.altitude);
+    REQUIRE_GT(atm_data.alt_data[1], atm_conditions.altitude);
+    REQUIRE_LT(atm_data.density_data[1], atm_conditions.density);
+    REQUIRE_GT(atm_data.density_data[0], atm_conditions.density);
+
+    // Test for altitude = 1
+    altitude = 1000;
+    atm_conditions = get_eg_atm_cond(altitude, &atm_data);
+
+    REQUIRE_EQ(atm_conditions.altitude, 1);
+    REQUIRE_LT(fabs(atm_conditions.density-atm_data.density_data[1]), 1e-6);
+
+    // Test for altitude = 99
+    altitude = 99000;
+    atm_conditions = get_eg_atm_cond(altitude, &atm_data);
+
+    REQUIRE_EQ(atm_conditions.altitude, 99);
+    REQUIRE_LT(fabs(atm_conditions.density-atm_data.density_data[99]), 1e-6);
+
+    // Test for altitude = 100
+    altitude = 100000;
+    atm_conditions = get_eg_atm_cond(altitude, &atm_data);
+
+    REQUIRE_EQ(atm_conditions.altitude, 100);
+    REQUIRE_GT(atm_data.density_data[99], atm_conditions.density);
 }

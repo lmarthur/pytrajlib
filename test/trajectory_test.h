@@ -78,7 +78,7 @@ TEST(trajectory, fly){
     run_params.gnss_noise = 0;
 
     // print all of the vehicle parameters
-    printf("Booster total mass: %f\n", vehicle.booster.total_mass);
+    // printf("Booster total mass: %f\n", vehicle.booster.total_mass);
     // Mock vehicle with no thrust dropped from 10m above the surface
     state initial_state = init_true_state(&run_params, rng);
     initial_state.theta_long = 0;

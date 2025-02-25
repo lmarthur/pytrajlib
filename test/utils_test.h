@@ -178,3 +178,5 @@ TEST(utils, get_altitude){
     REQUIRE_EQ(get_altitude(0, 1, 1), sqrt(2) - 6371e3);
     REQUIRE_EQ(get_altitude(1, 1, 1), sqrt(3) - 6371e3);
 }
+
+

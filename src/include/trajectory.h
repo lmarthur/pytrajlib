@@ -216,7 +216,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     */
 
     // Initialize the variables and structures
-    int max_steps = 100000;
+    int max_steps = 1000000;
 
     grav true_grav = init_grav(run_params, rng);
     grav est_grav = init_grav(run_params, rng);
@@ -224,6 +224,14 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
 
     atm_model atm_model = init_atm(run_params, rng);
     
+    char *atmprofilepath = "input/atmprofiles.txt";
+
+    int atm_profile_num;
+    // Generate a random integer between 0 and 100
+    atm_profile_num = (int)gsl_ran_flat(rng, 0, 100);
+
+    eg16_profile atm_profile = parse_atm(atmprofilepath, atm_profile_num);
+
     state old_true_state = *initial_state;
     state new_true_state = *initial_state;
 
@@ -253,8 +261,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     for (int i = 0; i < max_steps; i++){
         // Get the atmospheric conditions
         double old_altitude = get_altitude(old_true_state.x, old_true_state.y, old_true_state.z);
-
-        atm_cond true_atm_cond = get_atm_cond(old_altitude, &atm_model, run_params);
+        
+        atm_cond true_atm_cond = get_atm_cond(old_altitude, &atm_model, run_params, &atm_profile);
         atm_cond est_atm_cond = get_exp_atm_cond(old_altitude, &atm_model);
         // if during boost or outside atmosphere, dt = main time step, else dt = reentry time step
         if (old_true_state.t < vehicle->booster.total_burn_time || old_altitude > 1e6){
