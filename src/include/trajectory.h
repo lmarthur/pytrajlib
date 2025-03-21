@@ -424,6 +424,7 @@ cart_vector update_aimpoint(runparams run_params, double thrust_angle_long){
     // Set all error parameters to zero
     run_params_temp.grav_error = 0;
     run_params_temp.atm_error = 0;
+    run_params_temp.atm_model = 0;
     run_params_temp.initial_x_error = 0;
     run_params_temp.initial_pos_error = 0;
     run_params_temp.initial_vel_error = 0;
