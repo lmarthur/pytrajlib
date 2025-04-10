@@ -1,7 +1,7 @@
 #include <tau/tau.h>
 #include "../src/include/atmosphere.h"
 
-TEST(atmosphere, init_atm){
+TEST(atmosphere, init_exp_atm){
     // Initialize the run parameters
     runparams run_params;
     run_params.atm_model = 0;
@@ -15,7 +15,7 @@ TEST(atmosphere, init_atm){
     rng = gsl_rng_alloc(T);
 
     // Initialize the atmospheric model
-    atm_model atm_model = init_atm(&run_params, rng);
+    atm_model atm_model = init_exp_atm(&run_params, rng);
 
     // Check the sea level density
     REQUIRE_EQ(atm_model.sea_level_density, 1.225);
@@ -35,7 +35,7 @@ TEST(atmosphere, init_atm){
     }
 
     run_params.atm_error = 1;
-    atm_model = init_atm(&run_params, rng);
+    atm_model = init_exp_atm(&run_params, rng);
 
     // Check the perturbations
     for (int i = 0; i < 4; i++){
@@ -69,7 +69,7 @@ TEST(atmosphere, get_exp_atm_cond){
     rng = gsl_rng_alloc(T);
 
     // Initialize the atmospheric model
-    atm_model atm_model = init_atm(&run_params, rng);
+    atm_model atm_model = init_exp_atm(&run_params, rng);
 
     // Get the atmospheric conditions at sea level
     atm_cond atm_conditions = get_exp_atm_cond(0, &atm_model);
@@ -126,7 +126,7 @@ TEST(atmosphere, get_exp_atm_cond){
     run_params.atm_error = 1;
 
     // Initialize the atmospheric model
-    atm_model = init_atm(&run_params, rng);
+    atm_model = init_exp_atm(&run_params, rng);
 
     // Get the atmospheric conditions at sea level
     atm_conditions = get_exp_atm_cond(0, &atm_model);
@@ -209,7 +209,7 @@ TEST(atmosphere, get_pert_atm_cond){
     rng = gsl_rng_alloc(T);
 
     // Initialize the atmospheric model
-    atm_model atm_model = init_atm(&run_params, rng);
+    atm_model atm_model = init_exp_atm(&run_params, rng);
 
     // Get the atmospheric conditions at sea level
     atm_cond atm_conditions = get_pert_atm_cond(0, &atm_model);
@@ -266,7 +266,7 @@ TEST(atmosphere, get_pert_atm_cond){
     run_params.atm_error = 1;
 
     // Initialize the atmospheric model
-    atm_model = init_atm(&run_params, rng);
+    atm_model = init_exp_atm(&run_params, rng);
 
     // Get the atmospheric conditions at sea level
     atm_conditions = get_pert_atm_cond(0, &atm_model);
@@ -340,7 +340,7 @@ TEST(atmosphere, get_atm_cond){
     rng = gsl_rng_alloc(T);
 
     // Initialize the atmospheric model
-    atm_model atm_model = init_atm(&run_params, rng);
+    atm_model atm_model = init_exp_atm(&run_params, rng);
 
     eg16_profile atm_profile;
 
@@ -356,7 +356,7 @@ TEST(atmosphere, get_atm_cond){
     run_params.atm_error = 1;
 
     // Initialize the atmospheric model
-    atm_model = init_atm(&run_params, rng);
+    atm_model = init_exp_atm(&run_params, rng);
 
     // Get the atmospheric conditions at sea level
     
