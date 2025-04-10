@@ -22,6 +22,3 @@ output/*
 
 # EarthGRAM 2016
 src/include/egsrc
-
-# Atmosphere data
-input/atmprofiles.txt

@@ -77,7 +77,7 @@ To generate a new ```trajectory.txt``` file, run the simulation with ```traj_out
 - [X] Organize runs
 - [X] Add non-commercial license
 - [X] Set up EG16 atmosphere
-- [ ] Implement reentry-only simulation
+- [X] Implement reentry-only simulation
 - [ ] Generate system response plots
 
 ## BUG REPORTS: 
