@@ -34,36 +34,23 @@ def traj_plot(run_path):
     true_ax_drag = traj_data[:,11]
     true_ay_drag = traj_data[:,12]
     true_az_drag = traj_data[:,13]
-    true_ax_lift = traj_data[:,14]
-    true_ay_lift = traj_data[:,15]
-    true_az_lift = traj_data[:,16]
-    true_ax_thrust = traj_data[:,17]
-    true_ay_thrust = traj_data[:,18]
-    true_az_thrust = traj_data[:,19]
-    true_ax_total = traj_data[:,20]
-    true_ay_total = traj_data[:,21]
-    true_az_total = traj_data[:,22]
-    est_x = traj_data[:,23]
-    est_y = traj_data[:,24]
-    est_z = traj_data[:,25]
-    est_vx = traj_data[:,26]
-    est_vy = traj_data[:,27]
-    est_vz = traj_data[:,28]
-    est_ax_grav = traj_data[:,29]
-    est_ay_grav = traj_data[:,30]
-    est_az_grav = traj_data[:,31]
-    est_ax_drag = traj_data[:,32]
-    est_ay_drag = traj_data[:,33]
-    est_az_drag = traj_data[:,34]
-    est_ax_lift = traj_data[:,35]
-    est_ay_lift = traj_data[:,36]
-    est_az_lift = traj_data[:,37]
-    est_ax_thrust = traj_data[:,38]
-    est_ay_thrust = traj_data[:,39]
-    est_az_thrust = traj_data[:,40]
-    est_ax_total = traj_data[:,41]
-    est_ay_total = traj_data[:,42]
-    est_az_total = traj_data[:,43]
+    a_command = traj_data[:,14]
+    a_exec = traj_data[:,15]
+    true_ax_thrust = traj_data[:,16]
+    true_ay_thrust = traj_data[:,17]
+    true_az_thrust = traj_data[:,18]
+    true_ax_total = traj_data[:,19]
+    true_ay_total = traj_data[:,20]
+    true_az_total = traj_data[:,21]
+    est_x = traj_data[:,22]
+    est_y = traj_data[:,23]
+    est_z = traj_data[:,24]
+    est_vx = traj_data[:,25]
+    est_vy = traj_data[:,26]
+    est_vz = traj_data[:,27]
+    est_ax_total = traj_data[:,28]
+    est_ay_total = traj_data[:,29]
+    est_az_total = traj_data[:,30]
 
 
     true_altitude = np.sqrt(np.square(true_x) + np.square(true_y) + np.square(true_z)) - 6371e3
@@ -72,12 +59,12 @@ def traj_plot(run_path):
 
     # position vs. time
     plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_x, label="x")
+    #plt.plot(true_t, true_x, label="x")
     plt.plot(true_t, true_y, label="y")
     plt.plot(true_t, true_z, label="z")
-    plt.plot(true_t, est_x, label="x_est")
-    plt.plot(true_t, est_y, label="y_est")
-    plt.plot(true_t, est_z, label="z_est")
+    #plt.plot(true_t, est_x, label="x_est")
+    #plt.plot(true_t, est_y, label="y_est")
+    #plt.plot(true_t, est_z, label="z_est")
     plt.xlabel("Time (s)")
     plt.ylabel("Position (m)")
     plt.title("Position")
@@ -157,7 +144,7 @@ def traj_plot(run_path):
 
     # velocity vs. time
     plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_vx, label="vx")
+    #plt.plot(true_t, true_vx, label="vx")
     plt.plot(true_t, true_vy, label="vy")
     plt.plot(true_t, true_vz, label="vz")
     plt.xlabel("Time (s)")
@@ -227,37 +214,26 @@ def traj_plot(run_path):
     plt.savefig(run_path + "acceleration_error.pdf")
     plt.close()
 
-    # grav acceleration error
+    # drag acceleration
     plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_ax_grav - est_ax_grav, label="ax")
-    plt.plot(true_t, true_ay_grav - est_ay_grav, label="ay")
-    plt.plot(true_t, true_az_grav - est_az_grav, label="az")
+    plt.plot(true_t, true_ax_drag, label="ax")
+    plt.plot(true_t, true_ay_drag, label="ay")
+    plt.plot(true_t, true_az_drag, label="az")
     plt.xlabel("Time (s)")
-    plt.ylabel("Gravitational Acceleration Error (m/s^2)")
-    plt.title("Gravitational Acceleration Error")
+    plt.ylabel("Drag Acceleration (m/s^2)")
+    plt.title("Drag Acceleration")
     plt.legend()
     plt.grid()
-    plt.savefig(run_path + "grav_acceleration_error.pdf")
-    plt.close()
-
-    # drag acceleration error
-    plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_ax_drag - est_ax_drag, label="ax")
-    plt.plot(true_t, true_ay_drag - est_ay_drag, label="ay")
-    plt.plot(true_t, true_az_drag - est_az_drag, label="az")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Drag Acceleration Error (m/s^2)")
-    plt.title("Drag Acceleration Error")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "drag_acceleration_error.pdf")
+    plt.savefig(run_path + "drag_acceleration.pdf")
     plt.close()
 
     # lift acceleration
     plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_ax_lift, label="ax")
-    plt.plot(true_t, true_ay_lift, label="ay")
-    plt.plot(true_t, true_az_lift, label="az")
+    plt.plot(true_t[0:-10], a_command[0:-10], label="a_command")
+    plt.plot(true_t[0:-10], a_exec[0:-10], label="a_exec")
+    #plt.ylim(0, 25) # limit y-axis to 0-50 for better visibility of the lift acceleration
+
+    plt.yscale('symlog')
     plt.xlabel("Time (s)")
     plt.ylabel("Lift Acceleration (m/s^2)")
     plt.title("Lift Acceleration")
@@ -265,30 +241,18 @@ def traj_plot(run_path):
     plt.grid()
     plt.savefig(run_path + "lift_acceleration.pdf")
     plt.close()
-    
-    # lift acceleration error
-    plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_ax_lift - est_ax_lift, label="ax")
-    plt.plot(true_t, true_ay_lift - est_ay_lift, label="ay")
-    plt.plot(true_t, true_az_lift - est_az_lift, label="az")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Lift Acceleration Error (m/s^2)")
-    plt.title("Lift Acceleration Error")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "lift_acceleration_error.pdf")
-    plt.close()
 
-    # thrust acceleration error
+    # plot y and z position vs. altitude
     plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_ax_thrust - est_ax_thrust, label="ax")
-    plt.plot(true_t, true_ay_thrust - est_ay_thrust, label="ay")
-    plt.plot(true_t, true_az_thrust - est_az_thrust, label="az")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Thrust Acceleration Error (m/s^2)")
-    plt.title("Thrust Acceleration Error")
+    plt.plot(500000-true_altitude, true_y, label="y")
+    plt.plot(500000-true_altitude, true_z, label="z")
+    plt.xlabel("Altitude")
+    plt.ylabel("Position (m)")
+    # no x axis ticks
+    plt.xticks([])
+    plt.title("Lateral Position vs. Altitude")
     plt.legend()
     plt.grid()
-    plt.savefig(run_path + "thrust_acceleration_error.pdf")
+    plt.savefig(run_path + "position_vs_altitude.pdf")
     plt.close()
 

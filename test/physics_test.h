@@ -124,6 +124,8 @@ TEST(physics, update_drag){
     state state;
     runparams run_params;
     run_params.grav_error = 0;
+    run_params.run_type = 0;
+    run_params.cl_pert = 0; // Set to zero for this test, as we are only testing drag
 
     // Initialize the random number generator
     const gsl_rng_type *T;
@@ -133,7 +135,10 @@ TEST(physics, update_drag){
     rng = gsl_rng_alloc(T);
 
     grav grav = init_grav(&run_params, rng);
-    atm_model atm_model = init_atm(&run_params, rng);
+    atm_model atm_model = init_exp_atm(&run_params, rng);
+
+    // Step function anomaly timer (unused in this test, but required for the function signature)
+    double step_timer = 0; // Timer for the step function
     
     atm_cond = get_exp_atm_cond(0, &atm_model);
 
@@ -145,7 +150,7 @@ TEST(physics, update_drag){
     state.vy = 0;
     state.vz = 0;
 
-    update_drag(&vehicle, &atm_cond, &state);
+    update_drag(&run_params, &vehicle, &atm_cond, &state, &step_timer);
 
     // Check that the drag acceleration components are zero
     REQUIRE_LT(state.ax_drag, 1e-6);
@@ -160,7 +165,7 @@ TEST(physics, update_drag){
     state.vy = 1;
     state.vz = 1;
     
-    update_drag(&vehicle, &atm_cond, &state);
+    update_drag(&run_params, &vehicle, &atm_cond, &state, &step_timer);
 
     REQUIRE_LT(state.ax_drag, 1e-6);
     REQUIRE_LT(state.ay_drag, 1e-6);
@@ -174,7 +179,7 @@ TEST(physics, update_drag){
     state.vy = 1;
     state.vz = 1;
 
-    update_drag(&vehicle, &atm_cond, &state);
+    update_drag(&run_params, &vehicle, &atm_cond, &state, &step_timer);
 
     REQUIRE_NE(state.ax_drag, 0);
     REQUIRE_NE(state.ay_drag, 0);
@@ -189,7 +194,7 @@ TEST(physics, update_drag){
     state.vy = 0;
     state.vz = 0;
 
-    update_drag(&vehicle, &atm_cond, &state);
+    update_drag(&run_params, &vehicle, &atm_cond, &state, &step_timer);
     
     REQUIRE_LT(state.ax_drag, 0);
     REQUIRE_EQ(state.ay_drag, 0);

@@ -1,53 +1,54 @@
 [RUN]
-run_name = run_1
+run_name = reentry
 # If set to 0, full trajectory, if set to 1, reentry only
-run_type = 0
+run_type = 1
 output_path = ./output
-num_runs = 1000
-time_step_main = 1.0
-time_step_reentry = 0.01
-traj_output = 0
+num_runs = 2
+time_step_main = 0.1
+time_step_reentry = 0.001
+traj_output = 1
 # Note that the aimpoint coords are currently superseded by the thrust angle
 x_aim = 0
 y_aim = 0
 z_aim = 0
 theta_long = 1.04719755
+# theta_long = 0.7853981633974483
 theta_lat = 0.0
 
 [FLIGHT]
 # Gravitational error model
 grav_error = 1
 # Atmospheric model
-atm_model = 0
+atm_model = 1
 # Atmospheric perturbations
 atm_error = 1
 # Positioning updates during exoatmospheric flight (1 is on, 0 is off)
-gnss_nav = 0
+gnss_nav = 1
 # If set to 0, indicates perfect state measurements
 ins_nav = 1
-# If set to 1, enables idealized boost phase guidance
-boost_guidance = 1
 # If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability
 rv_maneuv = 1
 # Reentry velocity (m/s) for reentry only simulation (run_type = 1)
 reentry_vel = 7500
+# Deflection time (s) for control surfaces
+deflection_time = 0.01
 
 [VEHICLE]
 rv_type = 1
 
 [ERRORPARAMS]
 initial_x_error = 0.0
-initial_pos_error = 0.5
-initial_vel_error = 1e-3
-initial_angle_error = 1e-6
-acc_scale_stability = 1e-6
-gyro_bias_stability = 5e-8
-gyro_noise = 1e-8
-gnss_noise = 1e-1
+initial_pos_error = 1e1
+initial_vel_error = 1e-4
+initial_angle_error = 0
+acc_scale_stability = 0
+gyro_bias_stability = 0
+gyro_noise = 0
+gnss_noise = 0
 cl_pert = 0
 # Step function acceleration magnitude (m/s^2)
-step_acc_mag = 0
+step_acc_mag = 10
 # Step function acceleration height (m)
-step_acc_hgt = 0
+step_acc_hgt = 50000
 # Step function acceleration duration (s)
-step_acc_dur = 0
+step_acc_dur = 0.1

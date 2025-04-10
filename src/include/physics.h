@@ -73,7 +73,7 @@ void update_gravity(grav *grav, state *state){
 
 }
 
-void update_drag(vehicle *vehicle, atm_cond *atm_cond, state *state){
+void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, state *state, double *step_timer){
     /*
     Updates the drag acceleration components
 
@@ -124,6 +124,27 @@ void update_drag(vehicle *vehicle, atm_cond *atm_cond, state *state){
         state->ay_drag = -a_drag_mag * v_rel[1] / v_rel_mag;
         state->az_drag = -a_drag_mag * v_rel[2] / v_rel_mag;
 
+    }
+
+    // Add anomalous lift forces
+    double dynamic_pressure = 0.5 * atm_cond->density * v_rel_mag * v_rel_mag; // dynamic pressure in Pascals (N/m^2)
+    // printf("Dynamic pressure: %f\n", dynamic_pressure);
+    if (run_params->run_type == 1){
+        // printf("run_params->cl_pert: %f\n", run_params->cl_pert);
+        state->ay_drag = state->ay_drag + run_params->cl_pert * dynamic_pressure * vehicle->rv.rv_area/vehicle->current_mass; // add lift in the y-direction for reentry vehicles
+    }
+        
+    if (run_params->run_type == 1 && (run_params->step_acc_mag != 0)){
+        
+        if ((get_altitude(state->x, state->y, state->z) < run_params->step_acc_hgt) && (*step_timer < run_params->step_acc_dur)) {
+            // start timer
+            *step_timer += run_params->time_step_reentry; // increment the timer by the time step
+            // apply step function
+            state->ay_drag += run_params->step_acc_mag;
+            printf("Applying step function anomaly: %f at altitude: %f and time: %f\n", run_params->step_acc_mag, get_altitude(state->x, state->y, state->z), *step_timer);
+
+        }
+  
     }
 
     return;

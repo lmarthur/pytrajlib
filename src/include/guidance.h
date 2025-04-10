@@ -20,6 +20,8 @@ cart_vector prop_nav(runparams *run_params, state *estimated_state){
     double nav_gain = 5;
     // Calculate the relative position vector to the target
     cart_vector r_target;
+    // print the aimpoint
+
     r_target.x = run_params->x_aim - estimated_state->x;
     r_target.y = run_params->y_aim - estimated_state->y;
     r_target.z = run_params->z_aim - estimated_state->z;

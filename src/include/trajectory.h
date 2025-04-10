@@ -41,21 +41,40 @@ state init_true_state(runparams *run_params, gsl_rng *rng){
     */
 
     state state;
-    state.t = 0;
-    state.x = 6371e3 + run_params->initial_x_error * gsl_ran_gaussian(rng, 1);
-    state.y = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
-    state.z = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
+    // branch for initializing full trajectory run
+    if (run_params->run_type == 0){
+        // printf("Initializing full trajectory run\n");
+        state.t = 0;
+        state.x = 6371e3 + run_params->initial_x_error * gsl_ran_gaussian(rng, 1);
+        state.y = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
+        state.z = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
 
+        state.vx = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
+        state.vy = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
+        state.vz = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
+        
+    }
+    // branch for initializing reentry only run
+    if (run_params->run_type == 1){
+        // printf("Initializing reentry only run\n");
+        state.t = 0;
+        state.x = 6371e3 + 500e3 + run_params->initial_x_error * gsl_ran_gaussian(rng, 1);
+        state.y = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
+        state.z = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
+
+        state.vx = -run_params->reentry_vel + run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
+        state.vy = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
+        state.vz = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
+
+    }
+    
     double initial_rot_pert = run_params->initial_angle_error * gsl_ran_gaussian(rng, 1);
 
     state.initial_theta_lat_pert = run_params->initial_angle_error * gsl_ran_gaussian(rng, 1) + run_params->theta_long * initial_rot_pert - fabs(run_params->theta_lat * initial_rot_pert);
     state.initial_theta_long_pert = run_params->initial_angle_error * gsl_ran_gaussian(rng, 1) - run_params->theta_lat * initial_rot_pert - fabs(run_params->theta_long * initial_rot_pert);
     state.theta_long = run_params->theta_long + state.initial_theta_long_pert;
     state.theta_lat = run_params->theta_lat + state.initial_theta_lat_pert;
-
-    state.vx = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
-    state.vy = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
-    state.vz = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
+        
     state.ax_grav = 0;
     state.ay_grav = 0;
     state.az_grav = 0;
@@ -90,17 +109,37 @@ state init_est_state(runparams *run_params){
     */
 
     state state;
-    state.t = 0;
-    state.x = 6371e3;
-    state.y = 0;
-    state.z = 0;
+    if (run_params->run_type == 0){
+        // printf("Initializing full trajectory run\n");
+        state.t = 0;
+        state.x = 6371e3;
+        state.y = 0;
+        state.z = 0;
+
+        state.vx = 0;
+        state.vy = 0;
+        state.vz = 0;
+        
+    }
+    // branch for initializing reentry only run
+    if (run_params->run_type == 1){
+        // printf("Initializing reentry only run\n");
+        state.t = 0;
+        state.x = 6371e3 + 1000e3;
+        state.y = 0;
+        state.z = 0;
+
+        state.vx = -run_params->reentry_vel;
+        state.vy = 0;
+        state.vz = 0;
+
+    }
+
     state.theta_long = run_params->theta_long;
     state.theta_lat = run_params->theta_lat;
     state.initial_theta_lat_pert = 0;
     state.initial_theta_long_pert = 0;
-    state.vx = 0;
-    state.vy = 0;
-    state.vz = 0;
+
     state.ax_grav = 0;
     state.ay_grav = 0;
     state.az_grav = 0;
@@ -222,9 +261,12 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     grav est_grav = init_grav(run_params, rng);
     est_grav.perturb_flag = 0;
 
-    atm_model atm_model = init_atm(run_params, rng);
+    atm_model exp_atm_model = init_exp_atm(run_params, rng);
     
     char *atmprofilepath = "input/atmprofiles.txt";
+
+    double a_command_total = 0;
+    double a_lift_total = 0;
 
     int atm_profile_num;
     // Generate a random integer between 0 and 100
@@ -252,18 +294,22 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     FILE *traj_file;
     if (traj_output == 1){
         traj_file = fopen(run_params->trajectory_path, "w");
-        fprintf(traj_file, "t, current_mass, x, y, z, vx, vy, vz, ax_grav, ay_grav, az_grav, ax_drag, ay_drag, az_drag, ax_lift, ay_lift, az_lift, ax_thrust, ay_thrust, az_thrust, ax_total, ay_total, az_total, est_x, est_y, est_z, est_vx, est_vy, est_vz, est_ax_grav, est_ay_grav, est_az_grav, est_ax_drag, est_ay_drag, est_az_drag, est_ax_lift, est_ay_lift, est_az_lift, est_ax_thrust, est_ay_thrust, est_az_thrust, est_ax_total, est_ay_total, est_az_total \n");
+        fprintf(traj_file, "t, current_mass, x, y, z, vx, vy, vz, ax_grav, ay_grav, az_grav, ax_drag, ay_drag, az_drag, a_command, a_lift, ax_thrust, ay_thrust, az_thrust, ax_total, ay_total, az_total, est_x, est_y, est_z, est_vx, est_vy, est_vz, est_ax_total, est_ay_total, est_az_total \n");
         // Write the initial state to the trajectory file
-        fprintf(traj_file, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", old_true_state.t, vehicle->current_mass, old_true_state.x, old_true_state.y, old_true_state.z, old_true_state.vx, old_true_state.vy, old_true_state.vz, old_true_state.ax_grav, old_true_state.ay_grav, old_true_state.az_grav, old_true_state.ax_drag, old_true_state.ay_drag, old_true_state.az_drag, old_true_state.ax_lift, old_true_state.ay_lift, old_true_state.az_lift, old_true_state.ax_thrust, old_true_state.ay_thrust, old_true_state.az_thrust, old_true_state.ax_total, old_true_state.ay_total, old_true_state.az_total, old_est_state.x, old_est_state.y, old_est_state.z, old_est_state.vx, old_est_state.vy, old_est_state.vz, old_est_state.ax_grav, old_est_state.ay_grav, old_est_state.az_grav, old_est_state.ax_drag, old_est_state.ay_drag, old_est_state.az_drag, old_est_state.ax_lift, old_est_state.ay_lift, old_est_state.az_lift, old_est_state.ax_thrust, old_est_state.ay_thrust, old_est_state.az_thrust, old_est_state.ax_total, old_est_state.ay_total, old_est_state.az_total);
+        fprintf(traj_file, "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n", old_true_state.t, vehicle->current_mass, old_true_state.x, old_true_state.y, old_true_state.z, old_true_state.vx, old_true_state.vy, old_true_state.vz, old_true_state.ax_grav, old_true_state.ay_grav, old_true_state.az_grav, old_true_state.ax_drag, old_true_state.ay_drag, old_true_state.az_drag, a_command_total, a_lift_total, old_true_state.ax_thrust, old_true_state.ay_thrust, old_true_state.az_thrust, old_true_state.ax_total, old_true_state.ay_total, old_true_state.az_total, old_est_state.x, old_est_state.y, old_est_state.z, old_est_state.vx, old_est_state.vy, old_est_state.vz, old_est_state.ax_total, old_est_state.ay_total, old_est_state.az_total);
     }
+
+    // Variables for step function anomaly (only used for run_type = 1)
+    double step_timer = 0; // time since step function was activated
 
     // Begin the integration loop
     for (int i = 0; i < max_steps; i++){
         // Get the atmospheric conditions
         double old_altitude = get_altitude(old_true_state.x, old_true_state.y, old_true_state.z);
         
-        atm_cond true_atm_cond = get_atm_cond(old_altitude, &atm_model, run_params, &atm_profile);
-        atm_cond est_atm_cond = get_exp_atm_cond(old_altitude, &atm_model);
+        atm_cond true_atm_cond = get_atm_cond(old_altitude, &exp_atm_model, run_params, &atm_profile);
+        // printf("true_atm_cond: %f, %f, %f\n", true_atm_cond.density, true_atm_cond.meridional_wind, true_atm_cond.zonal_wind);
+        atm_cond est_atm_cond = get_exp_atm_cond(old_altitude, &exp_atm_model);
         // if during boost or outside atmosphere, dt = main time step, else dt = reentry time step
         if (old_true_state.t < vehicle->booster.total_burn_time || old_altitude > 1e6){
             time_step = run_params->time_step_main;
@@ -281,18 +327,24 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
         update_gravity(&true_grav, &new_des_state);
 
         // Update the drag acceleration components
-        update_drag(vehicle, &true_atm_cond, &new_true_state);
-        update_drag(vehicle, &est_atm_cond, &new_est_state);
-        update_drag(vehicle, &est_atm_cond, &new_des_state);
+        update_drag(run_params, vehicle, &true_atm_cond, &new_true_state, &step_timer);
+        update_drag(run_params, vehicle, &est_atm_cond, &new_est_state, &step_timer);
+        update_drag(run_params, vehicle, &est_atm_cond, &new_des_state, &step_timer);
 
         // If maneuverable RV, use proportional navigation during reentry
-        if (run_params->rv_maneuv == 1 && old_true_state.t > vehicle->booster.total_burn_time && get_altitude(new_true_state.x, new_true_state.y, new_true_state.z) < 1e6){
+        if (run_params->rv_maneuv == 1 && old_true_state.t >= vehicle->booster.total_burn_time && get_altitude(new_true_state.x, new_true_state.y, new_true_state.z) < 1e6){
             // Get the acceleration command
             cart_vector a_command = prop_nav(run_params, &new_est_state);
-            
+            // printf("a_command: %f, %f, %f\n", a_command.x, a_command.y, a_command.z);
             // Update the lift acceleration components
-            update_lift(&new_true_state, &a_command, &true_atm_cond, vehicle, time_step);
-            update_lift(&new_est_state, &a_command, &est_atm_cond, vehicle, time_step);
+            update_lift(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step);
+            // get the total acceleration command and the total lift acceleration
+            a_command_total = sqrt(a_command.x*a_command.x + a_command.y*a_command.y + a_command.z*a_command.z);
+            a_lift_total = sqrt(new_true_state.ax_lift*new_true_state.ax_lift + new_true_state.ay_lift*new_true_state.ay_lift + new_true_state.az_lift*new_true_state.az_lift);
+            // printf("a_command_total: %f, a_lift_total: %f\n", a_command_total, a_lift_total);
+
+            update_lift(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step);
+
         }
 
         // Calculate the total acceleration components
@@ -324,7 +376,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             gnss_measurement(&gnss, &new_true_state, &new_est_state, rng);
         }
 
-        if  (new_true_state.t == (vehicle->booster.total_burn_time) ){
+        if  (new_true_state.t == (vehicle->booster.total_burn_time) && run_params->run_type == 0){
             // Perform a perfect maneuver if before burnout
 
             new_true_state = perfect_maneuv(&new_true_state, &new_est_state, &new_des_state);
@@ -369,7 +421,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             }
             if (traj_output == 1){
                 // Write the final state to the trajectory file
-                fprintf(traj_file, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", true_final_state.t, vehicle->current_mass, true_final_state.x, true_final_state.y, true_final_state.z, true_final_state.vx, true_final_state.vy, true_final_state.vz, true_final_state.ax_grav, true_final_state.ay_grav, true_final_state.az_grav, true_final_state.ax_drag, true_final_state.ay_drag, true_final_state.az_drag, true_final_state.ax_lift, true_final_state.ay_lift, true_final_state.az_lift, true_final_state.ax_thrust, true_final_state.ay_thrust, true_final_state.az_thrust, true_final_state.ax_total, true_final_state.ay_total, true_final_state.az_total, est_final_state.x, est_final_state.y, est_final_state.z, est_final_state.vx, est_final_state.vy, est_final_state.vz, est_final_state.ax_grav, est_final_state.ay_grav, est_final_state.az_grav, est_final_state.ax_drag, est_final_state.ay_drag, est_final_state.az_drag, est_final_state.ax_lift, est_final_state.ay_lift, est_final_state.az_lift, est_final_state.ax_thrust, est_final_state.ay_thrust, est_final_state.az_thrust, est_final_state.ax_total, est_final_state.ay_total, est_final_state.az_total);
+                fprintf(traj_file, "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n", true_final_state.t, vehicle->current_mass, true_final_state.x, true_final_state.y, true_final_state.z, true_final_state.vx, true_final_state.vy, true_final_state.vz, true_final_state.ax_grav, true_final_state.ay_grav, true_final_state.az_grav, true_final_state.ax_drag, true_final_state.ay_drag, true_final_state.az_drag, a_command_total, a_lift_total, true_final_state.ax_thrust, true_final_state.ay_thrust, true_final_state.az_thrust, true_final_state.ax_total, true_final_state.ay_total, true_final_state.az_total, est_final_state.x, est_final_state.y, est_final_state.z, est_final_state.vx, est_final_state.vy, est_final_state.vz, est_final_state.ax_total, est_final_state.ay_total, est_final_state.az_total);
                 fclose(traj_file);
             }
 
@@ -378,7 +430,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
 
         // output the trajectory data
         if (traj_output == 1){
-            fprintf(traj_file, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", new_true_state.t, vehicle->current_mass, new_true_state.x, new_true_state.y, new_true_state.z, new_true_state.vx, new_true_state.vy, new_true_state.vz, new_true_state.ax_grav, new_true_state.ay_grav, new_true_state.az_grav, new_true_state.ax_drag, new_true_state.ay_drag, new_true_state.az_drag, new_true_state.ax_lift, new_true_state.ay_lift, new_true_state.az_lift, new_true_state.ax_thrust, new_true_state.ay_thrust, new_true_state.az_thrust, new_true_state.ax_total, new_true_state.ay_total, new_true_state.az_total, new_est_state.x, new_est_state.y, new_est_state.z, new_est_state.vx, new_est_state.vy, new_est_state.vz, new_est_state.ax_grav, new_est_state.ay_grav, new_est_state.az_grav, new_est_state.ax_drag, new_est_state.ay_drag, new_est_state.az_drag, new_est_state.ax_lift, new_est_state.ay_lift, new_est_state.az_lift, new_est_state.ax_thrust, new_est_state.ay_thrust, new_est_state.az_thrust, new_est_state.ax_total, new_est_state.ay_total, new_est_state.az_total);
+            fprintf(traj_file, "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n", new_true_state.t, vehicle->current_mass, new_true_state.x, new_true_state.y, new_true_state.z, new_true_state.vx, new_true_state.vy, new_true_state.vz, new_true_state.ax_grav, new_true_state.ay_grav, new_true_state.az_grav, new_true_state.ax_drag, new_true_state.ay_drag, new_true_state.az_drag, a_command_total, a_lift_total, new_true_state.ax_thrust, new_true_state.ay_thrust, new_true_state.az_thrust, new_true_state.ax_total, new_true_state.ay_total, new_true_state.az_total, new_est_state.x, new_est_state.y, new_est_state.z, new_est_state.vx, new_est_state.vy, new_est_state.vz, new_est_state.ax_total, new_est_state.ay_total, new_est_state.az_total);
         }
 
         // Update the old state
@@ -415,6 +467,14 @@ cart_vector update_aimpoint(runparams run_params, double thrust_angle_long){
 
     cart_vector aimpoint;
     
+    // If reentry only run, return the origin/launchpoint
+    if (run_params.run_type == 1){
+        aimpoint.x = 6371e3;
+        aimpoint.y = 0;
+        aimpoint.z = 0;
+        return aimpoint;
+    }
+
     runparams run_params_temp = run_params;
     // Set output to zero
     run_params_temp.traj_output = 0;
@@ -453,6 +513,7 @@ cart_vector update_aimpoint(runparams run_params, double thrust_angle_long){
             printf("Error: Invalid RV type\n");
             exit(1);
     }
+    
 
     state initial_state = init_true_state(&run_params_temp, rng);
     initial_state.theta_long = thrust_angle_long;
@@ -485,7 +546,7 @@ void mc_run(runparams run_params){
     int num_runs = run_params.num_runs;
     // printf("Simulating %d Monte Carlo runs...\n", num_runs);
     if (num_runs > MAX_RUNS){
-        printf("Error: Number of runs exceeds the maximum limit. Increase MAX_RUNS in src/include/trajectory.h \n");
+        printf("Error: Number of runs exceeds the maximum limit. Increase MAX_RUNS in src/include/trajectory.h and recompile. \n");
         printf("num_runs: %d, MAX_RUNS: %d\n", num_runs, MAX_RUNS);
         exit(1);
     }
@@ -511,17 +572,29 @@ void mc_run(runparams run_params){
 
     // Run the Monte Carlo simulation
     for (int i = 0; i < num_runs; i++){
+
         vehicle vehicle;
-        if (run_params.rv_type == 0){
-            vehicle = init_mmiii_ballistic();
+        if (run_params.run_type == 0){
+            if (run_params.rv_type == 0){
+                vehicle = init_mmiii_ballistic();
+            }
+            else if (run_params.rv_type == 1){
+                vehicle = init_mmiii_swerve();
+            }
+            else{
+                printf("Error: Invalid RV type\n");
+                exit(1);
+            }
         }
-        else if (run_params.rv_type == 1){
-            vehicle = init_mmiii_swerve();
+        else if (run_params.run_type == 1){
+            vehicle = init_reentry_only();
         }
         else{
-            printf("Error: Invalid RV type\n");
+            printf("Error: Invalid run type\n");
             exit(1);
         }
+        
+
         state initial_true_state = init_true_state(&run_params, rng);
         
         impact_data.impact_states[i] = fly(&run_params, &initial_true_state, &vehicle, rng);

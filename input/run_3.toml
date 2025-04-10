@@ -1,5 +1,7 @@
 [RUN]
 run_name = run_3
+# If set to 0, full trajectory, if set to 1, reentry only
+run_type = 0
 output_path = ./output
 num_runs = 1000
 time_step_main = 1.0
@@ -25,6 +27,8 @@ gnss_nav = 1
 ins_nav = 1
 # If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability
 rv_maneuv = 2
+# Reentry velocity (m/s) for reentry only simulation (run_type = 1)
+reentry_vel = 7500
 
 [VEHICLE]
 rv_type = 1
@@ -38,3 +42,10 @@ acc_scale_stability = 1e-6
 gyro_bias_stability = 1e-8
 gyro_noise = 1e-8
 gnss_noise = 1e-1
+cl_pert = 0
+# Step function acceleration magnitude (m/s^2)
+step_acc_mag = 0
+# Step function acceleration height (m)
+step_acc_hgt = 0
+# Step function acceleration duration (s)
+step_acc_dur = 0

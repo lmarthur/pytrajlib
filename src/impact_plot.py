@@ -102,7 +102,7 @@ def impact_plot(run_path, run_params):
     elif str(run_params.run_name, 'utf-8') == 'run_4':
         a0.set_title('Minuteman III: Maneuverable RV, INS+GNSS')
     elif str(run_params.run_name, 'utf-8') != 'test':
-        print('Warning: run_name ' + str(run_params.run_name, 'utf-8') + ' not recognized')
+        # print('Warning: run_name ' + str(run_params.run_name, 'utf-8') + ' not recognized')
 
         a0.set_title('Trajectory Impact Points')
     # plot the histogram of the miss distances

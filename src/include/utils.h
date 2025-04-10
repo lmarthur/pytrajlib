@@ -6,6 +6,7 @@
 
 typedef struct runparams{
     char *run_name; // name of the run
+    int run_type; // 0 for full trajectory, 1 for reentry only
     char *output_path; // path to the output directory
     char *impact_data_path; // path to the impact data file
     char *trajectory_path; // path to the trajectory data file
@@ -25,6 +26,8 @@ typedef struct runparams{
     int gnss_nav; // flag to include GNSS navigation
     int ins_nav; // flag to include INS navigation
     int rv_maneuv; // flag to include guidance during the reentry phase
+    double reentry_vel; // reentry velocity in meters per second
+    double deflection_time; // time to make full flap deflection in seconds, used for maneuverability
 
     int rv_type; // reentry vehicle type (0: ballistic, 1: maneuverable)
 
@@ -36,6 +39,10 @@ typedef struct runparams{
     double gyro_bias_stability; // gyro bias stability in rad/s
     double gyro_noise; // gyro noise in rad/s/sqrt(s)
     double gnss_noise; // GNSS error in meters
+    double cl_pert; // Coefficient of lift perturbation 
+    double step_acc_mag; // Step acceleration perturbation magnitude
+    double step_acc_hgt; // Step acceleration perturbation height (altitude) in meters
+    double step_acc_dur; // Step acceleration perturbation duration in seconds
 
 } runparams;
 
@@ -146,6 +153,7 @@ void print_config(runparams *run_params){
             pointer to the run parameters struct
     */
     printf("Run name: %s\n", run_params->run_name);
+    printf("Run type: %d\n", run_params->run_type);
     printf("Output path: %s\n", run_params->output_path);
     printf("Impact data path: %s\n", run_params->impact_data_path);
     printf("Trajectory path: %s\n", run_params->trajectory_path);
@@ -165,6 +173,7 @@ void print_config(runparams *run_params){
     printf("GNSS navigation: %d\n", run_params->gnss_nav);
     printf("INS navigation: %d\n", run_params->ins_nav);
     printf("Reentry phase guidance: %d\n", run_params->rv_maneuv);
+    printf("Reentry velocity: %f\n", run_params->reentry_vel);
 
     printf("Reentry vehicle type: %d\n", run_params->rv_type);
 
@@ -176,6 +185,10 @@ void print_config(runparams *run_params){
     printf("Gyro bias stability: %f\n", run_params->gyro_bias_stability);
     printf("Gyro noise: %f\n", run_params->gyro_noise);
     printf("GNSS noise: %f\n", run_params->gnss_noise);
+    printf("Coefficient of lift perturbation: %f\n", run_params->cl_pert);
+    printf("Step acceleration perturbation magnitude: %f\n", run_params->step_acc_mag);
+    printf("Step acceleration perturbation height: %f\n", run_params->step_acc_hgt);
+    printf("Step acceleration perturbation duration: %f\n", run_params->step_acc_dur);
 
 }
 
@@ -219,5 +232,53 @@ double linterp(double x, double xs[], double ys[], int n){
     return y;
 }
 
+double min(double a, double b){
+    /*
+    Returns the minimum of two values
+
+    INPUTS:
+    ----------
+        a: double
+            first value
+        b: double
+            second value
+    OUTPUTS:
+    ----------
+        min: double
+            minimum value
+    */
+
+    if (a < b){
+        return a;
+    }
+    else{
+        return b;
+    }
+}
+
+double sign(double x){
+    /*
+    Returns the sign of a value
+
+    INPUTS:
+    ----------
+        x: double
+            value to get the sign of
+    OUTPUTS:
+    ----------
+        sign: double
+            sign of the value
+    */
+
+    if (x > 0){
+        return 1;
+    }
+    else if (x < 0){
+        return -1;
+    }
+    else{
+        return 0;
+    }
+}
 
 #endif

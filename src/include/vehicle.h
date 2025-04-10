@@ -321,6 +321,25 @@ vehicle init_mock_vehicle(){
     return vehicle;
 }
 
+vehicle init_reentry_only(){
+    /*
+    Initializes a vehicle for reentry only
+
+    OUTPUTS:
+    ----------
+        vehicle: vehicle
+            vehicle struct
+    */
+
+    vehicle vehicle;
+    vehicle.booster = init_mock_booster();
+    vehicle.rv = init_swerve_rv();
+    vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
+    vehicle.current_mass = vehicle.total_mass;
+
+    return vehicle;
+}
+
 void update_mass(vehicle *vehicle, double t){
     /*
     Updates the mass of the vehicle based on the current stage and burn time

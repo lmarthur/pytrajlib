@@ -10,6 +10,7 @@ pytraj = CDLL(so_file)
 class runparams(Structure):
     _fields_ = [
         ("run_name", c_char_p),
+        ("run_type", c_int),
         ("output_path", c_char_p),
         ("impact_data_path", c_char_p),
         ("trajectory_path", c_char_p),
@@ -29,6 +30,8 @@ class runparams(Structure):
         ("gnss_nav", c_int),
         ("ins_nav", c_int),
         ("rv_maneuv", c_int),
+        ("reentry_vel", c_double),
+        ("deflection_time", c_double),
 
         ("rv_type", c_int), # 0 for ballistic, 1 for maneuverable
 
@@ -40,6 +43,10 @@ class runparams(Structure):
         ("gyro_bias_stability", c_double),
         ("gyro_noise", c_double),
         ("gnss_noise", c_double),
+        ("cl_pert", c_double),
+        ("step_acc_mag", c_double),
+        ("step_acc_hgt", c_double),
+        ("step_acc_dur", c_double),
     ]
 
 class cart_vector(Structure):
@@ -76,6 +83,7 @@ def read_config(run_name):
 
     # set the run parameters
     run_params.run_name = c_char_p(config['RUN']['run_name'].encode('utf-8'))
+    run_params.run_type = c_int(int(config['RUN']['run_type']))
     run_params.output_path = c_char_p(config['RUN']['output_path'].encode('utf-8'))
     run_params.impact_data_path = run_params.output_path + b"/" + run_params.run_name + b"/impact_data.txt"
     run_params.trajectory_path = run_params.output_path + b"/" + run_params.run_name + b"/trajectory.txt"
@@ -97,6 +105,8 @@ def read_config(run_name):
     run_params.gnss_nav = c_int(int(config['FLIGHT']['gnss_nav']))
     run_params.ins_nav = c_int(int(config['FLIGHT']['ins_nav']))
     run_params.rv_maneuv = c_int(int(config['FLIGHT']['rv_maneuv']))
+    run_params.reentry_vel = c_double(float(config['FLIGHT']['reentry_vel']))
+    run_params.deflection_time = c_double(float(config['FLIGHT']['deflection_time']))
 
     # set the vehicle parameters
     run_params.rv_type = c_int(int(config['VEHICLE']['rv_type']))
@@ -110,6 +120,10 @@ def read_config(run_name):
     run_params.gyro_bias_stability = c_double(float(config['ERRORPARAMS']['gyro_bias_stability']))
     run_params.gyro_noise = c_double(float(config['ERRORPARAMS']['gyro_noise']))
     run_params.gnss_noise = c_double(float(config['ERRORPARAMS']['gnss_noise']))
+    run_params.cl_pert = c_double(float(config['ERRORPARAMS']['cl_pert']))
+    run_params.step_acc_mag = c_double(float(config['ERRORPARAMS']['step_acc_mag'])) # magnitude of step acceleration
+    run_params.step_acc_hgt = c_double(float(config['ERRORPARAMS']['step_acc_hgt'])) # height of step acceleration
+    run_params.step_acc_dur = c_double(float(config['ERRORPARAMS']['step_acc_dur'])) # duration of step acceleration
 
     return run_params
 

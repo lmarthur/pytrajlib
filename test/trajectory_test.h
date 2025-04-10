@@ -53,6 +53,8 @@ TEST(trajectory, fly){
     vehicle vehicle = init_mock_vehicle();
     runparams run_params;
     // Set the run parameters
+    run_params.run_name = "test_run";
+    run_params.run_type = 0;
     run_params.traj_output = 0;
     run_params.time_step_main = 1;
     run_params.time_step_reentry = 1;
@@ -127,6 +129,7 @@ TEST(trajectory, fly){
 TEST(trajectory, update_aimpoint){
     // Set the run parameters
     runparams run_params;
+    run_params.run_type = 0;
     run_params.traj_output = 0;
     run_params.time_step_main = 1;
     run_params.time_step_reentry = 1;
