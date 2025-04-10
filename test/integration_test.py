@@ -38,6 +38,7 @@ def test_read_config():
     assert run_params.ins_nav == 1
     assert run_params.rv_maneuv == 1
     assert run_params.reentry_vel == 7500
+    assert run_params.deflection_time == 0.0
 
     assert run_params.rv_type == 1
 
@@ -49,6 +50,11 @@ def test_read_config():
     assert run_params.gyro_bias_stability == 0.0
     assert run_params.gyro_noise == 0.0
     assert run_params.gnss_noise == 0.0
+    assert run_params.cl_pert == 0.0
+    assert run_params.step_acc_mag == 0.0
+    assert run_params.step_acc_hgt == 0.0
+    assert run_params.step_acc_dur == 0.0
+    
 
 
 def test_integration_0():

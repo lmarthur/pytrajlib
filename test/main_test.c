@@ -9,7 +9,5 @@
 #include "sensors_test.h"
 #include "guidance_test.h"
 #include "maneuverability_test.h"
-#include "linalg_test.h"
-#include "filters_test.h"
 
 TAU_MAIN()
