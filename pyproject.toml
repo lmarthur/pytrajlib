@@ -1,0 +1,22 @@
+[project]
+name = "pytrajlib"
+version = "0.1.0"
+description = "Simulate the flight of a ballistic missile"
+readme = "README.md"
+authors = [
+    { name = "L.M. Arthur" },
+    { name = "A.M. Decker" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "matplotlib>=3.10.1",
+    "numpy>=2.2.4",
+    "scipy>=1.15.2",
+]
+
+[project.scripts]
+pytrajlib = "pytrajlib:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
