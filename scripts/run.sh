@@ -5,6 +5,6 @@
 # mamba activate pytraj_env
 
 # Run the program
-python ./src/main.py
+uv run python ./src/main.py
 
 

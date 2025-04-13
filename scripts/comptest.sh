@@ -22,6 +22,6 @@ gcc -shared -fPIC -o ./build/libPyTraj.so ./src/main.c -lgsl
 
 # Run integration tests
 echo "Running integration tests..."
-pytest -v -s ./test/
+uv run pytest -v -s ./test/
 
 echo "Done."
