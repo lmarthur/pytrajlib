@@ -22,3 +22,5 @@ output/*
 
 # EarthGRAM 2016
 src/include/egsrc
+
+*.pyc
