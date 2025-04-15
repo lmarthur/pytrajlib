@@ -11,7 +11,7 @@ plt.style.use(['no-latex'])
 # plt.style.use(['grayscale'])
 sys.path.append('.')
 import numpy as np
-from src.pylib import *
+from pytrajlib.pylib import *
 
 # import the run_0 sensitivity data with pandas
 sens_data = pd.read_csv('./output/run_0/sensitivity_data.csv')
