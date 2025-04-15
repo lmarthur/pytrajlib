@@ -19,7 +19,7 @@ if not os.path.isdir(f"./output/{config_file}"):
 
 # Import the necessary functions from the Python library
 sys.path.append('.')
-from src.pylib import *
+from pytrajlib.pylib import *
 so_file = "./build/libPyTraj.so"
 pytraj = CDLL(so_file)
 
@@ -27,7 +27,7 @@ pytraj = CDLL(so_file)
 if __name__ == "__main__":
     # Read the configuration file
     print("Reading configuration file " + config_file + ".toml...")
-    run_params = read_config(config_file)
+    run_params = read_config(config_path, config_file, "./input/atmprofiles.txt")
     print("Configuration file read.")
 
     aimpoint = update_aimpoint(run_params, config_path)
