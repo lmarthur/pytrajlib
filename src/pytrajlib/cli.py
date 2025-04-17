@@ -9,7 +9,7 @@ with importlib.resources.path("pytrajlib", "libPyTraj.so") as so_path:
     pytraj = CDLL(str(so_path))
 
 
-from pytrajlib.pylib import read_config, update_aimpoint
+from pytrajlib.pylib import read_config, update_aimpoint, mc_run
 
 
 def check_config_exists(config_path):
@@ -40,14 +40,13 @@ def check_output_exists(config_name):
 
 def run_simulation(config_name, config_path):
     print("Reading configuration file " + config_name + "...")
-    print("running simulation")
     atm_profile_path = str(importlib.resources.path("pytrajlib", "atmprofiles.txt"))
     print(f"Atmospheric profile path: {atm_profile_path}")
     run_params = read_config(config_path, config_name, atm_profile_path)
 
     aimpoint = update_aimpoint(run_params, config_path)
-    print(f"Aimpoint: ({aimpoint.x}, {aimpoint.y}, {aimpoint.z})")
-    impact_data_pointer = pytraj.mc_run(run_params)
+    impact_data = mc_run(run_params)
+    print(impact_data.to_dataframe().head())
 
 
 def cli():
