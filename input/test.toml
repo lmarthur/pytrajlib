@@ -7,6 +7,7 @@ num_runs = 2
 time_step_main = 1.0
 time_step_reentry = 0.01
 traj_output = 0
+impact_output = 1
 x_aim = 6371e3
 y_aim = 0.0
 z_aim = 0.0

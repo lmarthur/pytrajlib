@@ -56,6 +56,7 @@ TEST(trajectory, fly){
     run_params.run_name = "test_run";
     run_params.run_type = 0;
     run_params.traj_output = 0;
+    run_params.impact_output = 1;
     run_params.time_step_main = 1;
     run_params.time_step_reentry = 1;
     run_params.x_aim = 6371e3;
@@ -131,6 +132,7 @@ TEST(trajectory, update_aimpoint){
     runparams run_params;
     run_params.run_type = 0;
     run_params.traj_output = 0;
+    run_params.impact_output = 1;
     run_params.time_step_main = 1;
     run_params.time_step_reentry = 1;
     run_params.x_aim = 6371e3;

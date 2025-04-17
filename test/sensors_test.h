@@ -12,6 +12,7 @@ TEST(sensors, imu_init){
     // Initialize the run parameters
     runparams run_params;
     run_params.traj_output = 0;
+    run_params.impact_output = 1;
     run_params.time_step_main = 1;
     run_params.time_step_reentry = 1;
     run_params.x_aim = 6371e3;
@@ -61,6 +62,7 @@ TEST(sensors, imu_meas){
     // // Initialize the run parameters
     runparams run_params;
     run_params.traj_output = 0;
+    run_params.impact_output = 1;
     run_params.time_step_main = 1;
     run_params.time_step_reentry = 1;
     run_params.x_aim = 6371e3;
