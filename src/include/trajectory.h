@@ -558,8 +558,10 @@ void mc_run(runparams run_params){
 
     // Create a .txt file to store the impact data
     FILE *impact_file;
+    if (run_params.impact_output == 1){
     impact_file = fopen(run_params.impact_data_path, "w");
     fprintf(impact_file, "t, x, y, z, vx, vy, vz\n");
+    }
     
     // Initialize the random number generator
     const gsl_rng_type *T;
@@ -600,7 +602,9 @@ void mc_run(runparams run_params){
     }
 
     // Output the impact data
+    if (run_params.impact_output == 1){
     output_impact(impact_file, &impact_data, num_runs);
+    }
 
 
 }

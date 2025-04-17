@@ -15,6 +15,7 @@ typedef struct runparams{
     double time_step_main; // time step in seconds during boost and outside the atmosphere
     double time_step_reentry; // time step in seconds during reentry
     int traj_output; // flag to output trajectory data
+    int impact_output; // flag to output impact data
     double x_aim; // target x-coordinate in meters
     double y_aim; // target y-coordinate in meters
     double z_aim; // target z-coordinate in meters
@@ -163,6 +164,7 @@ void print_config(runparams *run_params){
     printf("Time step: %f\n", run_params->time_step_main);
     printf("Reentry time step: %f\n", run_params->time_step_reentry);
     printf("Trajectory output: %d\n", run_params->traj_output);
+    printf("Impact output: %d\n", run_params->impact_output);
     printf("Target x-coordinate: %f\n", run_params->x_aim);
     printf("Target y-coordinate: %f\n", run_params->y_aim);
     printf("Target z-coordinate: %f\n", run_params->z_aim);
