@@ -2,6 +2,8 @@ import numpy as np
 from ctypes import *
 import configparser
 import os
+import pandas as pd
+
 
 
 import importlib.resources
@@ -23,6 +25,7 @@ class runparams(Structure):
         ("time_step_main", c_double),
         ("time_step_reentry", c_double),
         ("traj_output", c_int),
+        ("impact_output", c_int),
         ("x_aim", c_double),
         ("y_aim", c_double),
         ("z_aim", c_double),
@@ -59,6 +62,70 @@ class cart_vector(Structure):
         ("z", c_double),
     ]
 
+class State(Structure):
+    _fields_ = [
+        ("t", c_double),
+        ("x", c_double),
+        ("y", c_double),
+        ("z", c_double),
+        ("vx", c_double),
+        ("vy", c_double),
+        ("vz", c_double),
+        ("ax_grav", c_double),
+        ("ay_grav", c_double),
+        ("az_grav", c_double),
+        ("ax_drag", c_double),
+        ("ay_drag", c_double),
+        ("az_drag", c_double),
+        ("ax_lift", c_double),
+        ("ay_lift", c_double),
+        ("az_lift", c_double),
+        ("ax_thrust", c_double),
+        ("ay_thrust", c_double),
+        ("az_thrust", c_double),
+        ("ax_total", c_double),
+        ("ay_total", c_double),
+        ("az_total", c_double),
+        ("initial_theta_long_pert", c_double),
+        ("initial_theta_lat_pert", c_double),
+        ("theta_long", c_double),
+        ("theta_lat", c_double),
+    ]
+
+    def __iter__(self):
+        """
+        Iterate over the fields of the State structure. This method allows a user 
+        to, e.g., call `dict(state)` to get a dictionary representation of the state.
+        
+        Yields:
+            tuple: A tuple containing the field name and its value.
+        """
+        for field_name, _ in self._fields_:
+            yield field_name, getattr(self, field_name)
+
+
+class ImpactData(Structure):
+    MAX_RUNS = 1000
+    _fields_ = [
+        ("impact_states", State * MAX_RUNS)
+    ]
+    
+    def to_dataframe(self):
+        """
+        Convert the ImpactData structure to a Pandas DataFrame.
+
+        OUTPUTS:
+        ----------
+            df: pandas.DataFrame
+                A DataFrame containing the impact data. Each row is a run, and 
+                each column is a field from the State structure.
+        """
+        data = []
+        for i in range(ImpactData.MAX_RUNS):
+            data.append(dict(self.impact_states[i]))
+
+        df = pd.DataFrame(data)
+        return df
 
 def read_config(config_path, run_name, atm_profile_path):
     """
@@ -80,7 +147,6 @@ def read_config(config_path, run_name, atm_profile_path):
     # read the configuration file
     config = configparser.ConfigParser()
     config.read(config_path)
-    print(type(config["RUN"]["run_name"]))
 
     # Make the output directory if it does not exist
     if not os.path.isdir(f"./output/{run_name}"):
@@ -233,3 +299,22 @@ def update_aimpoint(run_params, config_path):
     config["RUN"]["z_aim"] = str(aimpoint.z)
 
     return aimpoint
+
+def mc_run(run_params):
+    """
+    Function to run the Monte Carlo simulation.
+
+    INPUTS:
+    ----------
+        run_params: runparams
+            The run parameters.
+    OUTPUTS:
+    ----------
+        impact_data: ImpactData
+            The impact data.
+    """
+    # Set the output of mc_run to be an ImpactData struct
+    pytraj.mc_run.restype = ImpactData
+    impact_data = pytraj.mc_run(run_params)
+
+    return impact_data

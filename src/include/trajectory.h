@@ -527,7 +527,7 @@ cart_vector update_aimpoint(runparams run_params, double thrust_angle_long){
     return aimpoint;
 }
 
-void mc_run(runparams run_params){
+impact_data mc_run(runparams run_params){
     /*
     Function that runs a Monte Carlo simulation of the vehicle flight
     
@@ -559,8 +559,8 @@ void mc_run(runparams run_params){
     // Create a .txt file to store the impact data
     FILE *impact_file;
     if (run_params.impact_output == 1){
-    impact_file = fopen(run_params.impact_data_path, "w");
-    fprintf(impact_file, "t, x, y, z, vx, vy, vz\n");
+        impact_file = fopen(run_params.impact_data_path, "w");
+        fprintf(impact_file, "t, x, y, z, vx, vy, vz\n");
     }
     
     // Initialize the random number generator
@@ -603,9 +603,10 @@ void mc_run(runparams run_params){
 
     // Output the impact data
     if (run_params.impact_output == 1){
-    output_impact(impact_file, &impact_data, num_runs);
+        output_impact(impact_file, &impact_data, num_runs);
     }
 
+    return impact_data;
 
 }
 
