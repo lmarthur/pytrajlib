@@ -26,6 +26,7 @@ def test_read_config():
     assert run_params.time_step_main == 1.0
     assert run_params.time_step_reentry == 0.01
     assert run_params.traj_output == 0
+    assert run_params.impact_output == 1
     assert run_params.x_aim == 6371e3
     assert run_params.y_aim == 0
     assert run_params.z_aim == 0
