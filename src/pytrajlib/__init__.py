@@ -1,3 +1,3 @@
-from .cli import cli
+from .simulation import cli, run
 
-__all__ = ["cli"]
+__all__ = ["simulation", "run"]

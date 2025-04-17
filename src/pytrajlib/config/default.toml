@@ -1,0 +1,55 @@
+[RUN]
+run_name = run_0
+# If set to 0, full trajectory, if set to 1, reentry only
+run_type = 0
+output_path = ./output
+num_runs = 1000
+time_step_main = 1.0
+time_step_reentry = 0.01
+traj_output = 0
+impact_output = 0
+# Note that the aimpoint coords are currently superseded by the thrust angle
+x_aim = 0.0
+y_aim = 0.0
+z_aim = 0.0
+theta_long = 1.04719755
+theta_lat = 0.0
+
+[FLIGHT]
+# Gravitational error model
+grav_error = 1
+# Atmospheric model
+atm_model = 0
+# Atmospheric perturbations
+atm_error = 1
+# Positioning updates during exoatmospheric flight (1 is on, 0 is off)
+gnss_nav = 0
+# If set to 0, indicates perfect state measurements
+ins_nav = 1
+# If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability
+rv_maneuv = 0
+# Reentry velocity (m/s) for reentry only simulation (run_type = 1)
+reentry_vel = 7500
+# Deflection time (s) for control surfaces
+deflection_time = 0.0
+
+
+[VEHICLE]
+rv_type = 1
+
+[ERRORPARAMS]
+initial_x_error = 0.0
+initial_pos_error = 0.1
+initial_vel_error = 1e-3
+initial_angle_error = 1e-6
+acc_scale_stability = 1e-6
+gyro_bias_stability = 1e-8
+gyro_noise = 1e-8
+gnss_noise = 0.0
+cl_pert = 0.0
+# Step function acceleration magnitude (m/s^2)
+step_acc_mag = 0.0
+# Step function acceleration height (m)
+step_acc_hgt = 0.0
+# Step function acceleration duration (s)
+step_acc_dur = 0.0
