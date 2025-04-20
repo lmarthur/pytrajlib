@@ -24,6 +24,7 @@ def check_config_exists(config_path):
     """
     return os.path.isfile(config_path)
 
+
 def create_output_dirs(config_dict):
     """
     Create the output directories specified by the configuration dictionary so
@@ -35,19 +36,42 @@ def create_output_dirs(config_dict):
     Returns:
         None
     """
-    path_params = [
-        "output_path", 
-        "impact_data_path", 
-        "trajectory_path"
-    ]
+    path_params = ["output_path", "impact_data_path", "trajectory_path"]
     for path_param in path_params:
         dir_path = os.path.dirname(config_dict[path_param])
         os.makedirs(dir_path, exist_ok=True)
 
+
+def get_default_config_dict():
+    """
+    Get the default configuration dictionary from the default.toml file.
+
+    OUTPUTS:
+    --------
+        default_config_dict (dict): Dictionary containing the default configuration
+            parameters.
+    """
+    default_config = str(importlib.resources.path("pytrajlib.config", "default.toml"))
+    default_config_parser = configparser.ConfigParser()
+    default_config_parser.read(default_config)
+    default_config_dict = {
+        key: value
+        for section in default_config_parser.sections()
+        for key, value in default_config_parser.items(section)
+    }
+    # Override the default atm_profile_path because atmprofiles.txt is
+    # bundled with the package and would not have a stable fixed path when
+    # the package is installed on a variety of systems.
+    default_config_dict["atm_profile_path"] = str(
+        importlib.resources.path("pytrajlib.config", "atmprofiles.txt")
+    )
+    return default_config_dict
+
+
 def run(config_path=None, config_dict=None):
     """
-    Run the Monte Carlo code with the given parameters. One of config_path or
-    config_dict must be provided. If both are provided, config_dict will be used.
+    Run the Monte Carlo code with the given parameters. If neither are provided,
+    the default configuration is used. If both are provided, config_dict will be used.
 
     INPUTS:
     -------
@@ -61,15 +85,18 @@ def run(config_path=None, config_dict=None):
         from the State Structure.
     """
     if config_dict is None:
-        if not check_config_exists(config_path):
-            raise FileNotFoundError(f"The input file {config_path} does not exist.")
-        config_parser = configparser.ConfigParser()
-        config_parser.read(config_path)
-        config_dict = {
-            key: value
-            for section in config_parser.sections()
-            for key, value in config_parser.items(section)
-        }
+        if config_path is None:
+            config_dict = get_default_config_dict()
+        else:
+            if not check_config_exists(config_path):
+                raise FileNotFoundError(f"The input file {config_path} does not exist.")
+            config_parser = configparser.ConfigParser()
+            config_parser.read(config_path)
+            config_dict = {
+                key: value
+                for section in config_parser.sections()
+                for key, value in config_parser.items(section)
+            }
     create_output_dirs(config_dict)
     run_params = set_runparams(config_dict)
     update_aimpoint(run_params)
@@ -84,34 +111,34 @@ def cli():
     configuration.
     """
     arg_parser = argparse.ArgumentParser()
-    default_config = str(importlib.resources.path("pytrajlib.config", "default.toml"))
+    default_config_path = str(
+        importlib.resources.path("pytrajlib.config", "default.toml")
+    )
     arg_parser.add_argument(
         "-c",
         "--config",
         type=str,
         required=False,
-        default=default_config,
+        default=default_config_path,
         help="Path to the configuration file. If provided, it will override the default configuration.",
     )
-    default_config_parser = configparser.ConfigParser()
-    default_config_parser.read(default_config)
 
     # Set up the command line arguments and defaults from the config file
-    for section in default_config_parser.sections():
-        for key, value in default_config_parser.items(section):
-            arg_parser.add_argument(
-                f"--{key.replace('_', '-')}",
-                default=value,
-                # Ensure the type is correct based on the C run_param type
-                type=run_param_type(key),
-                required=False,
-            )
+    for key, value in get_default_config_dict().items():
+        arg_parser.add_argument(
+            f"--{key.replace('_', '-')}",
+            default=value,
+            # Ensure the type is correct based on the C run_param type
+            type=run_param_type(key),
+            required=False,
+            help=f"{key.replace('_', ' ').capitalize()} (default: {value})",
+        )
     defaults_dict = vars(arg_parser.parse_args([]))
     args_dict = vars(arg_parser.parse_args())
 
     # Remove the name of the config file as a config param because it is not in run_params
     config_path = os.path.abspath(args_dict.pop("config"))
-    
+
     # Ensure the configuration file provided exists
     if not check_config_exists(config_path):
         arg_parser.error(f"The input file {config_path} does not exist.")
@@ -122,7 +149,7 @@ def cli():
         config_parser.read(config_path)
         config_dict = {
             # Convert the value, which is a string, to the class it should be
-            # based on the C run_param type. 
+            # based on the C run_param type.
             key: run_param_type(key)(value)
             for section in config_parser.sections()
             for key, value in config_parser.items(section)
