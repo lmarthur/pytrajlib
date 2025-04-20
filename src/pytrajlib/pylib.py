@@ -136,6 +136,7 @@ class ImpactData(Structure):
         df = pd.DataFrame(data)
         return df
 
+
 def run_param_type(param):
     """
     Convert a run parameter to its corresponding Python type.
@@ -159,7 +160,7 @@ def run_param_type(param):
     }
     python_type = c_to_python_type[run_param_dict[param][0]]
     return python_type
-    
+
 
 def to_c_type(value, c_type):
     """
