@@ -3,6 +3,9 @@ run_name = run_0
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 0
 output_path = ./output
+impact_data_path = ./output/impact.txt
+trajectory_path = ./output/trajectory.txt
+atm_profile_path = ./input/atmprofiles.txt
 num_runs = 1000
 time_step_main = 1.0
 time_step_reentry = 0.01
