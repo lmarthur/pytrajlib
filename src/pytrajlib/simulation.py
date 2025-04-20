@@ -2,6 +2,7 @@ import argparse
 from ctypes import CDLL
 import os
 import configparser
+from datetime import datetime
 
 import importlib.resources
 
@@ -67,6 +68,30 @@ def get_default_config_dict():
     )
     return default_config_dict
 
+def write_config_toml(config_dict, file_path):
+    """
+    Write the configuration dictionary to a toml file.
+
+    INPUTS:
+    -------
+        config_dict (dict): Dictionary containing the configuration parameters.
+        file_path (str): Path to the output toml file.
+    """
+    # Copy the structure of the default config, but write the values from the 
+    # user-provided config_dict
+    default_config = str(importlib.resources.path("pytrajlib.config", "default.toml"))
+    default_config_parser = configparser.ConfigParser()
+    default_config_parser.read(default_config)
+    new_config_dict = {}
+    for section in default_config_parser.sections():
+        new_config_dict[section] = {}
+        for key, value in default_config_parser.items(section):
+            new_config_dict[section][key] = config_dict.get(key)
+    
+    new_config_parser = configparser.ConfigParser()
+    new_config_parser.read_dict(new_config_dict)
+    new_config_parser.write(open(file_path, "w"))
+
 
 def run(config_path=None, config_dict=None):
     """
@@ -101,6 +126,10 @@ def run(config_path=None, config_dict=None):
     run_params = set_runparams(config_dict)
     update_aimpoint(run_params)
     impact_df = mc_run(run_params)
+
+    # Copy the config toml to the output directory
+    toml = os.path.join(config_dict["output_path"], f"{config_dict['run_name']}.toml")
+    write_config_toml(config_dict, toml)
     return impact_df
 
 
@@ -120,7 +149,7 @@ def cli():
         type=str,
         required=False,
         default=default_config_path,
-        help="Path to the configuration file. If provided, it will override the default configuration.",
+        help=f"Path to the configuration file (default: {default_config_path})",
     )
 
     # Set up the command line arguments and defaults from the config file
@@ -136,7 +165,7 @@ def cli():
     defaults_dict = vars(arg_parser.parse_args([]))
     args_dict = vars(arg_parser.parse_args())
 
-    # Remove the name of the config file as a config param because it is not in run_params
+    # Remove `config` param because it is not present in run_params
     config_path = os.path.abspath(args_dict.pop("config"))
 
     # Ensure the configuration file provided exists
@@ -159,16 +188,20 @@ def cli():
         config_dict.pop("config")
 
     # If the user manually overrides a value, update the config_dict
+    some_overrides = False
     for key, value in args_dict.items():
         if key not in config_dict or value != config_dict[key]:
             config_dict[key] = value
+            if key != "run_name":
+                some_overrides = True
+    # If there are manual overrides and the user did not update the run_name, 
+    # change the run name to include the datetime to avoid overwriting previous runs
+    # with the same name.  
+    if some_overrides:
+        config_dict["run_name"] = f"default-{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
     atm_profile_path = str(
         importlib.resources.path("pytrajlib.config", "atmprofiles.txt")
     )
     config_dict["atm_profile_path"] = atm_profile_path
     return run(config_dict=config_dict)
-
-    # TODO save the config dict to the output directory as a toml file. Consider how to get the hierarchy back
-    # # Copy the input file to the output directory
-    # os.system(f"cp {config_path} ./output/{config_name}")
