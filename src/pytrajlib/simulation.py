@@ -24,6 +24,25 @@ def check_config_exists(config_path):
     """
     return os.path.isfile(config_path)
 
+def create_output_dirs(config_dict):
+    """
+    Create the output directories specified by the configuration dictionary so
+    the C code can write files to them.
+
+    Params:
+        config_dict (dict): Dictionary containing the run parameters.
+
+    Returns:
+        None
+    """
+    path_params = [
+        "output_path", 
+        "impact_data_path", 
+        "trajectory_path"
+    ]
+    for path_param in path_params:
+        dir_path = os.path.dirname(config_dict[path_param])
+        os.makedirs(dir_path, exist_ok=True)
 
 def run(config_path=None, config_dict=None):
     """
@@ -51,6 +70,7 @@ def run(config_path=None, config_dict=None):
             for section in config_parser.sections()
             for key, value in config_parser.items(section)
         }
+    create_output_dirs(config_dict)
     run_params = set_runparams(config_dict)
     update_aimpoint(run_params)
     impact_df = mc_run(run_params)
