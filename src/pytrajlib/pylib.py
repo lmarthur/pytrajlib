@@ -1,7 +1,5 @@
 import numpy as np
-from ctypes import *
-import configparser
-import os
+from ctypes import c_char_p, c_int, c_double, Structure, CDLL
 import pandas as pd
 
 
@@ -55,8 +53,9 @@ class runparams(Structure):
 
     def __iter__(self):
         """
-        Iterate over the fields of the runparams structure. This method allows a user
-        to, e.g., call `dict(runparams)` to get a dictionary representation of the runparams.
+        Iterate over the fields of the runparams structure. This method allows a 
+        user to, e.g., call `dict(runparams)` to get a dictionary representation 
+        of the runparams.
 
         Yields:
             tuple: A tuple containing the (field name, the type, and its value).
@@ -293,6 +292,6 @@ def mc_run(run_params):
     # Set the output of mc_run to be an ImpactData struct
     pytraj.mc_run.restype = ImpactData
     impact_data = pytraj.mc_run(run_params)
-    # While the C struct has a fixed size, we should only return data for the number of runs
+    # Only return data for the number of runs
     impact_df = impact_data.to_dataframe().iloc[: run_params.num_runs]
     return impact_df
