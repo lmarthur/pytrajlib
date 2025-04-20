@@ -136,6 +136,30 @@ class ImpactData(Structure):
         df = pd.DataFrame(data)
         return df
 
+def run_param_type(param):
+    """
+    Convert a run parameter to its corresponding Python type.
+
+    INPUTS:
+    ----------
+        param: tuple
+            The parameter to convert.
+
+    OUTPUTS:
+    ----------
+        python_type: type
+            The converted type.
+    """
+    run_params = runparams()
+    run_param_dict = dict(run_params)
+    c_to_python_type = {
+        c_int: int,
+        c_double: float,
+        c_char_p: str,
+    }
+    python_type = c_to_python_type[run_param_dict[param][0]]
+    return python_type
+    
 
 def to_c_type(value, c_type):
     """
