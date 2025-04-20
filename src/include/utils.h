@@ -159,7 +159,7 @@ void print_config(runparams *run_params){
     printf("Output path: %s\n", run_params->output_path);
     printf("Impact data path: %s\n", run_params->impact_data_path);
     printf("Trajectory path: %s\n", run_params->trajectory_path);
-    // TODO add atmospheric profile path
+    printf("Atmospheric profile path: %s\n", run_params->atm_profile_path);
     printf("Number of Monte Carlo runs: %d\n", run_params->num_runs);
     printf("Time step: %f\n", run_params->time_step_main);
     printf("Reentry time step: %f\n", run_params->time_step_reentry);
