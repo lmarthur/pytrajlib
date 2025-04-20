@@ -1,5 +1,5 @@
 [RUN]
-run_name = run_0
+run_name = default
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 0
 output_path = ./output
