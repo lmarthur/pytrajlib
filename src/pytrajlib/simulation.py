@@ -9,7 +9,7 @@ with importlib.resources.path("pytrajlib", "libPyTraj.so") as so_path:
     pytraj = CDLL(str(so_path))
 
 
-from pytrajlib.pylib import update_aimpoint, mc_run, set_runparams
+from pytrajlib.pylib import run_param_type, update_aimpoint, mc_run, set_runparams
 
 
 def check_config_exists(config_path):
@@ -75,38 +75,45 @@ def cli():
     )
     default_config_parser = configparser.ConfigParser()
     default_config_parser.read(default_config)
+
     # Set up the command line arguments and defaults from the config file
     for section in default_config_parser.sections():
         for key, value in default_config_parser.items(section):
             arg_parser.add_argument(
                 f"--{key.replace('_', '-')}",
                 default=value,
-                type=type(value),
+                # Ensure the type is correct based on the C run_param type
+                type=run_param_type(key),
                 required=False,
             )
-    # Ensure the configuration file provided exists
     defaults_dict = vars(arg_parser.parse_args([]))
     args_dict = vars(arg_parser.parse_args())
-    # Remove the name of the config file because it is not in run_params
-    config_path = args_dict.pop("config")
+
+    # Remove the name of the config file as a config param because it is not in run_params
+    config_path = os.path.abspath(args_dict.pop("config"))
+    
+    # Ensure the configuration file provided exists
     if not check_config_exists(config_path):
         arg_parser.error(f"The input file {config_path} does not exist.")
 
     # If the config file is not the default, read from it
-    if defaults_dict["config"] != config_path:
+    if os.path.abspath(defaults_dict["config"]) != config_path:
         config_parser = configparser.ConfigParser()
         config_parser.read(config_path)
         config_dict = {
-            key: value
+            # Convert the value, which is a string, to the class it should be
+            # based on the C run_param type. 
+            key: run_param_type(key)(value)
             for section in config_parser.sections()
             for key, value in config_parser.items(section)
         }
     else:
         config_dict = defaults_dict
         config_dict.pop("config")
+
     # If the user manually overrides a value, update the config_dict
     for key, value in args_dict.items():
-        if value != defaults_dict[key]:
+        if key not in config_dict or value != config_dict[key]:
             config_dict[key] = value
 
     atm_profile_path = str(
