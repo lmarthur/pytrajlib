@@ -56,7 +56,7 @@ def get_default_config_dict():
     default_config_parser = configparser.ConfigParser()
     default_config_parser.read(default_config)
     default_config_dict = {
-        key: value
+        key: run_param_type(key)(value)
         for section in default_config_parser.sections()
         for key, value in default_config_parser.items(section)
     }
@@ -85,7 +85,7 @@ def write_config_toml(config_dict, file_path):
     new_config_dict = {}
     for section in default_config_parser.sections():
         new_config_dict[section] = {}
-        for key, value in default_config_parser.items(section):
+        for key, _ in default_config_parser.items(section):
             new_config_dict[section][key] = config_dict.get(key)
     
     new_config_parser = configparser.ConfigParser()
@@ -158,7 +158,7 @@ def cli():
             f"--{key.replace('_', '-')}",
             default=value,
             # Ensure the type is correct based on the C run_param type
-            type=run_param_type(key),
+            type=type(value),
             required=False,
             help=f"{key.replace('_', ' ').capitalize()} (default: {value})",
         )
