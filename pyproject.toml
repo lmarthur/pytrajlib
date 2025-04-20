@@ -19,6 +19,9 @@ dependencies = [
 dev = [
     "pytest>=8.3.5",
 ]
+jupyter = [
+    "ipykernel>=6.29.5",
+]
 
 [project.scripts]
 pytrajlib = "pytrajlib:cli"
