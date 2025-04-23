@@ -5,7 +5,8 @@ import pandas as pd
 
 import importlib.resources
 
-with importlib.resources.path("pytrajlib", "libPyTraj.so") as so_path:
+with importlib.resources.path(
+    "pytrajlib", "mc.cpython-310-x86_64-linux-gnu.so") as so_path:
     pytraj = CDLL(str(so_path))
 
 

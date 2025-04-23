@@ -17,7 +17,10 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "build>=1.2.2.post1",
+    "cibuildwheel>=2.23.2",
     "pytest>=8.3.5",
+    "setuptools>=79.0.0",
 ]
 jupyter = [
     "ipykernel>=6.29.5",
@@ -27,5 +30,13 @@ jupyter = [
 pytrajlib = "pytrajlib:cli"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+ext-modules = [ { name = "pytrajlib.mc", sources = ["src/main.c"], libraries = ["gsl"]} ]
+
+[tool.cibuildwheel]
+before-build = "yum install -y gsl-devel"
+manylinux-x86_64-image = "manylinux2014"
+build = "cp310-manylinux_x86_64"
