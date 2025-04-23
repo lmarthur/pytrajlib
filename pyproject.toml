@@ -49,4 +49,4 @@ before-build = "brew install gsl"
 environment = {MACOSX_DEPLOYMENT_TARGET=14}
 
 [tool.cibuildwheel.windows]
-before-build = "choco install gsl"
+before-build = "mamba install -c conda-forge gsl"
