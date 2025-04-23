@@ -34,7 +34,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-ext-modules = [ { name = "pytrajlib.mc", sources = ["src/main.c"], libraries = ["gsl"], include-dirs=["/opt/homebrew/include", "C:\Miniconda\envs\base\Library\include"], library-dirs=["/opt/homebrew/lib", "C:\Miniconda\envs\base\Library\lib"]} ]
+ext-modules = [ { name = "pytrajlib.mc", sources = ["src/main.c"], libraries = ["gsl"], include-dirs=["/opt/homebrew/include", "C:\\Miniconda\\envs\\base\\Library\\include"], library-dirs=["/opt/homebrew/lib", "C:\\Miniconda\\envs\\base\\Library\\lib"]} ]
 
 [tool.cibuildwheel]
 build = "cp310-*"
