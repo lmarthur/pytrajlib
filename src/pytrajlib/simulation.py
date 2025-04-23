@@ -10,7 +10,12 @@ with importlib.resources.path("pytrajlib", "libPyTraj.so") as so_path:
     pytraj = CDLL(str(so_path))
 
 
-from pytrajlib.pylib import run_param_type, update_aimpoint, mc_run, set_runparams
+from pytrajlib.pylib import (
+    run_param_type,
+    update_aimpoint,
+    mc_run,
+    get_run_params_struct,
+)
 
 
 def check_config_exists(config_path):
@@ -26,36 +31,36 @@ def check_config_exists(config_path):
     return os.path.isfile(config_path)
 
 
-def create_output_dirs(config_dict):
+def create_output_dirs(run_params):
     """
-    Create the output directories specified by the configuration dictionary so
+    Create the output directories specified by the run params so
     the C code can write files to them.
 
     Params:
-        config_dict (dict): Dictionary containing the run parameters.
+        run_params (dict): Dictionary containing the run parameters.
 
     Returns:
         None
     """
     path_params = ["output_path", "impact_data_path", "trajectory_path"]
     for path_param in path_params:
-        dir_path = os.path.dirname(config_dict[path_param])
+        dir_path = os.path.dirname(run_params[path_param])
         os.makedirs(dir_path, exist_ok=True)
 
 
-def get_default_config_dict():
+def get_default_run_params():
     """
-    Get the default configuration dictionary from the default.toml file.
+    Get the default run params dictionary from the default.toml file.
 
     OUTPUTS:
     --------
-        default_config_dict (dict): Dictionary containing the default configuration
+        default_run_params (dict): Dictionary containing the default configuration
             parameters.
     """
     default_config = str(importlib.resources.path("pytrajlib.config", "default.toml"))
     default_config_parser = configparser.ConfigParser()
     default_config_parser.read(default_config)
-    default_config_dict = {
+    default_run_params = {
         key: run_param_type(key)(value)
         for section in default_config_parser.sections()
         for key, value in default_config_parser.items(section)
@@ -63,21 +68,22 @@ def get_default_config_dict():
     # Override the default atm_profile_path because atmprofiles.txt is
     # bundled with the package and would not have a stable fixed path when
     # the package is installed on a variety of systems.
-    default_config_dict["atm_profile_path"] = str(
+    default_run_params["atm_profile_path"] = str(
         importlib.resources.path("pytrajlib.config", "atmprofiles.txt")
     )
-    return default_config_dict
+    return default_run_params
 
-def write_config_toml(config_dict, file_path):
+
+def write_config_toml(run_params, file_path):
     """
     Write the configuration dictionary to a toml file.
 
     INPUTS:
     -------
-        config_dict (dict): Dictionary containing the configuration parameters.
+        run_params (dict): Dictionary containing the configuration parameters.
         file_path (str): Path to the output toml file.
     """
-    # Copy the structure of the default config, but write the values from the 
+    # Copy the structure of the default config, but write the values from the
     # user-provided config_dict
     default_config = str(importlib.resources.path("pytrajlib.config", "default.toml"))
     default_config_parser = configparser.ConfigParser()
@@ -86,21 +92,49 @@ def write_config_toml(config_dict, file_path):
     for section in default_config_parser.sections():
         new_config_dict[section] = {}
         for key, _ in default_config_parser.items(section):
-            new_config_dict[section][key] = config_dict.get(key)
-    
+            new_config_dict[section][key] = run_params.get(key)
+
     new_config_parser = configparser.ConfigParser()
     new_config_parser.read_dict(new_config_dict)
     new_config_parser.write(open(file_path, "w"))
 
 
-def run(config_path=None, config_dict=None):
+def get_run_params(config_path=None):
+    """
+    Get run params dict from the config file. If no config file is provided,
+    the default config file is used.
+
+    INPUTS
+    -------
+        config_path (str): Path to the configuration file. If None, the default
+            configuration file is used.
+    OUTPUTS
+    -------
+        run_params (dict): Dictionary containing the run parameters.
+    """
+    if config_path is None:
+        return get_default_run_params()
+
+    if not check_config_exists(config_path):
+        raise FileNotFoundError(f"The input file {config_path} does not exist.")
+    config_parser = configparser.ConfigParser()
+    config_parser.read(config_path)
+    run_params = {
+        key: value
+        for section in config_parser.sections()
+        for key, value in config_parser.items(section)
+    }
+    return run_params
+
+
+def run(config=None):
     """
     Run the Monte Carlo code with the given parameters. If neither are provided,
     the default configuration is used. If both are provided, config_dict will be used.
 
     INPUTS:
     -------
-        config_dict (dict): optional, Dictionary containing the run parameters from the
+        config: optional, Dictionary containing the run parameters from the
             config file or command line.
 
     OUTPUTS:
@@ -109,27 +143,20 @@ def run(config_path=None, config_dict=None):
         from the Monte Carlo run.  Each row is a run, and each column is a field
         from the State Structure.
     """
-    if config_dict is None:
-        if config_path is None:
-            config_dict = get_default_config_dict()
-        else:
-            if not check_config_exists(config_path):
-                raise FileNotFoundError(f"The input file {config_path} does not exist.")
-            config_parser = configparser.ConfigParser()
-            config_parser.read(config_path)
-            config_dict = {
-                key: value
-                for section in config_parser.sections()
-                for key, value in config_parser.items(section)
-            }
-    create_output_dirs(config_dict)
-    run_params = set_runparams(config_dict)
-    update_aimpoint(run_params)
-    impact_df = mc_run(run_params)
+    if isinstance(config, str):
+        run_params = get_run_params(config)
+    else:
+        run_params = config
+    create_output_dirs(run_params)
+    run_params_struct = get_run_params_struct(run_params)
+    update_aimpoint(run_params_struct)
+    impact_df = mc_run(run_params_struct)
 
     # Copy the config toml to the output directory
-    toml = os.path.join(config_dict["output_path"], f"{config_dict['run_name']}.toml")
-    write_config_toml(config_dict, toml)
+    toml_path = os.path.join(
+        run_params["output_path"], f"{run_params['run_name']}.toml"
+    )
+    write_config_toml(run_params, toml_path)
     return impact_df
 
 
@@ -153,7 +180,7 @@ def cli():
     )
 
     # Set up the command line arguments and defaults from the config file
-    for key, value in get_default_config_dict().items():
+    for key, value in get_default_run_params().items():
         arg_parser.add_argument(
             f"--{key.replace('_', '-')}",
             default=value,
@@ -194,9 +221,9 @@ def cli():
             config_dict[key] = value
             if key != "run_name":
                 some_overrides = True
-    # If there are manual overrides and the user did not update the run_name, 
+    # If there are manual overrides and the user did not update the run_name,
     # change the run name to include the datetime to avoid overwriting previous runs
-    # with the same name.  
+    # with the same name.
     if some_overrides:
         config_dict["run_name"] = f"default-{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
@@ -204,4 +231,4 @@ def cli():
         importlib.resources.path("pytrajlib.config", "atmprofiles.txt")
     )
     config_dict["atm_profile_path"] = atm_profile_path
-    return run(config_dict=config_dict)
+    return run(config=config_dict)

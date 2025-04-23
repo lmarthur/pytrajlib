@@ -3,7 +3,7 @@ import scipy.stats as stats
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-from pytrajlib.simulation import get_default_config_dict
+from pytrajlib.simulation import get_default_run_params
 import pandas as pd
 
 # TODO: Add a calculation of the range to the aimpoint
@@ -15,15 +15,15 @@ def impact(run_params=None, impact_data=None, output_dir=None):
 
     INPUTS
     --------
-        run_params (dict): Run parameters for the simulation. If None, use the 
+        run_params (dict): Run parameters for the simulation. If None, use the
             default parameters.
-        impact_data (np.ndarray | pd.DataFrame): Impact data from the simulation. 
+        impact_data (np.ndarray | pd.DataFrame): Impact data from the simulation.
             If None, read from the file specified by run_params.
-        output_dir (str): Directory to save the plots. If None, use do not save 
+        output_dir (str): Directory to save the plots. If None, use do not save
             the plots.
     """
     if run_params is None:
-        run_params = get_default_config_dict()
+        run_params = get_default_run_params()
     if impact_data is None:
         # print error if the paths are not found
         if not os.path.exists(run_params.get("impact_data_path")):

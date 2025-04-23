@@ -10,7 +10,7 @@ with importlib.resources.path("pytrajlib", "libPyTraj.so") as so_path:
 
 
 # define the runparam struct
-class runparams(Structure):
+class RunParams(Structure):
     _fields_ = [
         ("run_name", c_char_p),
         ("run_type", c_int),
@@ -53,8 +53,8 @@ class runparams(Structure):
 
     def __iter__(self):
         """
-        Iterate over the fields of the runparams structure. This method allows a 
-        user to, e.g., call `dict(runparams)` to get a dictionary representation 
+        Iterate over the fields of the runparams structure. This method allows a
+        user to, e.g., call `dict(runparams)` to get a dictionary representation
         of the runparams.
 
         Yields:
@@ -150,14 +150,13 @@ def run_param_type(param):
         python_type: type
             The converted type.
     """
-    run_params = runparams()
-    run_param_dict = dict(run_params)
+    run_params = dict(RunParams())
     c_to_python_type = {
         c_int: int,
         c_double: float,
         c_char_p: str,
     }
-    python_type = c_to_python_type[run_param_dict[param][0]]
+    python_type = c_to_python_type[run_params[param][0]]
     return python_type
 
 
@@ -186,9 +185,9 @@ def to_c_type(value, c_type):
         raise ValueError(f"Unsupported C type: {c_type}")
 
 
-def set_runparams(config):
+def get_run_params_struct(config):
     """
-    Set the the runparams struct from the config.
+    Set the the run_params struct from the config.
 
     INPUTS:
     ----------
@@ -199,16 +198,16 @@ def set_runparams(config):
         run_params: runparams
             The run parameters.
     """
-    run_params = runparams()
-    run_param_dict = dict(run_params)
+    run_params_struct = RunParams()
+    run_params = dict(run_params_struct)
     for key, value in config.items():
-        c_type = run_param_dict[key][0]
-        run_params.__setattr__(key, to_c_type(value, c_type))
+        c_type = run_params[key][0]
+        run_params_struct.__setattr__(key, to_c_type(value, c_type))
 
-    return run_params
+    return run_params_struct
 
 
-def get_cep(impact_data, run_params):
+def get_cep(impact_data, run_params_struct):
     """
     Function to calculate the circular error probable (CEP) from the impact data.
 
@@ -216,7 +215,7 @@ def get_cep(impact_data, run_params):
     ----------
         impact_data: numpy.ndarray
             The impact data.
-        run_params: runparams
+        run_params_struct: runparams
             The run parameters.
     OUTPUTS:
     ----------
@@ -224,9 +223,10 @@ def get_cep(impact_data, run_params):
             The circular error probable.
     """
     # get longitude and latitude of aimpoint
-    aimpoint_lon = np.arctan2(run_params.y_aim, run_params.x_aim)
+    aimpoint_lon = np.arctan2(run_params_struct.y_aim, run_params_struct.x_aim)
     aimpoint_lat = np.arctan2(
-        run_params.z_aim, np.sqrt(run_params.x_aim**2 + run_params.y_aim**2)
+        run_params_struct.z_aim,
+        np.sqrt(run_params_struct.x_aim**2 + run_params_struct.y_aim**2),
     )
 
     impact_x = impact_data[:, 1]
@@ -234,9 +234,9 @@ def get_cep(impact_data, run_params):
     impact_z = impact_data[:, 3]
 
     # get vector relative to aimpoint
-    impact_x = impact_x - run_params.x_aim
-    impact_y = impact_y - run_params.y_aim
-    impact_z = impact_z - run_params.z_aim
+    impact_x = impact_x - run_params_struct.x_aim
+    impact_y = impact_y - run_params_struct.y_aim
+    impact_z = impact_z - run_params_struct.z_aim
 
     # convert impact data to local tangent plane coordinates
     impact_x_local = -np.sin(aimpoint_lon) * impact_x + np.cos(aimpoint_lon) * impact_y
@@ -253,7 +253,7 @@ def get_cep(impact_data, run_params):
     return cep
 
 
-def update_aimpoint(run_params):
+def update_aimpoint(run_params_struct):
     """
     Function to update the aimpoint based on the current run parameters.
 
@@ -268,10 +268,12 @@ def update_aimpoint(run_params):
     """
     # Set the output of update_aimpoint to be a cart_vector struct
     pytraj.update_aimpoint.restype = cart_vector
-    aimpoint = pytraj.update_aimpoint(run_params, c_double(run_params.theta_long))
-    run_params.x_aim = aimpoint.x
-    run_params.y_aim = aimpoint.y
-    run_params.z_aim = aimpoint.z
+    aimpoint = pytraj.update_aimpoint(
+        run_params_struct, c_double(run_params_struct.theta_long)
+    )
+    run_params_struct.x_aim = aimpoint.x
+    run_params_struct.y_aim = aimpoint.y
+    run_params_struct.z_aim = aimpoint.z
 
     return aimpoint
 
