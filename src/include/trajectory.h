@@ -1,5 +1,6 @@
 #ifndef TRAJECTORY_H
 #define TRAJECTORY_H
+#define _USE_MATH_DEFINES
 
 #include <stdio.h>
 #include <math.h>
