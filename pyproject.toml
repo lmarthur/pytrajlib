@@ -46,6 +46,7 @@ manylinux-x86_64-image = "manylinux2014"
 
 [tool.cibuildwheel.macos]
 before-build = "brew install gsl"
+environment = {MACOSX_DEPLOYMENT_TARGET=14}
 
 [tool.cibuildwheel.windows]
 before-build = "choco install gsl"
