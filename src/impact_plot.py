@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append('.')
 import numpy as np
-from pytrajlib.pylib import *
+from pylib import *
 
 # TODO: Add a calculation of the range to the aimpoint
 
