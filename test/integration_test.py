@@ -5,7 +5,7 @@ import numpy as np
 
 
 sys.path.append('.')
-from pytrajlib.pylib import *
+from pylib import *
 so_file = "./build/libPyTraj.so"
 pytraj = CDLL(so_file)
 
