@@ -11,7 +11,7 @@ with importlib.resources.path(
     pytraj = CDLL(str(so_path))
 
 
-from pytrajlib.pylib import (
+from pylib import (
     run_param_type,
     update_aimpoint,
     mc_run,
