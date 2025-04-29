@@ -150,7 +150,12 @@ def run(config=None):
         run_params = config
     create_output_dirs(run_params)
     run_params_struct = get_run_params_struct(run_params)
-    update_aimpoint(run_params_struct)
+
+    aimpoint = update_aimpoint(run_params_struct)
+    run_params["x_aim"] = aimpoint.x
+    run_params["y_aim"] = aimpoint.y
+    run_params["z_aim"] = aimpoint.z
+
     impact_df = mc_run(run_params_struct)
 
     # Copy the config toml to the output directory

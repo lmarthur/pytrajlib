@@ -553,9 +553,6 @@ impact_data mc_run(runparams run_params){
     // vehicle vehicle = init_mmiii_ballistic();
     impact_data impact_data;
     
-    // Print an updated aimpoint
-    // cart_vector aimpoint = update_aimpoint(run_params, 0.785398163397);
-    // printf("Updated aimpoint: %f, %f, %f\n", aimpoint.x, aimpoint.y, aimpoint.z);
 
     // Create a .txt file to store the impact data
     FILE *impact_file;
