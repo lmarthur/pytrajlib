@@ -1024,6 +1024,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "build" },
+    { name = "cffi" },
     { name = "cibuildwheel" },
     { name = "pytest" },
     { name = "setuptools" },
@@ -1043,6 +1044,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "build", specifier = ">=1.2.2.post1" },
+    { name = "cffi", specifier = ">=1.17.1" },
     { name = "cibuildwheel", specifier = ">=2.23.2" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "setuptools", specifier = ">=79.0.0" },

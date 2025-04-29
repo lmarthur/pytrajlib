@@ -18,6 +18,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "build>=1.2.2.post1",
+    "cffi>=1.17.1",
     "cibuildwheel>=2.23.2",
     "pytest>=8.3.5",
     "setuptools>=79.0.0",
