@@ -25,4 +25,4 @@ src/include/egsrc
 
 *.pyc
 *.egg-info
-wheelhouse
+_traj.*
