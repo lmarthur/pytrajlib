@@ -448,7 +448,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     return new_true_state;
 }
 
-cart_vector update_aimpoint(runparams run_params, double thrust_angle_long){
+cart_vector update_aimpoint(runparams run_params){
     /*
     Updates the aimpoint based on the thrust angle and other run parameters
 
@@ -456,8 +456,6 @@ cart_vector update_aimpoint(runparams run_params, double thrust_angle_long){
     ----------
         run_params: runparams
             run parameters struct
-        thrust_angle_long: double
-            thrust angle in the longitudinal direction
     OUTPUTS:
     ----------
         cart_vector: aimpoint
@@ -515,7 +513,7 @@ cart_vector update_aimpoint(runparams run_params, double thrust_angle_long){
     
 
     state initial_state = init_true_state(&run_params_temp, rng);
-    initial_state.theta_long = thrust_angle_long;
+    initial_state.theta_long = run_params.theta_long;
 
     // Call the fly function to get the final state
     state final_state = fly(&run_params_temp, &initial_state, &vehicle, rng);
