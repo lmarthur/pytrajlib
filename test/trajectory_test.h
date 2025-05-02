@@ -157,7 +157,7 @@ TEST(trajectory, update_aimpoint){
     run_params.gyro_noise = 0;
     run_params.gnss_noise = 0;
 
-    cart_vector aimpoint = update_aimpoint(run_params, 0);
+    cart_vector aimpoint = update_aimpoint(run_params);
     // printf("Aimpoint: %f, %f, %f\n", aimpoint.x, aimpoint.y, aimpoint.z);
     REQUIRE_LT(fabs(get_altitude(aimpoint.x, aimpoint.y, aimpoint.z)), 1);
     REQUIRE_EQ(run_params.initial_pos_error, 1);
