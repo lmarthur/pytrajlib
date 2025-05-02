@@ -1,0 +1,118 @@
+import importlib.resources
+import platform
+
+from cffi import FFI
+
+include_dirs = ["src/"]
+library_dirs = []
+libraries = ["gsl"]
+
+if platform.system() == "Windows":
+    include = str(importlib.resources.path("pytrajlib.gsl.include", ""))
+    lib = str(importlib.resources.path("pytrajlib.gsl.lib", ""))
+    include_dirs.append(include)
+    library_dirs.append(lib)
+
+ffibuilder = FFI()
+
+ffibuilder.cdef(
+    """
+    struct runparams {
+        char *run_name; 
+        int run_type; 
+        char *output_path; 
+        char *impact_data_path; 
+        char *trajectory_path; 
+        char *atm_profile_path; 
+        int num_runs; 
+        double time_step_main; 
+        double time_step_reentry; 
+        int traj_output; 
+        int impact_output; 
+        double x_aim; 
+        double y_aim; 
+        double z_aim; 
+        double theta_long; 
+        double theta_lat; 
+
+        int grav_error; 
+        int atm_model; 
+        int atm_error; 
+        int gnss_nav; 
+        int ins_nav; 
+        int rv_maneuv; 
+        double reentry_vel; 
+        double deflection_time; 
+
+        int rv_type; 
+
+        double initial_x_error; 
+        double initial_pos_error; 
+        double initial_vel_error; 
+        double initial_angle_error; 
+        double acc_scale_stability; 
+        double gyro_bias_stability; 
+        double gyro_noise; 
+        double gnss_noise; 
+        double cl_pert; 
+        double step_acc_mag; 
+        double step_acc_hgt; 
+        double step_acc_dur; 
+    };
+    struct cart_vector{
+        double x;
+        ...;
+    };
+    struct state{
+        double t; 
+        double x; 
+        double y; 
+        double z; 
+        double vx; 
+        double vy; 
+        double vz; 
+        double ax_grav; 
+        double ay_grav; 
+        double az_grav; 
+        double ax_drag; 
+        double ay_drag; 
+        double az_drag; 
+        double ax_lift; 
+        double ay_lift; 
+        double az_lift; 
+        double ax_thrust; 
+        double ay_thrust; 
+        double az_thrust; 
+        double ax_total; 
+        double ay_total; 
+        double az_total; 
+        double initial_theta_long_pert; 
+        double initial_theta_lat_pert; 
+        double theta_long; 
+        double theta_lat; 
+    };
+    #define MAX_RUNS 1000
+    struct impact_data{
+        struct state impact_states[MAX_RUNS];
+    };
+    struct cart_vector update_aimpoint(struct runparams run_params);
+    struct impact_data mc_run(struct runparams run_params);
+    """
+    )
+
+ffibuilder.set_source("_traj",
+"""
+    #include "include/utils.h"
+    #include "include/vehicle.h"
+    #include "include/gravity.h"
+    #include "include/atmosphere.h"
+    #include "include/physics.h"
+    #include "include/trajectory.h"
+""",
+    include_dirs=include_dirs,
+    library_dirs=library_dirs,
+    libraries=libraries,
+    )
+
+if __name__ == "__main__":
+    ffibuilder.compile(verbose=True)

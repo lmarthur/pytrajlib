@@ -1,23 +1,97 @@
 import argparse
-from ctypes import CDLL
-import os
 import configparser
+import importlib.resources
+import os
+import platform
 from datetime import datetime
 
-import importlib.resources
+import pandas as pd
 
-with importlib.resources.path(
-    "pytrajlib", "mc.cpython-310-x86_64-linux-gnu.so") as so_path:
-    pytraj = CDLL(str(so_path))
+if platform.system() == "Windows":
+    math_dll_dir = str(importlib.resources.path("pytrajlib.gsl", ""))
+    os.add_dll_directory(math_dll_dir)
+
+from ._traj import ffi
+from ._traj import lib as traj
 
 
-from pylib import (
-    run_param_type,
-    update_aimpoint,
-    mc_run,
-    get_run_params_struct,
-)
+def to_c_type(value):
+    """
+    Convert a Python value to its corresponding C type.
 
+    INPUTS:
+    ----------
+        value: any
+            The value to convert.
+
+    OUTPUTS:
+    ----------
+        c_value: ctype
+            The converted value.
+
+    """
+    if not isinstance(value, str):
+        return value
+    if value.isdecimal():
+        return int(value)
+    try:
+        return float(value)
+    except ValueError:
+        return ffi.new("char[]", value.encode("utf-8"))
+
+def get_run_params_struct(config):
+    """
+    Set the the run_params struct from the config.
+
+    INPUTS:
+    ----------
+        config: dict
+            The configuration dictionary.
+    OUTPUTS:
+    ----------
+        run_params: runparams
+            The run parameters.
+    """
+    run_params_struct = ffi.new("struct runparams *")
+    # print(f"{type(run_params_struct.run_name)=}")
+    # print(ffi.typeof(f"({run_params_struct})->{'run_name'}"))
+    for key, value in config.items():
+        print(key, value)
+        run_params_struct.__setattr__(key, to_c_type(value))
+
+    return run_params_struct
+
+def impact_data_to_df(impact_data, num_runs):
+    """
+    Convert the impact data to a Pandas DataFrame.
+
+    INPUTS:
+    -------
+        impact_data: impact_data
+            The impact data from the Monte Carlo run.
+        num_runs: int
+            The number of runs in the Monte Carlo simulation.
+
+    OUTPUTS:
+    -------
+        impact_df: pd.DataFrame
+            The impact data as a Pandas DataFrame.
+    """
+    impact_df = pd.DataFrame()
+    rows = []
+    for i in range(num_runs):
+        row_data = dict(
+            t = impact_data.impact_states[i].t,
+            x = impact_data.impact_states[i].x,
+            y = impact_data.impact_states[i].y,
+            z = impact_data.impact_states[i].z,
+            vx = impact_data.impact_states[i].vx,
+            vy = impact_data.impact_states[i].vy,
+            vz = impact_data.impact_states[i].vz,
+        )
+        rows.append(row_data)
+    impact_df = pd.DataFrame(rows)
+    return impact_df
 
 def check_config_exists(config_path):
     """
@@ -62,7 +136,7 @@ def get_default_run_params():
     default_config_parser = configparser.ConfigParser()
     default_config_parser.read(default_config)
     default_run_params = {
-        key: run_param_type(key)(value)
+        key: value
         for section in default_config_parser.sections()
         for key, value in default_config_parser.items(section)
     }
@@ -144,19 +218,16 @@ def run(config=None):
         from the Monte Carlo run.  Each row is a run, and each column is a field
         from the State Structure.
     """
-    if isinstance(config, str):
+    if isinstance(config, str | None):
         run_params = get_run_params(config)
     else:
         run_params = config
     create_output_dirs(run_params)
     run_params_struct = get_run_params_struct(run_params)
 
-    aimpoint = update_aimpoint(run_params_struct)
-    run_params["x_aim"] = aimpoint.x
-    run_params["y_aim"] = aimpoint.y
-    run_params["z_aim"] = aimpoint.z
-
-    impact_df = mc_run(run_params_struct)
+    traj.update_aimpoint(run_params_struct[0])
+    impact_data = traj.mc_run(run_params_struct[0])
+    impact_df = impact_data_to_df(impact_data, int(run_params["num_runs"]))
 
     # Copy the config toml to the output directory
     toml_path = os.path.join(
@@ -210,9 +281,7 @@ def cli():
         config_parser = configparser.ConfigParser()
         config_parser.read(config_path)
         config_dict = {
-            # Convert the value, which is a string, to the class it should be
-            # based on the C run_param type.
-            key: run_param_type(key)(value)
+            key: value
             for section in config_parser.sections()
             for key, value in config_parser.items(section)
         }
