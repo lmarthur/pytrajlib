@@ -31,20 +31,5 @@ jupyter = [
 pytrajlib = "pytrajlib:cli"
 
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools", "cffi"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools]
-ext-modules = [ { name = "pytrajlib.mc", sources = ["src/main.c"], libraries = ["gsl"], include-dirs=["/opt/homebrew/include", "C:\\Miniconda\\envs\\test\\Library\\include"], library-dirs=["/opt/homebrew/lib", "C:\\Miniconda\\envs\\test\\Library\\lib"]} ]
-
-[tool.cibuildwheel]
-build = "cp310-*"
-
-[tool.cibuildwheel.linux]
-before-build = "yum install -y gsl-devel"
-build = "cp310-manylinux_x86_64"
-manylinux-x86_64-image = "manylinux2014"
-
-[tool.cibuildwheel.macos]
-before-build = "brew install gsl"
-environment = {MACOSX_DEPLOYMENT_TARGET=14}
