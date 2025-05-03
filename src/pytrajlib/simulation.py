@@ -8,8 +8,8 @@ from datetime import datetime
 import pandas as pd
 
 if platform.system() == "Windows":
-    math_dll_dir = str(importlib.resources.path("pytrajlib.gsl", ""))
-    os.add_dll_directory(math_dll_dir)
+    gsl_dll_dir = str(importlib.resources.files("pytrajlib.external.bin").joinpath(''))
+    os.add_dll_directory(gsl_dll_dir)
 
 from ._traj import ffi
 from ._traj import lib as traj
@@ -53,10 +53,7 @@ def get_run_params_struct(config):
             The run parameters.
     """
     run_params_struct = ffi.new("struct runparams *")
-    # print(f"{type(run_params_struct.run_name)=}")
-    # print(ffi.typeof(f"({run_params_struct})->{'run_name'}"))
     for key, value in config.items():
-        print(key, value)
         run_params_struct.__setattr__(key, to_c_type(value))
 
     return run_params_struct
