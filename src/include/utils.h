@@ -233,30 +233,6 @@ double linterp(double x, double xs[], double ys[], int n){
     return y;
 }
 
-double min(double a, double b){
-    /*
-    Returns the minimum of two values
-
-    INPUTS:
-    ----------
-        a: double
-            first value
-        b: double
-            second value
-    OUTPUTS:
-    ----------
-        min: double
-            minimum value
-    */
-
-    if (a < b){
-        return a;
-    }
-    else{
-        return b;
-    }
-}
-
 double sign(double x){
     /*
     Returns the sign of a value
