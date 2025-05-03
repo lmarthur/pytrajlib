@@ -1,1 +1,7 @@
 include src/include/*.h
+include src/pytrajlib/external/include/gsl/*.h
+include src/pytrajlib/external/lib/*.lib
+include src/pytrajlib/external/bin/*.dll
+include src/pytrajlib/*.so
+include src/pytrajlib/*.pyd
+include src/pytrajlib/config/*
