@@ -1,5 +1,4 @@
 version = 1
-revision = 1
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.12'",
@@ -1015,6 +1014,7 @@ name = "pytrajlib"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "cffi" },
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "pandas" },
@@ -1024,7 +1024,6 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "build" },
-    { name = "cffi" },
     { name = "cibuildwheel" },
     { name = "pytest" },
     { name = "setuptools" },
@@ -1035,6 +1034,7 @@ jupyter = [
 
 [package.metadata]
 requires-dist = [
+    { name = "cffi", specifier = ">=1.17.1" },
     { name = "matplotlib", specifier = ">=3.10.1" },
     { name = "numpy", specifier = ">=2.2.4" },
     { name = "pandas", specifier = ">=2.2.3" },
@@ -1044,7 +1044,6 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "build", specifier = ">=1.2.2.post1" },
-    { name = "cffi", specifier = ">=1.17.1" },
     { name = "cibuildwheel", specifier = ">=2.23.2" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "setuptools", specifier = ">=79.0.0" },

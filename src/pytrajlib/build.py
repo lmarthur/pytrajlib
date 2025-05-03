@@ -2,16 +2,20 @@ import importlib.resources
 import platform
 
 from cffi import FFI
+import os
 
 include_dirs = ["src/"]
 library_dirs = []
 libraries = ["gsl"]
 
 if platform.system() == "Windows":
-    include = str(importlib.resources.path("pytrajlib.gsl.include", ""))
-    lib = str(importlib.resources.path("pytrajlib.gsl.lib", ""))
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    include = os.path.join(base_path, "external", "include")
+    lib = os.path.join(base_path, "external", "lib")
+    lib = "src/pytrajlib/external/lib/"
+
     include_dirs.append(include)
-    library_dirs.append(lib)
+    library_dirs.append(lib)    
 
 ffibuilder = FFI()
 
@@ -100,7 +104,8 @@ ffibuilder.cdef(
     """
     )
 
-ffibuilder.set_source("_traj",
+# Make _traj part of the package so it is included in the wheel
+ffibuilder.set_source("pytrajlib._traj",
 """
     #include "include/utils.h"
     #include "include/vehicle.h"
