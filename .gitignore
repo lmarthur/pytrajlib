@@ -26,3 +26,5 @@ src/include/egsrc
 *.pyc
 *.egg-info
 _traj.*
+
+venv/
