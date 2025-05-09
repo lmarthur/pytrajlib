@@ -194,7 +194,7 @@ def get_run_params(config_path=None):
     return run_params
 
 
-def run(config=None):
+def run(config=None, **kwargs):
     """
     Run the Monte Carlo code with the given parameters. If neither are provided,
     the default configuration is used. If both are provided, config_dict will be used.
@@ -203,6 +203,7 @@ def run(config=None):
     -------
         config: optional, Dictionary containing the run parameters from the
             config file or command line.
+        kwargs: optional, Override the values in the config file.
 
     OUTPUTS:
     -------
@@ -214,6 +215,12 @@ def run(config=None):
         run_params = get_run_params(config)
     else:
         run_params = config
+    if kwargs:
+        for key, value in kwargs.items():
+            if key in run_params:
+                run_params[key] = value
+            else:
+                raise KeyError(f"Key {key} not found in run_params.")
     create_output_dirs(run_params)
     run_params_struct = get_run_params_struct(run_params)
     aimpoint = traj.update_aimpoint(run_params_struct[0])
