@@ -90,7 +90,7 @@ ffibuilder.cdef(
 
 # Make _traj part of the package so it is included in the wheel
 module_name = "_traj" if __name__ == "__main__" else "pytrajlib._traj"
-ffibuilder.set_source("_traj",
+ffibuilder.set_source(module_name,
 """
     #include "include/rng/mt19937-64/mt64.h"
     #include "include/rng/rng.h"
