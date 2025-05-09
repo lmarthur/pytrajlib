@@ -11,8 +11,7 @@
 #include "physics.h"
 #include "sensors.h"
 #include "maneuverability.h"
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
+#include "rng/rng.h"
 
 // Define a constant upper limit for the number of Monte Carlo runs
 #define MAX_RUNS 1000
@@ -24,7 +23,7 @@ typedef struct impact_data{
 
 } impact_data;
 
-state init_true_state(runparams *run_params, gsl_rng *rng){
+state init_true_state(runparams *run_params){
     /*
     Initializes a true state struct at the launch site with zero velocity and acceleration
 
@@ -32,8 +31,6 @@ state init_true_state(runparams *run_params, gsl_rng *rng){
     ----------
         run_params: runparams *
             pointer to the run parameters struct
-        rng: gsl_rng *
-            pointer to the random number generator
 
     OUTPUTS:
     ----------
@@ -46,33 +43,33 @@ state init_true_state(runparams *run_params, gsl_rng *rng){
     if (run_params->run_type == 0){
         // printf("Initializing full trajectory run\n");
         state.t = 0;
-        state.x = 6371e3 + run_params->initial_x_error * gsl_ran_gaussian(rng, 1);
-        state.y = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
-        state.z = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
+        state.x = 6371e3 + run_params->initial_x_error * ran_gaussian(1);
+        state.y = run_params->initial_pos_error * ran_gaussian(1);
+        state.z = run_params->initial_pos_error * ran_gaussian(1);
 
-        state.vx = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
-        state.vy = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
-        state.vz = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
+        state.vx = run_params->initial_vel_error * ran_gaussian(1);
+        state.vy = run_params->initial_vel_error * ran_gaussian(1);
+        state.vz = run_params->initial_vel_error * ran_gaussian(1);
         
     }
     // branch for initializing reentry only run
     if (run_params->run_type == 1){
         // printf("Initializing reentry only run\n");
         state.t = 0;
-        state.x = 6371e3 + 500e3 + run_params->initial_x_error * gsl_ran_gaussian(rng, 1);
-        state.y = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
-        state.z = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
+        state.x = 6371e3 + 500e3 + run_params->initial_x_error * ran_gaussian(1);
+        state.y = run_params->initial_pos_error * ran_gaussian(1);
+        state.z = run_params->initial_pos_error * ran_gaussian(1);
 
-        state.vx = -run_params->reentry_vel + run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
-        state.vy = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
-        state.vz = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
+        state.vx = -run_params->reentry_vel + run_params->initial_vel_error * ran_gaussian(1);
+        state.vy = run_params->initial_vel_error * ran_gaussian(1);
+        state.vz = run_params->initial_vel_error * ran_gaussian(1);
 
     }
     
-    double initial_rot_pert = run_params->initial_angle_error * gsl_ran_gaussian(rng, 1);
+    double initial_rot_pert = run_params->initial_angle_error * ran_gaussian(1);
 
-    state.initial_theta_lat_pert = run_params->initial_angle_error * gsl_ran_gaussian(rng, 1) + run_params->theta_long * initial_rot_pert - fabs(run_params->theta_lat * initial_rot_pert);
-    state.initial_theta_long_pert = run_params->initial_angle_error * gsl_ran_gaussian(rng, 1) - run_params->theta_lat * initial_rot_pert - fabs(run_params->theta_long * initial_rot_pert);
+    state.initial_theta_lat_pert = run_params->initial_angle_error * ran_gaussian(1) + run_params->theta_long * initial_rot_pert - fabs(run_params->theta_lat * initial_rot_pert);
+    state.initial_theta_long_pert = run_params->initial_angle_error * ran_gaussian(1) - run_params->theta_lat * initial_rot_pert - fabs(run_params->theta_long * initial_rot_pert);
     state.theta_long = run_params->theta_long + state.initial_theta_long_pert;
     state.theta_lat = run_params->theta_lat + state.initial_theta_lat_pert;
         
@@ -234,7 +231,7 @@ void output_impact(FILE *impact_file, impact_data *impact_data, int num_runs){
     
 }
 
-state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng *rng){
+state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
     /*
     Function that simulates the flight of a vehicle, updating the state of the vehicle at each time step
     
@@ -246,8 +243,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             pointer to the initial state of the vehicle
         vehicle: vehicle *
             pointer to the vehicle struct
-        rng: gsl_rng *
-            pointer to the random number generator
 
     OUTPUTS:
     ----------
@@ -258,18 +253,18 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     // Initialize the variables and structures
     int max_steps = 1000000;
 
-    grav true_grav = init_grav(run_params, rng);
-    grav est_grav = init_grav(run_params, rng);
+    grav true_grav = init_grav(run_params);
+    grav est_grav = init_grav(run_params);
     est_grav.perturb_flag = 0;
 
-    atm_model exp_atm_model = init_exp_atm(run_params, rng);
+    atm_model exp_atm_model = init_exp_atm(run_params);
 
     double a_command_total = 0;
     double a_lift_total = 0;
 
     int atm_profile_num;
     // Generate a random integer between 0 and 100
-    atm_profile_num = (int)gsl_ran_flat(rng, 0, 100);
+    atm_profile_num = (int)ran_flat(0, 100); 
 
     eg16_profile atm_profile = parse_atm(run_params->atm_profile_path, atm_profile_num);
 
@@ -284,7 +279,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     int traj_output = run_params->traj_output;
     double time_step;
     // Initialize the IMU
-    imu imu = imu_init(run_params, initial_state, rng);
+    imu imu = imu_init(run_params, initial_state);
 
     // Initialize the GNSS
     gnss gnss = gnss_init(run_params);
@@ -360,19 +355,19 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
         double a_drag = sqrt(new_true_state.ax_drag*new_true_state.ax_drag + new_true_state.ay_drag*new_true_state.ay_drag + new_true_state.az_drag*new_true_state.az_drag);
         if (run_params->ins_nav == 1){
             // INS Measurement
-            imu_measurement(&imu, &new_true_state, &new_est_state, vehicle, rng);
+            imu_measurement(&imu, &new_true_state, &new_est_state, vehicle);
 
             if (run_params->rv_maneuv == 0 ){ 
-                update_imu(&imu, time_step, rng);
+                update_imu(&imu, time_step);
             }
             else if (a_drag > 1e-3 || old_true_state.t < vehicle->booster.total_burn_time){
-                update_imu(&imu, time_step, rng);
+                update_imu(&imu, time_step);
             }
         }
 
         if (run_params->gnss_nav == 1){
             // GNSS Measurement
-            gnss_measurement(&gnss, &new_true_state, &new_est_state, rng);
+            gnss_measurement(&gnss, &new_true_state, &new_est_state);
         }
 
         if  (new_true_state.t == (vehicle->booster.total_burn_time) && run_params->run_type == 0){
@@ -399,8 +394,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             state des_final_state = impact_linterp(&old_des_state, &new_des_state);
 
             // Add coriolis effect based on the latitude and the impact time error
-            double lat = gsl_ran_flat(rng, -M_PI/2, M_PI/2);
-            double lon = gsl_ran_flat(rng, -M_PI, M_PI);
+            double lat = ran_flat(-M_PI/2, M_PI/2);
+            double lon = ran_flat(-M_PI, M_PI);
             double time_error = true_final_state.t - est_final_state.t;
             double rot_speed = 464 * cos(lat);
             // printf("Impact time error: %f\n", time_error);
@@ -491,13 +486,7 @@ cart_vector update_aimpoint(runparams run_params){
     run_params_temp.gyro_noise = 0;
     run_params_temp.gnss_noise = 0;
     
-    // Initialize the random number generator (unused in this case, but still required)
-    const gsl_rng_type *T;
-    gsl_rng *rng;
-    gsl_rng_env_setup();
-    T = gsl_rng_default;
-    rng = gsl_rng_alloc(T);
-
+    
     // Initialize the vehicle 
     vehicle vehicle;
     if (run_params_temp.rv_type == 0){
@@ -512,11 +501,11 @@ cart_vector update_aimpoint(runparams run_params){
     }
     
 
-    state initial_state = init_true_state(&run_params_temp, rng);
+    state initial_state = init_true_state(&run_params_temp);
     initial_state.theta_long = run_params.theta_long;
 
     // Call the fly function to get the final state
-    state final_state = fly(&run_params_temp, &initial_state, &vehicle, rng);
+    state final_state = fly(&run_params_temp, &initial_state, &vehicle);
 
     // Update the aimpoint based on the final state
     aimpoint.x = final_state.x;
@@ -559,14 +548,10 @@ impact_data mc_run(runparams run_params){
         fprintf(impact_file, "t, x, y, z, vx, vy, vz\n");
     }
     
-    // Initialize the random number generator
-    const gsl_rng_type *T;
-    gsl_rng *rng;
-    gsl_rng_env_setup();
-    T = gsl_rng_default;
-    rng = gsl_rng_alloc(T);
-
     // Run the Monte Carlo simulation
+    // Write the trajectory data to file for the first run
+    int original_traj_output = run_params.traj_output;
+    run_params.traj_output = 1;
     for (int i = 0; i < num_runs; i++){
 
         vehicle vehicle;
@@ -591,9 +576,12 @@ impact_data mc_run(runparams run_params){
         }
         
 
-        state initial_true_state = init_true_state(&run_params, rng);
+        state initial_true_state = init_true_state(&run_params);
         
-        impact_data.impact_states[i] = fly(&run_params, &initial_true_state, &vehicle, rng);
+        impact_data.impact_states[i] = fly(&run_params, &initial_true_state, &vehicle);
+        // Reset flag for writing trajectory data to file. Ensures only the first
+        // run writes to the file if the original trajectory output flag is 0.
+        run_params.traj_output = original_traj_output;
 
     }
 
