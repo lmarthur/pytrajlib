@@ -7,13 +7,29 @@ from datetime import datetime
 
 import pandas as pd
 
-if platform.system() == "Windows":
-    gsl_dll_dir = str(importlib.resources.files("pytrajlib.external.bin").joinpath(''))
-    os.add_dll_directory(gsl_dll_dir)
-
 from ._traj import ffi
 from ._traj import lib as traj
 
+_keep_alive = {}
+
+def to_python_type(value):
+    """
+    Convert string values to their corresponding Python types.
+    INPUTS:
+    ----------
+        value: str
+            The value to convert.
+    OUTPUTS:
+    ----------
+        python_value: any
+            The converted value.
+    """
+    if value.isdecimal():
+        return int(value)
+    try:
+        return float(value)
+    except ValueError:
+        return value
 
 def to_c_type(value):
     """
@@ -30,14 +46,10 @@ def to_c_type(value):
             The converted value.
 
     """
-    if not isinstance(value, str):
-        return value
-    if value.isdecimal():
-        return int(value)
-    try:
-        return float(value)
-    except ValueError:
-        return ffi.new("char[]", value.encode("utf-8"))
+    if isinstance(value, str):
+        s = ffi.new("char[]", value.encode("utf-8"))
+        return s
+    return value
 
 def get_run_params_struct(config):
     """
@@ -54,8 +66,9 @@ def get_run_params_struct(config):
     """
     run_params_struct = ffi.new("struct runparams *")
     for key, value in config.items():
-        run_params_struct.__setattr__(key, to_c_type(value))
-
+        p = to_c_type(value)
+        run_params_struct.__setattr__(key, p)
+        _keep_alive[key] = p
     return run_params_struct
 
 def impact_data_to_df(impact_data, num_runs):
@@ -120,32 +133,6 @@ def create_output_dirs(run_params):
         os.makedirs(dir_path, exist_ok=True)
 
 
-def get_default_run_params():
-    """
-    Get the default run params dictionary from the default.toml file.
-
-    OUTPUTS:
-    --------
-        default_run_params (dict): Dictionary containing the default configuration
-            parameters.
-    """
-    default_config = str(importlib.resources.path("pytrajlib.config", "default.toml"))
-    default_config_parser = configparser.ConfigParser()
-    default_config_parser.read(default_config)
-    default_run_params = {
-        key: value
-        for section in default_config_parser.sections()
-        for key, value in default_config_parser.items(section)
-    }
-    # Override the default atm_profile_path because atmprofiles.txt is
-    # bundled with the package and would not have a stable fixed path when
-    # the package is installed on a variety of systems.
-    default_run_params["atm_profile_path"] = str(
-        importlib.resources.path("pytrajlib.config", "atmprofiles.txt")
-    )
-    return default_run_params
-
-
 def write_config_toml(run_params, file_path):
     """
     Write the configuration dictionary to a toml file.
@@ -184,18 +171,26 @@ def get_run_params(config_path=None):
     -------
         run_params (dict): Dictionary containing the run parameters.
     """
+    retrieving_default = False
     if config_path is None:
-        return get_default_run_params()
+        retrieving_default = True
+        config_path = str(importlib.resources.path("pytrajlib.config", "default.toml"))
 
     if not check_config_exists(config_path):
         raise FileNotFoundError(f"The input file {config_path} does not exist.")
     config_parser = configparser.ConfigParser()
     config_parser.read(config_path)
     run_params = {
-        key: value
+        key: to_python_type(value)
         for section in config_parser.sections()
         for key, value in config_parser.items(section)
     }
+    if retrieving_default:
+        # Override the default atm_profile_path because atmprofiles.txt does not
+        # have a stable fixed path when the script is run as part of a package.
+        run_params["atm_profile_path"] = str(
+            importlib.resources.path("pytrajlib.config", "atmprofiles.txt")
+        )
     return run_params
 
 
@@ -221,8 +216,14 @@ def run(config=None):
         run_params = config
     create_output_dirs(run_params)
     run_params_struct = get_run_params_struct(run_params)
+    aimpoint = traj.update_aimpoint(run_params_struct[0])
 
-    traj.update_aimpoint(run_params_struct[0])
+    print(aimpoint.x, aimpoint.y, aimpoint.z)
+    run_params["x_aim"] = aimpoint.x
+    run_params["y_aim"] = aimpoint.y
+    run_params["z_aim"] = aimpoint.z
+    print(f"Running with aimpoint: {run_params['x_aim']}, {run_params['y_aim']}, {run_params['z_aim']}")
+    print(f"Trajectory output : {ffi.string(run_params_struct.trajectory_path).decode('utf-8')}")
     impact_data = traj.mc_run(run_params_struct[0])
     impact_df = impact_data_to_df(impact_data, int(run_params["num_runs"]))
 
@@ -254,7 +255,7 @@ def cli():
     )
 
     # Set up the command line arguments and defaults from the config file
-    for key, value in get_default_run_params().items():
+    for key, value in get_run_params().items():
         arg_parser.add_argument(
             f"--{key.replace('_', '-')}",
             default=value,

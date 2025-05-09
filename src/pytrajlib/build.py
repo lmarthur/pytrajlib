@@ -48,7 +48,8 @@ ffibuilder.cdef(
     };
     struct cart_vector{
         double x;
-        ...;
+        double y;
+        double z;
     };
     struct state{
         double t; 
@@ -88,8 +89,11 @@ ffibuilder.cdef(
     )
 
 # Make _traj part of the package so it is included in the wheel
-ffibuilder.set_source("pytrajlib._traj",
+module_name = "_traj" if __name__ == "__main__" else "pytrajlib._traj"
+ffibuilder.set_source("_traj",
 """
+    #include "include/rng/mt19937-64/mt64.h"
+    #include "include/rng/rng.h"
     #include "include/utils.h"
     #include "include/vehicle.h"
     #include "include/gravity.h"

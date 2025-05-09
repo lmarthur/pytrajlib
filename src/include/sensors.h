@@ -3,8 +3,7 @@
 
 #include "utils.h"
 #include "trajectory.h"
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
+#include "rng/rng.h"
 
 // Define an inertial measurement unit struct
 typedef struct imu{
@@ -27,7 +26,7 @@ typedef struct imu{
 
 } imu;
 
-imu imu_init(runparams *run_params, state *initial_state, gsl_rng *rng){
+imu imu_init(runparams *run_params, state *initial_state){
     /*
     Initializes an accelerometer struct
 
@@ -37,8 +36,6 @@ imu imu_init(runparams *run_params, state *initial_state, gsl_rng *rng){
             pointer to the run parameters struct
         initial_state: state *
             pointer to the initial state of the vehicle
-        rng: gsl_rng *
-            pointer to the random number generator
 
     OUTPUTS:
     ----------
@@ -48,15 +45,15 @@ imu imu_init(runparams *run_params, state *initial_state, gsl_rng *rng){
 
     imu imu;
     imu.acc_scale_stability = run_params->acc_scale_stability;
-    imu.acc_scale_x = imu.acc_scale_stability * gsl_ran_gaussian(rng, 1); // ppm
-    imu.acc_scale_y = imu.acc_scale_stability * gsl_ran_gaussian(rng, 1); // ppm
-    imu.acc_scale_z = imu.acc_scale_stability * gsl_ran_gaussian(rng, 1); // ppm
+    imu.acc_scale_x = imu.acc_scale_stability * ran_gaussian(1); // ppm
+    imu.acc_scale_y = imu.acc_scale_stability * ran_gaussian(1); // ppm
+    imu.acc_scale_z = imu.acc_scale_stability * ran_gaussian(1); // ppm
     
     imu.gyro_bias_stability = run_params->gyro_bias_stability;
     imu.gyro_noise = run_params->gyro_noise;
 
-    imu.gyro_bias_lat = imu.gyro_bias_stability * gsl_ran_gaussian(rng, 1); // rad/s
-    imu.gyro_bias_long = imu.gyro_bias_stability * gsl_ran_gaussian(rng, 1); // rad/s
+    imu.gyro_bias_lat = imu.gyro_bias_stability * ran_gaussian(1); // rad/s
+    imu.gyro_bias_long = imu.gyro_bias_stability * ran_gaussian(1); // rad/s
 
     imu.gyro_error_lat = initial_state->initial_theta_lat_pert;
     imu.gyro_error_long = initial_state->initial_theta_long_pert;
@@ -65,7 +62,7 @@ imu imu_init(runparams *run_params, state *initial_state, gsl_rng *rng){
 
 }
 
-void imu_measurement(imu *imu, state *true_state, state *est_state, vehicle *vehicle, gsl_rng *rng){
+void imu_measurement(imu *imu, state *true_state, state *est_state, vehicle *vehicle){
     /*
     Simulates an accelerometer measurement
 
@@ -79,8 +76,6 @@ void imu_measurement(imu *imu, state *true_state, state *est_state, vehicle *veh
             pointer to the estimated state of the vehicle
         vehicle: vehicle *
             pointer to the vehicle struct
-        rng: gsl_rng *
-            pointer to the random number generator
     */
 
     // Gyroscope measurements
@@ -97,7 +92,7 @@ void imu_measurement(imu *imu, state *true_state, state *est_state, vehicle *veh
 
 }
 
-void update_imu(imu *imu, double time_step, gsl_rng *rng){
+void update_imu(imu *imu, double time_step){
     /*
     Updates the accelerometer parameters
 
@@ -107,13 +102,11 @@ void update_imu(imu *imu, double time_step, gsl_rng *rng){
             pointer to the accelerometer struct
         time_step: double
             time step for the simulation
-        rng: gsl_rng *
-            pointer to the random number generator
     */
 
     // Update the gyro error by recursively adding noise and bias drift
-    imu->gyro_error_long = imu->gyro_error_long + (imu->gyro_noise * gsl_ran_gaussian(rng, 1) + imu->gyro_bias_long) * time_step;
-    imu->gyro_error_lat = imu->gyro_error_lat + (imu->gyro_noise * gsl_ran_gaussian(rng, 1) + imu->gyro_bias_lat) * time_step;
+    imu->gyro_error_long = imu->gyro_error_long + (imu->gyro_noise * ran_gaussian(1) + imu->gyro_bias_long) * time_step;
+    imu->gyro_error_lat = imu->gyro_error_lat + (imu->gyro_noise * ran_gaussian(1) + imu->gyro_bias_lat) * time_step;
 
 }
 
@@ -144,7 +137,7 @@ gnss gnss_init(runparams *run_params){
     return gnss;
 }
 
-void gnss_measurement(gnss *gnss, state *true_state, state *est_state, gsl_rng *rng){
+void gnss_measurement(gnss *gnss, state *true_state, state *est_state){
     /*
     Simulates a gnss measurement
 
@@ -156,8 +149,6 @@ void gnss_measurement(gnss *gnss, state *true_state, state *est_state, gsl_rng *
             pointer to the true state of the vehicle
         est_state: state *
             pointer to the estimated state of the vehicle
-        rng: gsl_rng *
-            pointer to the random number generator
 
     OUTPUTS:
     ----------
@@ -166,9 +157,9 @@ void gnss_measurement(gnss *gnss, state *true_state, state *est_state, gsl_rng *
     */
 
     // Position measurements
-    est_state->x = true_state->x + gnss->noise * gsl_ran_gaussian(rng, 1);
-    est_state->y = true_state->y + gnss->noise * gsl_ran_gaussian(rng, 1);
-    est_state->z = true_state->z + gnss->noise * gsl_ran_gaussian(rng, 1);
+    est_state->x = true_state->x + gnss->noise * ran_gaussian(1);
+    est_state->y = true_state->y + gnss->noise * ran_gaussian(1);
+    est_state->z = true_state->z + gnss->noise * ran_gaussian(1);
 
 }
 

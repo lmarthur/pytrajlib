@@ -1,8 +1,7 @@
 #ifndef GRAVITY_H
 #define GRAVITY_H
 
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
+#include "rng/rng.h"
 #include "utils.h"
 
 // Note that the update_gravity function is in the physics.h file
@@ -20,7 +19,7 @@ typedef struct grav{
 } grav;
 
 // Define a function to initialize gravity parameters
-grav init_grav(runparams *run_params, gsl_rng *rng){
+grav init_grav(runparams *run_params){
     /*
     Initializes gravity parameters
 
@@ -28,8 +27,6 @@ grav init_grav(runparams *run_params, gsl_rng *rng){
     ----------
         run_params: *runparams
             Pointer to the runparams struct
-        rng: *gsl_rng
-            Pointer to the GSL random number generator
     OUTPUTS:
     ----------
         grav: grav
@@ -45,7 +42,7 @@ grav init_grav(runparams *run_params, gsl_rng *rng){
     grav.geoid_height_std = 0.05;
     if (run_params->grav_error != 0){
         // Set nonzero geoid height error
-        grav.geoid_height_error = gsl_ran_gaussian(rng, grav.geoid_height_std);
+        grav.geoid_height_error = ran_gaussian(grav.geoid_height_std);
     }
     else {
         grav.geoid_height_error = 0;
