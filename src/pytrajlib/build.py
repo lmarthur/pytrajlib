@@ -1,24 +1,7 @@
-import importlib.resources
-import platform
-
 from cffi import FFI
-import os
 
 include_dirs = ["src/"]
-library_dirs = []
-libraries = ["gsl"]
-
-if platform.system() == "Windows":
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    include = os.path.join(base_path, "external", "include")
-    lib = os.path.join(base_path, "external", "lib")
-    lib = "src/pytrajlib/external/lib/"
-
-    include_dirs.append(include)
-    library_dirs.append(lib)    
-
 ffibuilder = FFI()
-
 ffibuilder.cdef(
     """
     struct runparams {
@@ -115,8 +98,7 @@ ffibuilder.set_source("pytrajlib._traj",
     #include "include/trajectory.h"
 """,
     include_dirs=include_dirs,
-    library_dirs=library_dirs,
-    libraries=libraries,
+    sources=["src/include/rng/mt19937-64/mt19937-64.c"]
     )
 
 if __name__ == "__main__":
