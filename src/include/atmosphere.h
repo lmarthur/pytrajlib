@@ -46,6 +46,44 @@ typedef struct eg16_profile{
 
 } eg16_profile;
 
+double atm_data[10000][6];
+int atm_data_is_filled = 0;
+
+void init_atm_data(char* atmprofilepath){
+    /*
+    Initializes the atmospheric profile data so we only read the file once.
+
+    INPUTS:
+    ----------
+        atmprofilepath: char *
+            path to the atmospheric profile file
+    OUTPUTS:
+    ----------
+        atm_profile: eg16_profile
+            atmospheric profile struct
+    */
+
+    if (atm_data_is_filled == 1){
+        return;
+    }
+
+    // Open the atmospheric profile file
+    FILE *fp = fopen(atmprofilepath, "r");
+    if (fp == NULL){
+        printf("Error opening atmospheric profile file\n");
+    }
+
+    // read the atmospheric profile data delimited by spaces
+    for (int i = 0; i < 100*100; i++){
+        for (int j = 0; j < 6; j++){
+            fscanf(fp, "%lfe", &atm_data[i][j]);
+        }
+    }
+    atm_data_is_filled = 1;
+    fclose(fp);
+    }
+    
+
 atm_model init_exp_atm(runparams *run_params){
     /*
     Initializes the atmospheric model
@@ -310,30 +348,10 @@ eg16_profile parse_atm(char* atmprofilepath, int profilenum){
         
     */
     // Initialize the atmospheric profile struct
-    double atm_data[10000][6];
     eg16_profile atm_profile;
     atm_profile.profile_num = profilenum;
 
-    // Open the atmospheric profile file
-    FILE *fp = fopen(atmprofilepath, "r");
-    if (fp == NULL){
-        printf("Error opening atmospheric profile file\n");
-    }
-
-    // read the atmospheric profile data delimited by spaces
-    for (int i = 0; i < 100*100; i++){
-        for (int j = 0; j < 6; j++){
-            fscanf(fp, "%lfe", &atm_data[i][j]);
-        }
-    }
-
-    // print the atmospheric profile data
-    // for (int i = 0; i < 100*100; i++){
-    //     for (int j = 0; j < 6; j++){
-    //         printf("%lf ", atm_data[i][j]);
-    //     }
-    //     printf("\n");
-    // }
+    init_atm_data(atmprofilepath);
     
     // Update the atmospheric profile struct by iterating over only the requested profile
     for (int i = 0; i < 100; i++){
@@ -343,15 +361,6 @@ eg16_profile parse_atm(char* atmprofilepath, int profilenum){
         atm_profile.zonal_wind_data[i] = atm_data[100*profilenum+i][4];
         atm_profile.vertical_wind_data[i] = atm_data[100*profilenum+i][5];
     }
-
-
-    // Print the atmospheric profile data
-    // printf("Profile number: %d\n", atm_profile.profile_num);
-    // for (int i = 0; i < 100; i++){
-    //     printf("Data: %lf %lf %lf %lf %lf\n", atm_profile.alt_data[i], atm_profile.density_data[i], atm_profile.meridional_wind_data[i], atm_profile.zonal_wind_data[i], atm_profile.vertical_wind_data[i]);
-    // }
-
-    fclose(fp);
 
     return atm_profile;
 }
