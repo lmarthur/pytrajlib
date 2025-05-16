@@ -48,6 +48,10 @@ typedef struct runparams{
 
 } runparams;
 
+// Create a globally accessible runparams to easily pass data between the functions
+// for the thrust angle optimization
+runparams *global_run_params;
+
 typedef struct cart_vector{
     double x;
     double y;
@@ -256,6 +260,44 @@ double sign(double x){
     else{
         return 0;
     }
+}
+
+runparams sanitize_runparams_for_aimpoint(runparams run_params){
+    /*
+    Function that sanitizes the run parameters for the aimpoint calculation
+
+    INPUTS:
+    ----------
+        run_params: runparams
+            run parameters struct
+
+    OUTPUTS:
+    ----------
+        run_params_temp: runparams
+            sanitized run parameters struct
+    */
+
+    runparams run_params_temp = run_params;
+
+    // Set output to zero
+    run_params_temp.traj_output = 0;
+    run_params_temp.rv_maneuv = 0;
+    run_params_temp.gnss_nav = 0;
+    run_params_temp.ins_nav = 0;
+    // Set all error parameters to zero
+    run_params_temp.grav_error = 0;
+    run_params_temp.atm_error = 0;
+    run_params_temp.atm_model = 0;
+    run_params_temp.initial_x_error = 0;
+    run_params_temp.initial_pos_error = 0;
+    run_params_temp.initial_vel_error = 0;
+    run_params_temp.initial_angle_error = 0;
+    run_params_temp.acc_scale_stability = 0;
+    run_params_temp.gyro_bias_stability = 0;
+    run_params_temp.gyro_noise = 0;
+    run_params_temp.gnss_noise = 0;
+    
+    return run_params_temp;
 }
 
 #endif
