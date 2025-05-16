@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useMap, useMapEvent } from "react-leaflet";
 import LocationPopup from "./popupComponents/LocationPopup";
 import { useMapContext } from "../page";
+import StrikeMarker from "./StrikeMarker";
 import "leaflet-defaulticon-compatibility";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 
@@ -80,9 +81,9 @@ export default function Map(props) {
     const newMarkers = [];
     for (let i = 0; i < strikepoints.length; i++) {
       newMarkers.push(
-        <Marker key={i} position={strikepoints[i]}>
+        <StrikeMarker key={i} position={strikepoints[i]}>
           <Tooltip permanent>Strike Point {i + 1}</Tooltip>
-        </Marker>
+        </StrikeMarker>
       );
     }
     setStrikepointMarkers(newMarkers);
