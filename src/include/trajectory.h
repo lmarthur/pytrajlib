@@ -3,7 +3,9 @@
 #define _USE_MATH_DEFINES
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
+#include <time.h>
 #include "utils.h"
 #include "vehicle.h"
 #include "gravity.h"
@@ -12,6 +14,20 @@
 #include "sensors.h"
 #include "maneuverability.h"
 #include "rng/rng.h"
+#include "optimize/mnbrak.h"
+#include "optimize/brent.h"
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <nlopt.h>
+EM_JS(void, num_run_counter, (), {
+    console.log("Incrementing run counter");
+  });
+
+EM_JS(void, error_tracker, (double error), {
+    console.log("Current error:", error);
+  });
+#endif
 
 // Define a constant upper limit for the number of Monte Carlo runs
 #define MAX_RUNS 1000
@@ -467,25 +483,7 @@ cart_vector update_aimpoint(runparams run_params){
         return aimpoint;
     }
 
-    runparams run_params_temp = run_params;
-    // Set output to zero
-    run_params_temp.traj_output = 0;
-    run_params_temp.rv_maneuv = 0;
-    run_params_temp.gnss_nav = 0;
-    run_params_temp.ins_nav = 0;
-    // Set all error parameters to zero
-    run_params_temp.grav_error = 0;
-    run_params_temp.atm_error = 0;
-    run_params_temp.atm_model = 0;
-    run_params_temp.initial_x_error = 0;
-    run_params_temp.initial_pos_error = 0;
-    run_params_temp.initial_vel_error = 0;
-    run_params_temp.initial_angle_error = 0;
-    run_params_temp.acc_scale_stability = 0;
-    run_params_temp.gyro_bias_stability = 0;
-    run_params_temp.gyro_noise = 0;
-    run_params_temp.gnss_noise = 0;
-    
+    runparams run_params_temp = sanitize_runparams_for_aimpoint(run_params);
     
     // Initialize the vehicle 
     vehicle vehicle;
@@ -536,8 +534,7 @@ impact_data mc_run(runparams run_params){
         printf("num_runs: %d, MAX_RUNS: %d\n", num_runs, MAX_RUNS);
         exit(1);
     }
-    // state initial_state = init_state();
-    // vehicle vehicle = init_mmiii_ballistic();
+    
     impact_data impact_data;
     
 
@@ -549,9 +546,12 @@ impact_data mc_run(runparams run_params){
     }
     
     // Run the Monte Carlo simulation
-    // Write the trajectory data to file for the first run
+    // Write the trajectory data to file for the first run. If traj_output is 2, 
+    // then do not write to file because this signifies a run from the web.
     int original_traj_output = run_params.traj_output;
-    run_params.traj_output = 1;
+    if (run_params.traj_output == 0){
+        run_params.traj_output = 1;
+    }
     for (int i = 0; i < num_runs; i++){
 
         vehicle vehicle;
@@ -560,7 +560,7 @@ impact_data mc_run(runparams run_params){
                 vehicle = init_mmiii_ballistic();
             }
             else if (run_params.rv_type == 1){
-                vehicle = init_mmiii_swerve();
+                                vehicle = init_mmiii_swerve();
             }
             else{
                 printf("Error: Invalid RV type\n");
@@ -583,6 +583,12 @@ impact_data mc_run(runparams run_params){
         // run writes to the file if the original trajectory output flag is 0.
         run_params.traj_output = original_traj_output;
 
+        // Allow time for browser to update.
+        #ifdef __EMSCRIPTEN__
+            num_run_counter();
+            emscripten_sleep(0);
+        #endif
+
     }
 
     // Output the impact data
@@ -593,5 +599,279 @@ impact_data mc_run(runparams run_params){
     return impact_data;
 
 }
+
+double aimpoint_error(cart_vector aimpoint){
+    /*
+    Calculate the distance between the current aimpoint and the goal aimpoint.
+
+    INPUTS:
+    ----------
+        aimpoint: cart_vector
+            Cartesian vector to the aimpoint
+    OUTPUTS:
+    ----------
+        error: double
+            distance between the current aimpoint and the goal aimpoint
+    */
+    double current_x = aimpoint.x;
+    double current_y = aimpoint.y;
+    double current_z = aimpoint.z;
+
+    double goal_x = global_run_params->x_aim;
+    double goal_y = global_run_params->y_aim;
+    double goal_z = global_run_params->z_aim;
+
+    double error = sqrt((goal_x - current_x)*(goal_x - current_x) + \
+    (goal_y - current_y)*(goal_y - current_y) + \
+    (goal_z - current_z)*(goal_z - current_z));
+    return error;
+}
+
+double aimpoint_error_theta_wrapper(double *x){
+    global_run_params->theta_lat = x[0];
+    global_run_params->theta_long = x[1];
+    cart_vector aimpoint = update_aimpoint(*global_run_params);
+    double error = aimpoint_error(aimpoint);
+    printf("Error: %f Guess: %f, %f\n", error, x[0], x[1]);
+    return error;
+}
+
+float aimpoint_error_magnitude_wrapper(float magnitude){
+    global_run_params->theta_lat = magnitude * global_run_params->theta_lat;
+    global_run_params->theta_long = magnitude * global_run_params->theta_long;
+    cart_vector aimpoint = update_aimpoint(*global_run_params);
+    return (float)aimpoint_error(aimpoint);
+}
+
+double nlopt_objective(unsigned n, const double *x, double *grad, void *data) {
+    double fx = aimpoint_error_theta_wrapper(x);
+
+    // Calculate the gradient with a simple finite diff
+    if (grad) {
+        double h = 1e-6, xtmp[n];
+        for (unsigned i = 0; i < n; ++i) {
+            memcpy(xtmp, x, sizeof(xtmp));
+            xtmp[i] += h;
+            double fi = aimpoint_error_theta_wrapper(xtmp);
+            // Initial gradients can be very large; scale the gradient so the
+            // optimizer does not crash
+            grad[i] = (fi - fx) / h / 1e6; 
+        }
+    }
+    return fx;
+}
+
+void get_bearing(double aim_lat, double aim_lon, double launch_lat, double launch_lon) {
+    /*
+    Function that calculates the bearing from the launch point to the aim point
+
+    INPUTS:
+    ----------
+        aim_lat: double
+            latitude of the aimpoint, in radians
+        aim_lon: double
+            longitude of the aimpoint, in radians
+        launch_lat: double
+            latitude of the launch point, in radians
+        launch_lon: double
+            longitude of the launch point, in radians
+        p: float *
+            pointer to the array to store the bearing components
+    */
+    double lon_diff = aim_lon - launch_lon;
+
+    // North component
+    global_run_params->theta_lat = cos(launch_lat) * sin(aim_lat) - sin(launch_lat) * cos(aim_lat) * cos(lon_diff);
+    // East component
+    global_run_params->theta_long = sin(lon_diff) * cos(aim_lat);
+
+    float ax = 0.5f, bx = 1.5f, cx;
+    float fa, fb, fc;
+    mnbrak(&ax, &bx, &cx, &fa, &fb, &fc, aimpoint_error_magnitude_wrapper);
+
+    float tol = 1e-6f;
+    float xmin, fmin;
+    fmin = brent(ax, bx, cx, aimpoint_error_magnitude_wrapper, tol, &xmin);
+
+    global_run_params->theta_lat = global_run_params->theta_lat * xmin;
+    global_run_params->theta_long = global_run_params->theta_long * xmin;
+}
+
+double dummy_constraint(unsigned n, const double *x, double *grad, void *data) {
+    return 1.0;  // Always positive, so always satisfied
+}
+
+#ifdef __EMSCRIPTEN__
+void get_thrust_angle(double aim_lat, double aim_lon, runparams *run_params){
+    /*
+    Find the thrust angles (theta_lat, theta_long) based on the latitude and longitude
+    of the aimpoint. Update the run_params object with the new angles.
+
+    INPUTS:
+    ----------
+        aim_lat: double
+            latitude of the aimpoint, in radians
+        aim_lon: double
+            longitude of the aimpoint, in radians
+        run_params: runparams*
+            pointer to the run parameters struct
+    */
+    double earth_radius = 6371e3; 
+    double spher_coords[3] = {earth_radius, aim_lon, aim_lat};
+    double cart_coords[3];
+    sphercoords_to_cartcoords(spher_coords, cart_coords);
+
+    runparams rp = sanitize_runparams_for_aimpoint(*run_params);
+    global_run_params = &rp;
+    global_run_params->x_aim = cart_coords[0];
+    global_run_params->y_aim = cart_coords[1];
+    global_run_params->z_aim = cart_coords[2];
+
+    printf("Optimizing...\n");
+    get_bearing(aim_lat, aim_lon, 0, 0);
+    run_params->theta_lat = global_run_params->theta_lat;
+    run_params->theta_long = global_run_params->theta_long;
+    printf("init guesses: %f, %f\n", run_params->theta_lat, run_params->theta_long);
+
+    nlopt_opt opt = nlopt_create(NLOPT_LD_SLSQP, 2);
+
+    double lb[2] = { -M_PI, -M_PI };
+    nlopt_set_lower_bounds(opt, lb);
+
+    double ub[2] = { M_PI, M_PI };
+    nlopt_set_upper_bounds(opt, ub);
+
+    nlopt_set_min_objective(opt, nlopt_objective, NULL);
+
+    // At least one constraint seems to be needed
+    nlopt_add_inequality_constraint(opt, dummy_constraint, NULL, 1e-8);
+    
+    nlopt_set_ftol_rel(opt, 1e-6);
+    nlopt_set_maxeval(opt, 100);
+
+    double x[2] = { run_params->theta_lat, run_params->theta_long };
+    double minf;
+
+    clock_t start, end;
+    double cpu_time_used;
+    start = clock();
+
+    int ret = nlopt_optimize(opt, x, &minf);
+    end = clock();
+    cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
+    printf("nlopt_optimize took %f seconds\n", cpu_time_used);
+    if (ret < 0) {
+        printf("NLopt failed with code %d\n", ret);
+        
+    } else {
+        printf("Found minimum at (%g, %g) with value %0.10g\n", x[0], x[1], minf);
+    }
+    run_params->theta_lat = x[0];
+    run_params->theta_long = x[1];
+
+    nlopt_destroy(opt);
+}
+
+
+char* mc_run_wrapper(char *run_name, int run_type, char *output_path, 
+    char *impact_data_path, char *trajectory_path, char *atm_profile_path, 
+    int num_runs, double time_step_main, double time_step_reentry, int traj_output, 
+    int impact_output, double x_aim, double y_aim, double z_aim, double theta_long, 
+    double theta_lat, int grav_error, int atm_model, int atm_error, int gnss_nav, 
+    int ins_nav, int rv_maneuv, double reentry_vel, double deflection_time, 
+    int rv_type, double initial_x_error, double initial_pos_error, 
+    double initial_vel_error, double initial_angle_error, double acc_scale_stability, 
+    double gyro_bias_stability, double gyro_noise, double gnss_noise, double cl_pert, 
+    double step_acc_mag, double step_acc_hgt, double step_acc_dur, double aim_lat, double aim_lon){
+    /*
+    Return the impact data as a string. This is used for the web version of the 
+    code because it is easier for javascript to handle strings than pointers or
+    structs.
+
+    Also computes the best thrust angles to achieve the provided aimpoint. 
+
+    INPUT:
+    ----------
+        All parameters used in the runparams struct + the aimpoint latitude and 
+        longitude (radians).
+    
+    OUTPUTS:
+    ----------
+        data_str: char*
+            string containing the impact data. First row is aim_x, aim_y, aim_z
+            Each subsequent row is t, x, y, z, vx, vy, vz.
+    */
+
+    runparams run_params;
+    run_params.run_name = run_name;
+    run_params.run_type = run_type;
+    run_params.output_path = output_path;
+    run_params.impact_data_path = impact_data_path;
+    run_params.trajectory_path = trajectory_path;
+    run_params.atm_profile_path = atm_profile_path;
+    run_params.num_runs = num_runs;
+    run_params.time_step_main = time_step_main;
+    run_params.time_step_reentry = time_step_reentry;
+    run_params.traj_output = traj_output;
+    run_params.impact_output = impact_output;
+    run_params.x_aim = x_aim;
+    run_params.y_aim = y_aim;
+    run_params.z_aim = z_aim;
+    run_params.theta_long = theta_long;
+    run_params.theta_lat = theta_lat;
+    run_params.grav_error = grav_error;
+    run_params.atm_model = atm_model;
+    run_params.atm_error = atm_error;
+    run_params.gnss_nav = gnss_nav;
+    run_params.ins_nav = ins_nav;
+    run_params.rv_maneuv = rv_maneuv;
+    run_params.reentry_vel = reentry_vel;
+    run_params.deflection_time = deflection_time;
+    run_params.rv_type = rv_type;
+    run_params.initial_x_error = initial_x_error;
+    run_params.initial_pos_error = initial_pos_error;
+    run_params.initial_vel_error = initial_vel_error;
+    run_params.initial_angle_error = initial_angle_error;
+    run_params.acc_scale_stability = acc_scale_stability;
+    run_params.gyro_bias_stability = gyro_bias_stability;
+    run_params.gyro_noise = gyro_noise;
+    run_params.gnss_noise = gnss_noise;
+    run_params.cl_pert = cl_pert;
+    run_params.step_acc_mag = step_acc_mag;
+    run_params.step_acc_hgt = step_acc_hgt;
+    run_params.step_acc_dur = step_acc_dur;
+
+    get_thrust_angle(aim_lat, aim_lon, &run_params);
+
+    cart_vector aimpoint = update_aimpoint(run_params);
+    printf("Aimpoint in c: %f, %f, %f\n", aimpoint.x, aimpoint.y, aimpoint.z);
+    run_params.x_aim = aimpoint.x;
+    run_params.y_aim = aimpoint.y;
+    run_params.z_aim = aimpoint.z;
+
+    impact_data data = mc_run(run_params);
+
+    // 24 chars for each double, 2 chars for the comma and space, 1 char for the newline
+    int size = ((24 + 2) * 7 + 1);
+    // Add 1 to num_rus so the first row has the aimpoint
+    char* data_str = (char*)malloc(size * (run_params.num_runs + 1) * sizeof(char));
+    snprintf(data_str, size, "%f, %f, %f\n", run_params.x_aim, run_params.y_aim, run_params.z_aim);
+    for (int i = 0; i < run_params.num_runs; i++){
+        char* row_str;
+        snprintf(row_str, size, "%f, %f, %f, %f, %f, %f, %f\n", data.impact_states[i].t, data.impact_states[i].x, data.impact_states[i].y, data.impact_states[i].z, data.impact_states[i].vx, data.impact_states[i].vy, data.impact_states[i].vz);
+        strcat(data_str, row_str);
+    }
+    return data_str;
+}
+
+int test() {
+    /*
+    Simple test the code is working; useful to see if the web version has loaded
+    properly.
+    */
+    printf("test\n");
+    return 1;
+}
+#endif
 
 #endif
