@@ -1,6 +1,8 @@
 include src/include/*.h
 include src/include/rng/mt19937-64/*.h
 include src/include/rng/mt19937-64/*.c
+include src/include/optimize/*.h
+include src/include/optimize/*.c
 include src/include/rng/*.h
 include src/pytrajlib/*.so
 include src/pytrajlib/*.pyd
