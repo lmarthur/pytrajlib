@@ -1,3 +1,7 @@
+import glob
+import platform
+import shutil
+
 from cffi import FFI
 
 include_dirs = ["src/"]
@@ -85,6 +89,7 @@ ffibuilder.cdef(
     };
     struct cart_vector update_aimpoint(struct runparams run_params);
     struct impact_data mc_run(struct runparams run_params);
+    void get_thrust_angle(double aim_lat, double aim_lon, struct runparams *run_params);
     """
     )
 
@@ -94,6 +99,11 @@ ffibuilder.set_source(module_name,
 """
     #include "include/rng/mt19937-64/mt64.h"
     #include "include/rng/rng.h"
+
+    #include "include/optimize/brent.h"
+    #include "include/optimize/mnbrak.h"
+    #include "include/optimize/nrutil.h"
+
     #include "include/utils.h"
     #include "include/vehicle.h"
     #include "include/gravity.h"
@@ -102,8 +112,16 @@ ffibuilder.set_source(module_name,
     #include "include/trajectory.h"
 """,
     include_dirs=include_dirs,
-    sources=["src/include/rng/mt19937-64/mt19937-64.c"]
+    sources=["src/include/rng/mt19937-64/mt19937-64.c", "src/include/optimize/nrutil.c"]
     )
 
 if __name__ == "__main__":
     ffibuilder.compile(verbose=True)
+    # If Windows, move .pyd to project dir so it can be found by pytrajlib
+    if platform.system() == 'Windows':
+        file_to_move = glob.glob("_traj*.pyd")[0]
+        shutil.move(file_to_move, "src/pytrajlib/_traj.pyd")
+    # If Linux or Mac, move .so
+    else:
+        file_to_move = glob.glob("_traj*.so")[0]
+        shutil.move(file_to_move, "src/pytrajlib/_traj.so")
