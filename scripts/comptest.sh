@@ -16,9 +16,9 @@ make -C ./test/build
 echo "Running the library tests..."
 ./test/build/PyTraj_test
 
-# Compile the shared library with gsl
+# Compile the shared library
 echo "Compiling the shared library..."
-gcc -shared -fPIC -o ./build/libPyTraj.so ./src/main.c -lgsl
+gcc -shared -fPIC -o ./build/libPyTraj.so ./src/main.c
 
 # Run integration tests
 echo "Running integration tests..."
