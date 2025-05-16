@@ -28,3 +28,7 @@ src/include/egsrc
 _traj.*
 
 venv/
+
+*.o
+
+examples/output/*
