@@ -30,7 +30,6 @@ emcc src/main.c \
     -o build/trajlib.js \
     --preload-file input/
 
-cp build/trajlib.data site/
 cp build/trajlib.* trajmap/app/
 cp build/trajlib.* trajmap/public/
 
