@@ -131,15 +131,12 @@ void sphervec_to_cartvec(double *sphervec, double *cartvec, double *spher_coords
         spher_coords: double *
             pointer to spherical coordinates [r, long, lat]
     */
-
-    // Get th x-component of the spherical vector
-    cartvec[0] = sphervec[0] * cos(spher_coords[1]) * cos(spher_coords[2]);
-
+    cartvec[0] = -sphervec[1]*sin(spher_coords[1]) - sphervec[2]*sin(spher_coords[2])*cos(spher_coords[1]) + sphervec[0]*cos(spher_coords[1]) * cos(spher_coords[2]);
     // Get the y-component of the spherical vector
-    cartvec[1] = sphervec[0] * sin(spher_coords[1]) * cos(spher_coords[2]);
+    cartvec[1] = sphervec[1]*cos(spher_coords[1]) - sphervec[2]*sin(spher_coords[2])*sin(spher_coords[1]) + sphervec[0]*sin(spher_coords[1])*cos(spher_coords[2]);
 
     // Get the z-component of the spherical vector
-    cartvec[2] = sphervec[0] * sin(spher_coords[2]);
+    cartvec[2] = sphervec[2]*cos(spher_coords[2]) + sphervec[0]*sin(spher_coords[2]);
     
 }
 
