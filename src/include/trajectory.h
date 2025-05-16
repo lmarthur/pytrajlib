@@ -637,9 +637,18 @@ double aimpoint_error_theta_wrapper(double *x){
 }
 
 float aimpoint_error_magnitude_wrapper(float magnitude){
-    global_run_params->theta_lat = magnitude * global_run_params->theta_lat;
-    global_run_params->theta_long = magnitude * global_run_params->theta_long;
+    // Save the original theta_lat and theta_long before multiplying them by
+    // the magnitude 
+    double tmp_theta_lat = global_run_params->theta_lat;
+    double tmp_theta_long = global_run_params->theta_long;
+    global_run_params->theta_lat = (double)magnitude * global_run_params->theta_lat;
+    global_run_params->theta_long = (double)magnitude * global_run_params->theta_long;
+    printf("Magnitude: %f, theta_lat: %f, theta_long: %f\n", magnitude, global_run_params->theta_lat, global_run_params->theta_long);
     cart_vector aimpoint = update_aimpoint(*global_run_params);
+
+    // Restore the original theta_lat and theta_long
+    global_run_params->theta_lat = tmp_theta_lat;
+    global_run_params->theta_long = tmp_theta_long;
     return (float)aimpoint_error(aimpoint);
 }
 
@@ -684,6 +693,8 @@ void get_bearing(double aim_lat, double aim_lon, double launch_lat, double launc
     global_run_params->theta_lat = cos(launch_lat) * sin(aim_lat) - sin(launch_lat) * cos(aim_lat) * cos(lon_diff);
     // East component
     global_run_params->theta_long = sin(lon_diff) * cos(aim_lat);
+    printf("north: %f, east: %f\n", global_run_params->theta_lat, global_run_params->theta_long);
+    printf("north: %f, east deg: %f\n", global_run_params->theta_lat * 180 / M_PI, global_run_params->theta_long  * 180 / M_PI);
 
     float ax = 0.5f, bx = 1.5f, cx;
     float fa, fb, fc;
@@ -730,9 +741,10 @@ void get_thrust_angle(double aim_lat, double aim_lon, runparams *run_params){
     printf("Optimizing...\n");
     get_bearing(aim_lat, aim_lon, 0, 0);
 
-    // Take the remainder to ensure the initial guess is within the lower and upper bounds 
-    run_params->theta_lat = remainder(global_run_params->theta_lat, 2 * M_PI);
-    run_params->theta_long = remainder(global_run_params->theta_long, 2 * M_PI);
+    printf("bearing guesses: %f, %f\n", global_run_params->theta_lat, global_run_params->theta_long);
+
+    run_params->theta_lat = global_run_params->theta_lat;
+    run_params->theta_long = global_run_params->theta_long;
     printf("init guesses: %f, %f\n", run_params->theta_lat, run_params->theta_long);
 
     nlopt_opt opt = nlopt_create(NLOPT_LD_SLSQP, 2);
@@ -748,7 +760,7 @@ void get_thrust_angle(double aim_lat, double aim_lon, runparams *run_params){
     // At least one constraint seems to be needed
     nlopt_add_inequality_constraint(opt, dummy_constraint, NULL, 1e-8);
     
-    nlopt_set_ftol_rel(opt, 1e-6);
+    nlopt_set_ftol_rel(opt, 1e-9);
     nlopt_set_maxeval(opt, 100);
 
     double x[2] = { run_params->theta_lat, run_params->theta_long };
