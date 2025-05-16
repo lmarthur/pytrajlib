@@ -729,8 +729,10 @@ void get_thrust_angle(double aim_lat, double aim_lon, runparams *run_params){
 
     printf("Optimizing...\n");
     get_bearing(aim_lat, aim_lon, 0, 0);
-    run_params->theta_lat = global_run_params->theta_lat;
-    run_params->theta_long = global_run_params->theta_long;
+
+    // Take the remainder to ensure the initial guess is within the lower and upper bounds 
+    run_params->theta_lat = remainder(global_run_params->theta_lat, 2 * M_PI);
+    run_params->theta_long = remainder(global_run_params->theta_long, 2 * M_PI);
     printf("init guesses: %f, %f\n", run_params->theta_lat, run_params->theta_long);
 
     nlopt_opt opt = nlopt_create(NLOPT_LD_SLSQP, 2);
