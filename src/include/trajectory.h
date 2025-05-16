@@ -327,6 +327,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
         update_gravity(&true_grav, &new_des_state);
 
         // Update the drag acceleration components
+        // printf("True atmospheric conditions: %f, %f, %f, %f\n", true_atm_cond.density, true_atm_cond.meridional_wind, true_atm_cond.zonal_wind, true_atm_cond.vertical_wind);
         update_drag(run_params, vehicle, &true_atm_cond, &new_true_state, &step_timer);
         update_drag(run_params, vehicle, &est_atm_cond, &new_est_state, &step_timer);
         update_drag(run_params, vehicle, &est_atm_cond, &new_des_state, &step_timer);
@@ -550,13 +551,7 @@ void mc_run(runparams run_params){
         printf("num_runs: %d, MAX_RUNS: %d\n", num_runs, MAX_RUNS);
         exit(1);
     }
-    // state initial_state = init_state();
-    // vehicle vehicle = init_mmiii_ballistic();
     impact_data impact_data;
-    
-    // Print an updated aimpoint
-    // cart_vector aimpoint = update_aimpoint(run_params, 0.785398163397);
-    // printf("Updated aimpoint: %f, %f, %f\n", aimpoint.x, aimpoint.y, aimpoint.z);
 
     // Create a .txt file to store the impact data
     FILE *impact_file;

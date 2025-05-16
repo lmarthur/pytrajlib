@@ -50,6 +50,14 @@ def impact_plot(run_path, run_params):
     cep = round(np.percentile(miss_distance, 50), 2)
     plotrange = 4*cep
 
+    # Define a mean impact point
+    mean_x = np.mean(impact_x_local)
+    mean_y = np.mean(impact_y_local)
+
+    # Use this to calculate an alternative CEP
+    alternate_cep = np.percentile(np.sqrt((impact_x_local - mean_x)**2 + (impact_y_local - mean_y)**2), 50)
+    print('Alternate CEP: ', alternate_cep)
+
     # Plot the data
     params = {
         'axes.labelsize': 8,

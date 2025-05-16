@@ -93,11 +93,15 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
     double spher_coords[3];
     double cart_coords[3] = {state->x, state->y, state->z};
     cartcoords_to_sphercoords(cart_coords, spher_coords);
-
+    // printf("Cartesian coordinates: %f, %f, %f\n", cart_coords[0], cart_coords[1], cart_coords[2]);
+    // printf("Spherical coordinates: %f, %f, %f\n", spher_coords[0], spher_coords[1], spher_coords[2]);
     sphervec_to_cartvec(spher_wind, cart_wind, spher_coords);
-
+    // printf("Wind vector: %f, %f, %f\n", spher_wind[0], spher_wind[1], spher_wind[2]);
+    // printf("Cartesian wind vector: %f, %f, %f\n", cart_wind[0], cart_wind[1], cart_wind[2]);
+    // TODO: verify the coordinate conversion of the wind vector
     double v_rel[3] = {state->vx - cart_wind[0], state->vy - cart_wind[1], state->vz - cart_wind[2]};
-
+    // print the relative velocity
+    // printf("Relative velocity: %f, %f, %f\n", v_rel[0], v_rel[1], v_rel[2]);
     double v_rel_mag = sqrt(v_rel[0]*v_rel[0] + v_rel[1]*v_rel[1] + v_rel[2]*v_rel[2]);
     
     if (v_rel_mag < 1e-2){
@@ -114,7 +118,7 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
         state->ax_drag = -a_drag_mag * v_rel[0] / v_rel_mag;
         state->ay_drag = -a_drag_mag * v_rel[1] / v_rel_mag;
         state->az_drag = -a_drag_mag * v_rel[2] / v_rel_mag;
-
+        // printf("Drag acceleration: %f, %f, %f\n", state->ax_drag, state->ay_drag, state->az_drag);
         
     }
     else{
@@ -141,7 +145,7 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
             *step_timer += run_params->time_step_reentry; // increment the timer by the time step
             // apply step function
             state->ay_drag += run_params->step_acc_mag;
-            printf("Applying step function anomaly: %f at altitude: %f and time: %f\n", run_params->step_acc_mag, get_altitude(state->x, state->y, state->z), *step_timer);
+            // printf("Applying step function anomaly: %f at altitude: %f and time: %f\n", run_params->step_acc_mag, get_altitude(state->x, state->y, state->z), *step_timer);
 
         }
   

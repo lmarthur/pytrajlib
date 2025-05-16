@@ -74,17 +74,17 @@ def traj_plot(run_path):
     plt.close()
 
     # position error
-    plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_x - est_x, label="x")
-    plt.plot(true_t, true_y - est_y, label="y")
-    plt.plot(true_t, true_z - est_z, label="z")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Position Error (m)")
-    plt.title("Position Error")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "position_error.pdf")
-    plt.close()
+    # plt.figure(figsize=(10,10))
+    # plt.plot(true_t[1::], true_x[1::] - est_x[1::], label="x")
+    # plt.plot(true_t[1::], true_y[1::] - est_y[1::], label="y")
+    # plt.plot(true_t[1::], true_z[1::] - est_z[1::], label="z")
+    # plt.xlabel("Time (s)")
+    # plt.ylabel("Position Error (m)")
+    # plt.title("Position Error")
+    # plt.legend()
+    # plt.grid()
+    # plt.savefig(run_path + "position_error.pdf")
+    # plt.close()
 
     # orbit plot
     earth_radius = 6371e3
@@ -132,15 +132,15 @@ def traj_plot(run_path):
     plt.savefig(run_path + "altitude.pdf")
     plt.close()
 
-    # altitude error
-    plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_altitude - est_altitude)
-    plt.xlabel("Time (s)")
-    plt.ylabel("Altitude Error (m)")
-    plt.title("Altitude Error")
-    plt.grid()
-    plt.savefig(run_path + "altitude_error.pdf")
-    plt.close()
+    # # altitude error
+    # plt.figure(figsize=(10,10))
+    # plt.plot(true_t, true_altitude - est_altitude)
+    # plt.xlabel("Time (s)")
+    # plt.ylabel("Altitude Error (m)")
+    # plt.title("Altitude Error")
+    # plt.grid()
+    # plt.savefig(run_path + "altitude_error.pdf")
+    # plt.close()
 
     # velocity vs. time
     plt.figure(figsize=(10,10))
@@ -155,28 +155,28 @@ def traj_plot(run_path):
     plt.savefig(run_path + "velocity.pdf")
     plt.close()
 
-    # velocity error
-    plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_vx - est_vx, label="vx")
-    plt.plot(true_t, true_vy - est_vy, label="vy")
-    plt.plot(true_t, true_vz - est_vz, label="vz")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Velocity Error (m/s)")
-    plt.title("Velocity Error")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "velocity_error.pdf")
-    plt.close()
+    # # velocity error
+    # plt.figure(figsize=(10,10))
+    # plt.plot(true_t, true_vx - est_vx, label="vx")
+    # plt.plot(true_t, true_vy - est_vy, label="vy")
+    # plt.plot(true_t, true_vz - est_vz, label="vz")
+    # plt.xlabel("Time (s)")
+    # plt.ylabel("Velocity Error (m/s)")
+    # plt.title("Velocity Error")
+    # plt.legend()
+    # plt.grid()
+    # plt.savefig(run_path + "velocity_error.pdf")
+    # plt.close()
 
-    # thrust vs. time
-    plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_thrust_mag)
-    plt.xlabel("Time (s)")
-    plt.ylabel("Thrust Acceleration (m/s^2)")
-    plt.title("Thrust")
-    plt.grid()
-    plt.savefig(run_path + "thrust.pdf")
-    plt.close()
+    # # thrust vs. time
+    # plt.figure(figsize=(10,10))
+    # plt.plot(true_t, true_thrust_mag)
+    # plt.xlabel("Time (s)")
+    # plt.ylabel("Thrust Acceleration (m/s^2)")
+    # plt.title("Thrust")
+    # plt.grid()
+    # plt.savefig(run_path + "thrust.pdf")
+    # plt.close()
 
     # mass vs. time
     plt.figure(figsize=(10,10))
@@ -219,6 +219,7 @@ def traj_plot(run_path):
     plt.plot(true_t, true_ax_drag, label="ax")
     plt.plot(true_t, true_ay_drag, label="ay")
     plt.plot(true_t, true_az_drag, label="az")
+    plt.yscale("symlog")
     plt.xlabel("Time (s)")
     plt.ylabel("Drag Acceleration (m/s^2)")
     plt.title("Drag Acceleration")
@@ -229,8 +230,8 @@ def traj_plot(run_path):
 
     # lift acceleration
     plt.figure(figsize=(10,10))
-    plt.plot(true_t[0:-10], a_command[0:-10], label="a_command")
-    plt.plot(true_t[0:-10], a_exec[0:-10], label="a_exec")
+    plt.plot(true_t[0:-10], a_command[0:-10], label="acommand")
+    plt.plot(true_t[0:-10], a_exec[0:-10], label="aexec")
     #plt.ylim(0, 25) # limit y-axis to 0-50 for better visibility of the lift acceleration
 
     plt.yscale('symlog')

@@ -3,10 +3,10 @@ run_name = reentry
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 1
 output_path = ./output
-num_runs = 2
+num_runs = 1
 time_step_main = 0.1
 time_step_reentry = 0.001
-traj_output = 1
+traj_output = 0
 # Note that the aimpoint coords are currently superseded by the thrust angle
 x_aim = 0
 y_aim = 0
@@ -31,15 +31,15 @@ rv_maneuv = 1
 # Reentry velocity (m/s) for reentry only simulation (run_type = 1)
 reentry_vel = 7500
 # Deflection time (s) for control surfaces
-deflection_time = 0.01
+deflection_time = 0.001
 
 [VEHICLE]
 rv_type = 1
 
 [ERRORPARAMS]
 initial_x_error = 0.0
-initial_pos_error = 1e1
-initial_vel_error = 1e-4
+initial_pos_error = 0
+initial_vel_error = 0
 initial_angle_error = 0
 acc_scale_stability = 0
 gyro_bias_stability = 0
@@ -47,8 +47,8 @@ gyro_noise = 0
 gnss_noise = 0
 cl_pert = 0
 # Step function acceleration magnitude (m/s^2)
-step_acc_mag = 10
+step_acc_mag = 0
 # Step function acceleration height (m)
-step_acc_hgt = 50000
+step_acc_hgt = 0
 # Step function acceleration duration (s)
-step_acc_dur = 0.1
+step_acc_dur = 0
