@@ -5,6 +5,13 @@ import Button from "@/app/components/Button";
 import { useMapContext } from "@/app/page";
 import runParamsFile from "../../default.json";
 import createTrajlib from "../../trajlib.js";
+import { Varela_Round } from "next/font/google";
+
+const varelaRound = Varela_Round({ 
+  subsets: ['latin'],
+  weight:["400"],
+  variable: '--font-varela',
+});
 
 const cartesianToSpherical = (x, y, z) => {
   // cartCoords: [x, y, z]
@@ -80,8 +87,8 @@ export default function Sidebar() {
 
   return (
     <div className="w-64 h-full bg-gradient-to-b from-gray-800 to-cyan-990 text-white p-4">
-      <div className="text-2xl font-bold text-center mb-8 font-mono">
-        TrajMap
+      <div className={`text-2xl text-center mb-8 ${varelaRound.className}`}>
+        TRAJMAP
       </div>
       <LaunchPointBar />
       <AimPointBar />
