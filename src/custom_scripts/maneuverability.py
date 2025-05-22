@@ -101,7 +101,7 @@ def time_constant(moment_of_inertia, atm_density, c_m_alpha, radius, vel):
 
 # plot the time constant as a function of velocity
 # Define the velocity range
-velocities = np.linspace(1, 10000, 99)  # Velocity range from 1 to 10000 m/s
+velocities = np.linspace(1000, 10000, 99)  # Velocity range from 1 to 10000 m/s
 time_constants_vel = np.zeros(len(velocities))
 # Calculate the atmospheric density at sea level
 rho = atm_density(altitude=0)
@@ -118,12 +118,12 @@ for i, vel in enumerate(velocities):
 # Plot the time constant vs velocity
 plt.figure(figsize=(10, 6))
 plt.plot(velocities, time_constants_vel)
-plt.xscale('log')
+# plt.xscale('log')
 plt.title('Time Constant vs Velocity')
 plt.xlabel('Velocity (m/s)')
 plt.ylabel('Time Constant (s)')
 plt.grid()
-plt.show()
+plt.savefig('./output/reentry/time_constant_velocity.pdf')
 
 # Plot the time constant as a function of altitude
 # Define the altitude range
@@ -138,7 +138,7 @@ for i, alt in enumerate(altitudes):
     Iy = moment_of_inertia(radius=0.25, length_cylinder=1.63, length_cone=1.12, density=rv_density)
     
     # Calculate the time constant
-    tc = time_constant(Iy, rho, c_m_alpha=-0.15, radius=0.5, vel=10000)  # Using a constant velocity of 10000 m/s
+    tc = time_constant(Iy, rho, c_m_alpha=-0.15, radius=0.5, vel=7500)  # Using a constant velocity of 10000 m/s
     
     # Store the time constant
     time_constants_altitude[i] = tc
@@ -149,4 +149,4 @@ plt.title('Time Constant vs Altitude')
 plt.xlabel('Altitude (m)')
 plt.ylabel('Time Constant (s)')
 plt.grid()
-plt.show()
+plt.savefig('./output/reentry/time_constant_altitude.pdf')

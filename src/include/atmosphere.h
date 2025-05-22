@@ -6,8 +6,8 @@
 #include <gsl/gsl_randist.h>
 #include "utils.h"
 
-const int ATM_PROFILE_LEN = 100;
-const int ATM_PROFILE_NUM = 100;
+const int ATM_PROFILE_LEN = 10000; // length of the atmospheric profile
+const int ATM_PROFILE_NUM = 1; // number of atmospheric profiles
 
 // Define an atm_cond struct to store local atmospheric conditions
 typedef struct atm_cond{
@@ -335,14 +335,6 @@ eg16_profile parse_atm(char* atmprofilepath, int profilenum){
             fscanf(fp, "%lfe", &atm_data[i][j]);
         }
     }
-
-    // print the atmospheric profile data
-    // for (int i = 0; i < 1000*1; i++){
-    //     for (int j = 0; j < 6; j++){
-    //         printf("%lf ", atm_data[i][j]);
-    //     }
-    //     printf("\n");
-    // }
     
     // printf("Atmospheric profile data read successfully\n");
     // Update the atmospheric profile struct by iterating over only the requested profile

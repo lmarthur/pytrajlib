@@ -4,8 +4,8 @@ run_name = reentry
 run_type = 1
 output_path = ./output
 num_runs = 1
-time_step_main = 0.1
-time_step_reentry = 0.001
+time_step_main = 0.0001
+time_step_reentry = 0.0001
 traj_output = 0
 # Note that the aimpoint coords are currently superseded by the thrust angle
 x_aim = 0

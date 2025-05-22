@@ -263,14 +263,14 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
 
     atm_model exp_atm_model = init_exp_atm(run_params, rng);
     
-    char *atmprofilepath = "input/atmprofiles.txt";
+    char *atmprofilepath = "input/atmprofile_hr.txt";
 
     double a_command_total = 0;
     double a_lift_total = 0;
 
     int atm_profile_num;
     // Generate a random integer between 0 and 100
-    atm_profile_num = (int)gsl_ran_flat(rng, 0, 100);
+    atm_profile_num = 0;
 
     eg16_profile atm_profile = parse_atm(atmprofilepath, atm_profile_num);
 

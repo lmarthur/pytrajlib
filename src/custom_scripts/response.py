@@ -5,7 +5,10 @@ import os
 from ctypes import *
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy as sp
 import scienceplots
+
+from maneuverability import *
 
 plt.style.use(['science'])
 plt.style.use(['no-latex'])
@@ -211,120 +214,144 @@ if __name__ == "__main__":
     # plt.close()
 
     # Simple trajectory run
-    # run_params = read_config(config_file)
-    # miss_distance = get_miss(config_file, run_params)
-# 
-    # # Extract the drag acceleration data from the trajectory data
-    # traj_data = np.loadtxt("./output/reentry/trajectory.txt", delimiter = ",", skiprows=1)
-    # # remove all but the 2nd, 3rd, 4th, 11th, 12th, and 13th columns
-    # traj_data = traj_data[:,[0,2,3,4,11,12,13]]
-# 
-    # # iterate through the rows, and if the altitude is greater than 100km, remove the row
-    # for i in range(len(traj_data)):
-    #     # calculate the altitude
-    #     altitude = np.sqrt(np.square(traj_data[i,1]) + np.square(traj_data[i,2]) + np.square(traj_data[i,3])) - 6371e3
-# 
-    #     if altitude < 100000:
-    #         traj_data = traj_data[i:,]
-    #         break
-    # 
-    # # plot the drag acceleration data
-    # lat_acc_mag = np.sqrt(np.square(traj_data[:,5]) + np.square(traj_data[:,6]))
-    # plt.figure(figsize=(10,10))
-    # ax = plt.gca()
-    # plt.plot(traj_data[:,0], lat_acc_mag, label="Drag acceleration", color=colors[0])
-    # plt.title("Lateral drag acceleration")
-    # plt.xlabel("Time (s)")
-    # plt.ylabel("Drag acceleration (m/s^2)")
-    # plt.legend()
-    # plt.savefig("./output/" + config_file + "/drag_acceleration_red.pdf")
-    # plt.close()
-# 
-    # # plot the power spectrum of the drag acceleration data
-    # # calculate the power spectrum
-    # fs = 1 / (traj_data[1,0] - traj_data[0,0]) # sampling frequency
-    # n = len(traj_data[:,0]) # length of the signal
-    # f = np.fft.fftfreq(n, 1/fs) # frequency bins
-    # print(f)
-    # # calculate the FFT
-    # fft = np.fft.fft(lat_acc_mag)
-    # # calculate the power spectrum
-    # power = np.abs(fft)**2
-    # print(power)
-    # # plot the power spectrum
-    # plt.figure(figsize=(10,10))
-    # ax = plt.gca()
-    # plt.plot(f, power, label="Power spectrum", color=colors[3])
-    # plt.title("Power spectrum of drag acceleration")
-    # plt.xlabel("Frequency (Hz)")
-    # plt.xscale('log')
-    # plt.yscale('log')
-    # plt.xlim(0.01, 100)
-    # # plt.ylim(1e0, 1e10)
-    # plt.legend()
-    # plt.savefig("./output/" + config_file + "/drag_acceleration_spectrum_red.pdf")
-    # plt.close()
+    run_params = read_config(config_file)
+    miss_distance = get_miss(config_file, run_params)
 
-    # print(np.shape(f))
-    # print(np.shape(power))
+    # Extract the drag acceleration data from the trajectory data
+    traj_data = np.loadtxt("./output/reentry/trajectory.txt", delimiter = ",", skiprows=1)
+    # remove all but the 2nd, 3rd, 4th, 11th, 12th, and 13th columns
+    traj_data = traj_data[:,[0,2,3,4,11,12,13]]
 
-    # Explore the parameter space of lift coefficient anomalies
+    # extract the velocity data 
+    vel_data = np.loadtxt("./output/reentry/trajectory.txt", delimiter = ",", skiprows=1)
+    # remove all but the 5th, 6th, and 7th columns
+    vel_data = vel_data[:,[0,5,6,7]]
 
-    c_l_anomalies = np.logspace(-4, -1, 100)
-    miss_distances_0 = np.zeros(len(c_l_anomalies))
+    # iterate through the rows, and if the altitude is greater than 100km, remove the row
+    for i in range(len(traj_data)):
+        # calculate the altitude
+        altitude = np.sqrt(np.square(traj_data[i,1]) + np.square(traj_data[i,2]) + np.square(traj_data[i,3])) - 6371e3
 
-    for i in range(len(c_l_anomalies)):
-        run_params = read_config(config_file)
-        run_params.reentry_vel = c_double(7500.0)
-        run_params.cl_pert = c_double(c_l_anomalies[i])
-        run_params.deflection_time = c_double(0.001)
-        print("C_l anomaly: " + str(run_params.cl_pert))
-        miss_distances_0[i] = get_miss(config_file, run_params)
+        if altitude < 100000:
+            traj_data = traj_data[i:,]
+            break
+    
+    # plot the drag acceleration data
+    lat_acc_mag = np.sqrt(np.square(traj_data[:,5]) + np.square(traj_data[:,6]))
+    # multiply by a hanning window
+    n = len(traj_data[:,0]) # length of the signal
+    print(n)
+    window = np.hanning(n)
 
-    miss_distances_1 = np.zeros(len(c_l_anomalies))
-
-    for i in range(len(c_l_anomalies)):
-        run_params = read_config(config_file)
-        run_params.reentry_vel = c_double(7500.0)
-        run_params.cl_pert = c_double(c_l_anomalies[i])
-        run_params.deflection_time = c_double(0.0001)
-        print("C_l anomaly: " + str(run_params.cl_pert))
-        miss_distances_1[i] = get_miss(config_file, run_params)
-
-    # Now, do this again but with a 5000m/s reentry velocity
-    miss_distances_2 = np.zeros(len(c_l_anomalies))
-
-    for i in range(len(c_l_anomalies)):
-        run_params = read_config(config_file)
-        run_params.reentry_vel = c_double(5000.0)
-        run_params.cl_pert = c_double(c_l_anomalies[i])
-        run_params.deflection_time = c_double(0.001)
-        print("C_l anomaly: " + str(run_params.cl_pert))
-        miss_distances_2[i] = get_miss(config_file, run_params)
-
-    miss_distances_3 = np.zeros(len(c_l_anomalies))
-
-    for i in range(len(c_l_anomalies)):
-        run_params = read_config(config_file)
-        run_params.reentry_vel = c_double(5000.0)
-        run_params.cl_pert = c_double(c_l_anomalies[i])
-        run_params.deflection_time = c_double(0.0001)
-        print("C_l anomaly: " + str(run_params.cl_pert))
-        miss_distances_3[i] = get_miss(config_file, run_params)
-
-    # Plot the miss distances
     plt.figure(figsize=(10,10))
     ax = plt.gca()
-    plt.plot(c_l_anomalies, miss_distances_0, label="Deflection time: 0.001s, Vel.: 7500m/s")
-    plt.plot(c_l_anomalies, miss_distances_1, label="Deflection time: 0.0001s, Vel.: 7500m/s")
-    plt.plot(c_l_anomalies, miss_distances_2, label="Deflection time: 0.001s, Vel.: 5000m/s")
-    plt.plot(c_l_anomalies, miss_distances_3, label="Deflection time: 0.0001s, Vel.: 5000m/s")
-    # plt.title("Reentry velocity: " + str(run_params.reentry_vel) + " m/s")
-    plt.xlabel("Lift Coefficient Anomaly")
-    plt.ylabel("Miss distance (m)")
-    plt.yscale('symlog')
-    plt.xscale('log')
+    plt.plot(traj_data[:,0], lat_acc_mag, label="Drag acceleration", color=colors[0])
+    plt.plot(traj_data[:,0], lat_acc_mag * window, label="Drag acceleration (windowed)", color=colors[1])
+    plt.title("Lateral drag acceleration")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Drag acceleration (m/s^2)")
     plt.legend()
-    plt.savefig("./output/" + config_file + "/miss_distance_cl_pert.pdf")
+    plt.savefig("./output/" + config_file + "/drag_acceleration_red.pdf")
     plt.close()
+
+    # plot the power spectrum of the drag acceleration data
+    # calculate the power spectrum with scipy, for a 10kHz sampling rate
+    # flattop, hann, blackmanharris windows seem to work the best
+    f, Pxx = sp.signal.welch(lat_acc_mag, fs=10000, nperseg=256, detrend='linear', average='mean', return_onesided=True, window='hann', scaling='density', nfft=256)
+    # plot the power spectrum
+    plt.figure(figsize=(10,10))
+    ax = plt.gca()
+    plt.plot(f, Pxx, label="Hann", color=colors[0])
+    f, Pxx = sp.signal.welch(lat_acc_mag, fs=10000, nperseg=256, detrend='linear', average='mean', return_onesided=True, window='blackmanharris', scaling='density', nfft=256)
+    plt.plot(f, Pxx, label="Blackman-Harris", color=colors[2])
+    f, Pxx = sp.signal.welch(lat_acc_mag, fs=10000, nperseg=256, detrend='linear', average='mean', return_onesided=True, window='flattop', scaling='density', nfft=256)
+    plt.plot(f, Pxx, label="Flattop", color=colors[4])
+    # plt.xscale('log')
+    plt.yscale('log')
+    plt.title("Lateral drag acceleration power spectrum")
+    plt.xlabel("Frequency (Hz)")
+    plt.ylabel("Power spectral density (m^2/s^4/Hz)")
+
+    plt.legend()
+    plt.savefig("./output/" + config_file + "/drag_acceleration_spectrum_red.pdf")
+    plt.close()
+
+    # find the frequency of the peak in the power spectrum
+    peak_freq = f[np.argmax(Pxx)]
+    print("Peak frequency: ", peak_freq, "Hz")
+
+    # At each time step, calculate the pitching time constant
+    time_constants = np.zeros(len(traj_data[:,0]))
+    # Calculate the moment of inertia
+    Iy = moment_of_inertia(radius=0.25, length_cylinder=1.63, length_cone=1.12, density=rv_density)
+    
+    for i in range(len(traj_data[:,0])):
+        # Calculate the atmospheric density
+        rho = atm_density(altitude = np.sqrt(np.square(traj_data[i,1]) + np.square(traj_data[i,2]) + np.square(traj_data[i,3])) - 6371e3)
+        
+        # Calculate the time constant
+        tc = time_constant(Iy, rho, c_m_alpha=-0.15, radius=0.5, vel=np.sqrt(np.square(vel_data[i,1]) + np.square(vel_data[i,2]) + np.square(vel_data[i,3])))
+        
+        # Store the time constant
+        time_constants[i] = tc
+
+    # # Explore the parameter space of lift coefficient anomalies
+# 
+    # c_l_anomalies = np.logspace(-4, -1, 100)
+    # miss_distances_0 = np.zeros(len(c_l_anomalies))
+# 
+    # for i in range(len(c_l_anomalies)):
+    #     run_params = read_config(config_file)
+    #     run_params.reentry_vel = c_double(7500.0)
+    #     run_params.cl_pert = c_double(c_l_anomalies[i])
+    #     run_params.deflection_time = c_double(0.001)
+    #     print("C_l anomaly: " + str(run_params.cl_pert))
+    #     miss_distances_0[i] = get_miss(config_file, run_params)
+# 
+    # miss_distances_1 = np.zeros(len(c_l_anomalies))
+# 
+    # for i in range(len(c_l_anomalies)):
+    #     run_params = read_config(config_file)
+    #     run_params.reentry_vel = c_double(7500.0)
+    #     run_params.cl_pert = c_double(c_l_anomalies[i])
+    #     run_params.deflection_time = c_double(0.0001)
+    #     print("C_l anomaly: " + str(run_params.cl_pert))
+    #     miss_distances_1[i] = get_miss(config_file, run_params)
+# 
+    # # Now, do this again but with a 5000m/s reentry velocity
+    # miss_distances_2 = np.zeros(len(c_l_anomalies))
+# 
+    # for i in range(len(c_l_anomalies)):
+    #     run_params = read_config(config_file)
+    #     run_params.reentry_vel = c_double(5000.0)
+    #     run_params.cl_pert = c_double(c_l_anomalies[i])
+    #     run_params.deflection_time = c_double(0.001)
+    #     print("C_l anomaly: " + str(run_params.cl_pert))
+    #     miss_distances_2[i] = get_miss(config_file, run_params)
+# 
+    # miss_distances_3 = np.zeros(len(c_l_anomalies))
+# 
+    # for i in range(len(c_l_anomalies)):
+    #     run_params = read_config(config_file)
+    #     run_params.reentry_vel = c_double(5000.0)
+    #     run_params.cl_pert = c_double(c_l_anomalies[i])
+    #     run_params.deflection_time = c_double(0.0001)
+    #     print("C_l anomaly: " + str(run_params.cl_pert))
+    #     miss_distances_3[i] = get_miss(config_file, run_params)
+# 
+    # # Plot the miss distances
+    # plt.figure(figsize=(10,10))
+    # ax = plt.gca()
+    # plt.plot(c_l_anomalies, miss_distances_0, label="Deflection time: 0.001s, Vel.: 7500m/s")
+    # plt.plot(c_l_anomalies, miss_distances_1, label="Deflection time: 0.0001s, Vel.: 7500m/s")
+    # plt.plot(c_l_anomalies, miss_distances_2, label="Deflection time: 0.001s, Vel.: 5000m/s")
+    # plt.plot(c_l_anomalies, miss_distances_3, label="Deflection time: 0.0001s, Vel.: 5000m/s")
+    # # plt.title("Reentry velocity: " + str(run_params.reentry_vel) + " m/s")
+    # plt.xlabel("Lift Coefficient Anomaly")
+    # plt.ylabel("Miss distance (m)")
+    # plt.yscale('symlog')
+    # plt.xscale('log')
+    # plt.legend()
+    # plt.savefig("./output/" + config_file + "/miss_distance_cl_pert.pdf")
+    # plt.close()
 
