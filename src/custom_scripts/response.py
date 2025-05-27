@@ -243,7 +243,6 @@ if __name__ == "__main__":
     n = len(traj_data[:,0]) # length of the signal
     print(n)
     window = np.hanning(n)
-
     plt.figure(figsize=(10,10))
     ax = plt.gca()
     plt.plot(traj_data[:,0], lat_acc_mag, label="Drag acceleration", color=colors[0])
@@ -277,7 +276,8 @@ if __name__ == "__main__":
     plt.savefig("./output/" + config_file + "/drag_acceleration_spectrum_red.pdf")
     plt.close()
 
-    # find the frequency of the peak in the power spectrum
+# 
+    # # find the frequency of the peak in the power spectrum
     peak_freq = f[np.argmax(Pxx)]
     print("Peak frequency: ", peak_freq, "Hz")
 
@@ -315,63 +315,3 @@ if __name__ == "__main__":
     plt.xlim(0, 120)
     plt.legend()
     plt.savefig("./output/" + config_file + "/pitching_frequency_distribution.pdf")
-    # # Explore the parameter space of lift coefficient anomalies
-# 
-    # c_l_anomalies = np.logspace(-4, -1, 100)
-    # miss_distances_0 = np.zeros(len(c_l_anomalies))
-# 
-    # for i in range(len(c_l_anomalies)):
-    #     run_params = read_config(config_file)
-    #     run_params.reentry_vel = c_double(7500.0)
-    #     run_params.cl_pert = c_double(c_l_anomalies[i])
-    #     run_params.deflection_time = c_double(0.001)
-    #     print("C_l anomaly: " + str(run_params.cl_pert))
-    #     miss_distances_0[i] = get_miss(config_file, run_params)
-# 
-    # miss_distances_1 = np.zeros(len(c_l_anomalies))
-# 
-    # for i in range(len(c_l_anomalies)):
-    #     run_params = read_config(config_file)
-    #     run_params.reentry_vel = c_double(7500.0)
-    #     run_params.cl_pert = c_double(c_l_anomalies[i])
-    #     run_params.deflection_time = c_double(0.0001)
-    #     print("C_l anomaly: " + str(run_params.cl_pert))
-    #     miss_distances_1[i] = get_miss(config_file, run_params)
-# 
-    # # Now, do this again but with a 5000m/s reentry velocity
-    # miss_distances_2 = np.zeros(len(c_l_anomalies))
-# 
-    # for i in range(len(c_l_anomalies)):
-    #     run_params = read_config(config_file)
-    #     run_params.reentry_vel = c_double(5000.0)
-    #     run_params.cl_pert = c_double(c_l_anomalies[i])
-    #     run_params.deflection_time = c_double(0.001)
-    #     print("C_l anomaly: " + str(run_params.cl_pert))
-    #     miss_distances_2[i] = get_miss(config_file, run_params)
-# 
-    # miss_distances_3 = np.zeros(len(c_l_anomalies))
-# 
-    # for i in range(len(c_l_anomalies)):
-    #     run_params = read_config(config_file)
-    #     run_params.reentry_vel = c_double(5000.0)
-    #     run_params.cl_pert = c_double(c_l_anomalies[i])
-    #     run_params.deflection_time = c_double(0.0001)
-    #     print("C_l anomaly: " + str(run_params.cl_pert))
-    #     miss_distances_3[i] = get_miss(config_file, run_params)
-# 
-    # # Plot the miss distances
-    # plt.figure(figsize=(10,10))
-    # ax = plt.gca()
-    # plt.plot(c_l_anomalies, miss_distances_0, label="Deflection time: 0.001s, Vel.: 7500m/s")
-    # plt.plot(c_l_anomalies, miss_distances_1, label="Deflection time: 0.0001s, Vel.: 7500m/s")
-    # plt.plot(c_l_anomalies, miss_distances_2, label="Deflection time: 0.001s, Vel.: 5000m/s")
-    # plt.plot(c_l_anomalies, miss_distances_3, label="Deflection time: 0.0001s, Vel.: 5000m/s")
-    # # plt.title("Reentry velocity: " + str(run_params.reentry_vel) + " m/s")
-    # plt.xlabel("Lift Coefficient Anomaly")
-    # plt.ylabel("Miss distance (m)")
-    # plt.yscale('symlog')
-    # plt.xscale('log')
-    # plt.legend()
-    # plt.savefig("./output/" + config_file + "/miss_distance_cl_pert.pdf")
-    # plt.close()
-

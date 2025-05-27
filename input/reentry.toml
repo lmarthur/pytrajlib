@@ -51,4 +51,4 @@ step_acc_mag = 0
 # Step function acceleration height (m)
 step_acc_hgt = 0
 # Step function acceleration duration (s)
-step_acc_dur = 0
+step_acc_dur = 0.025
