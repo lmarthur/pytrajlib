@@ -284,34 +284,32 @@ if __name__ == "__main__":
     # At each time step, calculate the pitching time constant
     time_constants = np.zeros(len(traj_data[:,0]))
     pitching_freqs = np.zeros(len(traj_data[:,0]))
-    drag_accel = np.zeros(len(traj_data[:,0]))
+    dynamic_press = np.zeros(len(traj_data[:,0]))
     # Calculate the moment of inertia
     Iy = moment_of_inertia(radius=0.25, length_cylinder=1.63, length_cone=1.12, density=rv_density)
     
     for i in range(len(traj_data[:,0])):
         # Calculate the atmospheric density
         rho = atm_density(altitude = np.sqrt(np.square(traj_data[i,1]) + np.square(traj_data[i,2]) + np.square(traj_data[i,3])) - 6371e3)
-        
+        dynamic_press[i] = rho * np.sqrt(np.square(vel_data[i,1]) + np.square(vel_data[i,2]) + np.square(vel_data[i,3]))**2 / 2
         # Calculate the time constant
         tc = time_constant(Iy, rho, c_m_alpha=-0.15, radius=0.5, vel=np.sqrt(np.square(vel_data[i,1]) + np.square(vel_data[i,2]) + np.square(vel_data[i,3])))
-        
-        # Calculate the total drag acceleration
-        drag_accel[i] = np.sqrt((np.square(traj_data[i,4]) + np.square(traj_data[i,5]) + np.square(traj_data[i,6])))
+
         # Store the time constant
         time_constants[i] = tc
         pitching_freqs[i] = 1 / tc
         
     print("Time constant: ", time_constants)
     print("Pitching frequency: ", pitching_freqs)
-
+    
     # histogram of the pitching frequencies
     # np.histogram(pitching_freqs, bins=150, range=(0, 150), density=True)
     plt.figure(figsize=(10,10))
     ax = plt.gca()
-    plt.hist(pitching_freqs, bins=120, range=(0, 120), weights=np.square(drag_accel), density=True, color=colors[0], label="Pitching frequency")
-    plt.title("Pitching frequency distribution")
+    plt.hist(pitching_freqs, bins=120, range=(0, 120), weights=dynamic_press, density=True, color=colors[0], label="Pitching frequency")
+    plt.title("Lift Acceleration Distribution")
     plt.xlabel("Pitching frequency (Hz)")
-    plt.ylabel("Power spectral density (m$^2$ s$^{-4}$ Hz$^{-1}$)")
+    plt.ylabel("Dynamic pressure (Pa)")
     plt.xlim(0, 120)
     plt.legend()
     plt.savefig("./output/" + config_file + "/pitching_frequency_distribution.pdf")
