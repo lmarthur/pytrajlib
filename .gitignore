@@ -13,6 +13,7 @@ output/*
 
 # pycache
 */__pycache__/
+*.pyc
 
 # pytest
 .pytest_cache
