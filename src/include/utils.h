@@ -27,9 +27,11 @@ typedef struct runparams{
     int ins_nav; // flag to include INS navigation
     int rv_maneuv; // flag to include guidance during the reentry phase
     double reentry_vel; // reentry velocity in meters per second
-    double deflection_time; // time to make full flap deflection in seconds, used for maneuverability
 
     int rv_type; // reentry vehicle type (0: ballistic, 1: maneuverable)
+    double deflection_time; // time to make full flap deflection in seconds, used for maneuverability
+    double actuator_force; // actuator max force in kilonewtons, used for maneuverability
+    double gearing_ratio; // gearing ratio of the control surfaces, used for maneuverability
 
     double initial_x_error; // initial x-error in meters
     double initial_pos_error; // initial position error in meters
@@ -176,6 +178,9 @@ void print_config(runparams *run_params){
     printf("Reentry velocity: %f\n", run_params->reentry_vel);
 
     printf("Reentry vehicle type: %d\n", run_params->rv_type);
+    printf("Flap deflection time: %f\n", run_params->deflection_time);
+    printf("Actuator force: %f\n", run_params->actuator_force);
+    printf("Gearing ratio: %f\n", run_params->gearing_ratio);
 
     printf("Initial x-error: %f\n", run_params->initial_x_error);
     printf("Initial position error: %f\n", run_params->initial_pos_error);

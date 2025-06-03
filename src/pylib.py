@@ -31,9 +31,11 @@ class runparams(Structure):
         ("ins_nav", c_int),
         ("rv_maneuv", c_int),
         ("reentry_vel", c_double),
-        ("deflection_time", c_double),
 
         ("rv_type", c_int), # 0 for ballistic, 1 for maneuverable
+        ("deflection_time", c_double),
+        ("actuator_force", c_double),
+        ("gearing_ratio", c_double),
 
         ("initial_x_error", c_double),
         ("initial_pos_error", c_double),
@@ -106,10 +108,12 @@ def read_config(run_name):
     run_params.ins_nav = c_int(int(config['FLIGHT']['ins_nav']))
     run_params.rv_maneuv = c_int(int(config['FLIGHT']['rv_maneuv']))
     run_params.reentry_vel = c_double(float(config['FLIGHT']['reentry_vel']))
-    run_params.deflection_time = c_double(float(config['FLIGHT']['deflection_time']))
 
     # set the vehicle parameters
     run_params.rv_type = c_int(int(config['VEHICLE']['rv_type']))
+    run_params.deflection_time = c_double(float(config['VEHICLE']['deflection_time']))
+    run_params.actuator_force = c_double(float(config['VEHICLE']['actuator_force']))
+    run_params.gearing_ratio = c_double(float(config['VEHICLE']['gearing_ratio']))
     
     # set the error parameters
     run_params.initial_x_error = c_double(float(config['ERRORPARAMS']['initial_x_error']))

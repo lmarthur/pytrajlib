@@ -4,8 +4,8 @@ run_name = reentry
 run_type = 1
 output_path = ./output
 num_runs = 1
-time_step_main = 0.1
-time_step_reentry = 0.001
+time_step_main = 0.0001
+time_step_reentry = 0.0001
 traj_output = 0
 # Note that the aimpoint coords are currently superseded by the thrust angle
 x_aim = 0
@@ -30,11 +30,15 @@ ins_nav = 1
 rv_maneuv = 1
 # Reentry velocity (m/s) for reentry only simulation (run_type = 1)
 reentry_vel = 7500
-# Deflection time (s) for control surfaces (if deflection_time < 0, use variable duration based on time constant in)
-deflection_time = 0.005
 
 [VEHICLE]
 rv_type = 1
+# Deflection time (s) for control surfaces 
+deflection_time = 0.01
+# Actuator max force at max speed (kN)
+actuator_force = 12.0
+# Gearing ratio---greater values correspond to increased max force and decreased max speed
+gearing_ratio = 1.0
 
 [ERRORPARAMS]
 initial_x_error = 0.0
@@ -46,9 +50,9 @@ gyro_bias_stability = 0
 gyro_noise = 0
 gnss_noise = 0
 cl_pert = 0
-# Step function acceleration magnitude (m/s^2)
-step_acc_mag = 0
+# Step function acceleration magnitude--if < 0, use variable magnitude based on dynamic pressure--(m/s^2)
+step_acc_mag = -1
 # Step function acceleration height (m)
 step_acc_hgt = 0
-# Step function acceleration duration (s)
-step_acc_dur = 0
+# Step function acceleration duration--if < 0, use variable duration based on time constant--(s)
+step_acc_dur = -1

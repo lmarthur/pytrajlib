@@ -200,6 +200,8 @@ TEST(maneuverability, update_lift){
     // Initialize the run parameters
     runparams run_params;
     run_params.deflection_time = 0.1; // Time to deflect the lift vector (seconds)
+    run_params.actuator_force = 10; // Maximum actuator force (kN)
+    run_params.gearing_ratio = 1; // Gearing ratio of the control surfaces
 
     // Initialize the vehicle
     vehicle vehicle;

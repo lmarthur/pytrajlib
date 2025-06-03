@@ -116,34 +116,6 @@ state perfect_maneuv(state *true_state, state *estimated_state, state *desired_s
     return updated_state;
 }
 
-double rv_time_constant(vehicle *vehicle, state *true_state, atm_cond *atm_cond){
-    /*
-    Calculates the time constant of the reentry vehicle based on the current state
-
-    INPUTS:
-    ----------
-        vehicle: vehicle *
-            pointer to the vehicle struct
-        true_state: state *
-            pointer to the true state of the vehicle
-        atm_cond: atm_cond *
-            pointer to the atmospheric conditions
-
-    OUTPUTS:
-    ----------
-        double: time_constant
-            time constant of the vehicle
-    */
-
-    // Get the current velocity
-    double velocity = sqrt(true_state->vx*true_state->vx + true_state->vy*true_state->vy + true_state->vz*true_state->vz);
-    
-    // Calculate the time constant
-    double time_constant = sqrt(-2 * vehicle->rv.Iyy / (vehicle->rv.c_m_alpha * vehicle->rv.rv_area * atm_cond->density * pow(velocity, 2) * vehicle->rv.rv_length));
-
-    return time_constant;
-}
-
 void update_lift(runparams *run_params, state *state, cart_vector *a_command, atm_cond *atm_cond, vehicle *vehicle, double time_step){
     /*
     Simulates maneuverability of a reentry vehicle by applying a commanded acceleration vector with a time delay and realistic atmospheric model
@@ -164,9 +136,12 @@ void update_lift(runparams *run_params, state *state, cart_vector *a_command, at
 
     // Calculate the time constant of the vehicle
     double time_constant = rv_time_constant(vehicle, state, atm_cond);
-    double max_a_exec = 25 * 9.8; // maximum acceleration in m/s^2
+    // Need to update this line based on actual vehicle dynamics
+    double max_flap_force = run_params->actuator_force * run_params->gearing_ratio * 1000; // maximum flap force in N
+    double max_lift_force = vehicle->rv.c_l_alpha * max_flap_force * (vehicle->rv.x_flap-vehicle->rv.x_com) / (vehicle->rv.c_m_alpha * vehicle->rv.rv_length); // maximum lift force in N, based on moment arm and lift properties
+    double max_a_exec = max_lift_force / vehicle->rv.rv_mass; // maximum acceleration that can be executed by the flaps in m/s^2
     double aoa_max = 10 * M_PI / 180; // maximum angle of attack in radians
-    double deflection_time = run_params->deflection_time; // time to reach maximum flap deflection (seconds), this should be defined in runparams
+    double deflection_time = run_params->deflection_time * run_params->gearing_ratio; // time to reach maximum flap deflection (seconds), this should be defined in runparams
     double deflection_rate = aoa_max / deflection_time; // deflection rate in rad/seconds
     
     // get current trim angle

@@ -40,8 +40,35 @@ typedef struct state{
 
 } state;
 
-// Define a series of functions to calculate acceleration components
+double rv_time_constant(vehicle *vehicle, state *true_state, atm_cond *atm_cond){
+    /*
+    Calculates the time constant of the reentry vehicle based on the current state
 
+    INPUTS:
+    ----------
+        vehicle: vehicle *
+            pointer to the vehicle struct
+        true_state: state *
+            pointer to the true state of the vehicle
+        atm_cond: atm_cond *
+            pointer to the atmospheric conditions
+
+    OUTPUTS:
+    ----------
+        double: time_constant
+            time constant of the vehicle
+    */
+
+    // Get the current velocity
+    double velocity = sqrt(true_state->vx*true_state->vx + true_state->vy*true_state->vy + true_state->vz*true_state->vz);
+    
+    // Calculate the time constant
+    double time_constant = sqrt(-2 * vehicle->rv.Iyy / (vehicle->rv.c_m_alpha * vehicle->rv.rv_area * atm_cond->density * pow(velocity, 2) * vehicle->rv.rv_length));
+
+    return time_constant;
+}
+
+// Define a series of functions to calculate acceleration components
 
 void update_gravity(grav *grav, state *state){
     /*
@@ -98,7 +125,7 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
     sphervec_to_cartvec(spher_wind, cart_wind, spher_coords);
     // printf("Wind vector: %f, %f, %f\n", spher_wind[0], spher_wind[1], spher_wind[2]);
     // printf("Cartesian wind vector: %f, %f, %f\n", cart_wind[0], cart_wind[1], cart_wind[2]);
-    // TODO: verify the coordinate conversion of the wind vector
+
     double v_rel[3] = {state->vx - cart_wind[0], state->vy - cart_wind[1], state->vz - cart_wind[2]};
     // print the relative velocity
     // printf("Relative velocity: %f, %f, %f\n", v_rel[0], v_rel[1], v_rel[2]);
@@ -119,7 +146,6 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
         state->ay_drag = -a_drag_mag * v_rel[1] / v_rel_mag;
         state->az_drag = -a_drag_mag * v_rel[2] / v_rel_mag;
         // printf("Drag acceleration: %f, %f, %f\n", state->ax_drag, state->ay_drag, state->az_drag);
-        
     }
     else{
         // Calculate the drag acceleration components for a booster
@@ -127,7 +153,6 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
         state->ax_drag = -a_drag_mag * v_rel[0] / v_rel_mag;
         state->ay_drag = -a_drag_mag * v_rel[1] / v_rel_mag;
         state->az_drag = -a_drag_mag * v_rel[2] / v_rel_mag;
-
     }
 
     // Add anomalous lift forces
@@ -135,14 +160,32 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
     // printf("Dynamic pressure: %f\n", dynamic_pressure);
     if (run_params->run_type == 1){
         // printf("run_params->cl_pert: %f\n", run_params->cl_pert);
-        state->ay_drag = state->ay_drag + run_params->cl_pert * dynamic_pressure * vehicle->rv.rv_area/vehicle->current_mass; // add lift in the y-direction for reentry vehicles
+        state->ay_drag = state->ay_drag + 0.01 * run_params->cl_pert * dynamic_pressure * vehicle->rv.rv_area/vehicle->current_mass; // add lift in the y-direction for reentry vehicles
     }
-        
+
+    double time_constant = rv_time_constant(vehicle, state, atm_cond);
     if (run_params->run_type == 1 && (run_params->step_acc_mag != 0)){
+        double step_acc_duration = run_params->step_acc_dur;
         
-        if ((get_altitude(state->x, state->y, state->z) < run_params->step_acc_hgt) && (*step_timer < run_params->step_acc_dur)) {
+        if (run_params->step_acc_dur < 0){
+            // If the step acceleration duration is negative, it means that the step duration is based on the time constant
+            step_acc_duration = time_constant/M_PI_2; // set the step duration based on the time constant
+            
+        }
+        if ((get_altitude(state->x, state->y, state->z) < run_params->step_acc_hgt) && (*step_timer < step_acc_duration)) {
             // start timer
+            // printf("Time constant: %f seconds\n", time_constant);
+
+            // if negative step_acc_mag, it means that the step acceleration duration is based on the dynamic pressure at the current altitude and velocity
+            if (run_params->step_acc_mag < 0){
+                // If the step acceleration magnitude is negative, it means that the step acceleration is based on the dynamic pressure
+                run_params->step_acc_mag = 0.0315* dynamic_pressure * vehicle->rv.rv_radius * vehicle->rv.rv_length / vehicle->current_mass; // set the step acceleration magnitude based on the dynamic pressure
+                printf("Step acceleration magnitude set to: %f m/s^2\n", run_params->step_acc_mag);
+                printf("Anomaly impulse: %f Ns\n", run_params->step_acc_mag * step_acc_duration);
+            }
+
             *step_timer += run_params->time_step_reentry; // increment the timer by the time step
+            // printf("Step timer: %f seconds\n", *step_timer);
             // apply step function
             state->ay_drag += run_params->step_acc_mag;
             // printf("Applying step function anomaly: %f at altitude: %f and time: %f\n", run_params->step_acc_mag, get_altitude(state->x, state->y, state->z), *step_timer);
