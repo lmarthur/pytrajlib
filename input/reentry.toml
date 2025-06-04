@@ -34,7 +34,7 @@ reentry_vel = 7500
 [VEHICLE]
 rv_type = 1
 # Deflection time (s) for control surfaces 
-deflection_time = 0.01
+deflection_time = 0.02
 # Actuator max force at max speed (kN)
 actuator_force = 12.0
 # Gearing ratio---greater values correspond to increased max force and decreased max speed

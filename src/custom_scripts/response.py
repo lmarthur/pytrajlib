@@ -226,7 +226,7 @@ if __name__ == "__main__":
     """
 
     # Plot the miss distance with respect to the gearing ratio 
-    gearing_ratios = np.logspace(-4,  0.75, 50)
+    gearing_ratios = np.logspace(-3,  0.5, 50)
 
     miss_distances_0 = np.zeros(len(gearing_ratios))
     for i in range(len(gearing_ratios)):
@@ -262,6 +262,7 @@ if __name__ == "__main__":
     plt.plot(gearing_ratios, miss_distances_0, label="7500 m/s")
     plt.xlabel("Gearing ratio")
     plt.ylabel("Miss distance (m)")
+    plt.title("Anomaly height: " + str(run_params.step_acc_hgt) + " m")
     plt.xscale('log')
     plt.yscale('symlog')
     # set y range 
