@@ -7,6 +7,7 @@ TEST(maneuverability, instant_maneuv){
     run_params.x_aim = 6371e3;
     run_params.y_aim = 0;
     run_params.z_aim = 0;
+    run_params.nav_gain = 5;
 
     state true_state;
     true_state.x = 6371e3 + 10;

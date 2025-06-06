@@ -8,6 +8,7 @@ TEST(guidance, prop_nav){
     run_params.x_aim = 0;
     run_params.y_aim = 0;
     run_params.z_aim = 0;
+    run_params.nav_gain = 5;
 
     estimated_state.x = 10;
     estimated_state.y = 0;

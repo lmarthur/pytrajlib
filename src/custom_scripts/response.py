@@ -227,7 +227,7 @@ if __name__ == "__main__":
 
     # Plot the miss distance with respect to the gearing ratio 
     gearing_ratios = np.logspace(-3,  0.5, 50)
-
+    
     miss_distances_0 = np.zeros(len(gearing_ratios))
     for i in range(len(gearing_ratios)):
         run_params = read_config(config_file)
@@ -268,7 +268,55 @@ if __name__ == "__main__":
     # set y range 
     plt.ylim(-1e0, 1e3)
     plt.legend()
-    plt.savefig("./output/" + config_file + "/miss_distance_gearing_ratio.pdf")
+    plt.savefig("./output/" + config_file + "/miss_distance_gearing_ratio_vels.pdf")
+    plt.close()
+    
+    # Repeat the gearing ratio plot for different navigation gains
+
+    miss_distances_0 = np.zeros(len(gearing_ratios))
+    for i in range(len(gearing_ratios)):
+        run_params = read_config(config_file)
+        run_params.step_acc_hgt = c_double(10000)
+        run_params.nav_gain = c_double(3.0)
+        run_params.reentry_vel = c_double(7500)
+        run_params.gearing_ratio = c_double(gearing_ratios[i])
+        print("Gearing ratio: " + str(run_params.gearing_ratio))
+        miss_distances_0[i] = get_miss(config_file, run_params)
+
+    miss_distances_1 = np.zeros(len(gearing_ratios))
+    for i in range(len(gearing_ratios)):
+        run_params = read_config(config_file)
+        run_params.step_acc_hgt = c_double(10000)
+        run_params.nav_gain = c_double(4.0)
+        run_params.reentry_vel = c_double(7500)
+        run_params.gearing_ratio = c_double(gearing_ratios[i])
+        print("Gearing ratio: " + str(run_params.gearing_ratio))
+        miss_distances_1[i] = get_miss(config_file, run_params)
+
+    miss_distances_2 = np.zeros(len(gearing_ratios))
+    for i in range(len(gearing_ratios)):
+        run_params = read_config(config_file)
+        run_params.step_acc_hgt = c_double(10000)
+        run_params.nav_gain = c_double(5.0)
+        run_params.reentry_vel = c_double(7500)
+        run_params.gearing_ratio = c_double(gearing_ratios[i])
+        print("Gearing ratio: " + str(run_params.gearing_ratio))
+        miss_distances_2[i] = get_miss(config_file, run_params)
+    
+    plt.figure(figsize=(10,10))
+    ax = plt.gca()
+    plt.plot(gearing_ratios, miss_distances_0, label="N = 5.0")
+    plt.plot(gearing_ratios, miss_distances_1, label="N = 4.0")
+    plt.plot(gearing_ratios, miss_distances_2, label="N = 3.0")
+    plt.xlabel("Gearing ratio")
+    plt.ylabel("Miss distance (m)")
+    plt.title("Anomaly height: " + str(run_params.step_acc_hgt) + " m")
+    plt.xscale('log')
+    plt.yscale('symlog')
+    # set y range 
+    plt.ylim(-1e0, 1e3)
+    plt.legend()
+    plt.savefig("./output/" + config_file + "/miss_distance_gearing_ratio_gains.pdf")
     plt.close()
 
 

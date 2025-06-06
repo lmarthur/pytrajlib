@@ -16,8 +16,7 @@ cart_vector prop_nav(runparams *run_params, state *estimated_state){
             pointer to the estimated state of the vehicle
 
     */
-    
-    double nav_gain = 5;
+
     // Calculate the relative position vector to the target
     cart_vector r_target;
     // print the aimpoint
@@ -41,9 +40,9 @@ cart_vector prop_nav(runparams *run_params, state *estimated_state){
     
     // Calculate the acceleration command by taking the cross product of the relative velocity and the rotation vector and scaling by the navigation gain
     cart_vector a_command;
-    a_command.x = nav_gain * (v_target.y*rot.z - v_target.z*rot.y);
-    a_command.y = nav_gain * (v_target.z*rot.x - v_target.x*rot.z);
-    a_command.z = nav_gain * (v_target.x*rot.y - v_target.y*rot.x);
+    a_command.x = run_params->nav_gain * (v_target.y*rot.z - v_target.z*rot.y);
+    a_command.y = run_params->nav_gain * (v_target.z*rot.x - v_target.x*rot.z);
+    a_command.z = run_params->nav_gain * (v_target.x*rot.y - v_target.y*rot.x);
 
     return a_command;
 }

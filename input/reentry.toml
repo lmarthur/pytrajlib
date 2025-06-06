@@ -39,6 +39,8 @@ deflection_time = 0.02
 actuator_force = 12.0
 # Gearing ratio---greater values correspond to increased max force and decreased max speed
 gearing_ratio = 1.0
+# Navigation gain for proportional navigation guidance law
+nav_gain = 5.0
 
 [ERRORPARAMS]
 initial_x_error = 0.0

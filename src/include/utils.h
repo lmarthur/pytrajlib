@@ -32,6 +32,7 @@ typedef struct runparams{
     double deflection_time; // time to make full flap deflection in seconds, used for maneuverability
     double actuator_force; // actuator max force in kilonewtons, used for maneuverability
     double gearing_ratio; // gearing ratio of the control surfaces, used for maneuverability
+    double nav_gain; // navigation gain for proportional navigation guidance
 
     double initial_x_error; // initial x-error in meters
     double initial_pos_error; // initial position error in meters
@@ -181,6 +182,7 @@ void print_config(runparams *run_params){
     printf("Flap deflection time: %f\n", run_params->deflection_time);
     printf("Actuator force: %f\n", run_params->actuator_force);
     printf("Gearing ratio: %f\n", run_params->gearing_ratio);
+    printf("Navigation gain: %f\n", run_params->nav_gain);
 
     printf("Initial x-error: %f\n", run_params->initial_x_error);
     printf("Initial position error: %f\n", run_params->initial_pos_error);

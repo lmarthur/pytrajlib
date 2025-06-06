@@ -28,10 +28,11 @@ To generate a new ```trajectory.txt``` file, run the simulation with ```traj_out
 
 ## TODO: 
 - [ ] Generate plots of miss distance vs response time
-- [ ] Generate plot of miss distance vs gearing for a range of nav gains
+- [X] Generate plot of miss distance vs gearing for a range of nav gains
 - [ ] Rerun plots with multiple atmospheres
 - [ ] Explore noise random walks
 - [ ] Explore initial reentry velocity errors
 - [ ] Merge branches
+
 ## BUG REPORTS: 
 None

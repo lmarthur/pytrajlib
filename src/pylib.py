@@ -36,6 +36,7 @@ class runparams(Structure):
         ("deflection_time", c_double),
         ("actuator_force", c_double),
         ("gearing_ratio", c_double),
+        ("nav_gain", c_double),
 
         ("initial_x_error", c_double),
         ("initial_pos_error", c_double),
@@ -114,6 +115,7 @@ def read_config(run_name):
     run_params.deflection_time = c_double(float(config['VEHICLE']['deflection_time']))
     run_params.actuator_force = c_double(float(config['VEHICLE']['actuator_force']))
     run_params.gearing_ratio = c_double(float(config['VEHICLE']['gearing_ratio']))
+    run_params.nav_gain = c_double(float(config['VEHICLE']['nav_gain']))
     
     # set the error parameters
     run_params.initial_x_error = c_double(float(config['ERRORPARAMS']['initial_x_error']))
