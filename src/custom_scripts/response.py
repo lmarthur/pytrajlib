@@ -91,37 +91,39 @@ if __name__ == "__main__":
     # iterate through the parameters of interest by manipulating the input file
 
     # First, standardized time delay with variable anomaly height
-    # anomaly_heights = np.linspace(0, 50000, 50)
-    # miss_distances_0 = np.zeros(len(anomaly_heights))
-    # for i in range(len(anomaly_heights)):
-    #     run_params = read_config(config_file)
-    #     run_params.step_acc_mag = c_double(-10*9.81) 
-    #     run_params.step_acc_hgt = c_double(anomaly_heights[i])
-    #     run_params.step_acc_dur = c_double(-0.1)
-    #     run_params.reentry_vel = c_double(7500)  # Set a constant reentry velocity for comparison
-    #     print("Anomaly height: " + str(run_params.step_acc_hgt))
-    #     miss_distances_0[i] = get_miss(config_file, run_params)
-# 
-    # miss_distances_1 = np.zeros(len(anomaly_heights))
-    # for i in range(len(anomaly_heights)):
-    #     run_params = read_config(config_file)
-    #     run_params.reentry_vel = c_double(5000)
-    #     run_params.step_acc_mag = c_double(-100*9.81)
-    #     run_params.step_acc_hgt = c_double(anomaly_heights[i])
-    #     run_params.step_acc_dur = c_double(-0.1)
-    #     print("Anomaly height: " + str(run_params.step_acc_hgt))
-    #     miss_distances_1[i] = get_miss(config_file, run_params)
-# 
-    # miss_distances_2 = np.zeros(len(anomaly_heights))
-    # for i in range(len(anomaly_heights)):
-    #     run_params = read_config(config_file)
-    #     run_params.reentry_vel = c_double(2500)
-    #     run_params.step_acc_mag = c_double(-100*9.81)
-    #     run_params.step_acc_hgt = c_double(anomaly_heights[i])
-    #     run_params.step_acc_dur = c_double(-0.1)
-    #     print("Anomaly height: " + str(run_params.step_acc_hgt))
-    #     miss_distances_2[i] = get_miss(config_file, run_params)
+    anomaly_heights = np.linspace(0, 50000, 50)
+    miss_distances_0 = np.zeros(len(anomaly_heights))
+    for i in range(len(anomaly_heights)):
+        run_params = read_config(config_file)
+        run_params.gearing_ratio = c_double(0.05)  # Set a constant gearing ratio for comparison
+        run_params.step_acc_mag = c_double(-10*9.81) 
+        run_params.step_acc_hgt = c_double(anomaly_heights[i])
+        run_params.step_acc_dur = c_double(-0.1)
+        run_params.reentry_vel = c_double(7500)  # Set a constant reentry velocity for comparison
+        print("Anomaly height: " + str(run_params.step_acc_hgt))
+        miss_distances_0[i] = get_miss(config_file, run_params)
 
+    miss_distances_1 = np.zeros(len(anomaly_heights))
+    for i in range(len(anomaly_heights)):
+        run_params = read_config(config_file)
+        run_params.gearing_ratio = c_double(0.05)
+        run_params.reentry_vel = c_double(5000)
+        run_params.step_acc_mag = c_double(-100*9.81)
+        run_params.step_acc_hgt = c_double(anomaly_heights[i])
+        run_params.step_acc_dur = c_double(-0.1)
+        print("Anomaly height: " + str(run_params.step_acc_hgt))
+        miss_distances_1[i] = get_miss(config_file, run_params)
+
+    miss_distances_2 = np.zeros(len(anomaly_heights))
+    for i in range(len(anomaly_heights)):
+        run_params = read_config(config_file)
+        run_params.gearing_ratio = c_double(0.05)
+        run_params.reentry_vel = c_double(2500)
+        run_params.step_acc_mag = c_double(-100*9.81)
+        run_params.step_acc_hgt = c_double(anomaly_heights[i])
+        run_params.step_acc_dur = c_double(-0.1)
+        print("Anomaly height: " + str(run_params.step_acc_hgt))
+        miss_distances_2[i] = get_miss(config_file, run_params)
     # Plot the miss distances
     
     params = {
@@ -139,25 +141,26 @@ if __name__ == "__main__":
     plt.rcParams.update(params)
     # set color palette
     colors = plt.cm.viridis(np.linspace(0, 1, 7))
-    # plt.plot(anomaly_heights, miss_distances_0, label="7500 m/s")
-    # plt.plot(anomaly_heights, miss_distances_1, label="5000 m/s")
-    # plt.plot(anomaly_heights, miss_distances_2, label="2500 m/s")
-    # plt.xlabel("Anomaly height (m)")
-    # plt.ylabel("Miss distance (m)")
-    # # plt.yscale('symlog')
-    # plt.legend()
-    # plt.savefig("./output/" + config_file + "/miss_distance_anomaly_height.pdf")
-    # plt.close()
+    plt.plot(anomaly_heights, miss_distances_0, label="7500 m/s")
+    plt.plot(anomaly_heights, miss_distances_1, label="5000 m/s")
+    plt.plot(anomaly_heights, miss_distances_2, label="2500 m/s")
+    plt.xlabel("Anomaly height (m)")
+    plt.ylabel("Miss distance (m)")
+    # plt.yscale('symlog')
+    plt.legend()
+    plt.savefig("./output/" + config_file + "/miss_distance_anomaly_height.pdf")
+    plt.close()
 
-    """
     # Second, for 10km anomaly height, probe the sensitivity of the miss distance to the time delay
     deflection_times = np.logspace(-3, 0, 100)
 
     miss_distances_0 = np.zeros(len(deflection_times))
     for i in range(len(deflection_times)):
         run_params = read_config(config_file)
-        run_params.step_acc_mag = c_double(10*9.81)
+        run_params.gearing_ratio = c_double(0.05)
+        run_params.step_acc_mag = c_double(10*-1)
         run_params.step_acc_hgt = c_double(10000)
+        run_params.step_acc_dur = c_double(-0.1)
         run_params.deflection_time = c_double(deflection_times[i])
         print("Deflection time: " + str(run_params.deflection_time))
         miss_distances_0[i] = get_miss(config_file, run_params)
@@ -165,8 +168,10 @@ if __name__ == "__main__":
     miss_dstances_1 = np.zeros(len(deflection_times))
     for i in range(len(deflection_times)):
         run_params = read_config(config_file)
-        run_params.step_acc_mag = c_double(10*9.81)
+        run_params.gearing_ratio = c_double(0.05)
+        run_params.step_acc_mag = c_double(-1)
         run_params.step_acc_hgt = c_double(1000)
+        run_params.step_acc_dur = c_double(-0.1)
         run_params.deflection_time = c_double(deflection_times[i])
         print("Deflection time: " + str(run_params.deflection_time))
         miss_dstances_1[i] = get_miss(config_file, run_params)
@@ -174,8 +179,10 @@ if __name__ == "__main__":
     miss_dstances_2 = np.zeros(len(deflection_times))
     for i in range(len(deflection_times)):
         run_params = read_config(config_file)
-        run_params.step_acc_mag = c_double(10*9.81)
+        run_params.gearing_ratio = c_double(0.05)
+        run_params.step_acc_mag = c_double(-1)
         run_params.step_acc_hgt = c_double(50000)
+        run_params.step_acc_dur = c_double(-0.1)
         run_params.deflection_time = c_double(deflection_times[i])
         print("Deflection time: " + str(run_params.deflection_time))
         miss_dstances_2[i] = get_miss(config_file, run_params)
@@ -183,8 +190,10 @@ if __name__ == "__main__":
     miss_dstances_3 = np.zeros(len(deflection_times))
     for i in range(len(deflection_times)):
         run_params = read_config(config_file)
-        run_params.step_acc_mag = c_double(9.81)
+        run_params.gearing_ratio = c_double(0.05)
+        run_params.step_acc_mag = c_double(-1)
         run_params.step_acc_hgt = c_double(10000)
+        run_params.step_acc_dur = c_double(-0.1)
         run_params.deflection_time = c_double(deflection_times[i])
         print("Deflection time: " + str(run_params.deflection_time))
         miss_dstances_3[i] = get_miss(config_file, run_params)
@@ -192,8 +201,10 @@ if __name__ == "__main__":
     miss_dstances_4 = np.zeros(len(deflection_times))
     for i in range(len(deflection_times)):
         run_params = read_config(config_file)
-        run_params.step_acc_mag = c_double(9.81)
+        run_params.gearing_ratio = c_double(0.05)
+        run_params.step_acc_mag = c_double(-1)
         run_params.step_acc_hgt = c_double(1000)
+        run_params.step_acc_dur = c_double(-0.1)
         run_params.deflection_time = c_double(deflection_times[i])
         print("Deflection time: " + str(run_params.deflection_time))
         miss_dstances_4[i] = get_miss(config_file, run_params)
@@ -201,20 +212,22 @@ if __name__ == "__main__":
     miss_dstances_5 = np.zeros(len(deflection_times))
     for i in range(len(deflection_times)):
         run_params = read_config(config_file)
-        run_params.step_acc_mag = c_double(9.81)
+        run_params.gearing_ratio = c_double(0.05)
+        run_params.step_acc_mag = c_double(-1)
         run_params.step_acc_hgt = c_double(50000)
+        run_params.step_acc_dur = c_double(-0.1)
         run_params.deflection_time = c_double(deflection_times[i])
         print("Deflection time: " + str(run_params.deflection_time))
         miss_dstances_5[i] = get_miss(config_file, run_params)
 
     plt.figure(figsize=(10,10))
     ax = plt.gca()
-    plt.plot(deflection_times, miss_dstances_2, label="50km, 10g")
-    plt.plot(deflection_times, miss_distances_0, label="10km, 10g")
-    plt.plot(deflection_times, miss_dstances_1, label="1km, 10g")
-    plt.plot(deflection_times, miss_dstances_5, label="50km, 1g")
-    plt.plot(deflection_times, miss_dstances_3, label="10km, 1g")
-    plt.plot(deflection_times, miss_dstances_4, label="1km, 1g")
+    plt.plot(deflection_times, miss_dstances_2, label="50km")
+    plt.plot(deflection_times, miss_distances_0, label="10km")
+    plt.plot(deflection_times, miss_dstances_1, label="1km")
+    plt.plot(deflection_times, miss_dstances_5, label="50km")
+    plt.plot(deflection_times, miss_dstances_3, label="10km")
+    plt.plot(deflection_times, miss_dstances_4, label="1km")
     plt.title("Reentry velocity: " + str(run_params.reentry_vel) + " m/s")
     plt.xlabel("Deflection time (s)")
     plt.ylabel("Miss distance (m)")
@@ -223,8 +236,9 @@ if __name__ == "__main__":
     plt.legend()
     plt.savefig("./output/" + config_file + "/miss_distance_deflection_time.pdf")
     plt.close()
-    """
 
+
+    """
     # Plot the miss distance with respect to the gearing ratio 
     gearing_ratios = np.logspace(-3,  0.5, 50)
     
@@ -318,6 +332,6 @@ if __name__ == "__main__":
     plt.legend()
     plt.savefig("./output/" + config_file + "/miss_distance_gearing_ratio_gains.pdf")
     plt.close()
-
+    """
 
 
