@@ -89,7 +89,6 @@ ffibuilder.cdef(
     };
     struct cart_vector update_aimpoint(struct runparams run_params);
     struct impact_data mc_run(struct runparams run_params);
-    void get_thrust_angle(double aim_lat, double aim_lon, struct runparams *run_params);
     """
     )
 
