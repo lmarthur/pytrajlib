@@ -144,7 +144,7 @@ def write_config_toml(run_params, file_path):
     """
     # Copy the structure of the default config, but write the values from the
     # user-provided config_dict
-    default_config = str(importlib.resources.path("pytrajlib.config", "default.toml"))
+    default_config = str(importlib.resources.files("pytrajlib.config").joinpath("default.toml"))
     default_config_parser = configparser.ConfigParser()
     default_config_parser.read(default_config)
     new_config_dict = {}
@@ -174,8 +174,8 @@ def get_run_params(config_path=None):
     retrieving_default = False
     if config_path is None:
         retrieving_default = True
-        config_path = str(importlib.resources.path("pytrajlib.config", "default.toml"))
-
+        config_path = str(importlib.resources.files("pytrajlib.config").joinpath("default.toml"))
+    print(f"Using config file: {config_path}")
     if not check_config_exists(config_path):
         raise FileNotFoundError(f"The input file {config_path} does not exist.")
     config_parser = configparser.ConfigParser()
@@ -189,7 +189,7 @@ def get_run_params(config_path=None):
         # Override the default atm_profile_path because atmprofiles.txt does not
         # have a stable fixed path when the script is run as part of a package.
         run_params["atm_profile_path"] = str(
-            importlib.resources.path("pytrajlib.config", "atmprofiles.txt")
+            importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.txt")
         )
     return run_params
 
@@ -250,7 +250,7 @@ def cli():
     """
     arg_parser = argparse.ArgumentParser()
     default_config_path = str(
-        importlib.resources.path("pytrajlib.config", "default.toml")
+        importlib.resources.files("pytrajlib.config").joinpath("default.toml")
     )
     arg_parser.add_argument(
         "-c",
@@ -308,7 +308,7 @@ def cli():
         config_dict["run_name"] = f"default-{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
     atm_profile_path = str(
-        importlib.resources.path("pytrajlib.config", "atmprofiles.txt")
+        importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.txt")
     )
     config_dict["atm_profile_path"] = atm_profile_path
     return run(config=config_dict)
