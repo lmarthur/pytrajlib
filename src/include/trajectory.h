@@ -59,9 +59,9 @@ state init_true_state(runparams *run_params){
     if (run_params->run_type == 0){
         // printf("Initializing full trajectory run\n");
         state.t = 0;
-        state.x = 6371e3 + run_params->initial_x_error * ran_gaussian(1);
-        state.y = run_params->initial_pos_error * ran_gaussian(1);
-        state.z = run_params->initial_pos_error * ran_gaussian(1);
+        state.x = run_params->x_launch + run_params->initial_x_error * ran_gaussian(1);
+        state.y = run_params->y_launch + run_params->initial_pos_error * ran_gaussian(1);
+        state.z = run_params->z_launch + run_params->initial_pos_error * ran_gaussian(1);
 
         state.vx = run_params->initial_vel_error * ran_gaussian(1);
         state.vy = run_params->initial_vel_error * ran_gaussian(1);
@@ -126,9 +126,9 @@ state init_est_state(runparams *run_params){
     if (run_params->run_type == 0){
         // printf("Initializing full trajectory run\n");
         state.t = 0;
-        state.x = 6371e3;
-        state.y = 0;
-        state.z = 0;
+        state.x = run_params->x_launch;
+        state.y = run_params->y_launch;
+        state.z = run_params->z_launch;
 
         state.vx = 0;
         state.vy = 0;

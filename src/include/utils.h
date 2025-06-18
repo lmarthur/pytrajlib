@@ -16,6 +16,9 @@ typedef struct runparams{
     double time_step_reentry; // time step in seconds during reentry
     int traj_output; // flag to output trajectory data
     int impact_output; // flag to output impact data
+    double x_launch; // launch x-coordinate in meters
+    double y_launch; // launch y-coordinate in meters
+    double z_launch; // launch z-coordinate in meters
     double x_aim; // target x-coordinate in meters
     double y_aim; // target y-coordinate in meters
     double z_aim; // target z-coordinate in meters
