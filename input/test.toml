@@ -30,11 +30,17 @@ boost_guidance = 1
 rv_maneuv = 1
 # Reentry velocity (m/s) for reentry only simulation (run_type = 1)
 reentry_vel = 7500
-# Deflection time (s) for control surfaces
-deflection_time = 0.0
 
 [VEHICLE]
 rv_type = 1
+# Deflection time (s) for control surfaces 
+deflection_time = 0.0
+# Actuator max force at max speed (kN)
+actuator_force = 12.0
+# Gearing ratio---greater values correspond to increased max force and decreased max speed
+gearing_ratio = 1.0
+# Navigation gain for proportional navigation guidance law
+nav_gain = 5.0
 
 [ERRORPARAMS]
 initial_x_error = 0.0

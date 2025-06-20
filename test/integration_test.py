@@ -38,9 +38,12 @@ def test_read_config():
     assert run_params.ins_nav == 1
     assert run_params.rv_maneuv == 1
     assert run_params.reentry_vel == 7500
-    assert run_params.deflection_time == 0.0
 
     assert run_params.rv_type == 1
+    assert run_params.deflection_time == 0.0
+    assert run_params.actuator_force == 12.0
+    assert run_params.gearing_ratio == 1.0
+    assert run_params.nav_gain == 5.0
 
     assert run_params.initial_x_error == 0.0
     assert run_params.initial_pos_error == 0.0
