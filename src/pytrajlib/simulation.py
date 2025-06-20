@@ -6,11 +6,34 @@ import platform
 from datetime import datetime
 
 import pandas as pd
+import numpy as np
 
 from ._traj import ffi
 from ._traj import lib as traj
 
 _keep_alive = {}
+
+
+def sphercoords_to_cartcoords(spher_coords):
+    """
+    Converts spherical coordinates to Cartesian coordinates.
+
+    INPUTS:
+    ----------
+        spher_coords: [r, lon, lat] in degrees
+
+    OUTPUTS:
+    ----------
+        cart_coords: list of 3 floats
+            [x, y, z]
+    """
+    r, lon, lat = spher_coords
+    lon = np.deg2rad(lon)
+    lat = np.deg2rad(lat)
+    x = r * np.cos(lon) * np.cos(lat)
+    y = r * np.sin(lon) * np.cos(lat)
+    z = r * np.sin(lat)
+    return [x, y, z]
 
 def to_python_type(value):
     """
@@ -265,6 +288,18 @@ def add_arguments_to_parser(parser):
         default=default_config_path,
         help=f"Path to the configuration file (default: {default_config_path})",
     )
+
+    parser.add_argument(
+        "-l"
+        "--launch",
+        type=float,
+        default=0.0,
+        nargs=2,
+        metavar=("LATITUDE", "LONGITUDE"),
+        dest="launch_lat_lon",
+        help="Launch latitude and longitude in decimal degrees (default: 0.0 0.0)",
+    )
+
     run_params = get_run_params()
     help_text = {
         "run_name": f"Name of the run (default: '{run_params['run_name']}')",
@@ -378,4 +413,10 @@ def cli():
         importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.txt")
     )
     config_dict["atm_profile_path"] = atm_profile_path
+
+    # Convert lat lon to cartesian
+    cart = sphercoords_to_cartcoords([6371e3, *config_dict["launch_lat_lon"]])
+    config_dict["x_launch"] = cart[0]
+    config_dict["y_launch"] = cart[1]
+    config_dict["z_launch"] = cart[2]
     return run(config=config_dict)
