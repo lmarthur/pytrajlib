@@ -775,7 +775,7 @@ void get_thrust_angle(double aim_lat, double aim_lon, runparams *run_params){
 }
 
 
-char* mc_run_wrapper(char *run_name, int run_type, char *output_path, 
+char* mc_run_wrapper(char *run_name, int run_type, 
     char *impact_data_path, char *trajectory_path, char *atm_profile_path, 
     int num_runs, double time_step_main, double time_step_reentry, int traj_output, 
     int impact_output, double x_aim, double y_aim, double z_aim, double theta_long, 
@@ -807,7 +807,6 @@ char* mc_run_wrapper(char *run_name, int run_type, char *output_path,
     runparams run_params;
     run_params.run_name = run_name;
     run_params.run_type = run_type;
-    run_params.output_path = output_path;
     run_params.impact_data_path = impact_data_path;
     run_params.trajectory_path = trajectory_path;
     run_params.atm_profile_path = atm_profile_path;

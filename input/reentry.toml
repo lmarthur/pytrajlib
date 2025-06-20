@@ -2,7 +2,7 @@
 run_name = reentry
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 1
-output_path = ./output
+output_dir = ./output
 num_runs = 2
 time_step_main = 0.1
 time_step_reentry = 0.001

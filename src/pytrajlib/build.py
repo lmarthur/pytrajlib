@@ -11,7 +11,6 @@ ffibuilder.cdef(
     struct runparams {
         char *run_name; 
         int run_type; 
-        char *output_path; 
         char *impact_data_path; 
         char *trajectory_path; 
         char *atm_profile_path; 
@@ -20,6 +19,9 @@ ffibuilder.cdef(
         double time_step_reentry; 
         int traj_output; 
         int impact_output; 
+        double x_launch;
+        double y_launch;
+        double z_launch;
         double x_aim; 
         double y_aim; 
         double z_aim; 

@@ -66,9 +66,13 @@ def get_run_params_struct(config):
     """
     run_params_struct = ffi.new("struct runparams *")
     for key, value in config.items():
-        p = to_c_type(value)
-        run_params_struct.__setattr__(key, p)
-        _keep_alive[key] = p
+        # Ignore config entries that do not exist in runparams
+        try:
+            p = to_c_type(value)
+            run_params_struct.__setattr__(key, p)
+            _keep_alive[key] = p
+        except AttributeError:
+            pass
     return run_params_struct
 
 def impact_data_to_df(impact_data, num_runs):
@@ -127,7 +131,7 @@ def create_output_dirs(run_params):
     Returns:
         None
     """
-    path_params = ["output_path", "impact_data_path", "trajectory_path"]
+    path_params = ["output_dir", "impact_data_path", "trajectory_path"]
     for path_param in path_params:
         dir_path = os.path.dirname(run_params[path_param])
         os.makedirs(dir_path, exist_ok=True)
@@ -236,23 +240,24 @@ def run(config=None, **kwargs):
 
     # Copy the config toml to the output directory
     toml_path = os.path.join(
-        run_params["output_path"], f"{run_params['run_name']}.toml"
+        run_params["output_dir"], f"{run_params['run_name']}.toml"
     )
     write_config_toml(run_params, toml_path)
     return impact_df
 
+def add_arguments_to_parser(parser):
+    """
+    Add command line arguments to the parser based on the run parameters.
 
-def cli():
+    INPUTS:
+    -------
+        parser: argparse.ArgumentParser
+            The argument parser to add the arguments to.
     """
-    Command line interface for running the Monte Carlo code. Users can provide
-    a toml configuration file or command line arguments to override the default
-    configuration.
-    """
-    arg_parser = argparse.ArgumentParser()
     default_config_path = str(
         importlib.resources.files("pytrajlib.config").joinpath("default.toml")
     )
-    arg_parser.add_argument(
+    parser.add_argument(
         "-c",
         "--config",
         type=str,
@@ -260,17 +265,79 @@ def cli():
         default=default_config_path,
         help=f"Path to the configuration file (default: {default_config_path})",
     )
+    run_params = get_run_params()
+    help_text = {
+        "run_name": f"Name of the run (default: '{run_params['run_name']}')",
+        "run_type": f"0 for simulating a full trajectory, 1 for reentry only. (default: {run_params['run_type']})",
+        "num_runs": f"Number of Monte Carlo runs to perform (default: {run_params['num_runs']})",
+        "output_dir": f"Directory in which to save the configuration details (default: '{run_params['output_dir']}')",
+        "impact_data_path": f"Path to save the impact data (default: '{run_params['impact_data_path']}')",
+        "trajectory_path": f"Path to save the trajectory data (default: '{run_params['trajectory_path']}')",
+        "atm_profile_path": f"Path to the atmospheric profile file (default: '{run_params['atm_profile_path']}')",
+        "time_step_main": f"Time step for the main simulation in seconds (default: {run_params['time_step_main']})",
+        "time_step_reentry": f"Time step for the reentry simulation in seconds (default: {run_params['time_step_reentry']})",
+        # TODO there should be an option for absolutely no trajectory output
+        "traj_output": f"Whether to output trajectory data (0 for only the first run, 1 for all runs) (default: {run_params['traj_output']})",
+        "impact_output": f"Whether to output impact data (0 for no, 1 for yes) (default: {run_params['impact_output']})",
+        # TODO for launch and aim points should we include xyz and lat lon? should lat lon be in radians or degrees?
+        "grav_error": f"Whether to include Gaussian-distributed uncertainty in the geoid height (default {run_params['grav_error']})",
+        "atm_model": f"Atmospheric model to use. If 0 and atm_error is 0, an exponential atmospheric model is used. If 0 and atm_error is 1, an exponential model with Gaussian wind injection from the EarthGram model is used. If both atm_model and amt_error are 1, then the EarthGram 2016 model for is used below altitude of 100km. (default: {run_params['atm_model']})",
+        "atm_error": f"See atm_model. Default: {run_params['atm_error']})",
+        "gnss_nav": f"Whether to use GNSS navigation (default: {run_params['gnss_nav']})",
+        "ins_nav": f"If off, indicates perfect inertial navigation system state measurements (default: {run_params['ins_nav']})",
+        "rv_maneuv": f"If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability (default: {run_params['rv_maneuv']})",
+        "reentry_vel": f"Reentry velocity (m/s) for reentry only simulation (run_type = 1) (default: {run_params['reentry_vel']})",
+        "deflection_time": f"Deflection time (s) for control surfaces (default: {run_params['deflection_time']})",
+        "rv_type": f"0 for ballistic reentry vehicle, 1 for maneuverable reentry vehicle (default: {run_params['rv_type']})",
+        # TODO what's the purpose of initial_x_error and initial_pos_error?
+        "initial_vel_error": f"Initial veleocity error in m/s (default: {run_params['initial_vel_error']})",
+        # TODO should the initial angle error be included (depends if keeping theta lat/lon; if not, should there be another similar err parameter?)
+        "acc_scale_stability": f"Accelerometer scale stability in ppm (default : {run_params['acc_scale_stability']})",
+        "gyro_bias_stability": f"Gyroscope bias stability in radians/s (default: {run_params['gyro_bias_stability']})",
+        "gyro_noise": f"Gyroscope noise in radians/s/sqrt(s) (default: {run_params['gyro_noise']})",
+        "gnss_noise": f"GNSS noise in m (default: {run_params['gnss_noise']})",
+        "cl_pert": f"Coefficient of lift perturbation {run_params['cl_pert']})",
+        "step_acc_mag": f"Step acceleration perturbation magnitude for reentry simulation run_type = 1 (default: {run_params['step_acc_mag']})",
+        "step_acc_hgt": f"Step acceleration perturbation height (altitude) in meters for reentry simulation run_type = 1 (default: {run_params['step_acc_hgt']})",
+        "step_acc_dur": f"Step acceleration perturbation duration in seconds for reentry simulation run_type = 1 (default: {run_params['step_acc_dur']})",
+    }
 
-    # Set up the command line arguments and defaults from the config file
-    for key, value in get_run_params().items():
-        arg_parser.add_argument(
-            f"--{key.replace('_', '-')}",
+    short_names = {
+        "run_name": "r",
+        "run_type": "t",
+        "num_runs": "n",
+        "output_dir": "o",
+        "impact_output": "i",
+        "traj_output": "j",
+        "atm_profile_path": "a",
+    }
+
+    for key, value in run_params.items():
+        flags = [f"--{key.replace('_', '-')}"]
+        if key in short_names:
+            flags.insert(0, f"-{short_names[key]}")
+        parser.add_argument(
+            *flags,
             default=value,
-            # Ensure the type is correct based on the C run_param type
             type=type(value),
             required=False,
-            help=f"{key.replace('_', ' ').capitalize()} (default: {value})",
+            help=help_text.get(key),
         )
+    return parser
+
+def cli():
+    """
+    Command line interface for running the Monte Carlo code. Users can provide
+    a toml configuration file or command line arguments to override the default
+    configuration.
+    """
+    default_config_path = str(
+        importlib.resources.files("pytrajlib.config").joinpath("default.toml")
+    )
+    arg_parser = argparse.ArgumentParser()
+    
+    add_arguments_to_parser(arg_parser)
+
     defaults_dict = vars(arg_parser.parse_args([]))
     args_dict = vars(arg_parser.parse_args())
 

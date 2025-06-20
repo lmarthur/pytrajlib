@@ -7,7 +7,6 @@
 typedef struct runparams{
     char *run_name; // name of the run
     int run_type; // 0 for full trajectory, 1 for reentry only
-    char *output_path; // path to the output directory
     char *impact_data_path; // path to the impact data file
     char *trajectory_path; // path to the trajectory data file
     char *atm_profile_path; // path to the atmospheric profile file
@@ -160,7 +159,6 @@ void print_config(runparams *run_params){
     */
     printf("Run name: %s\n", run_params->run_name);
     printf("Run type: %d\n", run_params->run_type);
-    printf("Output path: %s\n", run_params->output_path);
     printf("Impact data path: %s\n", run_params->impact_data_path);
     printf("Trajectory path: %s\n", run_params->trajectory_path);
     printf("Atmospheric profile path: %s\n", run_params->atm_profile_path);
