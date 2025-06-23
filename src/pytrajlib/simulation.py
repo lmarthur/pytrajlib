@@ -157,6 +157,8 @@ def create_output_dirs(run_params):
     path_params = ["output_dir", "impact_data_path", "trajectory_path"]
     for path_param in path_params:
         dir_path = os.path.dirname(run_params[path_param])
+        if not dir_path:
+            dir_path = os.getcwd()
         os.makedirs(dir_path, exist_ok=True)
 
 
@@ -243,16 +245,12 @@ def run(config=None, **kwargs):
     else:
         run_params = config
     if kwargs:
-        for key, value in kwargs.items():
-            if key in run_params:
-                run_params[key] = value
-            else:
-                raise KeyError(f"Key {key} not found in run_params.")
+        handle_overrides(run_params, kwargs)
+
     create_output_dirs(run_params)
     run_params_struct = get_run_params_struct(run_params)
     aimpoint = traj.update_aimpoint(run_params_struct[0])
 
-    print(aimpoint.x, aimpoint.y, aimpoint.z)
     run_params["x_aim"] = aimpoint.x
     run_params["y_aim"] = aimpoint.y
     run_params["z_aim"] = aimpoint.z
@@ -305,16 +303,14 @@ def add_arguments_to_parser(parser):
         "run_name": f"Name of the run (default: '{run_params['run_name']}')",
         "run_type": f"0 for simulating a full trajectory, 1 for reentry only. (default: {run_params['run_type']})",
         "num_runs": f"Number of Monte Carlo runs to perform (default: {run_params['num_runs']})",
-        "output_dir": f"Directory in which to save the configuration details (default: '{run_params['output_dir']}')",
-        "impact_data_path": f"Path to save the impact data (default: '{run_params['impact_data_path']}')",
-        "trajectory_path": f"Path to save the trajectory data (default: '{run_params['trajectory_path']}')",
+        "output_dir": "Directory in which to save the configuration details (default: currrent date and time e.g. './20250623_102744/')",
+        "impact_data_path": "Path to save the impact data (default: './{date}/impact.txt')",
+        "trajectory_path": "Path to save the trajectory data (default: './{date}/trajectory.txt')",
         "atm_profile_path": f"Path to the atmospheric profile file (default: '{run_params['atm_profile_path']}')",
         "time_step_main": f"Time step for the main simulation in seconds (default: {run_params['time_step_main']})",
         "time_step_reentry": f"Time step for the reentry simulation in seconds (default: {run_params['time_step_reentry']})",
-        # TODO there should be an option for absolutely no trajectory output
-        "traj_output": f"Whether to output trajectory data (0 for only the first run, 1 for all runs) (default: {run_params['traj_output']})",
+        "traj_output": f"Whether to output trajectory data (0 for no output, 1 for all runs, 2 for the first run) (default: {run_params['traj_output']})",
         "impact_output": f"Whether to output impact data (0 for no, 1 for yes) (default: {run_params['impact_output']})",
-        # TODO for launch and aim points should we include xyz and lat lon? should lat lon be in radians or degrees?
         "grav_error": f"Whether to include Gaussian-distributed uncertainty in the geoid height (default {run_params['grav_error']})",
         "atm_model": f"Atmospheric model to use. If 0 and atm_error is 0, an exponential atmospheric model is used. If 0 and atm_error is 1, an exponential model with Gaussian wind injection from the EarthGram model is used. If both atm_model and amt_error are 1, then the EarthGram 2016 model for is used below altitude of 100km. (default: {run_params['atm_model']})",
         "atm_error": f"See atm_model. Default: {run_params['atm_error']})",
@@ -324,7 +320,6 @@ def add_arguments_to_parser(parser):
         "reentry_vel": f"Reentry velocity (m/s) for reentry only simulation (run_type = 1) (default: {run_params['reentry_vel']})",
         "deflection_time": f"Deflection time (s) for control surfaces (default: {run_params['deflection_time']})",
         "rv_type": f"0 for ballistic reentry vehicle, 1 for maneuverable reentry vehicle (default: {run_params['rv_type']})",
-        # TODO what's the purpose of initial_x_error and initial_pos_error?
         "initial_vel_error": f"Initial veleocity error in m/s (default: {run_params['initial_vel_error']})",
         # TODO should the initial angle error be included (depends if keeping theta lat/lon; if not, should there be another similar err parameter?)
         "acc_scale_stability": f"Accelerometer scale stability in ppm (default : {run_params['acc_scale_stability']})",
@@ -360,15 +355,51 @@ def add_arguments_to_parser(parser):
         )
     return parser
 
+def handle_overrides(config_dict, override_dict):
+    """
+    Handle overrides for the configuration dictionary.
+
+    INPUTS:
+    -------
+        config_dict: dict
+            The configuration dictionary.
+        override_dict: dict
+            The dictionary containing overrides.
+
+    OUTPUTS:
+    -------
+        config_dict: dict
+            The updated configuration dictionary with overrides applied.
+    """
+    # Set output directory to current date/time if not provided by user
+    if not override_dict.get("output_dir"):
+        override_dict["output_dir"] = os.path.abspath(
+            f"./{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
+    if not override_dict.get("impact_data_path"):
+        override_dict["impact_data_path"] = os.path.join(
+            override_dict["output_dir"], "impact.txt"
+        )
+    if not override_dict.get("trajectory_path"):
+        override_dict["trajectory_path"] = os.path.join(
+            override_dict["output_dir"], "trajectory.txt"
+        )
+    # Update the config_dict if the user manually overrides a value
+    for key, value in override_dict.items():
+        if key not in config_dict or value != config_dict[key]:
+            config_dict[key] = value
+    atm_profile_path = str(
+        importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.txt")
+    )
+    config_dict["atm_profile_path"] = atm_profile_path
+    return config_dict
+
 def cli():
     """
     Command line interface for running the Monte Carlo code. Users can provide
     a toml configuration file or command line arguments to override the default
     configuration.
     """
-    default_config_path = str(
-        importlib.resources.files("pytrajlib.config").joinpath("default.toml")
-    )
     arg_parser = argparse.ArgumentParser()
     
     add_arguments_to_parser(arg_parser)
@@ -383,7 +414,7 @@ def cli():
     if not check_config_exists(config_path):
         arg_parser.error(f"The input file {config_path} does not exist.")
 
-    # If the config file is not the default, read from it
+    # Read config file if it is not the default
     if os.path.abspath(defaults_dict["config"]) != config_path:
         config_parser = configparser.ConfigParser()
         config_parser.read(config_path)
@@ -396,27 +427,9 @@ def cli():
         config_dict = defaults_dict
         config_dict.pop("config")
 
-    # If the user manually overrides a value, update the config_dict
-    some_overrides = False
-    for key, value in args_dict.items():
-        if key not in config_dict or value != config_dict[key]:
-            config_dict[key] = value
-            if key != "run_name":
-                some_overrides = True
-    # If there are manual overrides and the user did not update the run_name,
-    # change the run name to include the datetime to avoid overwriting previous runs
-    # with the same name.
-    if some_overrides:
-        config_dict["run_name"] = f"default-{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-
-    atm_profile_path = str(
-        importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.txt")
-    )
-    config_dict["atm_profile_path"] = atm_profile_path
-
     # Convert lat lon to cartesian
     cart = sphercoords_to_cartcoords([6371e3, *config_dict["launch_lat_lon"]])
     config_dict["x_launch"] = cart[0]
     config_dict["y_launch"] = cart[1]
     config_dict["z_launch"] = cart[2]
-    return run(config=config_dict)
+    return run(config=config_dict, **args_dict)

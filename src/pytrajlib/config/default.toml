@@ -2,14 +2,16 @@
 run_name = default
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 0
-output_dir = ./output
-impact_data_path = ./output/impact.txt
-trajectory_path = ./output/trajectory.txt
+# The output paths are dynamically set in Python unless overridden in the cmd line
+output_dir = 
+impact_data_path = 
+trajectory_path = 
+
 atm_profile_path = ./input/atmprofiles.txt
 num_runs = 1000
 time_step_main = 1.0
 time_step_reentry = 0.01
-traj_output = 0
+traj_output = 2
 impact_output = 0
 x_launch = 6371e3
 y_launch = 0.0

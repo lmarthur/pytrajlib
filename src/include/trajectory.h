@@ -546,10 +546,9 @@ impact_data mc_run(runparams run_params){
     }
     
     // Run the Monte Carlo simulation
-    // Write the trajectory data to file for the first run. If traj_output is 2, 
-    // then do not write to file because this signifies a run from the web.
+    // Write the trajectory data to file for the first run if traj_output is 2
     int original_traj_output = run_params.traj_output;
-    if (run_params.traj_output == 0){
+    if (run_params.traj_output == 2){
         run_params.traj_output = 1;
     }
     for (int i = 0; i < num_runs; i++){
@@ -580,7 +579,7 @@ impact_data mc_run(runparams run_params){
         
         impact_data.impact_states[i] = fly(&run_params, &initial_true_state, &vehicle);
         // Reset flag for writing trajectory data to file. Ensures only the first
-        // run writes to the file if the original trajectory output flag is 0.
+        // run writes to the file if the original trajectory output flag is 2.
         run_params.traj_output = original_traj_output;
 
         // Allow time for browser to update.
