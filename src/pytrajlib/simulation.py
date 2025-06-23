@@ -293,7 +293,7 @@ def add_arguments_to_parser(parser):
         "-l"
         "--launch",
         type=float,
-        default=0.0,
+        default=[0.0, 0.0],
         nargs=2,
         metavar=("LATITUDE", "LONGITUDE"),
         dest="launch_lat_lon",
