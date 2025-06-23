@@ -271,7 +271,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
 
     grav true_grav = init_grav(run_params);
     grav est_grav = init_grav(run_params);
-    est_grav.perturb_flag = 0;
 
     atm_model exp_atm_model = init_exp_atm(run_params);
 

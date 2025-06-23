@@ -12,7 +12,6 @@ typedef struct grav{
     double earth_radius; // radius of the Earth in meters
     double grav_const; // gravitational constant in m^3/kg/s^2
     double grav_g0; // acceleration due to gravity at the geoid surface in m/s^2
-    int perturb_flag; // flag to indicate if perturbations are enabled (1) or not (0)
     double geoid_height_error;
     double geoid_height_std;
 
@@ -48,8 +47,6 @@ grav init_grav(runparams *run_params){
         grav.geoid_height_error = 0;
     }
     
-    grav.perturb_flag = run_params->grav_error;
-
     return grav;
 }
 
