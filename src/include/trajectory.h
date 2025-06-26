@@ -639,7 +639,7 @@ double aimpoint_error(cart_vector aimpoint){
     return error;
 }
 
-float aimpoint_error_magnitude_wrapper(float up){
+float aimpoint_error_wrapper(float up){
     global_run_params->up = up;
     enu_to_long_lat();
     cart_vector aimpoint = update_aimpoint(*global_run_params);
@@ -673,11 +673,11 @@ void get_bearing(double aim_lat, double aim_lon, double launch_lat, double launc
 
     float ax = 0.5f, bx = 1.5f, cx;
     float fa, fb, fc;
-    mnbrak(&ax, &bx, &cx, &fa, &fb, &fc, aimpoint_error_magnitude_wrapper);
+    mnbrak(&ax, &bx, &cx, &fa, &fb, &fc, aimpoint_error_wrapper);
 
     float tol = 1e-6f;
     float xmin, fmin;
-    fmin = brent(ax, bx, cx, aimpoint_error_magnitude_wrapper, tol, &xmin);
+    fmin = brent(ax, bx, cx, aimpoint_error_wrapper, tol, &xmin);
 
     global_run_params->up = xmin;
 }
