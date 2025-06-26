@@ -243,19 +243,19 @@ def run(config=None, **kwargs):
         from the Monte Carlo run.  Each row is a run, and each column is a field
         from the State Structure.
     """
-    # Convert lat lon to cartesian
-    cart_aim = sphercoords_to_cartcoords([6371e3, *kwargs["aim_lat_lon"][::-1]])
-    cart_launch = sphercoords_to_cartcoords([6371e3, *kwargs["launch_lat_lon"][::-1]])
-    # Set the cartesian coordinates in the kwargs dict to override the config
-    kwargs["x_launch"], kwargs["y_launch"], kwargs["z_launch"] = cart_launch
-    kwargs["x_aim"], kwargs["y_aim"], kwargs["z_aim"] = cart_aim
+    # Convert lat lon to cartesian and set cart coordinates in kwargs to override the config
+    if "launch_lat_lon" in kwargs:
+        cart_launch = sphercoords_to_cartcoords([6371e3, *kwargs["launch_lat_lon"][::-1]])
+        kwargs["x_launch"], kwargs["y_launch"], kwargs["z_launch"] = cart_launch
+    if "aim_lat_lon" in kwargs:
+        cart_aim = sphercoords_to_cartcoords([6371e3, *kwargs["aim_lat_lon"][::-1]])
+        kwargs["x_aim"], kwargs["y_aim"], kwargs["z_aim"] = cart_aim
 
     if isinstance(config, str | None):
         run_params = get_run_params(config)
     else:
         run_params = config
-    if kwargs:
-        handle_overrides(run_params, kwargs)
+    handle_overrides(run_params, kwargs)
     
     create_output_dirs(run_params)
     run_params_struct = get_run_params_struct(run_params)
@@ -439,4 +439,5 @@ def cli():
         config_dict = defaults_dict
         config_dict.pop("config")
 
+    # print(f"args dict: {args_dict}")
     return run(config=config_dict, **args_dict)

@@ -16,9 +16,9 @@ impact_output = 0
 x_launch = 6371e3
 y_launch = 0.0
 z_launch = 0.0
-x_aim = 0.0
-y_aim = 0.0
-z_aim = 0.0
+x_aim = -3.246651e6
+y_aim = 5.481688e6
+z_aim = -6.187522
 # Note that the thrust angle is currently superseded by the launch and aimpoints
 theta_long = 1.04719755
 theta_lat = 0.0
