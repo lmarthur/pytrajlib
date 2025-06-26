@@ -2,7 +2,6 @@ import argparse
 import configparser
 import importlib.resources
 import os
-import platform
 from datetime import datetime
 
 import pandas as pd
