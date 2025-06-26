@@ -12,10 +12,6 @@ export function MapProvider({ children }) {
   const [strikepoints, setStrikepoints] = useState([]);
   const [trajectoryData, setTrajectoryData] = useState([]);
 
-  // The simulation aimpoint is the aimpoint used in the simulation. It may
-  // differ from the user-selected aimpoint due to an imperfect optimization.
-  const [simAimpoint, setSimAimpoint] = useState({ lat: null, lon: null });
-
   return (
     <MapContext.Provider
       value={{
@@ -29,8 +25,6 @@ export function MapProvider({ children }) {
         setStrikepoints,
         trajectoryData,
         setTrajectoryData,
-        simAimpoint,
-        setSimAimpoint,
       }}
     >
       {children}

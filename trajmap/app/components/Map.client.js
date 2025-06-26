@@ -29,13 +29,11 @@ export default function Map(props) {
     setClickLoc,
     launchpoint,
     aimpoint,
-    simAimpoint,
     strikepoints,
     trajectoryData,
   } = useMapContext();
   const [popupVisible, setPopupVisible] = useState(false);
   const [StrikepointMarkers, setStrikepointMarkers] = useState([]);
-  const [SimAimpointMarker, setSimAimpointMarker] = useState("");
   const [trajectoryLine, setTrajectoryLine] = useState(null);
 
   const MapClickHandler = () => {
@@ -60,21 +58,6 @@ export default function Map(props) {
 
     return null;
   };
-
-  useEffect(() => {
-    /*
-    Update the aimpoint marker when the aimpoint changes.
-    */
-    if (simAimpoint.lat !== null && simAimpoint.lon !== null) {
-      setSimAimpointMarker(
-        <Marker position={[simAimpoint.lat, simAimpoint.lon]}>
-          <Tooltip permanent>Simulation Aim Point</Tooltip>
-        </Marker>
-      );
-    } else {
-      setSimAimpointMarker(null);
-    }
-  }, [simAimpoint]);
 
   useEffect(() => {
     /*
@@ -145,7 +128,6 @@ export default function Map(props) {
         />
         {LaunchpointMarker}
         {AimpointMarker}
-        {SimAimpointMarker}
         {StrikepointMarkers}
         {trajectoryLine}
         <ScaleControl position="bottomright" />
