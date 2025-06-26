@@ -566,9 +566,11 @@ float aimpoint_error_wrapper(float up){
     return (float)aimpoint_error(aimpoint);
 }
 
-void get_bearing(double aim_lat, double aim_lon, double launch_lat, double launch_lon) {
+void optimize_thrust_angles(double aim_lat, double aim_lon, double launch_lat, double launch_lon) {
     /*
-    Function that calculates the bearing from the launch point to the aim point
+    Calculate the bearing, optimize for the up component of the ENU thrust, and 
+    transform ENU thrust vector to the thrust angles (theta_lat, theta_long) at
+    the origin.
 
     INPUTS:
     ----------
@@ -617,19 +619,36 @@ void get_thrust_angle(runparams *run_params){
     double earth_radius = 6371e3; 
 
     double cart_coords[3] = {run_params->x_aim, run_params->y_aim, run_params->z_aim};
+    double launch_cart_coords[3] = {run_params->x_launch, run_params->y_launch, run_params->z_launch};
     double aim_spher_coords[3];
+    double launch_spher_coords[3];
     cartcoords_to_sphercoords(cart_coords, aim_spher_coords);
+    cartcoords_to_sphercoords(launch_cart_coords, launch_spher_coords);
+
+    // Use a coordinate system where the launch point is always the origin.
+    // This requires transforming the user-provided aimpoint to an equivalent one
+    // in the new coordinate system.
+    double bearing = calc_bearing(launch_spher_coords[2], launch_spher_coords[1], 
+                            aim_spher_coords[2], aim_spher_coords[1]);
+    double distance = haversine_distance(launch_spher_coords[2], launch_spher_coords[1], 
+                            aim_spher_coords[2], aim_spher_coords[1]);
+    double current_aim_sphere[2] = {aim_spher_coords[2], aim_spher_coords[1]};
+    double new_aim_lat_long[2];
+    get_location(bearing, distance, current_aim_sphere, new_aim_lat_long);
+
+    double new_aim_spher_coords[3] = {earth_radius, new_aim_lat_long[1], new_aim_lat_long[0]};
+    double new_aim_cart_coords[3];
+    sphercoords_to_cartcoords(new_aim_spher_coords, new_aim_cart_coords);
+    run_params->x_aim = new_aim_cart_coords[0];
+    run_params->y_aim = new_aim_cart_coords[1];
+    run_params->z_aim = new_aim_cart_coords[2];
 
     runparams rp = sanitize_runparams_for_aimpoint(*run_params);
     global_run_params = &rp;
 
-    double launch_cart_coords[3] = {run_params->x_launch, run_params->y_launch, run_params->z_launch};
-    double launch_spher_coords[3];
-    cartcoords_to_sphercoords(launch_cart_coords, launch_spher_coords);
-
     printf("Optimizing...\n");
 
-    get_bearing(aim_spher_coords[2], aim_spher_coords[1], launch_spher_coords[2], launch_spher_coords[1]);
+    optimize_thrust_angles(new_aim_lat_long[0], new_aim_lat_long[1], 0.0, 0.0);
 
     printf("bearing vector: %f, %f\n", global_run_params->north, global_run_params->east);
     printf("bearing angle %f\n", atan2(global_run_params->north, global_run_params->east) * 180 / M_PI);

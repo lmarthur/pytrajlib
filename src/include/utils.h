@@ -304,4 +304,45 @@ runparams sanitize_runparams_for_aimpoint(runparams run_params){
     return run_params_temp;
 }
 
+double calc_bearing(double start_lat, double start_lon, double end_lat, double end_lon) {
+    /*
+    Calculate the bearing (in radians) from start to end (lat, lon in radians)
+    */
+    double lon_diff = end_lon - start_lon;
+    double east = sin(lon_diff) * cos(end_lat);
+    double north = cos(start_lat) * sin(end_lat) -
+                   sin(start_lat) * cos(end_lat) * cos(lon_diff);
+    return atan2(north, east);
+}
+
+double haversine_distance(double start_lat, double start_lon, double end_lat, double end_lon) {
+    /*
+    Calculate the haversine distance between two points (lat, lon in radians)
+    */
+    double dlat = end_lat - start_lat;
+    double dlon = end_lon - start_lon;
+    double a = sin(dlat / 2) * sin(dlat / 2) +
+               cos(start_lat) * cos(end_lat) *
+               sin(dlon / 2) * sin(dlon / 2);
+    double angular_distance = 2 * atan2(sqrt(a), sqrt(1 - a));
+    double distance = 6371e3 * angular_distance;
+    return distance;
+}
+
+void get_location(double bearing, double distance, double *start_location, double *end_location) {
+    /*
+    Calculate the end location (x, y, z) given a start location (lat, lon in radians),
+    a bearing (in radians), and a distance (in meters).
+    */
+    double start_lat = start_location[0];
+    double start_lon = start_location[1];
+    double angular_distance = distance / 6371e3;
+    double end_lat = asin(sin(start_lat) * cos(angular_distance) +
+                    cos(start_lat) * sin(angular_distance) * cos(bearing));
+    double end_lon = start_lon + atan2(sin(bearing) * sin(angular_distance) * cos(start_lat),
+                                 cos(angular_distance) - sin(start_lat) * sin(end_lat));
+    end_location[0] = end_lat;
+    end_location[1] = end_lon;
+}
+
 #endif
