@@ -321,7 +321,6 @@ def add_arguments_to_parser(parser):
         "deflection_time": f"Deflection time (s) for control surfaces (default: {run_params['deflection_time']})",
         "rv_type": f"0 for ballistic reentry vehicle, 1 for maneuverable reentry vehicle (default: {run_params['rv_type']})",
         "initial_vel_error": f"Initial veleocity error in m/s (default: {run_params['initial_vel_error']})",
-        # TODO should the initial angle error be included (depends if keeping theta lat/lon; if not, should there be another similar err parameter?)
         "acc_scale_stability": f"Accelerometer scale stability in ppm (default : {run_params['acc_scale_stability']})",
         "gyro_bias_stability": f"Gyroscope bias stability in radians/s (default: {run_params['gyro_bias_stability']})",
         "gyro_noise": f"Gyroscope noise in radians/s/sqrt(s) (default: {run_params['gyro_noise']})",

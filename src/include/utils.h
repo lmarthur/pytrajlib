@@ -15,14 +15,14 @@ typedef struct runparams{
     double time_step_reentry; // time step in seconds during reentry
     int traj_output; // flag to output trajectory data
     int impact_output; // flag to output impact data
-    double x_launch; // launch x-coordinate in meters
-    double y_launch; // launch y-coordinate in meters
-    double z_launch; // launch z-coordinate in meters
     double x_aim; // target x-coordinate in meters
     double y_aim; // target y-coordinate in meters
     double z_aim; // target z-coordinate in meters
     double theta_long; // thrust angle in the longitudinal direction in radians
     double theta_lat; // thrust angle in the latitudinal direction in radians
+    double east;
+    double north;
+    double up;
 
     int grav_error; // flag to include gravitational perturbations
     int atm_model; // flag to select the atmospheric model

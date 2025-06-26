@@ -36,7 +36,9 @@ typedef struct state{
     double initial_theta_lat_pert; // initial perturbation in the latitudinal thrust angle in radians
     double theta_long; // thrust angle in the longitudinal direction measured from the x-z plane in radians
     double theta_lat; // thrust angle in the latitudinal direction measured from the x-y plane in radians
-
+    double east;
+    double north;
+    double up;
 
 } state;
 

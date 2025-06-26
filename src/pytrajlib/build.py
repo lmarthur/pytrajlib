@@ -19,14 +19,14 @@ ffibuilder.cdef(
         double time_step_reentry; 
         int traj_output; 
         int impact_output; 
-        double x_launch;
-        double y_launch;
-        double z_launch;
         double x_aim; 
         double y_aim; 
         double z_aim; 
         double theta_long; 
         double theta_lat; 
+        double east;
+        double north;
+        double up;
 
         int grav_error; 
         int atm_model; 
@@ -84,6 +84,9 @@ ffibuilder.cdef(
         double initial_theta_lat_pert; 
         double theta_long; 
         double theta_lat; 
+        double east;
+        double north;
+        double up;
     };
     #define MAX_RUNS 1000
     struct impact_data{

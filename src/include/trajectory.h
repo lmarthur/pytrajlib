@@ -19,7 +19,6 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-#include <nlopt.h>
 EM_JS(void, num_run_counter, (), {
     console.log("Incrementing run counter");
   });
@@ -59,9 +58,9 @@ state init_true_state(runparams *run_params){
     if (run_params->run_type == 0){
         // printf("Initializing full trajectory run\n");
         state.t = 0;
-        state.x = run_params->x_launch + run_params->initial_x_error * ran_gaussian(1);
-        state.y = run_params->y_launch + run_params->initial_pos_error * ran_gaussian(1);
-        state.z = run_params->z_launch + run_params->initial_pos_error * ran_gaussian(1);
+        state.x = 6371e3 + run_params->initial_x_error * ran_gaussian(1);
+        state.y = run_params->initial_pos_error * ran_gaussian(1);
+        state.z = run_params->initial_pos_error * ran_gaussian(1);
 
         state.vx = run_params->initial_vel_error * ran_gaussian(1);
         state.vy = run_params->initial_vel_error * ran_gaussian(1);
@@ -126,9 +125,9 @@ state init_est_state(runparams *run_params){
     if (run_params->run_type == 0){
         // printf("Initializing full trajectory run\n");
         state.t = 0;
-        state.x = run_params->x_launch;
-        state.y = run_params->y_launch;
-        state.z = run_params->z_launch;
+        state.x = 6371e3;
+        state.y = 0;
+        state.z = 0;
 
         state.vx = 0;
         state.vy = 0;
@@ -598,6 +597,21 @@ impact_data mc_run(runparams run_params){
 
 }
 
+double enu_to_long_lat() {
+    // ENU --> global xyz @ 0, 0 --> lat, long
+    double enu_vector[3] = {global_run_params->up, global_run_params->east, global_run_params->north};
+    double global_xyz[3];
+    double launch[3] = {6371e3, 0, 0}; // Set coordinate system origin to the launch point
+    sphervec_to_cartvec(enu_vector, global_xyz, launch);
+    double x = global_xyz[0];
+    double y = global_xyz[1];
+    double z = global_xyz[2];
+    double r = sqrt(x*x + y*y + z*z);
+    global_run_params->theta_long = atan2(y, x);
+    global_run_params->theta_lat = asin(z / r);
+
+}
+
 double aimpoint_error(cart_vector aimpoint){
     /*
     Calculate the distance between the current aimpoint and the goal aimpoint.
@@ -625,38 +639,11 @@ double aimpoint_error(cart_vector aimpoint){
     return error;
 }
 
-double aimpoint_error_theta_wrapper(double *x){
-    global_run_params->theta_lat = x[0];
-    global_run_params->theta_long = x[1];
-    cart_vector aimpoint = update_aimpoint(*global_run_params);
-    double error = aimpoint_error(aimpoint);
-    printf("Error: %f Guess: %f, %f\n", error, x[0], x[1]);
-    return error;
-}
-
-float aimpoint_error_magnitude_wrapper(float magnitude){
-    global_run_params->theta_lat = magnitude * global_run_params->theta_lat;
-    global_run_params->theta_long = magnitude * global_run_params->theta_long;
+float aimpoint_error_magnitude_wrapper(float up){
+    global_run_params->up = up;
+    enu_to_long_lat();
     cart_vector aimpoint = update_aimpoint(*global_run_params);
     return (float)aimpoint_error(aimpoint);
-}
-
-double nlopt_objective(unsigned n, const double *x, double *grad, void *data) {
-    double fx = aimpoint_error_theta_wrapper(x);
-
-    // Calculate the gradient with a simple finite diff
-    if (grad) {
-        double h = 1e-6, xtmp[n];
-        for (unsigned i = 0; i < n; ++i) {
-            memcpy(xtmp, x, sizeof(xtmp));
-            xtmp[i] += h;
-            double fi = aimpoint_error_theta_wrapper(xtmp);
-            // Initial gradients can be very large; scale the gradient so the
-            // optimizer does not crash
-            grad[i] = (fi - fx) / h / 1e6; 
-        }
-    }
-    return fx;
 }
 
 void get_bearing(double aim_lat, double aim_lon, double launch_lat, double launch_lon) {
@@ -678,10 +665,11 @@ void get_bearing(double aim_lat, double aim_lon, double launch_lat, double launc
     */
     double lon_diff = aim_lon - launch_lon;
 
-    // North component
-    global_run_params->theta_lat = cos(launch_lat) * sin(aim_lat) - sin(launch_lat) * cos(aim_lat) * cos(lon_diff);
     // East component
-    global_run_params->theta_long = sin(lon_diff) * cos(aim_lat);
+    global_run_params->east = sin(lon_diff) * cos(aim_lat);
+
+    // North component
+    global_run_params->north = cos(launch_lat) * sin(aim_lat) - sin(launch_lat) * cos(aim_lat) * cos(lon_diff);
 
     float ax = 0.5f, bx = 1.5f, cx;
     float fa, fb, fc;
@@ -691,16 +679,14 @@ void get_bearing(double aim_lat, double aim_lon, double launch_lat, double launc
     float xmin, fmin;
     fmin = brent(ax, bx, cx, aimpoint_error_magnitude_wrapper, tol, &xmin);
 
-    global_run_params->theta_lat = global_run_params->theta_lat * xmin;
-    global_run_params->theta_long = global_run_params->theta_long * xmin;
+    global_run_params->up = xmin;
 }
 
 double dummy_constraint(unsigned n, const double *x, double *grad, void *data) {
     return 1.0;  // Always positive, so always satisfied
 }
 
-#ifdef __EMSCRIPTEN__
-void get_thrust_angle(double aim_lat, double aim_lon, runparams *run_params){
+void get_thrust_angle(runparams *run_params){
     /*
     Find the thrust angles (theta_lat, theta_long) based on the latitude and longitude
     of the aimpoint. Update the run_params object with the new angles.
@@ -715,65 +701,76 @@ void get_thrust_angle(double aim_lat, double aim_lon, runparams *run_params){
             pointer to the run parameters struct
     */
     double earth_radius = 6371e3; 
-    double spher_coords[3] = {earth_radius, aim_lon, aim_lat};
-    double cart_coords[3];
-    sphercoords_to_cartcoords(spher_coords, cart_coords);
+
+    double cart_coords[3] = {run_params->x_aim, run_params->y_aim, run_params->z_aim};
+    double aim_spher_coords[3];
+    cartcoords_to_sphercoords(cart_coords, aim_spher_coords);
 
     runparams rp = sanitize_runparams_for_aimpoint(*run_params);
     global_run_params = &rp;
-    global_run_params->x_aim = cart_coords[0];
-    global_run_params->y_aim = cart_coords[1];
-    global_run_params->z_aim = cart_coords[2];
+
+    double launch_cart_coords[3] = {6371e3, 0, 0};
+    double launch_spher_coords[3];
+    cartcoords_to_sphercoords(launch_cart_coords, launch_spher_coords);
 
     printf("Optimizing...\n");
-    get_bearing(aim_lat, aim_lon, 0, 0);
 
-    // Take the remainder to ensure the initial guess is within the lower and upper bounds 
-    run_params->theta_lat = remainder(global_run_params->theta_lat, 2 * M_PI);
-    run_params->theta_long = remainder(global_run_params->theta_long, 2 * M_PI);
-    printf("init guesses: %f, %f\n", run_params->theta_lat, run_params->theta_long);
+    get_bearing(aim_spher_coords[2], aim_spher_coords[1], launch_spher_coords[2], launch_spher_coords[1]);
 
-    nlopt_opt opt = nlopt_create(NLOPT_LD_SLSQP, 2);
+    printf("bearing vector: %f, %f\n", global_run_params->north, global_run_params->east);
+    printf("bearing angle %f\n", atan2(global_run_params->north, global_run_params->east) * 180 / M_PI);
 
-    double lb[2] = { -M_PI, -M_PI };
-    nlopt_set_lower_bounds(opt, lb);
+    run_params->east = global_run_params->east;
+    run_params->north = global_run_params->north;
+    run_params->up = global_run_params->up;
 
-    double ub[2] = { M_PI, M_PI };
-    nlopt_set_upper_bounds(opt, ub);
+    run_params->theta_lat = global_run_params->theta_lat;
+    run_params->theta_long = global_run_params->theta_long;
+    printf("Thrust angles: theta_long: %f, theta_lat: %f\n", run_params->theta_long * 180 / M_PI, run_params->theta_lat * 180 / M_PI);
 
-    nlopt_set_min_objective(opt, nlopt_objective, NULL);
+}
 
-    // At least one constraint seems to be needed
-    nlopt_add_inequality_constraint(opt, dummy_constraint, NULL, 1e-8);
+char* read_trajectory_file(char* trajectory_path) {
+    /*
+    Read the trajectory file and return its contents as a string.
     
-    nlopt_set_ftol_rel(opt, 1e-6);
-    nlopt_set_maxeval(opt, 100);
-
-    double x[2] = { run_params->theta_lat, run_params->theta_long };
-    double minf;
-
-    clock_t start, end;
-    double cpu_time_used;
-    start = clock();
-
-    int ret = nlopt_optimize(opt, x, &minf);
-    end = clock();
-    cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
-    printf("nlopt_optimize took %f seconds\n", cpu_time_used);
-    if (ret < 0) {
-        printf("NLopt failed with code %d\n", ret);
-        
-    } else {
-        printf("Found minimum at (%g, %g) with value %0.10g\n", x[0], x[1], minf);
+    INPUT:
+    ----------
+        trajectory_path: char*
+            Path to the trajectory file
+    
+    OUTPUTS:
+    ----------
+        file_content: char*
+            String containing the entire trajectory file content, or NULL if file not found
+    */
+    printf("Attempting to read trajectory file from: %s\n", trajectory_path);
+    
+    FILE *file = fopen(trajectory_path, "r");
+    
+    // Get file size
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    
+    if (file_size <= 0) {
+        printf("Error: Trajectory file is empty or invalid size: %ld\n", file_size);
+        fclose(file);
+        return NULL;
     }
-    run_params->theta_lat = x[0];
-    run_params->theta_long = x[1];
-
-    nlopt_destroy(opt);
+    char* content = (char*)malloc((file_size + 1) * sizeof(char));
+    
+    // Read file content
+    size_t bytes_read = fread(content, 1, file_size, file);
+    content[bytes_read] = '\0';
+    
+    fclose(file);
+    printf("Successfully read trajectory file (%ld bytes)\n", file_size);
+    return content;
 }
 
 
-char* mc_run_wrapper(char *run_name, int run_type, 
+char* mc_run_wrapper(char *run_name, int run_type, char *output_path, 
     char *impact_data_path, char *trajectory_path, char *atm_profile_path, 
     int num_runs, double time_step_main, double time_step_reentry, int traj_output, 
     int impact_output, double x_aim, double y_aim, double z_aim, double theta_long, 
@@ -840,7 +837,7 @@ char* mc_run_wrapper(char *run_name, int run_type,
     run_params.step_acc_hgt = step_acc_hgt;
     run_params.step_acc_dur = step_acc_dur;
 
-    get_thrust_angle(aim_lat, aim_lon, &run_params);
+    get_thrust_angle(&run_params);
 
     cart_vector aimpoint = update_aimpoint(run_params);
     printf("Aimpoint in c: %f, %f, %f\n", aimpoint.x, aimpoint.y, aimpoint.z);
@@ -871,6 +868,5 @@ int test() {
     printf("test\n");
     return 1;
 }
-#endif
 
 #endif
