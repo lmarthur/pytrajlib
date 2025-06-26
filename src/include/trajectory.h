@@ -865,14 +865,6 @@ char* mc_run_wrapper(char *run_name, int run_type, char *output_path,
     run_params.step_acc_hgt = step_acc_hgt;
     run_params.step_acc_dur = step_acc_dur;
 
-    get_thrust_angle(&run_params);
-
-    cart_vector aimpoint = update_aimpoint(run_params);
-    printf("Aimpoint in c: %f, %f, %f\n", aimpoint.x, aimpoint.y, aimpoint.z);
-    run_params.x_aim = aimpoint.x;
-    run_params.y_aim = aimpoint.y;
-    run_params.z_aim = aimpoint.z;
-
     impact_data data = mc_run(run_params);
 
     // 24 chars for each double, 2 chars for the comma and space, 1 char for the newline
