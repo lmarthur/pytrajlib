@@ -513,10 +513,8 @@ double enu_to_long_lat() {
     double x = global_xyz[0];
     double y = global_xyz[1];
     double z = global_xyz[2];
-    double r = sqrt(x*x + y*y + z*z);
     global_run_params->theta_long = atan2(y, x);
-    global_run_params->theta_lat = asin(z / r);
-
+    global_run_params->theta_lat = atan(z / sqrt(x*x + y*y));
 }
 
 double aimpoint_error(cart_vector aimpoint){
