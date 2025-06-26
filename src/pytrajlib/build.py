@@ -19,6 +19,9 @@ ffibuilder.cdef(
         double time_step_reentry; 
         int traj_output; 
         int impact_output; 
+        double x_launch; 
+        double y_launch; 
+        double z_launch;
         double x_aim; 
         double y_aim; 
         double z_aim; 

@@ -8,8 +8,12 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 
-from ._traj import ffi
-from ._traj import lib as traj
+try:
+    from ._traj import ffi
+    from ._traj import lib as traj
+except ImportError:
+    from pytrajlib._traj import ffi
+    from pytrajlib._traj import lib as traj
 
 _keep_alive = {}
 
@@ -33,7 +37,7 @@ def sphercoords_to_cartcoords(spher_coords):
     x = r * np.cos(lon) * np.cos(lat)
     y = r * np.sin(lon) * np.cos(lat)
     z = r * np.sin(lat)
-    return [x, y, z]
+    return [float(x), float(y), float(z)]
 
 def to_python_type(value):
     """
@@ -204,7 +208,6 @@ def get_run_params(config_path=None):
     if config_path is None:
         retrieving_default = True
         config_path = str(importlib.resources.files("pytrajlib.config").joinpath("default.toml"))
-    print(f"Using config file: {config_path}")
     if not check_config_exists(config_path):
         raise FileNotFoundError(f"The input file {config_path} does not exist.")
     config_parser = configparser.ConfigParser()
@@ -232,7 +235,8 @@ def run(config=None, **kwargs):
     -------
         config: optional, Dictionary containing the run parameters from the
             config file or command line.
-        kwargs: optional, Override the values in the config file.
+        kwargs: optional, Override the values in the config file, pass in arguments
+            like launch_lat_lon=[0,0], aim_lat_lon=[10, 10]., 
 
     OUTPUTS:
     -------
@@ -240,22 +244,23 @@ def run(config=None, **kwargs):
         from the Monte Carlo run.  Each row is a run, and each column is a field
         from the State Structure.
     """
+    # Convert lat lon to cartesian
+    cart_aim = sphercoords_to_cartcoords([6371e3, *kwargs["aim_lat_lon"][::-1]])
+    cart_launch = sphercoords_to_cartcoords([6371e3, *kwargs["launch_lat_lon"][::-1]])
+    # Set the cartesian coordinates in the kwargs dict to override the config
+    kwargs["x_launch"], kwargs["y_launch"], kwargs["z_launch"] = cart_launch
+    kwargs["x_aim"], kwargs["y_aim"], kwargs["z_aim"] = cart_aim
+
     if isinstance(config, str | None):
         run_params = get_run_params(config)
     else:
         run_params = config
     if kwargs:
         handle_overrides(run_params, kwargs)
-
+    
     create_output_dirs(run_params)
     run_params_struct = get_run_params_struct(run_params)
-    aimpoint = traj.update_aimpoint(run_params_struct[0])
-
-    run_params["x_aim"] = aimpoint.x
-    run_params["y_aim"] = aimpoint.y
-    run_params["z_aim"] = aimpoint.z
-    print(f"Running with aimpoint: {run_params['x_aim']}, {run_params['y_aim']}, {run_params['z_aim']}")
-    print(f"Trajectory output : {ffi.string(run_params_struct.trajectory_path).decode('utf-8')}")
+    
     impact_data = traj.mc_run(run_params_struct[0])
     impact_df = impact_data_to_df(impact_data, int(run_params["num_runs"]))
 
@@ -296,6 +301,16 @@ def add_arguments_to_parser(parser):
         metavar=("LATITUDE", "LONGITUDE"),
         dest="launch_lat_lon",
         help="Launch latitude and longitude in decimal degrees (default: 0.0 0.0)",
+    )
+    parser.add_argument(
+        "-a",
+        "--aim",
+        type=float,
+        default=[0.0, 0.0],
+        nargs=2,
+        metavar=("LATITUDE", "LONGITUDE"),
+        dest="aim_lat_lon",
+        help="Aimpoint latitude and longitude in decimal degrees (default: 0.0 0.0)",
     )
 
     run_params = get_run_params()
@@ -338,7 +353,6 @@ def add_arguments_to_parser(parser):
         "output_dir": "o",
         "impact_output": "i",
         "traj_output": "j",
-        "atm_profile_path": "a",
     }
 
     for key, value in run_params.items():
@@ -426,9 +440,4 @@ def cli():
         config_dict = defaults_dict
         config_dict.pop("config")
 
-    # Convert lat lon to cartesian
-    cart = sphercoords_to_cartcoords([6371e3, *config_dict["launch_lat_lon"]])
-    config_dict["x_launch"] = cart[0]
-    config_dict["y_launch"] = cart[1]
-    config_dict["z_launch"] = cart[2]
     return run(config=config_dict, **args_dict)
