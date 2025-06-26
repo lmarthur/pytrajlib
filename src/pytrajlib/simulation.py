@@ -288,7 +288,7 @@ def add_arguments_to_parser(parser):
     )
 
     parser.add_argument(
-        "-l"
+        "-l",
         "--launch",
         type=float,
         default=[0.0, 0.0],
