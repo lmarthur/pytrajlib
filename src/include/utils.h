@@ -334,13 +334,15 @@ void get_location(double bearing, double distance, double *start_location, doubl
     Calculate the end location (x, y, z) given a start location (lat, lon in radians),
     a bearing (in radians), and a distance (in meters).
     */
+    // Formula is clockwise from north
+    bearing = -(bearing - M_PI / 2);
     double start_lat = start_location[0];
     double start_lon = start_location[1];
     double angular_distance = distance / 6371e3;
     double end_lat = asin(sin(start_lat) * cos(angular_distance) +
                     cos(start_lat) * sin(angular_distance) * cos(bearing));
     double end_lon = start_lon + atan2(sin(bearing) * sin(angular_distance) * cos(start_lat),
-                                 cos(angular_distance) - sin(start_lat) * sin(end_lat));
+                                    cos(angular_distance) - sin(start_lat) * sin(end_lat));
     end_location[0] = end_lat;
     end_location[1] = end_lon;
 }

@@ -618,11 +618,11 @@ void get_thrust_angle(runparams *run_params){
     */
     double earth_radius = 6371e3; 
 
-    double cart_coords[3] = {run_params->x_aim, run_params->y_aim, run_params->z_aim};
+    double aim_cart_coords[3] = {run_params->x_aim, run_params->y_aim, run_params->z_aim};
     double launch_cart_coords[3] = {run_params->x_launch, run_params->y_launch, run_params->z_launch};
     double aim_spher_coords[3];
     double launch_spher_coords[3];
-    cartcoords_to_sphercoords(cart_coords, aim_spher_coords);
+    cartcoords_to_sphercoords(aim_cart_coords, aim_spher_coords);
     cartcoords_to_sphercoords(launch_cart_coords, launch_spher_coords);
 
     // Use a coordinate system where the launch point is always the origin.
@@ -632,9 +632,9 @@ void get_thrust_angle(runparams *run_params){
                             aim_spher_coords[2], aim_spher_coords[1]);
     double distance = haversine_distance(launch_spher_coords[2], launch_spher_coords[1], 
                             aim_spher_coords[2], aim_spher_coords[1]);
-    double current_aim_sphere[2] = {aim_spher_coords[2], aim_spher_coords[1]};
+    double origin[2] = {0.0, 0.0};
     double new_aim_lat_long[2];
-    get_location(bearing, distance, current_aim_sphere, new_aim_lat_long);
+    get_location(bearing, distance, origin, new_aim_lat_long);
 
     double new_aim_spher_coords[3] = {earth_radius, new_aim_lat_long[1], new_aim_lat_long[0]};
     double new_aim_cart_coords[3];
@@ -642,6 +642,10 @@ void get_thrust_angle(runparams *run_params){
     run_params->x_aim = new_aim_cart_coords[0];
     run_params->y_aim = new_aim_cart_coords[1];
     run_params->z_aim = new_aim_cart_coords[2];
+
+    run_params->x_launch = 6371e3; // Set the launch point to the origin
+    run_params->y_launch = 0.0;
+    run_params->z_launch = 0.0;
 
     runparams rp = sanitize_runparams_for_aimpoint(*run_params);
     global_run_params = &rp;
