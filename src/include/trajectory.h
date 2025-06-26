@@ -17,6 +17,17 @@
 #include "optimize/mnbrak.h"
 #include "optimize/brent.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+EM_JS(void, num_run_counter, (), {
+    console.log("Incrementing run counter");
+  });
+
+EM_JS(void, error_tracker, (double error), {
+    console.log("Current error:", error);
+  });
+#endif
+
 // Define a constant upper limit for the number of Monte Carlo runs
 #define MAX_RUNS 1000
 
@@ -726,6 +737,12 @@ impact_data mc_run(runparams run_params){
             update_loading_bar(num_runs % 10, num_runs);
         }
         #endif
+
+        // Allow time for browser to update.
+        #ifdef __EMSCRIPTEN__
+            num_run_counter();
+            emscripten_sleep(0);
+        #endif
     }
 
     // Output the impact data
@@ -735,6 +752,150 @@ impact_data mc_run(runparams run_params){
 
     return impact_data;
 
+}
+
+char* read_trajectory_file(char* trajectory_path) {
+    /*
+    Read the trajectory file and return its contents as a string.
+    
+    INPUT:
+    ----------
+        trajectory_path: char*
+            Path to the trajectory file
+    
+    OUTPUTS:
+    ----------
+        file_content: char*
+            String containing the entire trajectory file content, or NULL if file not found
+    */
+    printf("Attempting to read trajectory file from: %s\n", trajectory_path);
+    
+    FILE *file = fopen(trajectory_path, "r");
+    
+    // Get file size
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    
+    if (file_size <= 0) {
+        printf("Error: Trajectory file is empty or invalid size: %ld\n", file_size);
+        fclose(file);
+        return NULL;
+    }
+    char* content = (char*)malloc((file_size + 1) * sizeof(char));
+    
+    // Read file content
+    size_t bytes_read = fread(content, 1, file_size, file);
+    content[bytes_read] = '\0';
+    
+    fclose(file);
+    printf("Successfully read trajectory file (%ld bytes)\n", file_size);
+    return content;
+}
+
+
+char* mc_run_wrapper(char *run_name, int run_type, char *output_path, 
+    char *impact_data_path, char *trajectory_path, char *atm_profile_path, 
+    int num_runs, double time_step_main, double time_step_reentry, int traj_output, 
+    int impact_output, double x_aim, double y_aim, double z_aim, double theta_long, 
+    double theta_lat, int grav_error, int atm_model, int atm_error, int gnss_nav, 
+    int ins_nav, int rv_maneuv, double reentry_vel, double deflection_time, 
+    int rv_type, double initial_x_error, double initial_pos_error, 
+    double initial_vel_error, double initial_angle_error, double acc_scale_stability, 
+    double gyro_bias_stability, double gyro_noise, double gnss_noise, double cl_pert, 
+    double step_acc_mag, double step_acc_hgt, double step_acc_dur, double aim_lat, double aim_lon){
+    /*
+    Return the impact data as a string. This is used for the web version of the 
+    code because it is easier for javascript to handle strings than pointers or
+    structs.
+
+    Also computes the best thrust angles to achieve the provided aimpoint. 
+
+    INPUT:
+    ----------
+        All parameters used in the runparams struct + the aimpoint latitude and 
+        longitude (radians).
+    
+    OUTPUTS:
+    ----------
+        data_str: char*
+            string containing the impact data. First row is aim_x, aim_y, aim_z
+            Each subsequent row is t, x, y, z, vx, vy, vz.
+    */
+
+    runparams run_params;
+    run_params.run_name = run_name;
+    run_params.run_type = run_type;
+    run_params.impact_data_path = impact_data_path;
+    run_params.trajectory_path = trajectory_path;
+    run_params.atm_profile_path = atm_profile_path;
+    run_params.num_runs = num_runs;
+    run_params.time_step_main = time_step_main;
+    run_params.time_step_reentry = time_step_reentry;
+    run_params.traj_output = traj_output;
+    run_params.impact_output = impact_output;
+    run_params.x_aim = x_aim;
+    run_params.y_aim = y_aim;
+    run_params.z_aim = z_aim;
+    run_params.theta_long = theta_long;
+    run_params.theta_lat = theta_lat;
+    run_params.grav_error = grav_error;
+    run_params.atm_model = atm_model;
+    run_params.atm_error = atm_error;
+    run_params.gnss_nav = gnss_nav;
+    run_params.ins_nav = ins_nav;
+    run_params.rv_maneuv = rv_maneuv;
+    run_params.reentry_vel = reentry_vel;
+    run_params.deflection_time = deflection_time;
+    run_params.rv_type = rv_type;
+    run_params.initial_x_error = initial_x_error;
+    run_params.initial_pos_error = initial_pos_error;
+    run_params.initial_vel_error = initial_vel_error;
+    run_params.initial_angle_error = initial_angle_error;
+    run_params.acc_scale_stability = acc_scale_stability;
+    run_params.gyro_bias_stability = gyro_bias_stability;
+    run_params.gyro_noise = gyro_noise;
+    run_params.gnss_noise = gnss_noise;
+    run_params.cl_pert = cl_pert;
+    run_params.step_acc_mag = step_acc_mag;
+    run_params.step_acc_hgt = step_acc_hgt;
+    run_params.step_acc_dur = step_acc_dur;
+
+    get_thrust_angle(&run_params);
+
+    cart_vector aimpoint = update_aimpoint(run_params);
+    printf("Aimpoint in c: %f, %f, %f\n", aimpoint.x, aimpoint.y, aimpoint.z);
+    run_params.x_aim = aimpoint.x;
+    run_params.y_aim = aimpoint.y;
+    run_params.z_aim = aimpoint.z;
+
+    impact_data data = mc_run(run_params);
+
+    // 24 chars for each double, 2 chars for the comma and space, 1 char for the newline
+    int size = ((24 + 2) * 7 + 1);
+    // Add 1 to num_rus so the first row has the aimpoint
+    char* data_str = (char*)malloc(size * (run_params.num_runs + 1) * sizeof(char));
+    snprintf(data_str, size, "%f, %f, %f\n", run_params.x_aim, run_params.y_aim, run_params.z_aim);
+    for (int i = 0; i < run_params.num_runs; i++){
+        char* row_str;
+        snprintf(row_str, size, "%f, %f, %f, %f, %f, %f, %f\n", data.impact_states[i].t, data.impact_states[i].x, data.impact_states[i].y, data.impact_states[i].z, data.impact_states[i].vx, data.impact_states[i].vy, data.impact_states[i].vz);
+        strcat(data_str, row_str);
+    }
+    char* t = read_trajectory_file(run_params.trajectory_path);
+    // Append the trajectory data to the end of the string
+    strcat(data_str, "\nTrajectory Data:\n");
+    strcat(data_str, t);
+    return data_str;
+}
+
+
+int test() {
+    /*
+    Simple test the code is working; useful to see if the web version has loaded
+    properly.
+    */
+    printf("test\n");
+    return 1;
 }
 
 #endif
