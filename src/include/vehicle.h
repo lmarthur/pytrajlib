@@ -379,4 +379,304 @@ void update_mass(vehicle *vehicle, double t){
     return;
 }
 
+booster init_scud_booster(){
+    /*
+    Initializes a SCUD missile booster
+
+    OUTPUTS:
+    ----------
+        booster: booster
+            booster struct
+    */
+
+    booster booster;
+    strcpy(booster.name, "SCUD");
+    booster.num_stages = 1;
+    booster.maxdiam = 0.88; // [m] max diameter of missile
+    booster.area = M_PI * (booster.maxdiam / 2) * (booster.maxdiam / 2);
+    booster.c_d_0 = 0.15; // Using V2 drag characteristics
+    booster.bus_mass = 987; // TODO NOTE: this is the payload mass, not the bus mass
+
+    // Stage 1 parameters
+    booster.wet_mass[0] = 4873;
+    booster.fuel_mass[0] = 3771;
+    booster.dry_mass[0] = booster.wet_mass[0] - booster.fuel_mass[0];
+    booster.isp0[0] = 226 * 9.81;
+    booster.burn_time[0] = 62;
+    booster.fuel_burn_rate[0] = 58.8;
+
+    // Calculate totals
+    booster.total_burn_time = booster.burn_time[0];
+    booster.total_mass = booster.wet_mass[0] + booster.bus_mass;
+
+    return booster;
+}
+
+vehicle init_scud_ballistic() {
+    vehicle vehicle;
+    vehicle.booster = init_scud_booster();
+    vehicle.rv = init_ballistic_rv();
+    vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
+    vehicle.current_mass = vehicle.total_mass;
+}
+
+vehicle init_scud_swerve() {
+    vehicle vehicle;
+    vehicle.booster = init_scud_booster();
+    vehicle.rv = init_swerve_rv();
+    vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
+    vehicle.current_mass = vehicle.total_mass;
+}
+
+booster init_scud_er_booster(){
+    /*
+    Initializes a SCUD-ER missile booster
+
+    OUTPUTS:
+    ----------
+        booster: booster
+            booster struct
+    */
+
+    booster booster;
+    strcpy(booster.name, "SCUD-ER");
+    booster.num_stages = 1;
+    booster.maxdiam = 1.0;
+    booster.area = M_PI * (booster.maxdiam / 2) * (booster.maxdiam / 2);
+    booster.c_d_0 = 0.15; // Using V2 drag characteristics
+    booster.bus_mass = 500; // payload mass
+
+    // Stage 1 parameters
+    booster.wet_mass[0] = 8730;
+    booster.fuel_mass[0] = 7730;
+    booster.dry_mass[0] = booster.wet_mass[0] - booster.fuel_mass[0];
+    booster.isp0[0] = 230 * 9.81;
+    booster.burn_time[0] = 127.8;
+    booster.fuel_burn_rate[0] = 57.83;
+
+    // Calculate totals
+    booster.total_burn_time = booster.burn_time[0];
+    booster.total_mass = booster.wet_mass[0] + booster.bus_mass;
+
+    return booster;
+}
+
+vehicle init_scud_er_ballistic() {
+    /*
+    Initializes a SCUD-ER vehicle carrying a ballistic reentry vehicle
+
+    OUTPUTS:
+    ----------
+        vehicle: vehicle
+            vehicle struct
+    */
+    vehicle vehicle;
+    vehicle.booster = init_scud_er_booster();
+    vehicle.rv = init_ballistic_rv();
+    vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
+    vehicle.current_mass = vehicle.total_mass;
+
+    return vehicle;
+}
+
+vehicle init_scud_er_swerve() {
+    /*
+    Initializes a SCUD-ER vehicle carrying a maneuverable reentry vehicle
+    OUTPUTS:
+    ----------
+        vehicle: vehicle
+            vehicle struct
+    */
+    vehicle vehicle;
+    vehicle.booster = init_scud_er_booster();
+    vehicle.rv = init_swerve_rv();
+    vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
+    vehicle.current_mass = vehicle.total_mass;
+
+    return vehicle;
+}
+
+booster init_gbsd_booster(){
+    /*
+    Initializes a GBSD missile booster
+
+    OUTPUTS:
+    ----------
+        booster: booster
+            booster struct
+    */
+
+    booster booster;
+    strcpy(booster.name, "GBSD");
+    booster.num_stages = 3;
+    booster.maxdiam = 1.7;
+    booster.area = M_PI * (booster.maxdiam / 2) * (booster.maxdiam / 2);
+    booster.c_d_0 = 0.15;
+    booster.bus_mass = 600; // W78 + bus
+
+    // Stage 1 parameters
+    booster.wet_mass[0] = 23230;
+    booster.fuel_mass[0] = 0.89 * booster.wet_mass[0];
+    booster.dry_mass[0] = booster.wet_mass[0] - booster.fuel_mass[0];
+    booster.isp0[0] = 267 * 9.81;
+    booster.burn_time[0] = 61;
+    booster.fuel_burn_rate[0] = booster.fuel_mass[0] / booster.burn_time[0];
+
+    // Stage 2 parameters
+    booster.wet_mass[1] = 7270;
+    booster.fuel_mass[1] = 0.86 * booster.wet_mass[1]; // 6240
+    booster.dry_mass[1] = booster.wet_mass[1] - booster.fuel_mass[1];
+    booster.isp0[1] = 287 * 9.81;
+    booster.burn_time[1] = 66;
+    booster.fuel_burn_rate[1] = booster.fuel_mass[1] / booster.burn_time[1];
+
+    // Stage 3 parameters
+    booster.wet_mass[2] = 3710;
+    booster.fuel_mass[2] = 0.89 * booster.wet_mass[2]; // 3306
+    booster.dry_mass[2] = booster.wet_mass[2] - booster.fuel_mass[2];
+    booster.isp0[2] = 285 * 9.81;
+    booster.burn_time[2] = 61;
+    booster.fuel_burn_rate[2] = booster.fuel_mass[2] / booster.burn_time[2];
+
+    // Calculate totals
+    booster.total_burn_time = 0;
+    booster.total_mass = booster.bus_mass;
+    for (int i = 0; i < booster.num_stages; i++){
+        booster.total_burn_time += booster.burn_time[i];
+        booster.total_mass += booster.wet_mass[i];
+    }
+
+    return booster;
+}
+
+vehicle init_gbsd_ballistic() {
+    /*
+    Initializes a GBSD vehicle carrying a ballistic reentry vehicle
+
+    OUTPUTS:
+    ----------
+        vehicle: vehicle
+            vehicle struct
+    */
+
+    vehicle vehicle;
+    vehicle.booster = init_gbsd_booster();
+    vehicle.rv = init_ballistic_rv();
+    vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
+    vehicle.current_mass = vehicle.total_mass;
+
+    return vehicle;
+}
+
+vehicle init_gbsd_swerve() {
+    /*
+    Initializes a GBSD vehicle carrying a maneuverable reentry vehicle
+
+    OUTPUTS:
+    ----------
+        vehicle: vehicle
+            vehicle struct
+    */
+
+    vehicle vehicle;
+    vehicle.booster = init_gbsd_booster();
+    vehicle.rv = init_swerve_rv();
+    vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
+    vehicle.current_mass = vehicle.total_mass;
+
+    return vehicle;
+}
+
+
+booster init_d5_booster(){
+    /*
+    Initializes a D5 (Trident) missile booster
+
+    OUTPUTS:
+    ----------
+        booster: booster
+            booster struct
+    */
+
+    booster booster;
+    strcpy(booster.name, "D5");
+    booster.num_stages = 3;
+    booster.maxdiam = 2.11;
+    booster.area = M_PI * (booster.maxdiam / 2) * (booster.maxdiam / 2);
+    booster.c_d_0 = 0.15; // Using solid missile drag characteristics
+    booster.bus_mass = 1000; // payload mass
+
+    // Stage 1 parameters
+    booster.wet_mass[0] = 39241;
+    booster.fuel_mass[0] = 33355;
+    booster.dry_mass[0] = booster.wet_mass[0] - booster.fuel_mass[0];
+    booster.isp0[0] = 281 * 9.81; // m/s
+    booster.burn_time[0] = 63;
+    booster.fuel_burn_rate[0] = booster.fuel_mass[0] / booster.burn_time[0];
+
+    // Stage 2 parameters
+    booster.wet_mass[1] = 11866;
+    booster.fuel_mass[1] = 10320;
+    booster.dry_mass[1] = booster.wet_mass[1] - booster.fuel_mass[1];
+    booster.isp0[1] = 281 * 9.81;
+    booster.burn_time[1] = 64;
+    booster.fuel_burn_rate[1] = booster.fuel_mass[1] / booster.burn_time[1];
+
+    // Stage 3 parameters
+    booster.wet_mass[2] = 2191;
+    booster.fuel_mass[2] = 1970;
+    booster.dry_mass[2] = booster.wet_mass[2] - booster.fuel_mass[2];
+    booster.isp0[2] = 281 * 9.81;
+    booster.burn_time[2] = 43;
+    booster.fuel_burn_rate[2] = booster.fuel_mass[2] / booster.burn_time[2];
+
+    // Calculate totals
+    booster.total_burn_time = 0;
+    booster.total_mass = booster.bus_mass;
+    for (int i = 0; i < booster.num_stages; i++){
+        booster.total_burn_time += booster.burn_time[i];
+        booster.total_mass += booster.wet_mass[i];
+    }
+
+    return booster;
+}
+
+vehicle init_d5_ballistic() {
+    /*
+    Initializes a D5 vehicle carrying a ballistic reentry vehicle
+
+    OUTPUTS:
+    ----------
+        vehicle: vehicle
+            vehicle struct
+    */
+
+    vehicle vehicle;
+    vehicle.booster = init_d5_booster();
+    vehicle.rv = init_ballistic_rv();
+    vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
+    vehicle.current_mass = vehicle.total_mass;
+
+    return vehicle;
+}
+
+vehicle init_d5_swerve() {
+    /*
+    Initializes a D5 vehicle carrying a maneuverable reentry vehicle
+
+    OUTPUTS:
+    ----------
+        vehicle: vehicle
+            vehicle struct
+    */
+
+    vehicle vehicle;
+    vehicle.booster = init_d5_booster();
+    vehicle.rv = init_swerve_rv();
+    vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
+    vehicle.current_mass = vehicle.total_mass;
+
+    return vehicle;
+}
+
 #endif
