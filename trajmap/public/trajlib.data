@@ -10005,7 +10005,7 @@
 run_name = reentry
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 1
-output_path = ./output
+output_dir = ./output
 num_runs = 2
 time_step_main = 0.1
 time_step_reentry = 0.001
@@ -10058,7 +10058,7 @@ step_acc_dur = 0.1[RUN]
 run_name = run_0
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 0
-output_path = ./output
+output_dir = ./output
 num_runs = 1000
 time_step_main = 1.0
 time_step_reentry = 0.01
@@ -10112,7 +10112,7 @@ step_acc_dur = 0[RUN]
 run_name = run_1
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 0
-output_path = ./output
+output_dir = ./output
 num_runs = 1000
 time_step_main = 1.0
 time_step_reentry = 0.01
@@ -10165,7 +10165,7 @@ step_acc_dur = 0[RUN]
 run_name = run_2
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 0
-output_path = ./output
+output_dir = ./output
 num_runs = 1000
 time_step_main = 1.0
 time_step_reentry = 0.01
@@ -10214,7 +10214,7 @@ step_acc_dur = 0[RUN]
 run_name = run_3
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 0
-output_path = ./output
+output_dir = ./output
 num_runs = 1000
 time_step_main = 1.0
 time_step_reentry = 0.01
@@ -10265,7 +10265,7 @@ step_acc_dur = 0[RUN]
 run_name = run_4
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 0
-output_path = ./output
+output_dir = ./output
 num_runs = 1000
 time_step_main = 1.0
 time_step_reentry = 0.01
@@ -10317,7 +10317,7 @@ step_acc_dur = 0[RUN]
 run_name = test
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 0
-output_path = ./output
+output_dir = ./output
 num_runs = 2
 time_step_main = 1.0
 time_step_reentry = 0.01

@@ -797,7 +797,8 @@ char* read_trajectory_file(char* trajectory_path) {
 char* mc_run_wrapper(char *run_name, int run_type, char *output_path, 
     char *impact_data_path, char *trajectory_path, char *atm_profile_path, 
     int num_runs, double time_step_main, double time_step_reentry, int traj_output, 
-    int impact_output, double x_aim, double y_aim, double z_aim, double theta_long, 
+    int impact_output, double x_launch, double y_launch, double z_launch,
+    double x_aim, double y_aim, double z_aim, double theta_long, 
     double theta_lat, int grav_error, int atm_model, int atm_error, int gnss_nav, 
     int ins_nav, int rv_maneuv, double reentry_vel, double deflection_time, 
     int rv_type, double initial_x_error, double initial_pos_error, 
@@ -834,6 +835,9 @@ char* mc_run_wrapper(char *run_name, int run_type, char *output_path,
     run_params.time_step_reentry = time_step_reentry;
     run_params.traj_output = traj_output;
     run_params.impact_output = impact_output;
+    run_params.x_launch = x_launch;
+    run_params.y_launch = y_launch;
+    run_params.z_launch = z_launch;
     run_params.x_aim = x_aim;
     run_params.y_aim = y_aim;
     run_params.z_aim = z_aim;

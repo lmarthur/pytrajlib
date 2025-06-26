@@ -25,6 +25,56 @@ const cartesianToSpherical = (x, y, z) => {
   return [r, longitude, latitude];
 };
 
+const bearing = (start, end) => {
+  /**
+   * Calculate the bearing (in radians) from start to end (lat, lon in radians)
+   */
+  const [launch_lat, launch_lon] = start;
+  const [aim_lat, aim_lon] = end;
+  const lon_diff = aim_lon - launch_lon;
+
+  // East component
+  const east = Math.sin(lon_diff) * Math.cos(aim_lat);
+
+  // North component
+  const north =
+    Math.cos(launch_lat) * Math.sin(aim_lat) -
+    Math.sin(launch_lat) * Math.cos(aim_lat) * Math.cos(lon_diff);
+
+    
+  return Math.atan2(north, east);
+}
+
+const haversineDistance = (start, end) => {
+  /**
+   * Calculate the haversine distance between two points (lat, lon in radians)
+   */
+  const [launch_lat, launch_lon] = start;
+  const [aim_lat, aim_lon] = end;
+  const a =
+    Math.sin((aim_lat - launch_lat) / 2) * Math.sin((aim_lat - launch_lat) / 2) +
+    Math.cos(launch_lat) * Math.cos(aim_lat) *
+    Math.sin((aim_lon - launch_lon) / 2) * Math.sin((aim_lon - launch_lon) / 2);
+  const angular_distance = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = 6371e3 * angular_distance;
+  return distance;
+};
+
+const getLocation = (bearing, distance, start) => {
+  /**
+   * Calculate the end location (lat, lon in radians) given a start location (lat, lon in radians),
+   * a bearing (in radians), and a distance (in meters).
+   */
+  launch_lat = start[0]; // latitude of start point in radians
+  launch_long = start[1]; // longitude of start point in radians
+  angular_distance = distance / 6371e3;
+  const aim_lat = Math.asin( Math.sin(launch_lat)*Math.cos(angular_distance) +
+                      Math.cos(launch_lat)*Math.sin(angular_distance)*Math.cos(bearing) );
+  const aim_long = launch_long + Math.atan2(Math.sin(bearing)*Math.sin(angular_distance)*Math.cos(launch_lat),
+                            Math.cos(angular_distance)-Math.sin(launch_lat)*Math.sin(aim_lat));
+  return [aim_lat, aim_long];
+};
+
 const extractImpactData = (impactDataStr) => {
   const impactData = impactDataStr
     .trim()
