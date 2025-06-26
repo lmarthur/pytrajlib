@@ -2,18 +2,13 @@
 echo "Compiling the program with Emscripten..."
 
 # You need to have downloaded and installed Emscripten SDK
-source ../emsdk/emsdk_env.sh
+# source ../emsdk/emsdk_env.sh
 
 echo "Compiling the shared library to WebAssembly..."
 
-# Also requires the nlopt library which should be built with emscripten
 emcc src/main.c \
     src/include/rng/mt19937-64/mt19937-64.c \
     src/include/optimize/nrutil.c \
-    ../nlopt/build/libnlopt.a \
-    -I ../nlopt/include \
-    -I ../nlopt/src/api \
-    -Isrc ../nlopt/build/libnlopt.a \
     -Iinclude \
     -Iinclude/rng/mt19937-64 \
     -Iinclude/optimize \
