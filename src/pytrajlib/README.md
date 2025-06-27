@@ -1,9 +1,10 @@
 # pytrajlib 
 ## Python developer documentation
 
-There are two ways to run pytrajlib. 1) by building the C shared object library and then running a Python script or 2) with a local pip installation. 
+There are three ways to run pytrajlib. 1) by building the C shared object library and then running a Python script or 2) with a local pip installation from source 3) with 
+a pre-build wheel. 
 
-### Build C library and run Python script
+### 1. Build C library and run Python script
 We use `uv` to manage dependencies and build the package. [Install `uv`](https://docs.astral.sh/uv/#installation).
 
 Dependencies and settings for building the Python package are set in [pyproject.toml](../../pyproject.toml). 
@@ -53,7 +54,7 @@ uv run --with jupyter jupyter lab
 ```
 
 
-### Local pip installation
+### Local pip installation from source
 To install the pip package locally, we recommend creating a virtual environment. 
 
 ```bash
@@ -80,4 +81,22 @@ To exit the virtual environment, run
 
 ```bash
 deactivate
+```
+
+### pip installation from pre-build wheel
+Grab the `.whl` file appropriate for your OS and Python version. 
+
+(Optional, but recommended) create and enter a virtual environment.
+```bash
+python -m venv venv
+source venv/bin/activate
+
+# Windows
+.venv\Scripts\activate 
+```
+
+Inside the virtual environment, pip install the wheel:
+
+```bash
+pip install <name of downloaded wheel>.whl
 ```
