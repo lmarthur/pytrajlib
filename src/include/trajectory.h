@@ -473,18 +473,7 @@ cart_vector update_aimpoint(runparams run_params){
     runparams run_params_temp = sanitize_runparams_for_aimpoint(run_params);
     
     // Initialize the vehicle 
-    vehicle vehicle;
-    if (run_params_temp.rv_type == 0){
-            vehicle = init_mmiii_ballistic();
-    }
-    else if (run_params_temp.rv_type == 1){
-            vehicle = init_mmiii_swerve();
-    }
-    else{
-            printf("Error: Invalid RV type\n");
-            exit(1);
-    }
-    
+    vehicle vehicle = init_vehicle(run_params_temp.booster_type, run_params_temp.rv_type);
 
     state initial_state = init_true_state(&run_params_temp);
     initial_state.theta_long = run_params.theta_long;
@@ -649,7 +638,6 @@ void get_thrust_angle(runparams *run_params){
     global_run_params = &rp;
 
     printf("Optimizing...\n");
-
     optimize_thrust_angles(new_aim_lat_long[0], new_aim_lat_long[1], 0.0, 0.0);
 
     printf("bearing vector: %f, %f\n", global_run_params->north, global_run_params->east);
@@ -710,16 +698,7 @@ impact_data mc_run(runparams run_params){
 
         vehicle vehicle;
         if (run_params.run_type == 0){
-            if (run_params.rv_type == 0){
-                vehicle = init_mmiii_ballistic();
-            }
-            else if (run_params.rv_type == 1){
-                                vehicle = init_mmiii_swerve();
-            }
-            else{
-                printf("Error: Invalid RV type\n");
-                exit(1);
-            }
+            vehicle = init_vehicle(run_params.booster_type, run_params.rv_type);
         }
         else if (run_params.run_type == 1){
             vehicle = init_reentry_only();

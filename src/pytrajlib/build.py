@@ -40,6 +40,7 @@ ffibuilder.cdef(
         double reentry_vel; 
         double deflection_time; 
 
+        int booster_type;
         int rv_type; 
 
         double initial_x_error; 

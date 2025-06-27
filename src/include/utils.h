@@ -36,6 +36,7 @@ typedef struct runparams{
     double reentry_vel; // reentry velocity in meters per second
     double deflection_time; // time to make full flap deflection in seconds, used for maneuverability
 
+    int booster_type; // type of booster (0: MMIII, 1: SCUD, 2: SCUD-ER, 3: GBSD, 4: D5, 5: Mock)
     int rv_type; // reentry vehicle type (0: ballistic, 1: maneuverable)
 
     double initial_x_error; // initial x-error in meters

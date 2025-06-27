@@ -333,6 +333,7 @@ def add_arguments_to_parser(parser):
         "rv_maneuv": f"If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability (default: {run_params['rv_maneuv']})",
         "reentry_vel": f"Reentry velocity (m/s) for reentry only simulation (run_type = 1) (default: {run_params['reentry_vel']})",
         "deflection_time": f"Deflection time (s) for control surfaces (default: {run_params['deflection_time']})",
+        "booster_type": f"0 for MMIII, 1 for SCUD, 2 for SCUD-ER, 3 for GBSD, 4 for D5, 5 for Mock (default: {run_params['booster_type']}). You can also specify by name: MMIII, SCUD, SCUD-ER, GBSD, D5, MOCK.",
         "rv_type": f"0 for ballistic reentry vehicle, 1 for maneuverable reentry vehicle (default: {run_params['rv_type']})",
         "initial_vel_error": f"Initial veleocity error in m/s (default: {run_params['initial_vel_error']})",
         "acc_scale_stability": f"Accelerometer scale stability in ppm (default : {run_params['acc_scale_stability']})",
@@ -345,6 +346,32 @@ def add_arguments_to_parser(parser):
         "step_acc_dur": f"Step acceleration perturbation duration in seconds for reentry simulation run_type = 1 (default: {run_params['step_acc_dur']})",
     }
 
+    # Allow user to specify booster by name or number
+    booster_name_map = {
+        "MMIII": 0,
+        "SCUD": 1,
+        "SCUD-ER": 2,
+        "GBSD": 3,
+        "D5": 4,
+        "MOCK": 5,
+    }
+    def booster_type_parser(val):
+        if isinstance(val, int):
+            return val
+        try:
+            return int(val)
+        except ValueError:
+            name = str(val).strip().upper()
+            print(f"Parsing booster type: {name}")
+            # Accept both "scud-er" and "scuder"
+            if name.lower().replace("-", "") == "SCUDER":
+                name = "SCUD-ER"
+            if name in booster_name_map:
+                return booster_name_map[name]
+            raise argparse.ArgumentTypeError(
+                f"Invalid booster_type '{val}'. Must be one of: {', '.join(booster_name_map.keys())} or 0-5."
+            )
+
     short_names = {
         "run_name": "r",
         "run_type": "t",
@@ -352,19 +379,26 @@ def add_arguments_to_parser(parser):
         "output_dir": "o",
         "impact_output": "i",
         "traj_output": "j",
+        "booster_type": "b",
+        "rv_type": "v",
     }
 
+    # Patch the type for booster_type to allow name or number
     for key, value in run_params.items():
         flags = [f"--{key.replace('_', '-')}"]
         if key in short_names:
             flags.insert(0, f"-{short_names[key]}")
+        arg_type = type(value)
+        if key == "booster_type":
+            arg_type = booster_type_parser
         parser.add_argument(
             *flags,
             default=value,
-            type=type(value),
+            type=arg_type,
             required=False,
             help=help_text.get(key),
         )
+
     return parser
 
 def handle_overrides(config_dict, override_dict):
