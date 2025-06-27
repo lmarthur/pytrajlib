@@ -135,6 +135,30 @@ def get_run_params(config_path=None):
         )
     return run_params
 
+def booster_type_parser(val):
+    booster_name_map = {
+        "MMIII": 0,
+        "SCUD": 1,
+        "SCUD-ER": 2,
+        "GBSD": 3,
+        "D5": 4,
+        "MOCK": 5,
+    }
+    if isinstance(val, int):
+        return val
+    try:
+        return int(val)
+    except ValueError:
+        name = str(val).strip().upper()
+        print(f"Parsing booster type: {name}")
+        # Accept both "scud-er" and "scuder"
+        if name.lower().replace("-", "") == "SCUDER":
+            name = "SCUD-ER"
+        if name in booster_name_map:
+            return booster_name_map[name]
+        raise argparse.ArgumentTypeError(
+            f"Invalid booster_type '{val}'. Must be one of: {', '.join(booster_name_map.keys())} or 0-5."
+        )
 
 def run(config=None, **kwargs):
     """
@@ -167,6 +191,10 @@ def run(config=None, **kwargs):
     else:
         run_params = config
     handle_overrides(run_params, kwargs)
+
+    if "booster_type" in run_params:
+        # Convert booster_type to int if it is a string
+        run_params["booster_type"] = booster_type_parser(run_params["booster_type"])
     
     create_output_dirs(run_params)
     run_params_struct = get_run_params_struct(run_params)
@@ -257,31 +285,6 @@ def add_arguments_to_parser(parser):
         "step_acc_dur": f"Step acceleration perturbation duration in seconds for reentry simulation run_type = 1 (default: {run_params['step_acc_dur']})",
     }
 
-    # Allow user to specify booster by name or number
-    booster_name_map = {
-        "MMIII": 0,
-        "SCUD": 1,
-        "SCUD-ER": 2,
-        "GBSD": 3,
-        "D5": 4,
-        "MOCK": 5,
-    }
-    def booster_type_parser(val):
-        if isinstance(val, int):
-            return val
-        try:
-            return int(val)
-        except ValueError:
-            name = str(val).strip().upper()
-            print(f"Parsing booster type: {name}")
-            # Accept both "scud-er" and "scuder"
-            if name.lower().replace("-", "") == "SCUDER":
-                name = "SCUD-ER"
-            if name in booster_name_map:
-                return booster_name_map[name]
-            raise argparse.ArgumentTypeError(
-                f"Invalid booster_type '{val}'. Must be one of: {', '.join(booster_name_map.keys())} or 0-5."
-            )
 
     short_names = {
         "run_name": "r",

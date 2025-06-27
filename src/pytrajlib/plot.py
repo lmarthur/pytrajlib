@@ -38,32 +38,11 @@ def _get_impact_data(run_params=None, data=None):
         impact_z = data["z"].values
     return impact_x, impact_y, impact_z
 
-def impact(run_params=None, data=None, output_dir=None):
-    """
-    Plot the impact data from the simulation.
-
-    INPUTS
-    --------
-        run_params (dict): Run parameters for the simulation. If None, use the
-            default parameters.
-        data (np.ndarray | pd.DataFrame): Impact data from the simulation.
-            If None, read from the file specified by run_params.
-        output_dir (str): Directory to save the plots, e.g. "output/". If None, use do not save
-            the plots.
-    """
-    if run_params is None:
-        run_params = get_run_params()
+def _get_local_impact_and_cep(run_params, data, aimpoint_lat, aimpoint_lon, launch_lat, launch_lon):
     impact_x, impact_y, impact_z = _get_impact_data(run_params, data)
 
-    # get longitude and latitude of aimpoint and launchpoint
-    aimpoint_lat, aimpoint_lon = cart2sphere(run_params["x_aim"], run_params["y_aim"], run_params["z_aim"])
-    launch_lat, launch_lon = cart2sphere(run_params["x_launch"], run_params["y_launch"], run_params["z_launch"])
-    # Calculate the range to the aimpoint over the surface of the Earth
-    # This is the great circle distance between the aimpoint and the origin
-    range_to_aimpoint = haversine_distance((launch_lat, launch_lon), (aimpoint_lat, aimpoint_lon))
-    print("Range to aimpoint: ", range_to_aimpoint)
-
     lat, lon = transform_to_earth_coords(impact_x, impact_y, impact_z, (launch_lat, launch_lon))    
+    
     impact_x, impact_y, impact_z = sphere2cart(EARTH_RADIUS, lon, lat)
     # get vector relative to aimpoint
     impact_x = impact_x - run_params["x_aim"]
@@ -85,6 +64,33 @@ def impact(run_params=None, data=None, output_dir=None):
     cep = np.percentile(miss_distance, 50)
     print("CEP: ", cep)
     cep = round(np.percentile(miss_distance, 50), 2)
+    return impact_x_local, impact_y_local, miss_distance, cep
+
+def impact(run_params=None, data=None, output_dir=None):
+    """
+    Plot the impact data from the simulation.
+
+    INPUTS
+    --------
+        run_params (dict): Run parameters for the simulation. If None, use the
+            default parameters.
+        data (np.ndarray | pd.DataFrame): Impact data from the simulation.
+            If None, read from the file specified by run_params.
+        output_dir (str): Directory to save the plots, e.g. "output/". If None, use do not save
+            the plots.
+    """
+    if run_params is None:
+        run_params = get_run_params()
+
+    # get longitude and latitude of aimpoint and launchpoint
+    aimpoint_lat, aimpoint_lon = cart2sphere(run_params["x_aim"], run_params["y_aim"], run_params["z_aim"])
+    launch_lat, launch_lon = cart2sphere(run_params["x_launch"], run_params["y_launch"], run_params["z_launch"])
+    # Calculate the range to the aimpoint over the surface of the Earth
+    # This is the great circle distance between the aimpoint and the origin
+    range_to_aimpoint = haversine_distance((launch_lat, launch_lon), (aimpoint_lat, aimpoint_lon))
+    print("Range to aimpoint: ", range_to_aimpoint)
+
+    impact_x_local, impact_y_local, miss_distance, cep = _get_local_impact_and_cep(run_params, data, aimpoint_lat, aimpoint_lon, launch_lat, launch_lon)
     plotrange = 4 * cep
 
     # Plot the data
@@ -796,19 +802,36 @@ def map(run_params=None, data=None, output_dir=None, show_attribution=True):
         run_params = get_run_params()
 
     attrctrl = 1 if show_attribution else 0
-    m = folium.Map(location=[0, 0], zoom_start=2, attributionControl=attrctrl, control_scale=True)
+    m = folium.Map(location=[0, 0], zoom_start=2, attributionControl=attrctrl, control_scale=True, world_copy_jump=True)
 
     launch_lat, launch_lon = cart2sphere(run_params["x_launch"], run_params["y_launch"], run_params["z_launch"])
     launch = (launch_lat, launch_lon)
     aim_lat, aim_lon = cart2sphere(run_params["x_aim"], run_params["y_aim"], run_params["z_aim"])
+
+
+    # Add CEP circle
+    _, _, _, cep = _get_local_impact_and_cep(run_params, data, aim_lat, aim_lon, launch_lat, launch_lon)
+    if cep is not None:
+        folium.Circle(
+            location=[np.rad2deg(aim_lat), np.rad2deg(aim_lon)],
+            radius=cep,
+            color="black",
+            dash_array="5, 5",
+            fill=True,
+            fill_color="black",
+            fill_opacity=0.1,
+            weight=1,
+            tooltip=f"CEP: {cep:.2f} m",
+        ).add_to(m)
+
     # Add the launch and aim markers
     folium.Marker(
         location=[np.degrees(launch_lat), np.degrees(launch_lon)],
-        tooltip="Launch Point",
+        tooltip=f"Launch Point {np.degrees(launch_lat):.2f}°N, {np.degrees(launch_lon):.2f}°E",
     ).add_to(m)
     folium.Marker(
         location=[np.degrees(aim_lat), np.degrees(aim_lon)],
-        tooltip="Aim Point",
+        tooltip=f"Aim Point {np.degrees(aim_lat):.2f}°N, {np.degrees(aim_lon):.2f}°E",
     ).add_to(m)
 
     impact_x, impact_y, impact_z = _get_impact_data(run_params, data)
