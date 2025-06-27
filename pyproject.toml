@@ -20,6 +20,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "build>=1.2.2.post1",
+    "cibuildwheel>=2.23.3",
     "pytest>=8.3.5",
     "setuptools>=79.0.0",
 ]
@@ -33,3 +34,6 @@ pytrajlib = "pytrajlib:cli"
 [build-system]
 requires = ["setuptools", "cffi"]
 build-backend = "setuptools.build_meta"
+
+[tool.cibuildwheel]
+before-all = "uname -a"
