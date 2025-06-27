@@ -1,105 +1,21 @@
 # This script contains code to generate scatter plots and histograms of the impact data.
 import os
 
+import folium
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-import folium
-
-from pytrajlib.simulation import get_run_params
 from folium.features import DivIcon
 
-EARTH_RADIUS = 6371e3
-
-def cart2sphere(x, y, z):
-    """Convert Cartesian coordinates to spherical coordinates.
-    INPUTS
-    --------
-        x (np.ndarray): x coordinate.
-        y (np.ndarray): y coordinate.
-        z (np.ndarray): z coordinate.
-    OUTPUTS
-    --------
-        lat (np.ndarray): Latitude in radians.
-        lon (np.ndarray): Longitude in radians.
-    """
-    lat = np.atan(z / np.sqrt(x**2 + y**2))
-    lon = np.arctan2(y, x)
-    return lat, lon
-
-def calc_bearing(start, end):
-    """
-    Calculate the bearing (in radians) from start to end (lat, lon in radians).
-    """
-    launch_lat, launch_lon = start
-    aim_lat, aim_lon = end
-    lon_diff = aim_lon - launch_lon
-
-    east = np.sin(lon_diff) * np.cos(aim_lat)
-    north = (
-        np.cos(launch_lat) * np.sin(aim_lat)
-        - np.sin(launch_lat) * np.cos(aim_lat) * np.cos(lon_diff)
-    )
-    return np.arctan2(north, east)
-
-def haversine_distance(start, end):
-    """
-    Calculate the haversine distance between two points (lat, lon in radians).
-    """
-    launch_lat, launch_lon = start
-    aim_lat, aim_lon = end
-    a = (
-        np.sin((aim_lat - launch_lat) / 2) ** 2
-        + np.cos(launch_lat) * np.cos(aim_lat)
-        * np.sin((aim_lon - launch_lon) / 2) ** 2
-    )
-    angular_distance = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
-    distance = EARTH_RADIUS * angular_distance
-    return distance
-
-def get_location(bearing, distance, start):
-    """
-    Calculate the end location (lat, lon in radians) given a start location (lat, lon in radians),
-    a bearing (in radians), and a distance (in meters).
-    """
-    bearing = -(bearing - np.pi / 2)
-    launch_lat = start[0]
-    launch_lon = start[1]
-    angular_distance = distance / EARTH_RADIUS
-    aim_lat = np.arcsin(
-        np.sin(launch_lat) * np.cos(angular_distance)
-        + np.cos(launch_lat) * np.sin(angular_distance) * np.cos(bearing)
-    )
-    aim_lon = launch_lon + np.arctan2(
-        np.sin(bearing) * np.sin(angular_distance) * np.cos(launch_lat),
-        np.cos(angular_distance) - np.sin(launch_lat) * np.sin(aim_lat),
-    )
-    return aim_lat, aim_lon
-
-def cartesian_to_spherical(x, y, z):
-    """
-    Convert cartesian coordinates to spherical (r, lon, lat) in radians.
-    """
-    r = np.sqrt(x**2 + y**2 + z**2)
-    lon = np.arctan2(y, x)
-    lat = np.arcsin(z / r)
-    return r, lon, lat
-
-def transform_to_earth_coords(x, y, z, launchpoint):
-    """
-    Transform from the cartesian x, y, z impact points via a trajectory from the 
-    launchpoint to the 'Earth' coordinates launched from the user-selected launchpoint.
-    launchpoint: dict with keys 'lat' and 'lon' in radians.
-    Returns (lat, lon) in radians.
-    """
-    launch_lon = launchpoint['lon']
-    launch_lat = launchpoint['lat']
-    r, long_from_origin, lat_from_origin = cartesian_to_spherical(x, y, z)
-    bearing = calc_bearing((0, 0), (lat_from_origin, long_from_origin))
-    distance = haversine_distance((0, 0), (lat_from_origin, long_from_origin))
-    lat, lon = get_location(bearing, distance, (launch_lat, launch_lon))
-    return lat, lon
+from pytrajlib.simulation import get_run_params
+from pytrajlib.utils import (
+    EARTH_RADIUS,
+    cart2sphere,
+    haversine_distance,
+    sphere2cart,
+    transform_to_earth_coords,
+)
 
 
 def _get_impact_data(run_params=None, data=None):
@@ -139,28 +55,24 @@ def impact(run_params=None, data=None, output_dir=None):
         run_params = get_run_params()
     impact_x, impact_y, impact_z = _get_impact_data(run_params, data)
 
-    # get longitude and latitude of aimpoint
-    aimpoint_lon = np.arctan2(run_params["y_aim"], run_params["x_aim"])
-    aimpoint_lat = np.arctan2(
-        run_params["z_aim"],
-        np.sqrt(run_params["x_aim"] ** 2 + run_params["y_aim"] ** 2),
-    )
-
+    # get longitude and latitude of aimpoint and launchpoint
+    aimpoint_lat, aimpoint_lon = cart2sphere(run_params["x_aim"], run_params["y_aim"], run_params["z_aim"])
+    launch_lat, launch_lon = cart2sphere(run_params["x_launch"], run_params["y_launch"], run_params["z_launch"])
     # Calculate the range to the aimpoint over the surface of the Earth
     # This is the great circle distance between the aimpoint and the origin
-    range_to_aimpoint = np.arccos(
-        np.sin(aimpoint_lat) * np.sin(0)
-        + np.cos(aimpoint_lat) * np.cos(0) * np.cos(aimpoint_lon)
-    )
-    range_to_aimpoint = range_to_aimpoint * EARTH_RADIUS
+    range_to_aimpoint = haversine_distance((launch_lat, launch_lon), (aimpoint_lat, aimpoint_lon))
     print("Range to aimpoint: ", range_to_aimpoint)
 
+    lat, lon = transform_to_earth_coords(impact_x, impact_y, impact_z, (launch_lat, launch_lon))    
+    impact_x, impact_y, impact_z = sphere2cart(EARTH_RADIUS, lon, lat)
     # get vector relative to aimpoint
     impact_x = impact_x - run_params["x_aim"]
     impact_y = impact_y - run_params["y_aim"]
     impact_z = impact_z - run_params["z_aim"]
 
     # convert impact data to local tangent plane coordinates
+    print(f"aimpont_lat: {aimpoint_lat}, aimpoint_lon: {aimpoint_lon}")
+    print(f"launch_lat: {launch_lat}, launch_lon: {launch_lon}")
     impact_x_local = -np.sin(aimpoint_lon) * impact_x + np.cos(aimpoint_lon) * impact_y
     impact_y_local = (
         -np.sin(aimpoint_lat) * np.cos(aimpoint_lon) * impact_x
@@ -866,7 +778,7 @@ def all_trajectory_plots(run_params=None, data=None, output_dir=None):
     lift_acceleration(run_params, data, output_dir)
     position_vs_altitude(run_params, data, output_dir)
 
-def map(run_params=None, data=None, output_dir=None):
+def map(run_params=None, data=None, output_dir=None, show_attribution=True):
     """
     Plot the trajectory on a map.
 
@@ -878,19 +790,17 @@ def map(run_params=None, data=None, output_dir=None):
             If None, read from the file specified by run_params.
         output_dir (str): Directory to save the plots, e.g. "output/". If None, use do not save
             the plots.
+        show_attribution (bool): Whether to show the tiles attribution on the map.
     """
     if run_params is None:
         run_params = get_run_params()
 
-    m = folium.Map(location=[0, 0], zoom_start=2, attributionControl=0, control_scale=True)
+    attrctrl = 1 if show_attribution else 0
+    m = folium.Map(location=[0, 0], zoom_start=2, attributionControl=attrctrl, control_scale=True)
 
-    print("aim in map", np.array(cart2sphere(run_params["x_aim"], run_params["y_aim"], run_params["z_aim"])) * 180 / np.pi)
-    print(f"{run_params['x_aim']=}, {run_params['y_aim']=}, {run_params['z_aim']=}")
     launch_lat, launch_lon = cart2sphere(run_params["x_launch"], run_params["y_launch"], run_params["z_launch"])
-    launch = {"lon": launch_lon, "lat": launch_lat}
-    print(launch)
+    launch = (launch_lat, launch_lon)
     aim_lat, aim_lon = cart2sphere(run_params["x_aim"], run_params["y_aim"], run_params["z_aim"])
-    # aim_lat, aim_lon = transform_to_earth_coords(run_params["x_aim"], run_params["y_aim"], run_params["z_aim"], launch)
     # Add the launch and aim markers
     folium.Marker(
         location=[np.degrees(launch_lat), np.degrees(launch_lon)],
@@ -901,13 +811,7 @@ def map(run_params=None, data=None, output_dir=None):
         tooltip="Aim Point",
     ).add_to(m)
 
-
     impact_x, impact_y, impact_z = _get_impact_data(run_params, data)
-    print(impact_x[0], impact_y[0], impact_z[0])
-    # lat_impact = np.degrees(np.atan(impact_z / np.sqrt(impact_x**2 + impact_y**2)))
-    # lon_impact = np.degrees(np.arctan2(impact_y, impact_x))
-    # print("Impact latitudes:", lat_impact)
-    # print("Impact longitudes:", lon_impact)
     x_svg = """
     <svg width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
         <line x1="8" y1="8" x2="24" y2="24" stroke="black" stroke-width="3" stroke-linecap="round"/>
@@ -918,7 +822,6 @@ def map(run_params=None, data=None, output_dir=None):
 
     # Add the X icon marker
     for lat, lon in zip(transformed_lat, transformed_lon):
-        print("Adding impact marker at lat:", np.rad2deg(lat), "lon:", np.rad2deg(lon))
         folium.Marker(
             location=[np.rad2deg(lat), np.rad2deg(lon)],
             icon=DivIcon(
@@ -933,14 +836,11 @@ def map(run_params=None, data=None, output_dir=None):
     trajectory_data = _get_trajectory_data(run_params)
     if trajectory_data is None:
         return m
-    print(trajectory_data)
     traj_x = trajectory_data[:, 2]
     traj_y = trajectory_data[:, 3]
     traj_z = trajectory_data[:, 4]
     # Transform the trajectory coordinates to Earth coordinates
     traj_lat, traj_lon = transform_to_earth_coords(traj_x, traj_y, traj_z, launch)
-    print("Trajectory latitudes and longitudes:")
-    print([(np.rad2deg(lat), np.rad2deg(lon)) for lat, lon in zip(traj_lat, traj_lon)])
     # Create a PolyLine for the trajectory
     folium.PolyLine(
         locations=[(np.rad2deg(lat), np.rad2deg(lon)) for lat, lon in zip(traj_lat, traj_lon)],
@@ -948,4 +848,7 @@ def map(run_params=None, data=None, output_dir=None):
         weight=2,
         opacity=0.6,
     ).add_to(m)
+
+    if output_dir is not None:
+        m.save(output_dir + "trajectory_map.html")
     return m

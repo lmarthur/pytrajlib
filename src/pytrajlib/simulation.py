@@ -4,78 +4,21 @@ import importlib.resources
 import os
 from datetime import datetime
 
-import pandas as pd
 import numpy as np
 
-try:
-    from ._traj import ffi
-    from ._traj import lib as traj
-except ImportError:
-    from pytrajlib._traj import ffi
-    from pytrajlib._traj import lib as traj
+from pytrajlib.utils import (
+    EARTH_RADIUS,
+    impact_data_to_df,
+    sphere2cart,
+    to_c_type,
+    to_python_type,
+)
+
+from ._traj import ffi
+from ._traj import lib as traj
 
 _keep_alive = {}
 
-
-def sphercoords_to_cartcoords(spher_coords):
-    """
-    Converts spherical coordinates to Cartesian coordinates.
-
-    INPUTS:
-    ----------
-        spher_coords: [r, lon, lat] in degrees
-
-    OUTPUTS:
-    ----------
-        cart_coords: list of 3 floats
-            [x, y, z]
-    """
-    r, lon, lat = spher_coords
-    lon = np.deg2rad(lon)
-    lat = np.deg2rad(lat)
-    x = r * np.cos(lon) * np.cos(lat)
-    y = r * np.sin(lon) * np.cos(lat)
-    z = r * np.sin(lat)
-    return [float(x), float(y), float(z)]
-
-def to_python_type(value):
-    """
-    Convert string values to their corresponding Python types.
-    INPUTS:
-    ----------
-        value: str
-            The value to convert.
-    OUTPUTS:
-    ----------
-        python_value: any
-            The converted value.
-    """
-    if value.isdecimal():
-        return int(value)
-    try:
-        return float(value)
-    except ValueError:
-        return value
-
-def to_c_type(value):
-    """
-    Convert a Python value to its corresponding C type.
-
-    INPUTS:
-    ----------
-        value: any
-            The value to convert.
-
-    OUTPUTS:
-    ----------
-        c_value: ctype
-            The converted value.
-
-    """
-    if isinstance(value, str):
-        s = ffi.new("char[]", value.encode("utf-8"))
-        return s
-    return value
 
 def get_run_params_struct(config):
     """
@@ -100,38 +43,6 @@ def get_run_params_struct(config):
         except AttributeError:
             pass
     return run_params_struct
-
-def impact_data_to_df(impact_data, num_runs):
-    """
-    Convert the impact data to a Pandas DataFrame.
-
-    INPUTS:
-    -------
-        impact_data: impact_data
-            The impact data from the Monte Carlo run.
-        num_runs: int
-            The number of runs in the Monte Carlo simulation.
-
-    OUTPUTS:
-    -------
-        impact_df: pd.DataFrame
-            The impact data as a Pandas DataFrame.
-    """
-    impact_df = pd.DataFrame()
-    rows = []
-    for i in range(num_runs):
-        row_data = dict(
-            t = impact_data.impact_states[i].t,
-            x = impact_data.impact_states[i].x,
-            y = impact_data.impact_states[i].y,
-            z = impact_data.impact_states[i].z,
-            vx = impact_data.impact_states[i].vx,
-            vy = impact_data.impact_states[i].vy,
-            vz = impact_data.impact_states[i].vz,
-        )
-        rows.append(row_data)
-    impact_df = pd.DataFrame(rows)
-    return impact_df
 
 def check_config_exists(config_path):
     """
@@ -245,10 +156,10 @@ def run(config=None, **kwargs):
     """
     # Convert lat lon to cartesian and set cart coordinates in kwargs to override the config
     if "launch_lat_lon" in kwargs:
-        cart_launch = sphercoords_to_cartcoords([6371e3, *kwargs["launch_lat_lon"][::-1]])
+        cart_launch = sphere2cart(EARTH_RADIUS, *np.deg2rad(kwargs["launch_lat_lon"][::-1]))
         kwargs["x_launch"], kwargs["y_launch"], kwargs["z_launch"] = cart_launch
     if "aim_lat_lon" in kwargs:
-        cart_aim = sphercoords_to_cartcoords([6371e3, *kwargs["aim_lat_lon"][::-1]])
+        cart_aim = sphere2cart(EARTH_RADIUS, *np.deg2rad(kwargs["aim_lat_lon"][::-1]))
         kwargs["x_aim"], kwargs["y_aim"], kwargs["z_aim"] = cart_aim
 
     if isinstance(config, str | None):
@@ -473,5 +384,4 @@ def cli():
         config_dict = defaults_dict
         config_dict.pop("config")
 
-    # print(f"args dict: {args_dict}")
     return run(config=config_dict, **args_dict)

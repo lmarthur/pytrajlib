@@ -73,3 +73,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.pre-commit-config.yaml
