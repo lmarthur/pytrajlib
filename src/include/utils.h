@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdio.h>
 
