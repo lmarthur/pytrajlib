@@ -244,7 +244,7 @@ def add_arguments_to_parser(parser):
         "-a",
         "--aim",
         type=float,
-        default=[0.0, 0.0],
+        default=[0.0, 120.64],
         nargs=2,
         metavar=("LATITUDE", "LONGITUDE"),
         dest="aim_lat_lon",
