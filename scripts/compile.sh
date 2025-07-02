@@ -3,11 +3,8 @@
 # Compile the program
 echo "Compiling the program..."
 
-# mamba activate pytraj_env
-
 rm -f ./test/build/PyTraj_test
-rm -f ./build/libPyTraj.so
-rm -f ./src/pytrajlib/libPyTraj.so
+rm -f ./src/pytrajlib/_traj.so
 
 # Compile with CMake
 cmake -S ./test -B test/build -Wno-dev
@@ -19,9 +16,6 @@ echo "Running the library tests..."
 
 # Compile the shared library
 echo "Compiling the shared library..."
-gcc -shared -fPIC -o ./build/libPyTraj.so ./src/main.c
-
-# Copy the .so file to the pytrajlib directory
-cp ./build/libPyTraj.so ./src/pytrajlib/libPyTraj.so
+uv run src/pytrajlib/build.py
 
 echo "Done."
