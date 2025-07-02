@@ -350,7 +350,10 @@ def handle_overrides(config_dict, override_dict):
 
     # Set output directory to current date/time if not provided by user and the user
     # wants to output impact or trajectory data
-    if config_dict.get("impact_output") == 1 or config_dict.get("traj_output") == 1:
+    if config_dict.get("impact_output") == 1 or config_dict.get("traj_output") in [
+        1,
+        2,
+    ]:
         if not config_dict.get("output_dir"):
             config_dict["output_dir"] = os.path.abspath(
                 f"./{datetime.now().strftime('%Y%m%d_%H%M%S')}"
