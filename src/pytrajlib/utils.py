@@ -1,9 +1,12 @@
+import os
+
 import numpy as np
 import pandas as pd
 
 from ._traj import ffi
 
 EARTH_RADIUS = 6371e3
+
 
 def to_python_type(value):
     """
@@ -23,6 +26,7 @@ def to_python_type(value):
         return float(value)
     except ValueError:
         return value
+
 
 def to_c_type(value):
     """
@@ -44,6 +48,7 @@ def to_c_type(value):
         return s
     return value
 
+
 def impact_data_to_df(impact_data, num_runs):
     """
     Convert the impact data to a Pandas DataFrame.
@@ -64,17 +69,18 @@ def impact_data_to_df(impact_data, num_runs):
     rows = []
     for i in range(num_runs):
         row_data = dict(
-            t = impact_data.impact_states[i].t,
-            x = impact_data.impact_states[i].x,
-            y = impact_data.impact_states[i].y,
-            z = impact_data.impact_states[i].z,
-            vx = impact_data.impact_states[i].vx,
-            vy = impact_data.impact_states[i].vy,
-            vz = impact_data.impact_states[i].vz,
+            t=impact_data.impact_states[i].t,
+            x=impact_data.impact_states[i].x,
+            y=impact_data.impact_states[i].y,
+            z=impact_data.impact_states[i].z,
+            vx=impact_data.impact_states[i].vx,
+            vy=impact_data.impact_states[i].vy,
+            vz=impact_data.impact_states[i].vz,
         )
         rows.append(row_data)
     impact_df = pd.DataFrame(rows)
     return impact_df
+
 
 def cart2sphere(x, y, z):
     """Convert Cartesian coordinates to spherical coordinates.
@@ -92,6 +98,7 @@ def cart2sphere(x, y, z):
     lat = np.atan(z / np.sqrt(x**2 + y**2))
     lon = np.arctan2(y, x)
     return lat, lon
+
 
 def sphere2cart(r, lon, lat):
     """
@@ -129,11 +136,11 @@ def calc_bearing(start, end):
     lon_diff = aim_lon - launch_lon
 
     east = np.sin(lon_diff) * np.cos(aim_lat)
-    north = (
-        np.cos(launch_lat) * np.sin(aim_lat)
-        - np.sin(launch_lat) * np.cos(aim_lat) * np.cos(lon_diff)
-    )
+    north = np.cos(launch_lat) * np.sin(aim_lat) - np.sin(launch_lat) * np.cos(
+        aim_lat
+    ) * np.cos(lon_diff)
     return np.arctan2(north, east)
+
 
 def haversine_distance(start, end):
     """
@@ -151,12 +158,12 @@ def haversine_distance(start, end):
     aim_lat, aim_lon = end
     a = (
         np.sin((aim_lat - launch_lat) / 2) ** 2
-        + np.cos(launch_lat) * np.cos(aim_lat)
-        * np.sin((aim_lon - launch_lon) / 2) ** 2
+        + np.cos(launch_lat) * np.cos(aim_lat) * np.sin((aim_lon - launch_lon) / 2) ** 2
     )
     angular_distance = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
     distance = EARTH_RADIUS * angular_distance
     return distance
+
 
 def get_location(bearing, distance, start):
     """
@@ -189,9 +196,9 @@ def get_location(bearing, distance, start):
 
 def transform_to_earth_coords(x, y, z, launchpoint):
     """
-    Transform the cartesian x, y, z impact points to the lat lon points they would 
+    Transform the cartesian x, y, z impact points to the lat lon points they would
     have had if following a great circle projected to the surface of the Earth and
-    launched from the launchpoint instead of 0, 0. 
+    launched from the launchpoint instead of 0, 0.
 
     INPUTS:
     ----------
@@ -209,3 +216,120 @@ def transform_to_earth_coords(x, y, z, launchpoint):
     distance = haversine_distance((0, 0), (lat_from_origin, long_from_origin))
     lat, lon = get_location(bearing, distance, (launch_lat, launch_lon))
     return lat, lon
+
+
+def get_impact_data(run_params=None, impact_data=None):
+    """
+    Get the x y z locations of the impact points from the run parameters or data.
+
+    """
+    if impact_data is None:
+        # print error if the paths are not found
+        if not os.path.exists(run_params["impact_data_path"]):
+            print(f"Impact data file {run_params['impact_data_path']} not found")
+            return
+
+        impact_data = np.loadtxt(
+            run_params.get("impact_data_path"), delimiter=",", skiprows=1
+        )
+        impact_x = impact_data[:, 1]
+        impact_y = impact_data[:, 2]
+        impact_z = impact_data[:, 3]
+    elif isinstance(impact_data, pd.DataFrame):
+        # Convert the DataFrame to a numpy array
+        impact_x = impact_data["x"].values
+        impact_y = impact_data["y"].values
+        impact_z = impact_data["z"].values
+    return impact_x, impact_y, impact_z
+
+
+def get_local_impact(run_params, impact_data):
+    """
+    Get the local impact coordinates
+
+    INPUTS:
+    ----------
+        impact_data: numpy.ndarray
+            The impact data.
+        run_params_struct: runparams
+            The run parameters.
+    OUTPUTS:
+    ----------
+        impact_x_local: numpy.ndarray
+            The x coordinates of the impact points in local tangent plane coordinates.
+        impact_y_local: numpy.ndarray
+            The y coordinates of the impact points in local tangent plane coordinates.
+    """
+    # Get longitude and latitude of aimpoint and launchpoint
+    aimpoint_lat, aimpoint_lon = cart2sphere(
+        run_params["x_aim"], run_params["y_aim"], run_params["z_aim"]
+    )
+    launch_lat, launch_lon = cart2sphere(
+        run_params["x_launch"], run_params["y_launch"], run_params["z_launch"]
+    )
+
+    impact_x, impact_y, impact_z = get_impact_data(run_params, impact_data)
+
+    lat, lon = transform_to_earth_coords(
+        impact_x, impact_y, impact_z, (launch_lat, launch_lon)
+    )
+
+    impact_x, impact_y, impact_z = sphere2cart(EARTH_RADIUS, lon, lat)
+    # get vector relative to aimpoint
+    impact_x = impact_x - run_params["x_aim"]
+    impact_y = impact_y - run_params["y_aim"]
+    impact_z = impact_z - run_params["z_aim"]
+
+    # convert impact data to local tangent plane coordinates
+    print(f"aimpont_lat: {aimpoint_lat}, aimpoint_lon: {aimpoint_lon}")
+    print(f"launch_lat: {launch_lat}, launch_lon: {launch_lon}")
+    impact_x_local = -np.sin(aimpoint_lon) * impact_x + np.cos(aimpoint_lon) * impact_y
+    impact_y_local = (
+        -np.sin(aimpoint_lat) * np.cos(aimpoint_lon) * impact_x
+        - np.sin(aimpoint_lat) * np.sin(aimpoint_lon) * impact_y
+        + np.cos(aimpoint_lat) * impact_z
+    )
+
+    return impact_x_local, impact_y_local
+
+
+def get_cep_miss_distance_from_local_impact(impact_x_local, impact_y_local):
+    """
+    Calculate the circular error probable (CEP) from the local impact coordinates.
+
+    INPUTS:
+    ----------
+        impact_x_local: numpy.ndarray
+            The x coordinates of the impact points in local tangent plane coordinates.
+        impact_y_local: numpy.ndarray
+            The y coordinates of the impact points in local tangent plane coordinates.
+    OUTPUTS:
+    ----------
+        miss_distance: numpy.ndarray
+            The miss distances of the impact points.
+        cep: double
+            The circular error probable.
+    """
+    miss_distance = np.sqrt(impact_x_local**2 + impact_y_local**2)
+    cep = np.percentile(miss_distance, 50)
+    return miss_distance, round(cep, 2)
+
+
+def get_cep(impact_data, run_params):
+    """
+    Calculate the circular error probable (CEP) from the impact data.
+
+    INPUTS:
+    ----------
+        impact_data: numpy.ndarray
+            The impact data.
+        run_params_struct: runparams
+            The run parameters.
+    OUTPUTS:
+    ----------
+        cep: double
+            The circular error probable.
+    """
+    impact_x_local, impact_y_local = get_local_impact(run_params, impact_data)
+    _, cep = get_cep_miss_distance_from_local_impact(impact_x_local, impact_y_local)
+    return cep
