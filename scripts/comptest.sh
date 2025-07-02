@@ -5,8 +5,8 @@ echo "Compiling the program..."
 
 # mamba activate pytraj_env
 
-rm ./test/build/PyTraj_test
-rm ./build/libPyTraj.so
+rm -f ./test/build/PyTraj_test
+rm -f ./build/libPyTraj.so
 
 # Compile with CMake
 cmake -S ./test -B test/build -Wno-dev

@@ -13,16 +13,16 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Tau)
 
-find_package(GSL REQUIRED)
-link_libraries(GSL::gsl GSL::gslcblas)
-
 enable_testing()
 
 add_executable(${PROJECT_NAME}
     main_test.c
+    ../src/include/rng/mt19937-64/mt19937-64.c
+    ../src/include/optimize/nrutil.c
 )
 
 target_link_libraries(
     PyTraj_test
     Tau
+    m
 )

@@ -56,15 +56,8 @@ TEST(physics, update_gravity){
     runparams run_params;
     run_params.grav_error = 0;
 
-    // Initialize the random number generator
-    const gsl_rng_type *T;
-    gsl_rng *rng;
-    gsl_rng_env_setup();
-    T = gsl_rng_default;
-    rng = gsl_rng_alloc(T);
-
     // Initialize the grav struct
-    grav = init_grav(&run_params, rng);
+    grav = init_grav(&run_params);
 
     // Initialize the state struct with the vehicle at one earth radius
     state.x = grav.earth_radius;
@@ -127,15 +120,8 @@ TEST(physics, update_drag){
     run_params.run_type = 0;
     run_params.cl_pert = 0; // Set to zero for this test, as we are only testing drag
 
-    // Initialize the random number generator
-    const gsl_rng_type *T;
-    gsl_rng *rng;
-    gsl_rng_env_setup();
-    T = gsl_rng_default;
-    rng = gsl_rng_alloc(T);
-
-    grav grav = init_grav(&run_params, rng);
-    atm_model atm_model = init_exp_atm(&run_params, rng);
+    grav grav = init_grav(&run_params);
+    atm_model atm_model = init_exp_atm(&run_params);
 
     // Step function anomaly timer (unused in this test, but required for the function signature)
     double step_timer = 0; // Timer for the step function
