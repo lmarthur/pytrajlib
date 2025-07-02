@@ -95,7 +95,7 @@ def test_cep_near_zero_without_random_errors(run_params):
     """
     run_params["num_runs"] = 10
     impact_data = run(run_params)
-    cep = get_cep(impact_data, run_params)
+    cep = get_cep(run_params, impact_data)
 
     assert cep < 1e-3
 
@@ -109,7 +109,7 @@ def test_atmospheric_error_increases_cep(run_params):
     run_params["rv_maneuv"] = 0
 
     impact_data = run(run_params)
-    cep = get_cep(impact_data, run_params)
+    cep = get_cep(run_params, impact_data)
 
     assert cep > 1e-3 and cep < 1e3
 
@@ -124,7 +124,7 @@ def test_idealized_maneuver_with_atmospheric_error_reduces_cep(run_params):
     run_params["rv_maneuv"] = 2
 
     impact_data = run(run_params)
-    cep = get_cep(impact_data, run_params)
+    cep = get_cep(run_params, impact_data)
 
     assert cep < 1e-3
 
@@ -139,7 +139,7 @@ def test_gravity_error_increases_cep(run_params):
 
     impact_data = run(run_params)
 
-    cep = get_cep(impact_data, run_params)
+    cep = get_cep(run_params, impact_data)
 
     assert cep > 1e-3 and cep < 1e2
 
@@ -183,7 +183,7 @@ def test_increase_error_increase_cep_all_guidance(
         run_params["num_runs"] = 10
         run_params["rv_maneuv"] = rv_maneuv
         impact_data = run(run_params)
-        cep = get_cep(impact_data, run_params)
+        cep = get_cep(run_params, impact_data)
         ceps.append(cep)
 
     assert ceps[0] < ceps[1] < ceps[2], (
@@ -220,11 +220,11 @@ def test_rv_maneuver(run_params, rvm1, rvm2):
     run_params["grav_error"] = 1
 
     impact_data = run(run_params)
-    cep1 = get_cep(impact_data, run_params)
+    cep1 = get_cep(run_params, impact_data)
 
     run_params["rv_maneuv"] = rvm2
     impact_data = run(run_params)
-    cep2 = get_cep(impact_data, run_params)
+    cep2 = get_cep(run_params, impact_data)
 
     assert cep1 > cep2, (
         f"Expected CEP with rv_maneuv {rvm1} to be greater than with rv_maneuv {rvm2}, "
@@ -248,11 +248,11 @@ def test_gnss_navigation_decreases_cep(run_params):
     run_params["gnss_noise"] = 1e-2
 
     impact_data = run(run_params)
-    cep1 = get_cep(impact_data, run_params)
+    cep1 = get_cep(run_params, impact_data)
 
     run_params["gnss_nav"] = 1
     impact_data = run(run_params)
-    cep2 = get_cep(impact_data, run_params)
+    cep2 = get_cep(run_params, impact_data)
 
     assert cep1 > cep2, (
         f"Expected CEP with GNSS navigation off to be greater than with GNSS navigation on, "
@@ -283,7 +283,7 @@ def test_gnss_noise_increases_cep(run_params, gnss_noise):
     for noise in gnss_noise:
         run_params["gnss_noise"] = noise
         impact_data = run(run_params)
-        cep = get_cep(impact_data, run_params)
+        cep = get_cep(run_params, impact_data)
         ceps.append(cep)
 
     assert ceps[0] < ceps[1] < ceps[2], (

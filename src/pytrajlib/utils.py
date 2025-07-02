@@ -315,7 +315,7 @@ def get_cep_miss_distance_from_local_impact(impact_x_local, impact_y_local):
     return miss_distance, round(cep, 2)
 
 
-def get_cep(impact_data, run_params):
+def get_cep(run_params, impact_data):
     """
     Calculate the circular error probable (CEP) from the impact data.
 

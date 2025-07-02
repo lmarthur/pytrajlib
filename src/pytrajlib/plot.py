@@ -12,7 +12,7 @@ from pytrajlib.utils import (
     EARTH_RADIUS,
     cart2sphere,
     get_cep,
-    get_cep_from_local_impact,
+    get_cep_miss_distance_from_local_impact,
     get_impact_data,
     get_local_impact,
     haversine_distance,
@@ -51,7 +51,9 @@ def impact(run_params=None, data=None, output_dir=None):
     print("Range to aimpoint: ", range_to_aimpoint)
 
     impact_x_local, impact_y_local = get_local_impact(run_params, data)
-    miss_distance, cep = get_cep_from_local_impact(impact_x_local, impact_y_local)
+    miss_distance, cep = get_cep_miss_distance_from_local_impact(
+        impact_x_local, impact_y_local
+    )
     plotrange = 4 * cep
 
     # Plot the data
@@ -805,6 +807,8 @@ def map(run_params=None, data=None, output_dir=None, show_attribution=True):
         run_params["x_launch"], run_params["y_launch"], run_params["z_launch"]
     )
     launch = (launch_lat, launch_lon)
+    print("xaim in run params: ", "x_aim" in run_params)
+    print(run_params["x_aim"])
     aim_lat, aim_lon = cart2sphere(
         run_params["x_aim"], run_params["y_aim"], run_params["z_aim"]
     )
