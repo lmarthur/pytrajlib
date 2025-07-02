@@ -715,6 +715,15 @@ impact_data mc_run(runparams run_params){
         // Reset flag for writing trajectory data to file. Ensures only the first
         // run writes to the file if the original trajectory output flag is 2.
         run_params.traj_output = original_traj_output;
+
+        #ifdef FROM_PYTHON
+        if ((i + 1) % 10 == 0) {
+            update_loading_bar(10, num_runs);
+        }
+        if (i == num_runs - 1) {
+            update_loading_bar(num_runs % 10, num_runs);
+        }
+        #endif
     }
 
     // Output the impact data

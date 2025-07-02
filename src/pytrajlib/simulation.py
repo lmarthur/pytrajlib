@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 
 import numpy as np
+from tqdm.auto import tqdm
 
 from pytrajlib.utils import (
     EARTH_RADIUS,
@@ -18,6 +19,19 @@ from ._traj import ffi
 from ._traj import lib as traj
 
 _keep_alive = {}
+
+
+@ffi.def_extern()
+def update_loading_bar(update_size, total):
+    """
+    Create or update the loading bar with the given update size and total.
+    This is called from the C code.
+    """
+    if _keep_alive.get("loading_bar") is None:
+        _keep_alive["loading_bar"] = tqdm(total=total, desc="Progress")
+        _keep_alive["loading_bar"].update(n=update_size)
+    else:
+        _keep_alive["loading_bar"].update(n=update_size)
 
 
 def get_run_params_struct(config):
@@ -166,7 +180,7 @@ def booster_type_parser(val):
         )
 
 
-def run(config=None, **kwargs):
+def run(config=None, return_config=True, **kwargs):
     """
     Run the Monte Carlo code with the given parameters. If neither are provided,
     the default configuration is used. If both are provided, config_dict will be used.
@@ -175,14 +189,18 @@ def run(config=None, **kwargs):
     -------
         config: optional, Dictionary containing the run parameters from the
             config file or command line.
+        return_config: optional, If True, the function will return the
+            configuration dictionary used for the run. E.g. if kwargs are passed
+            in, the returned config will be updated with those values.
         kwargs: optional, Override the values in the config file, pass in arguments
             like launch_lat_lon=[0,0], aim_lat_lon=[10, 10].,
 
     OUTPUTS:
     -------
-        impact_df (pd.DataFrame): Pandas DataFrame containing the impact data
-        from the Monte Carlo run.  Each row is a run, and each column is a field
-        from the State Structure.
+        tuple of (impact_df, run_params) if return_config is True, otherwise just impact_df.
+            impact_df (pd.DataFrame): Pandas DataFrame containing the impact data
+            from the Monte Carlo run.  Each row is a run, and each column is a field
+            from the State Structure.
     """
     # Convert lat lon to cartesian and set cart coordinates in kwargs to override the config
     if "launch_lat_lon" in kwargs:
@@ -208,13 +226,16 @@ def run(config=None, **kwargs):
     run_params_struct = get_run_params_struct(run_params)
 
     impact_data = traj.mc_run(run_params_struct[0])
+    _keep_alive["loading_bar"].close()
+    _keep_alive.clear()
     impact_df = impact_data_to_df(impact_data, int(run_params["num_runs"]))
 
     # Copy the config toml to the output directory
     print(f"output directory: {run_params['output_dir']}")
     toml_path = os.path.join(run_params["output_dir"], f"{run_params['run_name']}.toml")
     write_config_toml(run_params, toml_path)
-    return impact_df
+
+    return impact_df, run_params if return_config else impact_df
 
 
 def add_arguments_to_parser(parser):
@@ -402,4 +423,4 @@ def cli():
         config_dict = defaults_dict
         config_dict.pop("config")
 
-    return run(config=config_dict, **args_dict)
+    return run(config=config_dict, return_config=False, **args_dict)

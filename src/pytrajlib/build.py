@@ -8,6 +8,9 @@ include_dirs = ["src/"]
 ffibuilder = FFI()
 ffibuilder.cdef(
     """
+    extern "Python" void update_loading_bar(int, int);
+    void loading_bar_callback(int x, int y);
+
     struct runparams {
         char *run_name; 
         int run_type; 
@@ -106,6 +109,12 @@ module_name = "_traj" if __name__ == "__main__" else "pytrajlib._traj"
 ffibuilder.set_source(
     module_name,
     """
+    static void update_loading_bar(int, int);
+
+    void loading_bar_callback(int x, int y) {
+        update_loading_bar(x, y);
+    }
+
     #include "include/rng/mt19937-64/mt64.h"
     #include "include/rng/rng.h"
 
@@ -125,6 +134,7 @@ ffibuilder.set_source(
         "src/include/rng/mt19937-64/mt19937-64.c",
         "src/include/optimize/nrutil.c",
     ],
+    extra_compile_args=["-DFROM_PYTHON"],
 )
 
 if __name__ == "__main__":
