@@ -114,9 +114,8 @@ def get_run_params(config_path=None):
     -------
         run_params (dict): Dictionary containing the run parameters.
     """
-    retrieving_default = False
-    if config_path is None:
-        retrieving_default = True
+    retrieving_default = config_path is None
+    if retrieving_default:
         config_path = str(importlib.resources.files("pytrajlib.config").joinpath("default.toml"))
     if not check_config_exists(config_path):
         raise FileNotFoundError(f"The input file {config_path} does not exist.")
