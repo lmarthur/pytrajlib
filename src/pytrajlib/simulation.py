@@ -44,6 +44,7 @@ def get_run_params_struct(config):
             pass
     return run_params_struct
 
+
 def check_config_exists(config_path):
     """
     Check if the configuration file exists.
@@ -87,7 +88,9 @@ def write_config_toml(run_params, file_path):
     """
     # Copy the structure of the default config, but write the values from the
     # user-provided config_dict
-    default_config = str(importlib.resources.files("pytrajlib.config").joinpath("default.toml"))
+    default_config = str(
+        importlib.resources.files("pytrajlib.config").joinpath("default.toml")
+    )
     default_config_parser = configparser.ConfigParser()
     default_config_parser.read(default_config)
     new_config_dict = {}
@@ -116,7 +119,9 @@ def get_run_params(config_path=None):
     """
     retrieving_default = config_path is None
     if retrieving_default:
-        config_path = str(importlib.resources.files("pytrajlib.config").joinpath("default.toml"))
+        config_path = str(
+            importlib.resources.files("pytrajlib.config").joinpath("default.toml")
+        )
     if not check_config_exists(config_path):
         raise FileNotFoundError(f"The input file {config_path} does not exist.")
     config_parser = configparser.ConfigParser()
@@ -133,6 +138,7 @@ def get_run_params(config_path=None):
             importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.txt")
         )
     return run_params
+
 
 def booster_type_parser(val):
     booster_name_map = {
@@ -159,6 +165,7 @@ def booster_type_parser(val):
             f"Invalid booster_type '{val}'. Must be one of: {', '.join(booster_name_map.keys())} or 0-5."
         )
 
+
 def run(config=None, **kwargs):
     """
     Run the Monte Carlo code with the given parameters. If neither are provided,
@@ -169,7 +176,7 @@ def run(config=None, **kwargs):
         config: optional, Dictionary containing the run parameters from the
             config file or command line.
         kwargs: optional, Override the values in the config file, pass in arguments
-            like launch_lat_lon=[0,0], aim_lat_lon=[10, 10]., 
+            like launch_lat_lon=[0,0], aim_lat_lon=[10, 10].,
 
     OUTPUTS:
     -------
@@ -179,7 +186,9 @@ def run(config=None, **kwargs):
     """
     # Convert lat lon to cartesian and set cart coordinates in kwargs to override the config
     if "launch_lat_lon" in kwargs:
-        cart_launch = sphere2cart(EARTH_RADIUS, *np.deg2rad(kwargs["launch_lat_lon"][::-1]))
+        cart_launch = sphere2cart(
+            EARTH_RADIUS, *np.deg2rad(kwargs["launch_lat_lon"][::-1])
+        )
         kwargs["x_launch"], kwargs["y_launch"], kwargs["z_launch"] = cart_launch
     if "aim_lat_lon" in kwargs:
         cart_aim = sphere2cart(EARTH_RADIUS, *np.deg2rad(kwargs["aim_lat_lon"][::-1]))
@@ -194,19 +203,19 @@ def run(config=None, **kwargs):
     if "booster_type" in run_params:
         # Convert booster_type to int if it is a string
         run_params["booster_type"] = booster_type_parser(run_params["booster_type"])
-    
+
     create_output_dirs(run_params)
     run_params_struct = get_run_params_struct(run_params)
-    
+
     impact_data = traj.mc_run(run_params_struct[0])
     impact_df = impact_data_to_df(impact_data, int(run_params["num_runs"]))
 
     # Copy the config toml to the output directory
-    toml_path = os.path.join(
-        run_params["output_dir"], f"{run_params['run_name']}.toml"
-    )
+    print(f"output directory: {run_params['output_dir']}")
+    toml_path = os.path.join(run_params["output_dir"], f"{run_params['run_name']}.toml")
     write_config_toml(run_params, toml_path)
     return impact_df
+
 
 def add_arguments_to_parser(parser):
     """
@@ -268,7 +277,7 @@ def add_arguments_to_parser(parser):
         "atm_error": f"See atm_model. Default: {run_params['atm_error']})",
         "gnss_nav": f"Whether to use GNSS navigation (default: {run_params['gnss_nav']})",
         "ins_nav": f"If off, indicates perfect inertial navigation system state measurements (default: {run_params['ins_nav']})",
-        "rv_maneuv": f"If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability (default: {run_params['rv_maneuv']})",
+        "rv_maneuv": f"If set to 0, there is no additional maneuverability. If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability (default: {run_params['rv_maneuv']})",
         "reentry_vel": f"Reentry velocity (m/s) for reentry only simulation (run_type = 1) (default: {run_params['reentry_vel']})",
         "deflection_time": f"Deflection time (s) for control surfaces (default: {run_params['deflection_time']})",
         "booster_type": f"0 for MMIII, 1 for SCUD, 2 for SCUD-ER, 3 for GBSD, 4 for D5, 5 for Mock (default: {run_params['booster_type']}). You can also specify by name: MMIII, SCUD, SCUD-ER, GBSD, D5, MOCK.",
@@ -283,7 +292,6 @@ def add_arguments_to_parser(parser):
         "step_acc_hgt": f"Step acceleration perturbation height (altitude) in meters for reentry simulation run_type = 1 (default: {run_params['step_acc_hgt']})",
         "step_acc_dur": f"Step acceleration perturbation duration in seconds for reentry simulation run_type = 1 (default: {run_params['step_acc_dur']})",
     }
-
 
     short_names = {
         "run_name": "r",
@@ -314,6 +322,7 @@ def add_arguments_to_parser(parser):
 
     return parser
 
+
 def handle_overrides(config_dict, override_dict):
     """
     Handle overrides for the configuration dictionary.
@@ -330,19 +339,6 @@ def handle_overrides(config_dict, override_dict):
         config_dict: dict
             The updated configuration dictionary with overrides applied.
     """
-    # Set output directory to current date/time if not provided by user
-    if not override_dict.get("output_dir"):
-        override_dict["output_dir"] = os.path.abspath(
-            f"./{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        )
-    if not override_dict.get("impact_data_path"):
-        override_dict["impact_data_path"] = os.path.join(
-            override_dict["output_dir"], "impact.txt"
-        )
-    if not override_dict.get("trajectory_path"):
-        override_dict["trajectory_path"] = os.path.join(
-            override_dict["output_dir"], "trajectory.txt"
-        )
     # Update the config_dict if the user manually overrides a value
     for key, value in override_dict.items():
         if key not in config_dict or value != config_dict[key]:
@@ -351,7 +347,24 @@ def handle_overrides(config_dict, override_dict):
         importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.txt")
     )
     config_dict["atm_profile_path"] = atm_profile_path
+
+    # Set output directory to current date/time if not provided by user and the user
+    # wants to output impact or trajectory data
+    if config_dict.get("impact_output") == 1 or config_dict.get("traj_output") == 1:
+        if not config_dict.get("output_dir"):
+            config_dict["output_dir"] = os.path.abspath(
+                f"./{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            )
+        if not config_dict.get("impact_data_path"):
+            config_dict["impact_data_path"] = os.path.join(
+                config_dict["output_dir"], "impact.txt"
+            )
+        if not config_dict.get("trajectory_path"):
+            config_dict["trajectory_path"] = os.path.join(
+                config_dict["output_dir"], "trajectory.txt"
+            )
     return config_dict
+
 
 def cli():
     """
@@ -360,7 +373,7 @@ def cli():
     configuration.
     """
     arg_parser = argparse.ArgumentParser()
-    
+
     add_arguments_to_parser(arg_parser)
 
     defaults_dict = vars(arg_parser.parse_args([]))
