@@ -7,7 +7,6 @@ import numpy as np
 import scipy.stats as stats
 from folium.features import DivIcon
 
-from pytrajlib.simulation import get_run_params
 from pytrajlib.utils import (
     EARTH_RADIUS,
     cart2sphere,
@@ -15,6 +14,7 @@ from pytrajlib.utils import (
     get_cep_miss_distance_from_local_impact,
     get_impact_data,
     get_local_impact,
+    get_run_params,
     haversine_distance,
     transform_to_earth_coords,
 )
@@ -192,8 +192,8 @@ def impact(run_params=None, data=None, output_dir=None):
     a1.set_xlabel("Miss Distance Histogram (m)", labelpad=1)
 
     if output_dir is not None:
-        plt.savefig(output_dir + "impact_plot.jpg", dpi=1000)
-        plt.savefig(output_dir + "impact_plot.pdf")
+        plt.savefig(output_dir + "/impact_plot.jpg", dpi=1000)
+        plt.savefig(output_dir + "/impact_plot.pdf")
         plt.close()
 
 
@@ -268,7 +268,7 @@ def position(run_params=None, data=None, output_dir=None):
     plt.legend()
     plt.grid()
     if output_dir is not None:
-        plt.savefig(output_dir + "position.pdf")
+        plt.savefig(output_dir + "/position.pdf")
         plt.close()
 
 
@@ -305,7 +305,7 @@ def position_error(run_params=None, data=None, output_dir=None):
     plt.legend()
     plt.grid()
     if output_dir is not None:
-        plt.savefig(output_dir + "position_error.pdf")
+        plt.savefig(output_dir + "/position_error.pdf")
     plt.close()
 
 
@@ -348,7 +348,7 @@ def orbit(run_params=None, data=None, output_dir=None):
     plt.axis("off")
 
     if output_dir is not None:
-        plt.savefig(output_dir + "orbit.pdf")
+        plt.savefig(output_dir + "/orbit.pdf")
     plt.close()
 
 
@@ -397,7 +397,7 @@ def altitude(run_params=None, data=None, output_dir=None):
     # plt.fill_between(true_t, true_altitude/1000, 0, where=(true_t > 2915), color='red', alpha=0.5)
     # plt.annotate('Reentry\n (INS)', xy=(2910, 40), xytext=(2200, 250), arrowprops=dict(facecolor='black', arrowstyle='->'), ha='center')
     if output_dir is not None:
-        plt.savefig(output_dir + "altitude.pdf")
+        plt.savefig(output_dir + "/altitude.pdf")
     plt.close()
 
 
@@ -433,7 +433,7 @@ def altitude_error(run_params=None, data=None, output_dir=None):
     plt.title("Altitude Error")
     plt.grid()
     if output_dir is not None:
-        plt.savefig(output_dir + "altitude_error.pdf")
+        plt.savefig(output_dir + "/altitude_error.pdf")
         plt.close()
 
 
@@ -467,7 +467,7 @@ def velocity(run_params=None, data=None, output_dir=None):
     plt.legend()
     plt.grid()
     if output_dir is not None:
-        plt.savefig(output_dir + "velocity.pdf")
+        plt.savefig(output_dir + "/velocity.pdf")
         plt.close()
 
 
@@ -504,7 +504,7 @@ def velocity_error(run_params=None, data=None, output_dir=None):
     plt.legend()
     plt.grid()
     if output_dir is not None:
-        plt.savefig(output_dir + "velocity_error.pdf")
+        plt.savefig(output_dir + "/velocity_error.pdf")
         plt.close()
 
 
@@ -540,7 +540,7 @@ def thrust(run_params=None, data=None, output_dir=None):
     plt.title("Thrust")
     plt.grid()
     if output_dir is not None:
-        plt.savefig(output_dir + "thrust.pdf")
+        plt.savefig(output_dir + "/thrust.pdf")
         plt.close()
 
 
@@ -569,7 +569,7 @@ def mass(run_params=None, data=None, output_dir=None):
     plt.title("Mass")
     plt.grid()
     if output_dir is not None:
-        plt.savefig(output_dir + "mass.pdf")
+        plt.savefig(output_dir + "/mass.pdf")
         plt.close()
 
 
@@ -603,7 +603,7 @@ def acceleration(run_params=None, data=None, output_dir=None):
     plt.legend()
     plt.grid()
     if output_dir is not None:
-        plt.savefig(output_dir + "acceleration.pdf")
+        plt.savefig(output_dir + "/acceleration.pdf")
         plt.close()
 
 
@@ -640,7 +640,7 @@ def acceleration_error(run_params=None, data=None, output_dir=None):
     plt.legend()
     plt.grid()
     if output_dir is not None:
-        plt.savefig(output_dir + "acceleration_error.pdf")
+        plt.savefig(output_dir + "/acceleration_error.pdf")
         plt.close()
 
 
@@ -674,7 +674,7 @@ def drag_acceleration(run_params=None, data=None, output_dir=None):
     plt.legend()
     plt.grid()
     if output_dir is not None:
-        plt.savefig(output_dir + "drag_acceleration.pdf")
+        plt.savefig(output_dir + "/drag_acceleration.pdf")
         plt.close()
 
 
@@ -709,7 +709,7 @@ def lift_acceleration(run_params=None, data=None, output_dir=None):
     plt.legend()
     plt.grid()
     if output_dir is not None:
-        plt.savefig(output_dir + "lift_acceleration.pdf")
+        plt.savefig(output_dir + "/lift_acceleration.pdf")
         plt.close()
 
 
@@ -744,7 +744,7 @@ def position_vs_altitude(run_params=None, data=None, output_dir=None):
     plt.legend()
     plt.grid()
     if output_dir is not None:
-        plt.savefig(output_dir + "position_vs_altitude.pdf")
+        plt.savefig(output_dir + "/position_vs_altitude.pdf")
         plt.close()
 
 
@@ -880,5 +880,5 @@ def map(run_params=None, data=None, output_dir=None, show_attribution=True):
     ).add_to(m)
 
     if output_dir is not None:
-        m.save(output_dir + "trajectory_map.html")
+        m.save(output_dir + "/trajectory_map.html")
     return m

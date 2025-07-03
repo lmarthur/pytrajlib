@@ -1,18 +1,21 @@
 import argparse
 import configparser
 import importlib.resources
+import inspect
 import os
 from datetime import datetime
 
 import numpy as np
 from tqdm.auto import tqdm
 
+import pytrajlib.plot as plot
 from pytrajlib.utils import (
     EARTH_RADIUS,
+    check_config_exists,
+    get_run_params,
     impact_data_to_df,
     sphere2cart,
     to_c_type,
-    to_python_type,
 )
 
 from ._traj import ffi
@@ -57,19 +60,6 @@ def get_run_params_struct(config):
         except AttributeError:
             pass
     return run_params_struct
-
-
-def check_config_exists(config_path):
-    """
-    Check if the configuration file exists.
-
-    Params:
-        config_path (str): Path to the configuration file.
-
-    Returns:
-        bool: True if the file exists, False otherwise.
-    """
-    return os.path.isfile(config_path)
 
 
 def create_output_dirs(run_params):
@@ -118,42 +108,6 @@ def write_config_toml(run_params, file_path):
     new_config_parser.write(open(file_path, "w"))
 
 
-def get_run_params(config_path=None):
-    """
-    Get run params dict from the config file. If no config file is provided,
-    the default config file is used.
-
-    INPUTS
-    -------
-        config_path (str): Path to the configuration file. If None, the default
-            configuration file is used.
-    OUTPUTS
-    -------
-        run_params (dict): Dictionary containing the run parameters.
-    """
-    retrieving_default = config_path is None
-    if retrieving_default:
-        config_path = str(
-            importlib.resources.files("pytrajlib.config").joinpath("default.toml")
-        )
-    if not check_config_exists(config_path):
-        raise FileNotFoundError(f"The input file {config_path} does not exist.")
-    config_parser = configparser.ConfigParser()
-    config_parser.read(config_path)
-    run_params = {
-        key: to_python_type(value)
-        for section in config_parser.sections()
-        for key, value in config_parser.items(section)
-    }
-    if retrieving_default:
-        # Override the default atm_profile_path because atmprofiles.txt does not
-        # have a stable fixed path when the script is run as part of a package.
-        run_params["atm_profile_path"] = str(
-            importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.txt")
-        )
-    return run_params
-
-
 def booster_type_parser(val):
     booster_name_map = {
         "MMIII": 0,
@@ -178,6 +132,26 @@ def booster_type_parser(val):
         raise argparse.ArgumentTypeError(
             f"Invalid booster_type '{val}'. Must be one of: {', '.join(booster_name_map.keys())} or 0-5."
         )
+
+
+def plot_parser(plot_name):
+    """
+    Return the plotting function for the given plot name.
+    See plot.py for the available plots.
+
+    Plot names are case-insensitive and can use underscores or dashes.
+
+    INPUTS:
+    -------
+        plot_name: str
+            The plot type to parse.
+
+    OUTPUTS:
+    -------
+        function: The plotting function corresponding to the plot name.
+    """
+    plot_name = plot_name.lower().replace("-", "_")
+    return getattr(plot, plot_name, None)
 
 
 def run(config=None, return_config=True, **kwargs):
@@ -230,7 +204,7 @@ def run(config=None, return_config=True, **kwargs):
     _keep_alive.clear()
     impact_df = impact_data_to_df(impact_data, int(run_params["num_runs"]))
 
-    # Copy the config toml to the output directory
+    # Copy the config toml to the output directory if output dir is specified
     if run_params["output_dir"]:
         print(f"output directory: {run_params['output_dir']}")
         toml_path = os.path.join(
@@ -238,7 +212,36 @@ def run(config=None, return_config=True, **kwargs):
         )
         write_config_toml(run_params, toml_path)
 
+    # Save plots to the output directory
+    if run_params.get("plot"):
+        if not isinstance(run_params["plot"], list):
+            run_params["plot"] = [run_params["plot"]]
+        for plot_func in run_params["plot"]:
+            plot_func(
+                run_params=run_params,
+                data=impact_df,
+                output_dir=run_params["output_dir"],
+            )
+
     return impact_df, run_params if return_config else impact_df
+
+
+def get_all_plot_function_names():
+    """
+    Get all public plot function names from the pytrajlib.plot module.
+
+    OUTPUTS:
+    -------
+        list: A list of plot function names.
+    """
+    plot_functions = inspect.getmembers(plot, inspect.isfunction)
+    public_plot_functions = [
+        name.replace("_", "-")
+        for name, func in plot_functions
+        if not name.startswith("_") and func.__module__ == plot.__name__
+    ]
+
+    return public_plot_functions
 
 
 def add_arguments_to_parser(parser):
@@ -283,12 +286,21 @@ def add_arguments_to_parser(parser):
         help="Aimpoint latitude and longitude in decimal degrees (default: 0.0 0.0)",
     )
 
+    parser.add_argument(
+        "-p",
+        "--plot",
+        type=plot_parser,
+        default=None,
+        nargs="*",
+        help=f"Plot type to use. One (or more) of the following: {get_all_plot_function_names()} (default: None, no plot will be generated). Plots are saved to the output directory.",
+    )
+
     run_params = get_run_params()
     help_text = {
         "run_name": f"Name of the run (default: '{run_params['run_name']}')",
         "run_type": f"0 for simulating a full trajectory, 1 for reentry only. (default: {run_params['run_type']})",
         "num_runs": f"Number of Monte Carlo runs to perform (default: {run_params['num_runs']})",
-        "output_dir": "Directory in which to save the configuration details (default: currrent date and time e.g. './20250623_102744/')",
+        "output_dir": "Directory in which to save the configuration details, plots, and data (default: currrent date and time e.g. './20250623_102744/').",
         "impact_data_path": "Path to save the impact data (default: './{date}/impact.txt')",
         "trajectory_path": "Path to save the trajectory data (default: './{date}/trajectory.txt')",
         "atm_profile_path": f"Path to the atmospheric profile file (default: '{run_params['atm_profile_path']}')",
@@ -373,11 +385,12 @@ def handle_overrides(config_dict, override_dict):
     config_dict["atm_profile_path"] = atm_profile_path
 
     # Set output directory to current date/time if not provided by user and the user
-    # wants to output impact or trajectory data
-    if config_dict.get("impact_output") == 1 or config_dict.get("traj_output") in [
-        1,
-        2,
-    ]:
+    # wants to output impact data, trajectory data, or plots
+    if (
+        config_dict.get("impact_output") == 1
+        or config_dict.get("traj_output") > 0
+        or config_dict.get("plot")
+    ):
         if not config_dict.get("output_dir"):
             config_dict["output_dir"] = os.path.abspath(
                 f"./{datetime.now().strftime('%Y%m%d_%H%M%S')}"

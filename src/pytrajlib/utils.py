@@ -1,3 +1,5 @@
+import configparser
+import importlib.resources
 import os
 
 import numpy as np
@@ -333,3 +335,52 @@ def get_cep(run_params, impact_data):
     impact_x_local, impact_y_local = get_local_impact(run_params, impact_data)
     _, cep = get_cep_miss_distance_from_local_impact(impact_x_local, impact_y_local)
     return cep
+
+
+def check_config_exists(config_path):
+    """
+    Check if the configuration file exists.
+
+    Params:
+        config_path (str): Path to the configuration file.
+
+    Returns:
+        bool: True if the file exists, False otherwise.
+    """
+    return os.path.isfile(config_path)
+
+
+def get_run_params(config_path=None):
+    """
+    Get run params dict from the config file. If no config file is provided,
+    the default config file is used.
+
+    INPUTS
+    -------
+        config_path (str): Path to the configuration file. If None, the default
+            configuration file is used.
+    OUTPUTS
+    -------
+        run_params (dict): Dictionary containing the run parameters.
+    """
+    retrieving_default = config_path is None
+    if retrieving_default:
+        config_path = str(
+            importlib.resources.files("pytrajlib.config").joinpath("default.toml")
+        )
+    if not check_config_exists(config_path):
+        raise FileNotFoundError(f"The input file {config_path} does not exist.")
+    config_parser = configparser.ConfigParser()
+    config_parser.read(config_path)
+    run_params = {
+        key: to_python_type(value)
+        for section in config_parser.sections()
+        for key, value in config_parser.items(section)
+    }
+    if retrieving_default:
+        # Override the default atm_profile_path because atmprofiles.txt does not
+        # have a stable fixed path when the script is run as part of a package.
+        run_params["atm_profile_path"] = str(
+            importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.txt")
+        )
+    return run_params
