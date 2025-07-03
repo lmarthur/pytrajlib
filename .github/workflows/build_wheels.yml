@@ -39,7 +39,7 @@ jobs:
         path: dist/*.tar.gz
 
   publish-to-testpypi:
-    name: Publish Python 🐍 distribution 📦 to TestPyPI
+    name: Publish to TestPyPI
     needs:
     - build_wheels
     runs-on: ubuntu-latest
