@@ -231,9 +231,12 @@ def run(config=None, return_config=True, **kwargs):
     impact_df = impact_data_to_df(impact_data, int(run_params["num_runs"]))
 
     # Copy the config toml to the output directory
-    print(f"output directory: {run_params['output_dir']}")
-    toml_path = os.path.join(run_params["output_dir"], f"{run_params['run_name']}.toml")
-    write_config_toml(run_params, toml_path)
+    if run_params["output_dir"]:
+        print(f"output directory: {run_params['output_dir']}")
+        toml_path = os.path.join(
+            run_params["output_dir"], f"{run_params['run_name']}.toml"
+        )
+        write_config_toml(run_params, toml_path)
 
     return impact_df, run_params if return_config else impact_df
 
