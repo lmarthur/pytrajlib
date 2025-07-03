@@ -84,7 +84,15 @@ deactivate
 ```
 
 ### pip installation from pre-build wheel
-Grab the `.whl` file appropriate for your OS and Python version. 
+Grab the `.whl` file appropriate for your OS and Python version. You can download
+it from a Github Action or create a wheel for your machine from this repository 
+by running
+
+```bash
+uv build
+```
+
+which creates `.tar.gz` (source distribution) and `.whl` (build distribution) files.
 
 (Optional, but recommended) create and enter a virtual environment.
 ```bash
@@ -98,5 +106,5 @@ source venv/bin/activate
 Inside the virtual environment, pip install the wheel:
 
 ```bash
-pip install <name of downloaded wheel>.whl
+pip install <name of wheel>.whl
 ```
