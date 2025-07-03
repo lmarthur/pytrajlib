@@ -1,6 +1,9 @@
 name: Build
 
-on: [push]
+on:
+  push:
+  release:
+    types: [published]
 
 jobs:
   build_wheels:
@@ -8,7 +11,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # macos-13 is an intel runner, macos-14 is apple silicon
         os: [ubuntu-latest, windows-latest, macos-13, macos-14]
 
     steps:
@@ -48,6 +50,7 @@ jobs:
 
     permissions:
       id-token: write
+
     steps:
     - name: Download all the dists
       uses: actions/download-artifact@v4
@@ -55,7 +58,27 @@ jobs:
         pattern: cibw-*
         path: dist
         merge-multiple: true
+
     - name: Publish distribution 📦 to TestPyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
+
+  publish-to-pypi:
+    name: Publish to PyPI
+    needs: [build_wheels, make_sdist]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
+
+    environment: pypi
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
