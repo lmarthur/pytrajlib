@@ -117,10 +117,10 @@ def booster_type_parser(val):
         "D5": 4,
         "MOCK": 5,
     }
-    if isinstance(val, int):
-        return val
     try:
-        return int(val)
+        booster_num = int(val)
+        if 0 <= booster_num <= 5:
+            return booster_num
     except ValueError:
         name = str(val).strip().upper()
         print(f"Parsing booster type: {name}")
@@ -129,9 +129,9 @@ def booster_type_parser(val):
             name = "SCUD-ER"
         if name in booster_name_map:
             return booster_name_map[name]
-        raise argparse.ArgumentTypeError(
-            f"Invalid booster_type '{val}'. Must be one of: {', '.join(booster_name_map.keys())} or 0-5."
-        )
+    raise argparse.ArgumentTypeError(
+        f"Invalid booster_type '{val}'. Must be one of: {', '.join(booster_name_map.keys())} or 0-5."
+    )
 
 
 def plot_parser(plot_name):
