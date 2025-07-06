@@ -165,10 +165,10 @@ void update_thrust(vehicle *vehicle, state *state){
     
     // Get the current stage
     int stage = 0;
-    if (state->t > vehicle->booster.burn_time[0]){
+    if (vehicle->booster.num_stages > 1 && state->t > vehicle->booster.burn_time[0]){
         stage = 1;
     }
-    if (state->t > vehicle->booster.burn_time[0] + vehicle->booster.burn_time[1]){
+    if (vehicle->booster.num_stages > 2 && state->t > vehicle->booster.burn_time[0] + vehicle->booster.burn_time[1]){
         stage = 2;
     }
 

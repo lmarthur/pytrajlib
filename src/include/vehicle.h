@@ -365,11 +365,11 @@ void update_mass(vehicle *vehicle, double t){
             // First stage is burning
             vehicle->current_mass = vehicle->total_mass - t * vehicle->booster.fuel_burn_rate[0];
         }
-        if (t <= (vehicle->booster.burn_time[1] + vehicle->booster.burn_time[0]) && t > vehicle->booster.burn_time[0]){
+        if (vehicle->booster.num_stages > 1 && t <= (vehicle->booster.burn_time[1] + vehicle->booster.burn_time[0]) && t > vehicle->booster.burn_time[0]){
             // Second stage is burning
             vehicle->current_mass = vehicle->total_mass - vehicle->booster.wet_mass[0] - (t - vehicle->booster.burn_time[0]) * vehicle->booster.fuel_burn_rate[1];
         }
-        if (t <= (vehicle->booster.burn_time[2] + vehicle->booster.burn_time[1] + vehicle->booster.burn_time[0]) && t > (vehicle->booster.burn_time[1] + vehicle->booster.burn_time[0])){
+        if (vehicle->booster.num_stages > 2 && t <= (vehicle->booster.burn_time[2] + vehicle->booster.burn_time[1] + vehicle->booster.burn_time[0]) && t > (vehicle->booster.burn_time[1] + vehicle->booster.burn_time[0])){
             // Third stage is burning
             vehicle->current_mass = vehicle->total_mass - vehicle->booster.wet_mass[0] - vehicle->booster.wet_mass[1] - (t - vehicle->booster.burn_time[0] - vehicle->booster.burn_time[1]) * vehicle->booster.fuel_burn_rate[2];
         }
@@ -413,19 +413,37 @@ booster init_scud_booster(){
 }
 
 vehicle init_scud_ballistic() {
+    /*
+    Initializes a SCUD vehicle carrying a ballistic reentry vehicle
+    OUTPUTS:
+    ----------
+        vehicle: vehicle
+            vehicle struct
+    */
     vehicle vehicle;
     vehicle.booster = init_scud_booster();
     vehicle.rv = init_ballistic_rv();
     vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
     vehicle.current_mass = vehicle.total_mass;
+
+    return vehicle;
 }
 
 vehicle init_scud_swerve() {
+    /*    
+    Initializes a SCUD vehicle carrying a maneuverable reentry vehicle
+    OUTPUTS:
+    ----------
+        vehicle: vehicle
+            vehicle struct
+    */
     vehicle vehicle;
     vehicle.booster = init_scud_booster();
     vehicle.rv = init_swerve_rv();
     vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
     vehicle.current_mass = vehicle.total_mass;
+
+    return vehicle;
 }
 
 booster init_scud_er_booster(){
