@@ -62,12 +62,12 @@ const LocationBar = (params) => {
   };
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 text-sm">
       <div className="flex gap-2">
         <input
           type="text"
-          placeholder={`Select ${params.name}`}
-          className="flex-1 px-4 py-2 rounded-full bg-white text-gray-900 focus:outline-none duration-400 border border-gray-200 focus:ring-2 focus:ring-cyan-400"
+          placeholder={`Select or Search ${params.name}`}
+          className="flex-1 px-4 py-2 rounded-full bg-white text-gray-900 focus:outline-none duration-400 border border-gray-200 focus:ring-2 focus:ring-cyan-400 text-sm"
           value={value}
           onChange={e => setValue(e.target.value)}
           onBlur={handleInput}
