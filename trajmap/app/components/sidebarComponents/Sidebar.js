@@ -133,51 +133,72 @@ export default function Sidebar() {
     aimpoint.lon != null;
 
   // Helper for boolean dropdowns
-  const BoolDropdown = ({ label, value, onChange }) => (
-    <div className="mb-2">
-      <label className="block text-xs mb-1">{label}</label>
-      <select
-        className="w-full p-1 rounded text-black bg-white"
-        value={value ? "1" : "0"}
-        onChange={e => onChange(e.target.value === "1")}
-      >
-        <option value="1">Yes</option>
-        <option value="0">No</option>
-      </select>
-    </div>
-  );
+  const BoolDropdown = ({ label, value, onChange }) => {
+    const [localValue, setLocalValue] = useState(value ? "1" : "0");
+    useEffect(() => { setLocalValue(value ? "1" : "0"); }, [value]);
+    const commit = (val) => { onChange(val === "1"); };
+    return (
+      <div className="mb-2">
+        <label className="block text-xs mb-1">{label}</label>
+        <select
+          className="w-full p-1 rounded text-black bg-white"
+          value={localValue}
+          onChange={e => setLocalValue(e.target.value)}
+          onBlur={e => commit(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") commit(e.target.value); }}
+        >
+          <option value="1">Yes</option>
+          <option value="0">No</option>
+        </select>
+      </div>
+    );
+  };
 
   // Helper for number/text fill-ins
-  const NumberInput = ({ label, value, onChange, step = 1, min, max }) => (
-    <div className="mb-2">
-      <label className="block text-xs mb-1">{label}</label>
-      <input
-        className="w-full p-1 rounded text-black bg-white"
-        type="number"
-        value={value}
-        step={step}
-        min={min}
-        max={max}
-        onChange={e => onChange(Number(e.target.value))}
-      />
-    </div>
-  );
+  const NumberInput = ({ label, value, onChange, step = 1, min, max }) => {
+    const [localValue, setLocalValue] = useState(value);
+    useEffect(() => { setLocalValue(value); }, [value]);
+    const commit = (val) => { if (!isNaN(val)) onChange(Number(val)); };
+    return (
+      <div className="mb-2">
+        <label className="block text-xs mb-1">{label}</label>
+        <input
+          className="w-full p-1 rounded text-black bg-white"
+          type="number"
+          value={localValue}
+          step={step}
+          min={min}
+          max={max}
+          onChange={e => setLocalValue(e.target.value)}
+          onBlur={e => commit(localValue)}
+          onKeyDown={e => { if (e.key === "Enter") commit(localValue); }}
+        />
+      </div>
+    );
+  };
 
   // Helper for string dropdowns
-  const StringDropdown = ({ label, value, options, onChange }) => (
-    <div className="mb-2">
-      <label className="block text-xs mb-1">{label}</label>
-      <select
-        className="w-full p-1 rounded text-black bg-white"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-      >
-        {options.map(opt => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-    </div>
-  );
+  const StringDropdown = ({ label, value, options, onChange }) => {
+    const [localValue, setLocalValue] = useState(value);
+    useEffect(() => { setLocalValue(value); }, [value]);
+    const commit = (val) => { onChange(val); };
+    return (
+      <div className="mb-2">
+        <label className="block text-xs mb-1">{label}</label>
+        <select
+          className="w-full p-1 rounded text-black bg-white"
+          value={localValue}
+          onChange={e => setLocalValue(e.target.value)}
+          onBlur={e => commit(localValue)}
+          onKeyDown={e => { if (e.key === "Enter") commit(localValue); }}
+        >
+          {options.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+    );
+  };
 
   // Booster type options
   const boosterOptions = [
