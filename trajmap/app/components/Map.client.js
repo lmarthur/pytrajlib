@@ -113,16 +113,11 @@ export default function Map(props) {
     Update the trajectory line when the trajectory data changes.
     */
     if (trajectoryData && trajectoryData.length > 0) {
-      // While during the boost phase (t < 188), color it green
       console.log("Trajectory data:", trajectoryData);
-      const boostPhase = trajectoryData.filter(([t]) => t < 188);
-      const boostPhaseLine = boostPhase.map(([t, lat, lon]) => [lat, lon]);
-      const postBoostPhase = trajectoryData.filter(([t]) => t >= 188);
-      const postBoostPhaseLine = postBoostPhase.map(([t, lat, lon]) => [lat, lon]);
+      const trajectoryLine = trajectoryData.map(([t, lat, lon]) => [lat, lon]);
       setTrajectoryLine(
         <>
-          <Polyline positions={boostPhaseLine} color="green" weight={3} />
-          <Polyline positions={postBoostPhaseLine} color="red" weight={3} />
+          <Polyline positions={trajectoryLine} color="red" weight={3} />
         </>
       );
     } else {
