@@ -103,6 +103,9 @@ export default function Map(props) {
     /*
     Draw a circle representing the CEP around the aimpoint.
     */
+   if (!cep) {
+    return;
+   }
       setCepLine(
         <Circle
           center={[aimpoint.lat, aimpoint.lon]}

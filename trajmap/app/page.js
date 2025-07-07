@@ -1,6 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useMemo, createContext, useContext, useState } from "react";
+import { useMemo, createContext, useContext, useState, useEffect } from "react";
 import Sidebar from "@/app/components/sidebarComponents/Sidebar";
 
 const MapContext = createContext();
@@ -12,7 +12,18 @@ export function MapProvider({ children }) {
   const [strikepoints, setStrikepoints] = useState([]);
   const [trajectoryData, setTrajectoryData] = useState([]);
   const [cep, setCEP] = useState(null);
+  // Loading progress state for overlay
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
+  useEffect(() => {
+    window.setLoadingProgress = setLoadingProgress;
+    return () => { window.setLoadingProgress = undefined; };
+  }, []);
+
+  useEffect(() => {
+    console.log("loading progress", loadingProgress);
+  }, [loadingProgress]);
+  console.log("loading progress", loadingProgress);
   return (
     <MapContext.Provider
       value={{
@@ -28,8 +39,21 @@ export function MapProvider({ children }) {
         setTrajectoryData,
         cep,
         setCEP,
+        loadingProgress,
+        setLoadingProgress,
       }}
     >
+      {/* Loading overlay */}
+      {loadingProgress > 0 && loadingProgress < 1 && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="w-1/2 h-4 bg-gray-200 rounded">
+            <div
+              className="h-4 bg-cyan-500 rounded transition-all"
+              style={{ width: `${loadingProgress * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
       {children}
     </MapContext.Provider>
   );

@@ -10323,9 +10323,12 @@ time_step_main = 1.0
 time_step_reentry = 0.01
 traj_output = 0
 impact_output = 1
-x_aim = 6371e3
-y_aim = 0.0
-z_aim = 0.0
+x_launch = 6371e3
+y_launch = 0.0
+z_launch = 0.0
+x_aim = -557819.616403   
+y_aim = 6.346534e+06
+z_aim = -31.37706
 theta_long = 0.785398163397
 theta_lat = 0.0
 
@@ -10350,6 +10353,7 @@ reentry_vel = 7500
 deflection_time = 0.0
 
 [VEHICLE]
+booster_type = 0
 rv_type = 1
 
 [ERRORPARAMS]

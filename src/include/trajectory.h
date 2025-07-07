@@ -19,13 +19,9 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-EM_JS(void, num_run_counter, (), {
-    console.log("Incrementing run counter");
-  });
-
-EM_JS(void, error_tracker, (double error), {
-    console.log("Current error:", error);
-  });
+EM_JS(void, set_loading_progress, (double progress), {
+  if (window.setLoadingProgress) window.setLoadingProgress(progress);
+});
 #endif
 
 // Define a constant upper limit for the number of Monte Carlo runs
@@ -740,7 +736,7 @@ impact_data mc_run(runparams run_params){
 
         // Allow time for browser to update.
         #ifdef __EMSCRIPTEN__
-            num_run_counter();
+            set_loading_progress((i + 1) / num_runs);
             emscripten_sleep(0);
         #endif
     }
