@@ -17,7 +17,7 @@ export function MapProvider({ children }) {
 
   useEffect(() => {
     window.setLoadingProgress = setLoadingProgress;
-    return () => { window.setLoadingProgress = undefined; };
+    return () => { delete window.setLoadingProgress; };
   }, []);
 
   useEffect(() => {
@@ -44,11 +44,13 @@ export function MapProvider({ children }) {
       }}
     >
       {/* Loading overlay */}
-      {loadingProgress > 0 && loadingProgress < 1 && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="w-1/2 h-4 bg-gray-200 rounded">
+      {(loadingProgress > 0 && loadingProgress < 1) && (
+        <div className="fixed inset-0 flex items-center justify-center z-9999">
+          <div
+            className="w-1/4 h-5 border-solid border-4 bg-gray-200 rounded border-black"
+          >
             <div
-              className="h-4 bg-cyan-500 rounded transition-all"
+              className="h-3 bg-cyan-500 transition-all"
               style={{ width: `${loadingProgress * 100}%` }}
             />
           </div>

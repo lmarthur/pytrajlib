@@ -95,6 +95,7 @@ export default function Sidebar() {
   const {
     launchpoint,
     aimpoint,
+    setAimpoint,
     setStrikepoints,
     setTrajectoryData,
     setCEP,
@@ -195,7 +196,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="w-64 h-full bg-gradient-to-b from-gray-800 to-cyan-990 text-white p-4">
+    <div className="w-80 h-full bg-gradient-to-b from-gray-800 to-cyan-990 text-white p-4 overflow-y-auto max-h-screen">
       <div className={`text-2xl text-center mb-8 ${varelaRound.className}`}>
         TRAJMAP
       </div>
@@ -228,6 +229,26 @@ export default function Sidebar() {
                 launchpoint,
               );
               console.log("receiving strikepoints:", strikepoints);
+
+              // Ensure the aimpoint is in the same longitude range as the strikepoints
+              // If the strikepoints have negative longitudes, the aimpoint
+              // should have a negative longitude as well
+              // Same thing if the strikepoints have positive longitudes, the aimpoint
+              // should have a positive longitude as well 
+              if (strikepoints[0][1] < -180 && aimpoint.lon > 0) {
+                const newAimpoint = {
+                  lat: aimpoint.lat,
+                  lon: aimpoint.lon - 360,
+                }
+                setAimpoint(newAimpoint);
+              }
+              else if (strikepoints[0][1] > 180 && aimpoint.lon < 0) {
+                const newAimpoint = {
+                  lat: aimpoint.lat,
+                  lon: aimpoint.lon + 360,
+                }
+                setAimpoint(newAimpoint);
+              }
               setStrikepoints(strikepoints);
               setTrajectoryData(trajectoryData);
               setSimRunning(false);

@@ -19,7 +19,7 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-EM_JS(void, set_loading_progress, (double progress), {
+EM_JS(void, update_js_loading_bar, (double progress), {
   if (window.setLoadingProgress) window.setLoadingProgress(progress);
 });
 #endif
@@ -734,10 +734,16 @@ impact_data mc_run(runparams run_params){
         }
         #endif
 
-        // Allow time for browser to update.
         #ifdef __EMSCRIPTEN__
-            set_loading_progress((i + 1) / num_runs);
-            emscripten_sleep(0);
+            if ((i + 1) % 10 == 0) {
+                update_js_loading_bar((double)(i + 1) / num_runs);
+                // Allow time for browser to update.
+                emscripten_sleep(0);
+            }
+            if (i == num_runs - 1) {
+                update_js_loading_bar(1.0);
+                emscripten_sleep(0);
+            }
         #endif
     }
 
