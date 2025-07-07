@@ -39,7 +39,7 @@ const UpdatePositionAndZoom = (props) => {
     else if (props.cep > 100) {
       zoom = 15;
     }
-    else if (props.cep > 10) {
+    else {
       zoom = 17;
     }
     props.setShowMarkers(false);
