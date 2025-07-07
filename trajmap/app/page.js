@@ -11,6 +11,7 @@ export function MapProvider({ children }) {
   const [launchpoint, setLaunchpoint] = useState({ lat: null, lon: null });
   const [strikepoints, setStrikepoints] = useState([]);
   const [trajectoryData, setTrajectoryData] = useState([]);
+  const [cep, setCEP] = useState(null);
 
   return (
     <MapContext.Provider
@@ -25,6 +26,8 @@ export function MapProvider({ children }) {
         setStrikepoints,
         trajectoryData,
         setTrajectoryData,
+        cep,
+        setCEP,
       }}
     >
       {children}

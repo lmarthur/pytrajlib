@@ -6,94 +6,13 @@ import { useMapContext } from "@/app/page";
 import runParamsFile from "../../default.json";
 import createTrajlib from "../../trajlib.js";
 import { Varela_Round } from "next/font/google";
-import { sphercoordsToCartcoords } from "@/app/utils/utils";
+import { sphere2cart, transformToEarthCoords, calculateCEP } from "@/app/utils/utils";
 
-const varelaRound = Varela_Round({ 
+const varelaRound = Varela_Round({
   subsets: ['latin'],
-  weight:["400"],
+  weight: ["400"],
   variable: '--font-varela',
 });
-
-const cartesianToSpherical = (x, y, z) => {
-  // cartCoords: [x, y, z]
-  // returns [r, longitude, latitude]
-
-  const r = Math.sqrt(x * x + y * y + z * z);
-  const longitude = Math.atan2(y, x); // in radians
-  const latitude = Math.atan(z / Math.sqrt(x * x + y * y)); // in radians
-
-  return [r, longitude, latitude];
-};
-
-const calc_bearing = (start, end) => {
-  /**
-   * Calculate the bearing (in radians) from start to end (lat, lon in radians)
-   */
-  const [launch_lat, launch_lon] = start;
-  const [aim_lat, aim_lon] = end;
-  const lon_diff = aim_lon - launch_lon;
-
-  // East component
-  const east = Math.sin(lon_diff) * Math.cos(aim_lat);
-
-  // North component
-  const north =
-    Math.cos(launch_lat) * Math.sin(aim_lat) -
-    Math.sin(launch_lat) * Math.cos(aim_lat) * Math.cos(lon_diff);
-
-    
-  return Math.atan2(north, east);
-}
-
-const haversineDistance = (start, end) => {
-  /**
-   * Calculate the haversine distance between two points (lat, lon in radians)
-   */
-  const [launch_lat, launch_lon] = start;
-  const [aim_lat, aim_lon] = end;
-  const a =
-    Math.sin((aim_lat - launch_lat) / 2) * Math.sin((aim_lat - launch_lat) / 2) +
-    Math.cos(launch_lat) * Math.cos(aim_lat) *
-    Math.sin((aim_lon - launch_lon) / 2) * Math.sin((aim_lon - launch_lon) / 2);
-  const angular_distance = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = 6371e3 * angular_distance;
-  return distance;
-};
-
-const getLocation = (bearing, distance, start) => {
-  /**
-   * Calculate the end location (lat, lon in radians) given a start location (lat, lon in radians),
-   * a bearing (in radians), and a distance (in meters).
-   */
-  // Formula assumes angle is clockwise from north
-  bearing = -(bearing - Math.PI / 2);
-  const launch_lat = start[0]; // latitude of start point in radians
-  const launch_long = start[1]; // longitude of start point in radians
-  const angular_distance = distance / 6371e3;
-  const aim_lat = Math.asin( Math.sin(launch_lat)*Math.cos(angular_distance) +
-                      Math.cos(launch_lat)*Math.sin(angular_distance)*Math.cos(bearing) );
-  const aim_long = launch_long + Math.atan2(Math.sin(bearing)*Math.sin(angular_distance)*Math.cos(launch_lat),
-                            Math.cos(angular_distance)-Math.sin(launch_lat)*Math.sin(aim_lat));
-  return [aim_lat, aim_long];
-};
-
-const transformToEarthCoords = (x, y, z, launchpoint) => {
-  /**
-   * Tranform from the cartesian x, y, z impact points via a trajectory from the 
-   * launchpoint to the "Earth" coordinates launched from the user-selected launchpoint.
-   */
-    const launch_lon = (launchpoint.lon * Math.PI) / 180;
-    const launch_lat = (launchpoint.lat * Math.PI) / 180;
-
-    const [r, long_from_origin, lat_from_origin] = cartesianToSpherical(x, y, z);
-    // Find bearing from origin to strikepoint
-    const bearing = calc_bearing([0, 0], [lat_from_origin, long_from_origin]);
-    // Find distance from origin to strikepoint
-    const distance = haversineDistance([0, 0], [lat_from_origin, long_from_origin]);
-    // Get the Earth strikepoint location
-    const latLon = getLocation(bearing, distance, [launch_lat, launch_lon]);
-    return latLon;
-}
 
 const extractImpactData = (impactDataStr, launchpoint) => {
   /**
@@ -103,16 +22,10 @@ const extractImpactData = (impactDataStr, launchpoint) => {
     .trim()
     .split("\n")
     .map((line) => line.split(",").map((num) => parseFloat(num.trim())));
-  const [x_aim, y_aim, z_aim] = impactData.shift();
-  console.log("Sim Aimpoint:", x_aim, y_aim, z_aim);
-  const aimpoint_lon = (Math.atan2(y_aim, x_aim) * 180) / Math.PI;
-  const aimpoint_lat =
-    (Math.atan2(z_aim, Math.sqrt(x_aim ** 2 + y_aim ** 2)) * 180) / Math.PI;
-  console.log(
-    "Sim Aimpoint (spherical) in degrees:",
-    aimpoint_lon,
-    aimpoint_lat
-  );
+  const cep = calculateCEP(impactData, launchpoint);
+  // The first row contains the aimpoint coordinates
+  // Shifting removes it so we only iterate over the impact data
+  impactData.shift();
 
   const strikepoints = [];
   for (const row of impactData) {
@@ -125,7 +38,7 @@ const extractImpactData = (impactDataStr, launchpoint) => {
       (longitude * 180) / Math.PI,
     ]);
   }
-  return [aimpoint_lat, aimpoint_lon, strikepoints];
+  return [strikepoints, cep];
 }
 
 const extractTrajectoryData = (trajectoryDataStr, launchpoint) => {
@@ -167,11 +80,12 @@ const runSimulation = async (trajlib, runParams, launchpoint) => {
   );
   // First part of data is the impact data, second part is the trajectory data
   const [impactDataStr, trajectoryDataStr] = data.split("\nTrajectory Data:\n");
-  const [aimpoint_lat, aimpoint_lon, strikepoints] = extractImpactData(impactDataStr, launchpoint);
+  const [strikepoints, cep] = extractImpactData(impactDataStr, launchpoint);
   const trajectoryData = extractTrajectoryData(trajectoryDataStr, launchpoint);
   return {
     strikepoints: strikepoints,
     trajectoryData: trajectoryData,
+    cep: cep,
   };
 };
 
@@ -183,13 +97,14 @@ export default function Sidebar() {
     aimpoint,
     setStrikepoints,
     setTrajectoryData,
+    setCEP,
   } = useMapContext();
 
   useEffect(() => {
     if (aimpoint.lat != null && aimpoint.lon != null) {
       const aim_lon = (aimpoint.lon * Math.PI) / 180;
       const aim_lat = (aimpoint.lat * Math.PI) / 180;
-      const [x, y, z] = sphercoordsToCartcoords([6371e3, aim_lon, aim_lat]);
+      const [x, y, z] = sphere2cart([6371e3, aim_lon, aim_lat]);
       setRunParams((prev) => ({
         ...prev,
         x_aim: x,
@@ -200,7 +115,7 @@ export default function Sidebar() {
     if (launchpoint.lat != null && launchpoint.lon != null) {
       const launch_lon = (launchpoint.lon * Math.PI) / 180;
       const launch_lat = (launchpoint.lat * Math.PI) / 180;
-      const [x, y, z] = sphercoordsToCartcoords([6371e3, launch_lon, launch_lat]);
+      const [x, y, z] = sphere2cart([6371e3, launch_lon, launch_lat]);
       setRunParams((prev) => ({
         ...prev,
         x_launch: x,
@@ -245,7 +160,7 @@ export default function Sidebar() {
             }).then(async (Module) => {
               console.log("Module created!");
               console.log(Module._test());
-              const { strikepoints, trajectoryData } = await runSimulation(
+              const { strikepoints, trajectoryData, cep } = await runSimulation(
                 Module,
                 runParams,
                 launchpoint,
@@ -254,6 +169,7 @@ export default function Sidebar() {
               setStrikepoints(strikepoints);
               setTrajectoryData(trajectoryData);
               setSimRunning(false);
+              setCEP(cep);
             });
           }
         }}

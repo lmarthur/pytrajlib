@@ -2,7 +2,7 @@
 import { MapContainer, Marker, TileLayer, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
-import { useMap, useMapEvent, Polyline, ScaleControl } from "react-leaflet";
+import { useMap, useMapEvent, Polyline, ScaleControl, Circle } from "react-leaflet";
 import LocationPopup from "./popupComponents/LocationPopup";
 import { useMapContext } from "../page";
 import StrikeMarker from "./StrikeMarker";
@@ -31,10 +31,12 @@ export default function Map(props) {
     aimpoint,
     strikepoints,
     trajectoryData,
+    cep,
   } = useMapContext();
   const [popupVisible, setPopupVisible] = useState(false);
   const [StrikepointMarkers, setStrikepointMarkers] = useState([]);
   const [trajectoryLine, setTrajectoryLine] = useState(null);
+  const [cepLine, setCepLine] = useState(null);
 
   const MapClickHandler = () => {
     useMapEvent("click", (e) => {
@@ -95,12 +97,34 @@ export default function Map(props) {
       setTrajectoryLine(null);
     }
   }
-  , [trajectoryData]);
+    , [trajectoryData]);
+
+  useEffect(() => {
+    /*
+    Draw a circle representing the CEP around the aimpoint.
+    */
+      setCepLine(
+        <Circle
+          center={[aimpoint.lat, aimpoint.lon]}
+          radius={cep}
+          pathOptions={{
+            color: "black",
+            dashArray: "5, 5",
+            fill: true,
+            fillColor: "black",
+            fillOpacity: 0.1,
+            weight: 1,
+          }}
+        >
+          <Tooltip permanent>{`CEP: ${cep.toFixed(2)} m`}</Tooltip>
+        </Circle>
+      );
+  }, [cep]);
 
   const AimpointMarker =
     aimpoint.lat !== null && aimpoint.lon !== null ? (
       <Marker position={[aimpoint.lat, aimpoint.lon]}>
-        <Tooltip permanent>Aim Point</Tooltip>
+        <Tooltip>Aim Point</Tooltip>
       </Marker>
     ) : null;
   const LaunchpointMarker =
@@ -130,6 +154,7 @@ export default function Map(props) {
         {AimpointMarker}
         {StrikepointMarkers}
         {trajectoryLine}
+        {cepLine}
         <ScaleControl position="bottomright" />
       </MapContainer>
       {popupVisible ? (
