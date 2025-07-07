@@ -26,3 +26,8 @@ First, [install Emscripten](https://emscripten.org/docs/getting_started/download
 ```bash
 source scripts/emscript.sh
 ```
+
+## Tools used
+- The ReactJS framework [NextJS](https://nextjs.org/)
+- [Nominatim](https://github.com/osm-search/Nominatim) for location searches with
+OSM locations
