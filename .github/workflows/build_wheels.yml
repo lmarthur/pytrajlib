@@ -1,7 +1,6 @@
 name: Build
 
 on:
-  push:
   release:
     types: [published]
 
@@ -43,7 +42,7 @@ jobs:
     needs:
     - build_wheels
     runs-on: ubuntu-latest
-    if: github.event_name != 'release'
+    if: github.event_name == 'release' && github.event.action == 'published'
 
     environment:
       name: testpypi
