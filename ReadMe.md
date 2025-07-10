@@ -27,20 +27,7 @@ To generate trajectory plots from an existing ```trajectory.txt``` file, run
 To generate a new ```trajectory.txt``` file, run the simulation with ```traj_output = 1``` in the relevant ```.toml``` file. 
 
 ## TODO: 
-- [X] Get run.sh and comptest.sh working
-- [ ] Add Euler angles to state
-- [ ] Add Euler angles to state parsers and tests
-- [ ] Add Euler angles to rk4step() function
-- [ ] Write tests for get_euler_angles function
-- [ ] Implement get_euler_angles() function
-- [ ] Write tests for get_AoA() function
-- [ ] Implement get_AoA() function
-- [ ] Write tests for update_torque() function
-- [ ] Implement update_torque() function (should account for AoA, pitch damping, and control surface deflections)
-- [ ] Write new tests for update_drag()
-- [ ] Add AoA to update_drag()
-- [ ] Write new tests for update_lift()
-- [ ] Add AoA and control surface deflection to update_lift()
+- [X] Add AoA to the update_drag() function
 - [ ] Generate plots of miss distance vs response time
 - [ ] Generate plot of miss distance vs gearing for a range of nav gains
 - [ ] Rerun plots with multiple atmospheres
