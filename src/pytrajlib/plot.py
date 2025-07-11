@@ -864,20 +864,28 @@ def map(run_params=None, data=None, output_dir=None, show_attribution=True):
     trajectory_data = _get_trajectory_data(run_params)
     if trajectory_data is None:
         return m
-    traj_x = trajectory_data[:, 2]
-    traj_y = trajectory_data[:, 3]
-    traj_z = trajectory_data[:, 4]
-    # Transform the trajectory coordinates to Earth coordinates
-    traj_lat, traj_lon = transform_to_earth_coords(traj_x, traj_y, traj_z, launch)
-    # Create a PolyLine for the trajectory
-    folium.PolyLine(
-        locations=[
-            (np.rad2deg(lat), np.rad2deg(lon)) for lat, lon in zip(traj_lat, traj_lon)
-        ],
-        color="black",
-        weight=2,
-        opacity=0.6,
-    ).add_to(m)
+    times = trajectory_data[:, 0]
+    run_start_idx = np.where(times == 0)[0]
+    if len(run_start_idx) > 1:
+        run_end_idx = list(run_start_idx)[1:] + [-1]
+    else:
+        run_end_idx = [-1]
+    for start, end in zip(run_start_idx, run_end_idx):
+        traj_x = trajectory_data[start:end, 2]
+        traj_y = trajectory_data[start:end, 3]
+        traj_z = trajectory_data[start:end, 4]
+        # Transform the trajectory coordinates to Earth coordinates
+        traj_lat, traj_lon = transform_to_earth_coords(traj_x, traj_y, traj_z, launch)
+        # Create a PolyLine for the trajectory
+        folium.PolyLine(
+            [
+                (np.rad2deg(lat), np.rad2deg(lon))
+                for lat, lon in zip(traj_lat, traj_lon)
+            ],
+            color="black",
+            weight=2,
+            opacity=0.7,
+        ).add_to(m)
 
     if output_dir is not None:
         m.save(output_dir + "/trajectory_map.html")

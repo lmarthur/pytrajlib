@@ -255,7 +255,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
     */
 
     // Initialize the variables and structures
-    int max_steps = 1000000;
+    int max_steps = 100000000;
 
     grav true_grav = init_grav(run_params);
     grav est_grav = init_grav(run_params);
@@ -290,8 +290,10 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
     // Create a .txt file to store the trajectory data
     FILE *traj_file;
     if (traj_output == 1){
-        traj_file = fopen(run_params->trajectory_path, "w");
-        fprintf(traj_file, "t, current_mass, x, y, z, vx, vy, vz, ax_grav, ay_grav, az_grav, ax_drag, ay_drag, az_drag, a_command, a_lift, ax_thrust, ay_thrust, az_thrust, ax_total, ay_total, az_total, est_x, est_y, est_z, est_vx, est_vy, est_vz, est_ax_total, est_ay_total, est_az_total \n");
+        traj_file = fopen(run_params->trajectory_path, "a");
+        if (ftell(traj_file) == 0) {
+            fprintf(traj_file, "t, current_mass, x, y, z, vx, vy, vz, ax_grav, ay_grav, az_grav, ax_drag, ay_drag, az_drag, a_command, a_lift, ax_thrust, ay_thrust, az_thrust, ax_total, ay_total, az_total, est_x, est_y, est_z, est_vx, est_vy, est_vz, est_ax_total, est_ay_total, est_az_total \n");
+        }
         // Write the initial state to the trajectory file
         fprintf(traj_file, "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n", old_true_state.t, vehicle->current_mass, old_true_state.x, old_true_state.y, old_true_state.z, old_true_state.vx, old_true_state.vy, old_true_state.vz, old_true_state.ax_grav, old_true_state.ay_grav, old_true_state.az_grav, old_true_state.ax_drag, old_true_state.ay_drag, old_true_state.az_drag, a_command_total, a_lift_total, old_true_state.ax_thrust, old_true_state.ay_thrust, old_true_state.az_thrust, old_true_state.ax_total, old_true_state.ay_total, old_true_state.az_total, old_est_state.x, old_est_state.y, old_est_state.z, old_est_state.vx, old_est_state.vy, old_est_state.vz, old_est_state.ax_total, old_est_state.ay_total, old_est_state.az_total);
     }
