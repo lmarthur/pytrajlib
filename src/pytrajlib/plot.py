@@ -306,7 +306,7 @@ def position_error(run_params=None, data=None, output_dir=None):
     plt.grid()
     if output_dir is not None:
         plt.savefig(output_dir + "/position_error.pdf")
-    plt.close()
+        plt.close()
 
 
 def orbit(run_params=None, data=None, output_dir=None):
@@ -349,7 +349,7 @@ def orbit(run_params=None, data=None, output_dir=None):
 
     if output_dir is not None:
         plt.savefig(output_dir + "/orbit.pdf")
-    plt.close()
+        plt.close()
 
 
 def altitude(run_params=None, data=None, output_dir=None):
@@ -380,7 +380,7 @@ def altitude(run_params=None, data=None, output_dir=None):
     # remove top and right spines
     plt.gca().spines["top"].set_visible(False)
     plt.gca().spines["right"].set_visible(False)
-    # shade under the curve from 0 to 160 seconds
+    # shade under the curve from 0 to 188 seconds for the boost phase of mmiii
     plt.fill_between(
         true_t,
         true_altitude / 1000,
@@ -398,7 +398,7 @@ def altitude(run_params=None, data=None, output_dir=None):
     # plt.annotate('Reentry\n (INS)', xy=(2910, 40), xytext=(2200, 250), arrowprops=dict(facecolor='black', arrowstyle='->'), ha='center')
     if output_dir is not None:
         plt.savefig(output_dir + "/altitude.pdf")
-    plt.close()
+        plt.close()
 
 
 def altitude_error(run_params=None, data=None, output_dir=None):
