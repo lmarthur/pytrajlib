@@ -4,6 +4,7 @@ import os
 import folium
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import scipy.stats as stats
 from folium.features import DivIcon
 
@@ -212,13 +213,16 @@ def _set_trajectory_plot_params():
 def _get_trajectory_data(run_params=None, data=None):
     if run_params is None:
         run_params = get_run_params()
-    if data is None:
+    is_trajectory_data = (
+        isinstance(data, pd.DataFrame) and "current_mass" in data.columns
+    )
+    if data is None or not is_trajectory_data:
         # print error if the paths are not found
         if not os.path.exists(run_params["trajectory_path"]):
             print(f"Trajectory data file {run_params['trajectory_path']} not found")
             return
         data = np.loadtxt(run_params["trajectory_path"], delimiter=",", skiprows=1)
-    return data
+    return np.array(data)
 
 
 def _get_altitude(x, y, z):
