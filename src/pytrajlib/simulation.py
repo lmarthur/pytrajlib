@@ -222,8 +222,9 @@ def run(config=None, return_config=True, **kwargs):
                 data=impact_df,
                 output_dir=run_params["output_dir"],
             )
-
-    return impact_df, run_params if return_config else impact_df
+    if return_config:
+        return impact_df, run_params
+    return impact_df
 
 
 def get_all_plot_function_names():
