@@ -252,21 +252,17 @@ export default function Sidebar() {
               console.log("receiving strikepoints:", strikepoints);
 
               // Ensure the aimpoint is in the same longitude range as the strikepoints
-              // If the strikepoints have negative longitudes, the aimpoint
-              // should have a negative longitude as well
-              // Same thing if the strikepoints have positive longitudes, the aimpoint
-              // should have a positive longitude as well 
-              if (strikepoints[0][1] < -180 && aimpoint.lon > 0) {
-                const newAimpoint = {
-                  lat: aimpoint.lat,
-                  lon: aimpoint.lon - 360,
-                }
-                setAimpoint(newAimpoint);
-              }
-              else if (strikepoints[0][1] > 180 && aimpoint.lon < 0) {
+              if (strikepoints[0][1] - aimpoint.lon > 180) {
                 const newAimpoint = {
                   lat: aimpoint.lat,
                   lon: aimpoint.lon + 360,
+                }
+                setAimpoint(newAimpoint);
+              }
+              else if (strikepoints[0][1] - aimpoint.lon < -180) {
+                const newAimpoint = {
+                  lat: aimpoint.lat,
+                  lon: aimpoint.lon - 360,
                 }
                 setAimpoint(newAimpoint);
               }
