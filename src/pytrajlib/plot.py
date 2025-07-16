@@ -717,41 +717,6 @@ def lift_acceleration(run_params=None, data=None, output_dir=None):
         plt.close()
 
 
-def position_vs_altitude(run_params=None, data=None, output_dir=None):
-    """
-    Plot y and z position vs. altitude
-
-    INPUTS
-    --------
-        run_params (dict): Run parameters for the simulation. If None, and data
-            is None, use the default parameters.
-        data (np.ndarray | pd.DataFrame): Trajectory data from the simulation.
-            If None, read from the file specified by run_params.
-        output_dir (str): Directory to save the plots, e.g. "output/". If None, use do not save
-            the plots.
-    """
-    _set_trajectory_plot_params()
-    data = _get_trajectory_data(run_params, data)
-    true_x = data[:, 2]
-    true_y = data[:, 3]
-    true_z = data[:, 4]
-    true_altitude = _get_altitude(true_x, true_y, true_z)
-
-    plt.figure(figsize=(10, 10))
-    plt.plot(500000 - true_altitude, true_y, label="y")
-    plt.plot(500000 - true_altitude, true_z, label="z")
-    plt.xlabel("Altitude")
-    plt.ylabel("Position (m)")
-    # no x axis ticks
-    plt.xticks([])
-    plt.title("Lateral Position vs. Altitude")
-    plt.legend()
-    plt.grid()
-    if output_dir is not None:
-        plt.savefig(output_dir + "/position_vs_altitude.pdf")
-        plt.close()
-
-
 def all_trajectory_plots(run_params=None, data=None, output_dir=None):
     """
     Plot the trajectory of the vehicle.
@@ -778,7 +743,6 @@ def all_trajectory_plots(run_params=None, data=None, output_dir=None):
     acceleration_error(run_params, data, output_dir)
     drag_acceleration(run_params, data, output_dir)
     lift_acceleration(run_params, data, output_dir)
-    position_vs_altitude(run_params, data, output_dir)
 
 
 def map(run_params=None, data=None, output_dir=None, show_attribution=True):
