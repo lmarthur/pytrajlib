@@ -412,12 +412,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             true_final_state.x = true_final_state.x - coriolis * sin(lon)*cos(lat);
             true_final_state.y = true_final_state.y + coriolis * cos(lon)*cos(lat);
             true_final_state.z = true_final_state.z + coriolis * sin(lat);
-            if (run_params->rv_maneuv == 2){
-                // If perfect rv maneuver, update the final position
-                true_final_state.x = true_final_state.x - est_final_state.x;
-                true_final_state.y = true_final_state.y - est_final_state.y;
-                true_final_state.z = true_final_state.z - est_final_state.z;
-            }
+
             if (traj_output == 1){
                 // Write the final state to the trajectory file
                 fprintf(traj_file, "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n", true_final_state.t, vehicle->current_mass, true_final_state.x, true_final_state.y, true_final_state.z, true_final_state.vx, true_final_state.vy, true_final_state.vz, true_final_state.ax_grav, true_final_state.ay_grav, true_final_state.az_grav, true_final_state.ax_drag, true_final_state.ay_drag, true_final_state.az_drag, a_command_total, a_lift_total, true_final_state.ax_thrust, true_final_state.ay_thrust, true_final_state.az_thrust, true_final_state.ax_total, true_final_state.ay_total, true_final_state.az_total, est_final_state.x, est_final_state.y, est_final_state.z, est_final_state.vx, est_final_state.vy, est_final_state.vz, est_final_state.ax_total, est_final_state.ay_total, est_final_state.az_total);

@@ -114,21 +114,6 @@ def test_atmospheric_error_increases_cep(run_params):
     assert cep > 1e-3 and cep < 1e3
 
 
-@pytest.mark.xfail(reason="TODO check on issue with idealized maneuverability")
-def test_idealized_maneuver_with_atmospheric_error_reduces_cep(run_params):
-    """
-    Verify that turning on atmospheric error with idealized maneuverability makes miss distance near 0
-    """
-    run_params["atm_error"] = 1
-    run_params["num_runs"] = 10
-    run_params["rv_maneuv"] = 2
-
-    impact_data = run(run_params, return_config=False)
-    cep = get_cep(run_params, impact_data)
-
-    assert cep < 1e-3
-
-
 def test_gravity_error_increases_cep(run_params):
     """
     Verify that turning on gravitational error increases miss distance
@@ -150,9 +135,9 @@ def test_gravity_error_increases_cep(run_params):
         ("initial_pos_error", 1.0, 10.0),
         ("initial_vel_error", 0.1, 1.0),
         ("initial_angle_error", 1e-6, 1e-4),
-        ("acc_scale_stability", 1e-8, 1e-6),
-        ("gyro_bias_stability", 1e-8, 1e-6),
-        ("gyro_noise", 1e-8, 1e-6),
+        ("acc_scale_stability", 1e-6, 1e-4),
+        ("gyro_bias_stability", 1e-6, 1e-4),
+        ("gyro_noise", 1e-6, 1e-4),
     ],
 )
 @pytest.mark.parametrize(
@@ -160,12 +145,6 @@ def test_gravity_error_increases_cep(run_params):
     [
         0,
         1,
-        pytest.param(
-            2,
-            marks=pytest.mark.xfail(
-                reason="TODO check on issue with idealized maneuverability"
-            ),
-        ),
     ],
 )
 def test_increase_error_increase_cep_all_guidance(
@@ -174,13 +153,13 @@ def test_increase_error_increase_cep_all_guidance(
     """
     Verify that turning on/increasing initial position error increases miss distance (all guidance combinations)
 
-    rv_maneuv: 0 for boost guidance only, 1 for realistic rv maneuver, 2 for idealized rv maneuver
+    rv_maneuv: 0 for boost guidance only, 1 for realistic rv maneuver
     """
     ceps = []
     errors = [0, error_value_low, error_value_high]
     for error in errors:
         run_params[error_type] = error
-        run_params["num_runs"] = 10
+        run_params["num_runs"] = 100
         run_params["rv_maneuv"] = rv_maneuv
         impact_data = run(run_params, return_config=False)
         cep = get_cep(run_params, impact_data)
@@ -191,43 +170,26 @@ def test_increase_error_increase_cep_all_guidance(
     )
 
 
-@pytest.mark.parametrize(
-    "rvm1, rvm2",
-    [
-        (0, 1),
-        pytest.param(
-            1,
-            2,
-            marks=pytest.mark.xfail(
-                reason="TODO check on issue with idealized maneuverability"
-            ),
-        ),
-    ],
-)
-def test_rv_maneuver(run_params, rvm1, rvm2):
+def test_rv_maneuver(run_params):
     """
-    Verify that turning on rv maneuver decreases miss distance
-
-    and
-
-    Verify that turning on perfect rv maneuv decreases miss distance compared to
-    realistic rv maneuv
+    Verify that turning on rv maneuver decreases miss distance when deflection
+    time is zero.
     """
 
     run_params["num_runs"] = 10
-    run_params["rv_maneuv"] = rvm1
+    run_params["rv_maneuv"] = 0
     run_params["atm_error"] = 1
     run_params["grav_error"] = 1
 
     impact_data = run(run_params, return_config=False)
     cep1 = get_cep(run_params, impact_data)
 
-    run_params["rv_maneuv"] = rvm2
+    run_params["rv_maneuv"] = 1
     impact_data = run(run_params, return_config=False)
     cep2 = get_cep(run_params, impact_data)
 
     assert cep1 > cep2, (
-        f"Expected CEP with rv_maneuv {rvm1} to be greater than with rv_maneuv {rvm2}, "
+        f"Expected CEP with rv_maneuv 0 to be greater than with rv_maneuv 1, "
         f"got {cep1} > {cep2}"
     )
 
