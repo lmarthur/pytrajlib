@@ -95,7 +95,7 @@ ffibuilder.cdef(
         double north;
         double up;
     };
-    #define MAX_RUNS 1000
+    #define MAX_RUNS 10000
     struct impact_data{
         struct state impact_states[MAX_RUNS];
     };

@@ -18,7 +18,7 @@
 #include "optimize/brent.h"
 
 // Define a constant upper limit for the number of Monte Carlo runs
-#define MAX_RUNS 1000
+#define MAX_RUNS 10000
 
 // Define a struct to store impact data
 typedef struct impact_data{
