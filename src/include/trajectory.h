@@ -310,7 +310,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         // printf("true_atm_cond: %f, %f, %f\n", true_atm_cond.density, true_atm_cond.meridional_wind, true_atm_cond.zonal_wind);
         atm_cond est_atm_cond = get_exp_atm_cond(old_altitude, &exp_atm_model);
         // if during boost or outside atmosphere, dt = main time step, else dt = reentry time step
-        if (old_true_state.t < vehicle->booster.total_burn_time || old_altitude > 1e6){
+        if (old_true_state.t < vehicle->booster.total_burn_time || old_altitude >= 1e5){
             time_step = run_params->time_step_main;
         }
         else{
@@ -331,7 +331,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         update_drag(run_params, vehicle, &est_atm_cond, &new_des_state, &step_timer);
 
         // If maneuverable RV, use proportional navigation during reentry
-        if (run_params->rv_maneuv == 1 && old_true_state.t >= vehicle->booster.total_burn_time && get_altitude(new_true_state.x, new_true_state.y, new_true_state.z) < 1e6){
+        if (run_params->rv_maneuv == 1 && old_true_state.t >= vehicle->booster.total_burn_time && get_altitude(new_true_state.x, new_true_state.y, new_true_state.z) < 1e5){
             // Get the acceleration command
             cart_vector a_command = prop_nav(run_params, &new_est_state);
             // printf("a_command: %f, %f, %f\n", a_command.x, a_command.y, a_command.z);
