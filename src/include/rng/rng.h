@@ -7,7 +7,7 @@
 
 double ran_flat(double min, double max) {
     /*
-    Return a uniformly distributed random number in the range [min, max]
+    Return a uniformly distributed random number in the range [min, max)
 
     INPUTS:
     ----------
