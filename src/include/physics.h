@@ -133,8 +133,8 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
     // printf("Relative velocity: %f, %f, %f\n", v_rel[0], v_rel[1], v_rel[2]);
     double v_rel_mag = sqrt(v_rel[0]*v_rel[0] + v_rel[1]*v_rel[1] + v_rel[2]*v_rel[2]);
 
-    double aoa_total = atan(v_mag / wind_mag); // angle of attack in radians, assuming the vehicle is moving in the direction of the wind
-
+    double aoa_total = atan(wind_mag/v_mag); // angle of attack in radians, assuming the vehicle is moving in the direction of the wind
+    // printf("Angle of attack: %f radians\n", aoa_total);
     if (v_rel_mag < 1e-2){
         state->ax_drag = 0;
         state->ay_drag = 0;
