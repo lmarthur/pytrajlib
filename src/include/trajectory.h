@@ -399,20 +399,20 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             state true_final_state = impact_linterp(&old_true_state, &new_true_state);
             state est_final_state = impact_linterp(&old_est_state, &new_est_state);
             state des_final_state = impact_linterp(&old_des_state, &new_des_state);
-            // // Add coriolis effect based on the latitude and the impact time error
-            // double lat = gsl_ran_flat(rng, -M_PI/2, M_PI/2);
-            // double lon = gsl_ran_flat(rng, -M_PI, M_PI);
-            // double time_error = true_final_state.t - est_final_state.t;
-            // double rot_speed = 464 * cos(lat);
-            // // printf("Impact time error: %f\n", time_error);
-            // double coriolis = rot_speed * time_error;
-            // printf("Coriolis effect: %f\n", coriolis);
-            // // based on the coriolis effect, update the final state x and y
-            // // This might seem like a bug, but I promise it's just clever
-            // // This replicates flying in a random direction, not just along the equator
-            // true_final_state.x = true_final_state.x - coriolis * sin(lon)*cos(lat);
-            // true_final_state.y = true_final_state.y + coriolis * cos(lon)*cos(lat);
-            // true_final_state.z = true_final_state.z + coriolis * sin(lat);
+            // Add coriolis effect based on the latitude and the impact time error
+            double lat = gsl_ran_flat(rng, -M_PI/2, M_PI/2);
+            double lon = gsl_ran_flat(rng, -M_PI, M_PI);
+            double time_error = true_final_state.t - est_final_state.t;
+            double rot_speed = 464 * cos(lat);
+            // printf("Impact time error: %f\n", time_error);
+            double coriolis = rot_speed * time_error;
+
+            // based on the coriolis effect, update the final state x and y
+            // This might seem like a bug, but I promise it's just clever
+            // This replicates flying in a random direction, not just along the equator
+            true_final_state.x = true_final_state.x - coriolis * sin(lon)*cos(lat);
+            true_final_state.y = true_final_state.y + coriolis * cos(lon)*cos(lat);
+            true_final_state.z = true_final_state.z + coriolis * sin(lat);
 
             if (run_params->rv_maneuv == 2){
                 // If perfect rv maneuver, update the final position
