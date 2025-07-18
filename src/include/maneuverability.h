@@ -164,12 +164,12 @@ void update_lift(runparams *run_params, state *state, cart_vector *a_command, at
     }
     // Case 1: current flap deflection is less than target flap deflection
     if (trim_angle_x < target_trim_angle_x){
-        trim_angle_x = trim_angle_x + deflection_rate * time_step/aoa_max;
+        trim_angle_x = trim_angle_x + deflection_rate * time_step;
         // printf("Case 1");
     }
     // Case 2: current flap deflection is greater than target flap deflection
     else if (trim_angle_x > target_trim_angle_x){
-        trim_angle_x = trim_angle_x - deflection_rate * time_step/aoa_max;
+        trim_angle_x = trim_angle_x - deflection_rate * time_step;
         // printf("Case 2");
     }
 
@@ -179,11 +179,11 @@ void update_lift(runparams *run_params, state *state, cart_vector *a_command, at
         // printf("Case 0 for Y\n");
     }
     if (trim_angle_y < target_trim_angle_y){
-        trim_angle_y = trim_angle_y + deflection_rate * time_step/aoa_max; // increment towards target
+        trim_angle_y = trim_angle_y + deflection_rate * time_step; // increment towards target
         // printf("Case 1 for Y\n");
     }
     else if (trim_angle_y > target_trim_angle_y){
-        trim_angle_y = trim_angle_y - deflection_rate * time_step/aoa_max; // decrement towards target
+        trim_angle_y = trim_angle_y - deflection_rate * time_step; // decrement towards target
         // printf("Case 2 for Y\n");
     }
 
@@ -192,11 +192,11 @@ void update_lift(runparams *run_params, state *state, cart_vector *a_command, at
         // printf("Case 0 for Z\n");
     }
     if (trim_angle_z < target_trim_angle_z){
-        trim_angle_z = trim_angle_z + deflection_rate * time_step/aoa_max; // increment towards target
+        trim_angle_z = trim_angle_z + deflection_rate * time_step; // increment towards target
         // printf("Case 1 for Z\n");
     }
     else if (trim_angle_z > target_trim_angle_z){
-        trim_angle_z = trim_angle_z - deflection_rate * time_step/aoa_max; // decrement towards target
+        trim_angle_z = trim_angle_z - deflection_rate * time_step; // decrement towards target
         // printf("Case 2 for Z\n");
     }
 
