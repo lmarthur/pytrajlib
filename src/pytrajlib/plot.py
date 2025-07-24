@@ -222,7 +222,17 @@ def _get_trajectory_data(run_params=None, data=None):
             print(f"Trajectory data file {run_params['trajectory_path']} not found")
             return
         data = np.loadtxt(run_params["trajectory_path"], delimiter=",", skiprows=1)
-    return np.array(data)
+
+    times = data[:, 0]
+    run_start_idx = np.where(times == 0)[0]
+    if len(run_start_idx) > 1:
+        run_end_idx = list(run_start_idx)[1:] + [-1]
+    else:
+        run_end_idx = [-1]
+    runs = []
+    for start, end in zip(run_start_idx, run_end_idx):
+        runs.append(data[start:end, :])
+    return runs[0]
 
 
 def _get_altitude(x, y, z):
@@ -818,7 +828,7 @@ def map(run_params=None, data=None, output_dir=None, show_attribution=True):
     """
 
     # Add the X icon marker
-    for lat, lon in zip(transformed_lat, transformed_lon):
+    for i, (lat, lon) in enumerate(zip(transformed_lat, transformed_lon)):
         folium.Marker(
             location=[np.rad2deg(lat), np.rad2deg(lon)],
             icon=DivIcon(
@@ -826,6 +836,7 @@ def map(run_params=None, data=None, output_dir=None, show_attribution=True):
                 icon_anchor=(16, 16),
                 html=x_svg,
             ),
+            tooltip=f"Impact Point {i + 1}: {np.rad2deg(lat):.2f}°N, {np.rad2deg(lon):.2f}°E",
         ).add_to(m)
 
     # Add trajectory line
