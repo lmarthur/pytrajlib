@@ -350,6 +350,12 @@ def check_config_exists(config_path):
     return os.path.isfile(config_path)
 
 
+def get_default_atm_profile_path():
+    return str(
+        importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.txt")
+    )
+
+
 def get_run_params(config_path=None):
     """
     Get run params dict from the config file. If no config file is provided,
@@ -380,7 +386,24 @@ def get_run_params(config_path=None):
     if retrieving_default:
         # Override the default atm_profile_path because atmprofiles.txt does not
         # have a stable fixed path when the script is run as part of a package.
-        run_params["atm_profile_path"] = str(
-            importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.txt")
-        )
+        run_params["atm_profile_path"] = get_default_atm_profile_path()
     return run_params
+
+
+def save_mean_atm_profile(atm_profile_path=None):
+    """
+    Calculate the mean atmospheric profile from the given atmospheric profile file
+    and save it to a file named 'mean_atm.txt' in the same directory.
+
+    INPUTS:
+    ----------
+        atm_profile_path (str): Path to the atmospheric profile file. If None,
+            the default atmospheric profile file is used.
+    """
+    atm_profile_path = atm_profile_path or get_default_atm_profile_path()
+    atm = pd.read_csv(atm_profile_path, header=None, sep="\s+")
+    folder_path = os.path.dirname(atm_profile_path)
+    mean_atm = atm.groupby(1)[[2, 3, 4, 5]].apply(
+        lambda altitude_df: altitude_df.mean(axis=0)
+    )
+    mean_atm.to_csv(folder_path + "/mean_atm.txt", header=None, sep=" ")
