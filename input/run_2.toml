@@ -18,8 +18,8 @@ theta_lat = 0.0
 [FLIGHT]
 # Gravitational error model
 grav_error = 1
-# Atmospheric perturbations
-atm_error = 1
+# Atmospheric model: 0=exponential, 1=exponential+wind, 2=EarthGRAM
+atm_model = 1
 # Positioning updates during exoatmospheric flight (1 is on, 0 is off)
 gnss_nav = 0
 # If set to 0, indicates perfect state measurements

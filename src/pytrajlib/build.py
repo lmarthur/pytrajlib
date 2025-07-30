@@ -36,7 +36,6 @@ ffibuilder.cdef(
 
         int grav_error; 
         int atm_model; 
-        int atm_error; 
         int gnss_nav; 
         int ins_nav; 
         int rv_maneuv; 

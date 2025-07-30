@@ -43,7 +43,7 @@ def test_read_config(run_params):
     assert run_params["theta_lat"] == 0.0
 
     assert run_params["grav_error"] == 0
-    assert run_params["atm_error"] == 0
+    assert run_params["atm_model"] == 0
     assert run_params["gnss_nav"] == 0
     assert run_params["ins_nav"] == 1
     assert run_params["rv_maneuv"] == 1
@@ -104,7 +104,7 @@ def test_atmospheric_error_increases_cep(run_params):
     """
     Verify that turning on atmospheric error increases miss distance
     """
-    run_params["atm_error"] = 1
+    run_params["atm_model"] = 1  # Use exponential model with wind perturbations
     run_params["num_runs"] = 10
     run_params["rv_maneuv"] = 0
 
@@ -178,7 +178,7 @@ def test_rv_maneuver(run_params):
 
     run_params["num_runs"] = 10
     run_params["rv_maneuv"] = 0
-    run_params["atm_error"] = 1
+    run_params["atm_model"] = 1  # Use exponential model with wind perturbations
     run_params["grav_error"] = 1
 
     impact_data = run(run_params, return_config=False)
@@ -202,7 +202,7 @@ def test_gnss_navigation_decreases_cep(run_params):
     run_params["run_type"] = 0
     run_params["num_runs"] = 10
     run_params["rv_maneuv"] = 1
-    run_params["atm_error"] = 1
+    run_params["atm_model"] = 1  # Use exponential model with wind perturbations
     run_params["acc_scale_stability"] = 1e-6
     run_params["gyro_bias_stability"] = 1e-8
     run_params["gyro_noise"] = 1e-8
@@ -235,7 +235,7 @@ def test_gnss_noise_increases_cep(run_params, gnss_noise):
     run_params["run_type"] = 0
     run_params["num_runs"] = 10
     run_params["rv_maneuv"] = 1
-    run_params["atm_error"] = 1
+    run_params["atm_model"] = 1  # Use exponential model with wind perturbations
     run_params["acc_scale_stability"] = 1e-6
     run_params["gyro_bias_stability"] = 1e-8
     run_params["gyro_noise"] = 1e-8

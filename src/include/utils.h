@@ -29,8 +29,7 @@ typedef struct runparams{
     double up;
 
     int grav_error; // flag to include gravitational perturbations
-    int atm_model; // flag to select the atmospheric model
-    int atm_error; // flag to include atmospheric perturbations
+    int atm_model; // atmospheric model: 0=exponential, 1=exponential+wind, 2=EarthGRAM
     int gnss_nav; // flag to include GNSS navigation
     int ins_nav; // flag to include INS navigation
     int rv_maneuv; // flag to include guidance during the reentry phase
@@ -180,7 +179,6 @@ void print_config(runparams *run_params){
 
     printf("Gravitational perturbations: %d\n", run_params->grav_error);
     printf("Atmospheric model: %d\n", run_params->atm_model);
-    printf("Atmospheric perturbations: %d\n", run_params->atm_error);
     printf("GNSS navigation: %d\n", run_params->gnss_nav);
     printf("INS navigation: %d\n", run_params->ins_nav);
     printf("Reentry phase guidance: %d\n", run_params->rv_maneuv);
@@ -292,7 +290,6 @@ runparams sanitize_runparams_for_aimpoint(runparams run_params){
     run_params_temp.ins_nav = 0;
     // Set all error parameters to zero
     run_params_temp.grav_error = 0;
-    run_params_temp.atm_error = 0;
     run_params_temp.atm_model = 0;
     run_params_temp.initial_x_error = 0;
     run_params_temp.initial_pos_error = 0;

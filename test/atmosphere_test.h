@@ -4,8 +4,7 @@
 TEST(atmosphere, init_exp_atm){
     // Initialize the run parameters
     runparams run_params;
-    run_params.atm_model = 0;
-    run_params.atm_error = 0;
+    run_params.atm_model = 0;  // Exponential model without perturbations
 
     // Initialize the atmospheric model
     atm_model atm_model = init_exp_atm(&run_params);
@@ -27,7 +26,7 @@ TEST(atmosphere, init_exp_atm){
         REQUIRE_EQ(atm_model.pert_vert_winds[i], 0);
     }
 
-    run_params.atm_error = 1;
+    run_params.atm_model = 1;  // Exponential model with wind perturbations
     atm_model = init_exp_atm(&run_params);
 
     // Check the perturbations
@@ -51,8 +50,7 @@ TEST(atmosphere, init_exp_atm){
 TEST(atmosphere, get_exp_atm_cond){
     // Initialize the run parameters
     runparams run_params;
-    run_params.atm_model = 0;
-    run_params.atm_error = 0;
+    run_params.atm_model = 0;  // Exponential model without perturbations
 
     // Initialize the atmospheric model
     atm_model atm_model = init_exp_atm(&run_params);
@@ -109,7 +107,7 @@ TEST(atmosphere, get_exp_atm_cond){
     REQUIRE_LT(atm_conditions.density, atm_model.sea_level_density);
 
     // Repeat the test with perturbation flag enabled
-    run_params.atm_error = 1;
+    run_params.atm_model = 1;  // Exponential model with wind perturbations
 
     // Initialize the atmospheric model
     atm_model = init_exp_atm(&run_params);
@@ -184,8 +182,7 @@ TEST(atmosphere, get_exp_atm_cond){
 TEST(atmosphere, get_pert_atm_cond){
     // Initialize the run parameters
     runparams run_params;
-    run_params.atm_model = 0;
-    run_params.atm_error = 0;
+    run_params.atm_model = 0;  // Exponential model with wind perturbations
 
     // Initialize the atmospheric model
     atm_model atm_model = init_exp_atm(&run_params);
@@ -242,7 +239,7 @@ TEST(atmosphere, get_pert_atm_cond){
     REQUIRE_LT(atm_conditions.density, atm_model.sea_level_density);
 
     // Repeat the test with perturbation flag enabled
-    run_params.atm_error = 1;
+    run_params.atm_model = 1;  // Exponential model with wind perturbations
 
     // Initialize the atmospheric model
     atm_model = init_exp_atm(&run_params);
@@ -308,8 +305,7 @@ TEST(atmosphere, get_pert_atm_cond){
 
 TEST(atmosphere, get_atm_cond){
     runparams run_params;
-    run_params.atm_model = 0;
-    run_params.atm_error = 0;
+    run_params.atm_model = 0;  // Exponential model without perturbations
 
     // Initialize the atmospheric model
     atm_model atm_model = init_exp_atm(&run_params);
@@ -325,7 +321,7 @@ TEST(atmosphere, get_atm_cond){
     REQUIRE_EQ(atm_conditions.vertical_wind, 0);
 
     // Repeat the test with perturbation flag enabled
-    run_params.atm_error = 1;
+    run_params.atm_model = 1;  // Exponential model with wind perturbations
 
     // Initialize the atmospheric model
     atm_model = init_exp_atm(&run_params);

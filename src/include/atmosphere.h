@@ -105,8 +105,8 @@ atm_model init_exp_atm(runparams *run_params){
     atm_model.sea_level_density = 1.225; // sea level density in kg/m^3
 
 
-    // Non-perturbed branch
-    if (run_params->atm_error == 0){
+    // Non-perturbed branch (atm_model == 0)
+    if (run_params->atm_model == 0){
 
         for (int i = 0; i < 4; i++){
             atm_model.std_densities[i] = 0;
@@ -120,6 +120,7 @@ atm_model init_exp_atm(runparams *run_params){
 
     }
     else{
+        // Perturbed branch (atm_model == 1)
         // Density standard deviations
         atm_model.std_densities[0] = 0.00009;
         atm_model.std_densities[1] = 0.00001;
@@ -313,19 +314,17 @@ atm_cond get_atm_cond(double altitude, atm_model *exp_atm_model, runparams *run_
 
     atm_cond atm_conditions;
 
-    if (run_params->atm_error == 0){
+    if (run_params->atm_model == 0){
+        // Exponential model without perturbations
         atm_conditions = get_exp_atm_cond(altitude, exp_atm_model);
     }
+    else if (run_params->atm_model == 1){
+        // Exponential model with Gaussian wind perturbations
+        atm_conditions = get_pert_atm_cond(altitude, exp_atm_model);
+    }
     else{
-        if (run_params->atm_model == 0){
-            atm_conditions = get_pert_atm_cond(altitude, exp_atm_model);
-        }
-        else{
-            // EarthGRAM branch
-
-            atm_conditions = get_eg_atm_cond(altitude, atm_profile);
-        }
-
+        // EarthGRAM model (atm_model == 2)
+        atm_conditions = get_eg_atm_cond(altitude, atm_profile);
     }
     
     return atm_conditions;

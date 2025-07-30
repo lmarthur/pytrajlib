@@ -15,7 +15,7 @@ TEST(sensors, imu_init){
     run_params.theta_lat = 0;
 
     run_params.grav_error = 0;
-    run_params.atm_error = 0;
+    run_params.atm_model = 0;  // Exponential model without perturbations
     run_params.gnss_nav = 0;
     run_params.ins_nav = 0;
 
@@ -58,7 +58,7 @@ TEST(sensors, imu_meas){
     run_params.theta_lat = 0;
 
     run_params.grav_error = 0;
-    run_params.atm_error = 0;
+    run_params.atm_model = 0;  // Exponential model without perturbations
     run_params.gnss_nav = 0;
     run_params.ins_nav = 0;
 
