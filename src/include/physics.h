@@ -168,7 +168,7 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
     // printf("Dynamic pressure: %f\n", dynamic_pressure);
     if (run_params->run_type == 1){
         // printf("run_params->cl_pert: %f\n", run_params->cl_pert);
-        state->ay_drag = state->ay_drag + 0.01 * run_params->cl_pert * dynamic_pressure * vehicle->rv.rv_area/vehicle->current_mass; // add lift in the y-direction for reentry vehicles
+        state->ay_drag = state->ay_drag + run_params->cl_pert * dynamic_pressure * vehicle->rv.rv_area/vehicle->current_mass; // add lift in the y-direction for reentry vehicles
     }
 
     double time_constant = rv_time_constant(vehicle, state, atm_cond);
