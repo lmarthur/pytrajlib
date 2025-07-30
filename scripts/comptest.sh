@@ -20,6 +20,6 @@ uv run src/pytrajlib/build.py
 
 # Run integration tests
 echo "Running integration tests..."
-uv run pytest -v -s ./test/
+uv run pytest -v ./test/
 
 echo "Done."

@@ -677,11 +677,7 @@ void get_thrust_angle(runparams *run_params){
     runparams rp = sanitize_runparams_for_aimpoint(*run_params);
     global_run_params = &rp;
 
-    printf("Optimizing...\n");
     optimize_thrust_angles(new_aim_lat_long[0], new_aim_lat_long[1], 0.0, 0.0);
-
-    printf("bearing vector: %f, %f\n", global_run_params->north, global_run_params->east);
-    printf("bearing angle %f\n", atan2(global_run_params->north, global_run_params->east) * 180 / M_PI);
 
     run_params->east = global_run_params->east;
     run_params->north = global_run_params->north;
@@ -689,8 +685,6 @@ void get_thrust_angle(runparams *run_params){
 
     run_params->theta_lat = global_run_params->theta_lat;
     run_params->theta_long = global_run_params->theta_long;
-    printf("Thrust angles: theta_long: %f, theta_lat: %f\n", run_params->theta_long * 180 / M_PI, run_params->theta_lat * 180 / M_PI);
-
 }
 
 impact_data mc_run(runparams run_params){
