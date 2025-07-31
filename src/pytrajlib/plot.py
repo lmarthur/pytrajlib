@@ -350,7 +350,7 @@ def orbit(run_params=None, data=None, output_dir=None):
     plt.gca().add_artist(earth_atmosphere)
 
     # plot the Earth
-    earth = plt.Circle((0, 0), EARTH_RADIUS, color="blue", label="Earth")
+    earth = plt.Circle((0, 0), EARTH_RADIUS, color="deepskyblue", label="Earth")
     plt.gca().add_artist(earth)
     # set range for x and y axes to 2*earth_radius
     plt.xlim(-1.2 * EARTH_RADIUS, 1.5 * EARTH_RADIUS)
