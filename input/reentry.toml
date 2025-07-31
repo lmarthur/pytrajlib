@@ -32,7 +32,6 @@ reentry_vel = 7500
 deflection_time = 0.01
 
 [VEHICLE]
-rv_type = 1
 
 [ERRORPARAMS]
 initial_x_error = 0.0

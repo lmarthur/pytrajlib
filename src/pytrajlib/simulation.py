@@ -317,7 +317,6 @@ def add_arguments_to_parser(parser):
         "reentry_vel": f"Reentry velocity (m/s) for reentry only simulation (run_type = 1) (default: {run_params['reentry_vel']})",
         "deflection_time": f"Deflection time (s) for control surfaces (default: {run_params['deflection_time']})",
         "booster_type": f"0 for MMIII, 1 for SCUD, 2 for SCUD-ER, 3 for GBSD, 4 for D5, 5 for Mock (default: {run_params['booster_type']}). You can also specify by name: MMIII, SCUD, SCUD-ER, GBSD, D5, MOCK.",
-        "rv_type": f"0 for ballistic reentry vehicle, 1 for maneuverable reentry vehicle (default: {run_params['rv_type']})",
         "initial_vel_error": f"Initial veleocity error in m/s (default: {run_params['initial_vel_error']})",
         "acc_scale_stability": f"Accelerometer scale stability in ppm (default : {run_params['acc_scale_stability']})",
         "gyro_bias_stability": f"Gyroscope bias stability in radians/s (default: {run_params['gyro_bias_stability']})",
@@ -337,7 +336,7 @@ def add_arguments_to_parser(parser):
         "impact_output": "i",
         "traj_output": "j",
         "booster_type": "b",
-        "rv_type": "v",
+        "rv_maneuv": "m",
     }
 
     # Patch the type for booster_type to allow name or number

@@ -53,7 +53,6 @@ TEST(trajectory, fly){
     run_params.theta_long = 0;
     run_params.theta_lat = 0;
 
-    run_params.rv_type = 0;
     run_params.grav_error = 0;
     run_params.atm_model = 0;  // Exponential model without perturbations
     run_params.gnss_nav = 0;
@@ -135,7 +134,6 @@ TEST(trajectory, update_aimpoint){
     run_params.ins_nav = 0;
 
     run_params.booster_type = 5; // Mock vehicle
-    run_params.rv_type = 0;
 
     run_params.initial_x_error = 0;
     run_params.initial_pos_error = 1;

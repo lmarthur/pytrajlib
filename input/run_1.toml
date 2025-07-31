@@ -32,7 +32,6 @@ rv_maneuv = 1
 reentry_vel = 7500
 
 [VEHICLE]
-rv_type = 1
 
 [ERRORPARAMS]
 initial_x_error = 0.0

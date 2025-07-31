@@ -37,7 +37,6 @@ typedef struct runparams{
     double deflection_time; // time to make full flap deflection in seconds, used for maneuverability
 
     int booster_type; // type of booster (0: MMIII, 1: SCUD, 2: SCUD-ER, 3: GBSD, 4: D5, 5: Mock)
-    int rv_type; // reentry vehicle type (0: ballistic, 1: maneuverable)
 
     double initial_x_error; // initial x-error in meters
     double initial_pos_error; // initial position error in meters
@@ -183,8 +182,6 @@ void print_config(runparams *run_params){
     printf("INS navigation: %d\n", run_params->ins_nav);
     printf("Reentry phase guidance: %d\n", run_params->rv_maneuv);
     printf("Reentry velocity: %f\n", run_params->reentry_vel);
-
-    printf("Reentry vehicle type: %d\n", run_params->rv_type);
 
     printf("Initial x-error: %f\n", run_params->initial_x_error);
     printf("Initial position error: %f\n", run_params->initial_pos_error);

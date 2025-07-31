@@ -42,7 +42,6 @@ deflection_time = 0.0
 
 [VEHICLE]
 booster_type = 0
-rv_type = 1
 
 [ERRORPARAMS]
 initial_x_error = 0.0

@@ -51,7 +51,6 @@ def test_read_config(run_params):
     assert run_params["deflection_time"] == 0.0
 
     assert run_params["booster_type"] == 0
-    assert run_params["rv_type"] == 1
 
     assert run_params["initial_x_error"] == 0.0
     assert run_params["initial_pos_error"] == 0.0

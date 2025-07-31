@@ -19,8 +19,6 @@ TEST(sensors, imu_init){
     run_params.gnss_nav = 0;
     run_params.ins_nav = 0;
 
-    run_params.rv_type = 0;
-
     run_params.initial_x_error = 0;
     run_params.initial_pos_error = 1;
     run_params.initial_vel_error = 0;
@@ -61,8 +59,6 @@ TEST(sensors, imu_meas){
     run_params.atm_model = 0;  // Exponential model without perturbations
     run_params.gnss_nav = 0;
     run_params.ins_nav = 0;
-
-    run_params.rv_type = 0;
 
     run_params.initial_x_error = 0;
     run_params.initial_pos_error = 1;

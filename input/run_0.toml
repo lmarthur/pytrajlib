@@ -33,7 +33,6 @@ deflection_time = 0.0
 
 
 [VEHICLE]
-rv_type = 1
 
 [ERRORPARAMS]
 initial_x_error = 0.0

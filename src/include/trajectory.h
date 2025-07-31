@@ -513,7 +513,7 @@ cart_vector update_aimpoint(runparams run_params){
     runparams run_params_temp = sanitize_runparams_for_aimpoint(run_params);
     
     // Initialize the vehicle 
-    vehicle vehicle = init_vehicle(run_params_temp.booster_type, run_params_temp.rv_type);
+    vehicle vehicle = init_vehicle(run_params_temp.booster_type, run_params_temp.rv_maneuv);
 
     state initial_state = init_true_state(&run_params_temp);
     initial_state.theta_long = run_params.theta_long;
@@ -732,7 +732,7 @@ impact_data mc_run(runparams run_params){
 
         vehicle vehicle;
         if (run_params.run_type == 0){
-            vehicle = init_vehicle(run_params.booster_type, run_params.rv_type);
+            vehicle = init_vehicle(run_params.booster_type, run_params.rv_maneuv);
         }
         else if (run_params.run_type == 1){
             vehicle = init_reentry_only();
