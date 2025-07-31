@@ -283,7 +283,6 @@ runparams sanitize_runparams_for_aimpoint(runparams run_params){
 
     // Set output to zero
     run_params_temp.traj_output = 0;
-    run_params_temp.rv_maneuv = 0;
     run_params_temp.gnss_nav = 0;
     run_params_temp.ins_nav = 0;
     // Set all error parameters to zero
