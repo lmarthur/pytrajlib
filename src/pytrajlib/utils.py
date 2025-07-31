@@ -387,6 +387,7 @@ def get_run_params(config_path=None):
         # Override the default atm_profile_path because atmprofiles.txt does not
         # have a stable fixed path when the script is run as part of a package.
         run_params["atm_profile_path"] = get_default_atm_profile_path()
+        run_params["mean_atm_profile_path"] = save_mean_atm_profile()
     return run_params
 
 
@@ -399,6 +400,10 @@ def save_mean_atm_profile(atm_profile_path=None):
     ----------
         atm_profile_path (str): Path to the atmospheric profile file. If None,
             the default atmospheric profile file is used.
+
+    OUTPUTS:
+    ----------
+        mean_atm_path (str): Path to the saved mean atmospheric profile file.
     """
     atm_profile_path = atm_profile_path or get_default_atm_profile_path()
     atm = pd.read_csv(atm_profile_path, header=None, sep="\s+")
@@ -406,4 +411,6 @@ def save_mean_atm_profile(atm_profile_path=None):
     mean_atm = atm.groupby(1)[[2, 3, 4, 5]].apply(
         lambda altitude_df: altitude_df.mean(axis=0)
     )
-    mean_atm.to_csv(folder_path + "/mean_atm.txt", header=None, sep=" ")
+    mean_atm_path = folder_path + "/mean_atm.txt"
+    mean_atm.to_csv(mean_atm_path, header=None, sep=" ")
+    return mean_atm_path

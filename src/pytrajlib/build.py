@@ -17,6 +17,7 @@ ffibuilder.cdef(
         char *impact_data_path; 
         char *trajectory_path; 
         char *atm_profile_path; 
+        char *mean_atm_profile_path;
         int num_runs; 
         double time_step_main; 
         double time_step_reentry; 

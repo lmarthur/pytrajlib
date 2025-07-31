@@ -11,6 +11,7 @@ typedef struct runparams{
     char *impact_data_path; // path to the impact data file
     char *trajectory_path; // path to the trajectory data file
     char *atm_profile_path; // path to the atmospheric profile file
+    char *mean_atm_profile_path; // path to the mean atmospheric profile file
     int num_runs; // number of Monte Carlo runs
     double time_step_main; // time step in seconds during boost and outside the atmosphere
     double time_step_reentry; // time step in seconds during reentry
@@ -29,7 +30,7 @@ typedef struct runparams{
     double up;
 
     int grav_error; // flag to include gravitational perturbations
-    int atm_model; // atmospheric model: 0=exponential, 1=exponential+wind, 2=EarthGRAM
+    int atm_model; // atmospheric model: 0=exponential, 1=exponential+wind, 2=EarthGRAM, 3=mean EarthGRAM
     int gnss_nav; // flag to include GNSS navigation
     int ins_nav; // flag to include INS navigation
     int rv_maneuv; // flag to include guidance during the reentry phase
@@ -287,7 +288,6 @@ runparams sanitize_runparams_for_aimpoint(runparams run_params){
     run_params_temp.ins_nav = 0;
     // Set all error parameters to zero
     run_params_temp.grav_error = 0;
-    run_params_temp.atm_model = 0;
     run_params_temp.initial_x_error = 0;
     run_params_temp.initial_pos_error = 0;
     run_params_temp.initial_vel_error = 0;
@@ -296,6 +296,14 @@ runparams sanitize_runparams_for_aimpoint(runparams run_params){
     run_params_temp.gyro_bias_stability = 0;
     run_params_temp.gyro_noise = 0;
     run_params_temp.gnss_noise = 0;
+
+    // Use the mean EarthGRAM model instead of a specific one for aimpoint calculations
+    if (run_params.atm_model >= 2){
+        run_params_temp.atm_model = 3;
+    }
+    else {
+        run_params_temp.atm_model = 0;
+    }
     
     return run_params_temp;
 }

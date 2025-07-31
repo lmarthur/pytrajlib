@@ -305,11 +305,18 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
     double a_command_total = 0;
     double a_lift_total = 0;
 
-    int atm_profile_num;
-    // Generate a random integer between 0 and 100
-    atm_profile_num = (int)ran_flat(0, 100); 
+    // Initialize either a randomly chosen EarthGRAM profile or the average EarthGRAM profile
+    eg16_profile atm_profile;
+    eg16_profile mean_atm_profile = parse_atm(run_params->mean_atm_profile_path, -1);
+    if (run_params->atm_model == 2) {
+        // Generate a random integer between 0 and 100
+        int atm_profile_num = (int)ran_flat(0, 100); 
 
-    eg16_profile atm_profile = parse_atm(run_params->atm_profile_path, atm_profile_num);
+        atm_profile = parse_atm(run_params->atm_profile_path, atm_profile_num);
+    }
+    else if (run_params->atm_model == 3) {
+        atm_profile = mean_atm_profile;
+    }
 
     state old_true_state = *initial_state;
     state new_true_state = *initial_state;
@@ -685,6 +692,7 @@ void get_thrust_angle(runparams *run_params){
 
     run_params->theta_lat = global_run_params->theta_lat;
     run_params->theta_long = global_run_params->theta_long;
+    global_run_params = NULL;
 }
 
 impact_data mc_run(runparams run_params){

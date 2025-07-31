@@ -47,7 +47,11 @@ typedef struct eg16_profile{
 } eg16_profile;
 
 double atm_data[10000][6];
+// The mean atmospheric profile data has 5 columns, not 6, because there is no 
+// profile number column
+double mean_atm_data[100][5];
 int atm_data_is_filled = 0;
+int mean_atm_data_is_filled = 0;
 
 void init_atm_data(char* atmprofilepath){
     /*
@@ -81,7 +85,41 @@ void init_atm_data(char* atmprofilepath){
     }
     atm_data_is_filled = 1;
     fclose(fp);
+}
+
+void init_mean_atm_data(char* atmprofilepath){
+    /*
+    Initializes the mean atmospheric profile data so we only read the file once.
+
+    INPUTS:
+    ----------
+        atmprofilepath: char *
+            path to the mean atmospheric profile file
+    OUTPUTS:
+    ----------
+        atm_profile: eg16_profile
+            atmospheric profile struct
+    */
+
+    if (mean_atm_data_is_filled == 1){
+        return;
     }
+
+    // Open the atmospheric profile file
+    FILE *fp = fopen(atmprofilepath, "r");
+    if (fp == NULL){
+        printf("Error opening mean atmospheric profile file\n");
+    }
+
+    // read the atmospheric profile data delimited by spaces
+    for (int i = 0; i < 100; i++){
+        for (int j = 0; j < 5; j++){
+            fscanf(fp, "%lfe", &mean_atm_data[i][j]);
+        }
+    }
+    mean_atm_data_is_filled = 1;
+    fclose(fp);
+}
     
 
 atm_model init_exp_atm(runparams *run_params){
@@ -322,8 +360,8 @@ atm_cond get_atm_cond(double altitude, atm_model *exp_atm_model, runparams *run_
         // Exponential model with Gaussian wind perturbations
         atm_conditions = get_pert_atm_cond(altitude, exp_atm_model);
     }
-    else{
-        // EarthGRAM model (atm_model == 2)
+    else if (run_params->atm_model >= 2){
+        // EarthGRAM model (random or average)
         atm_conditions = get_eg_atm_cond(altitude, atm_profile);
     }
     
@@ -339,7 +377,8 @@ eg16_profile parse_atm(char* atmprofilepath, int profilenum){
         atmprofilepath: char *
             path to the atmospheric profile file
         profilenum: int
-            index number of the atmospheric profile to use
+            index number of the atmospheric profile to use. -1 signifies the mean 
+            atmospheric profile
     OUTPUTS:
     ----------
         atm_profile: eg16_profile
@@ -350,15 +389,27 @@ eg16_profile parse_atm(char* atmprofilepath, int profilenum){
     eg16_profile atm_profile;
     atm_profile.profile_num = profilenum;
 
-    init_atm_data(atmprofilepath);
-    
-    // Update the atmospheric profile struct by iterating over only the requested profile
-    for (int i = 0; i < 100; i++){
-        atm_profile.alt_data[i] = atm_data[100*profilenum+i][1];
-        atm_profile.density_data[i] = atm_data[100*profilenum+i][2];
-        atm_profile.meridional_wind_data[i] = atm_data[100*profilenum+i][3];
-        atm_profile.zonal_wind_data[i] = atm_data[100*profilenum+i][4];
-        atm_profile.vertical_wind_data[i] = atm_data[100*profilenum+i][5];
+    if (profilenum < 0) {
+        init_mean_atm_data(atmprofilepath);
+        // Update the atmospheric profile struct using mean data
+        for (int i = 0; i < 100; i++){
+            atm_profile.alt_data[i] = mean_atm_data[i][0];
+            atm_profile.density_data[i] = mean_atm_data[i][1];
+            atm_profile.meridional_wind_data[i] = mean_atm_data[i][2];
+            atm_profile.zonal_wind_data[i] = mean_atm_data[i][3];
+            atm_profile.vertical_wind_data[i] = mean_atm_data[i][4];
+        }
+    }
+    else {
+        init_atm_data(atmprofilepath);
+        // Update the atmospheric profile struct by iterating over only the requested profile
+        for (int i = 0; i < 100; i++){
+            atm_profile.alt_data[i] = atm_data[100*profilenum+i][1];
+            atm_profile.density_data[i] = atm_data[100*profilenum+i][2];
+            atm_profile.meridional_wind_data[i] = atm_data[100*profilenum+i][3];
+            atm_profile.zonal_wind_data[i] = atm_data[100*profilenum+i][4];
+            atm_profile.vertical_wind_data[i] = atm_data[100*profilenum+i][5];
+        }
     }
 
     return atm_profile;
