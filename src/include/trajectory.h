@@ -353,6 +353,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
 
     // Begin the integration loop
     for (int i = 0; i < max_steps; i++){
+        int during_boost_phase = old_true_state.t < vehicle->booster.total_burn_time;
         // Get the atmospheric conditions
         double old_altitude = get_altitude(old_true_state.x, old_true_state.y, old_true_state.z);
         
@@ -360,7 +361,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         // printf("true_atm_cond: %f, %f, %f\n", true_atm_cond.density, true_atm_cond.meridional_wind, true_atm_cond.zonal_wind);
         est_atm_cond = get_exp_atm_cond(old_altitude, &exp_atm_model);
         // if during boost or outside atmosphere, dt = main time step, else dt = reentry time step
-        if (old_true_state.t < vehicle->booster.total_burn_time || old_altitude >= 1e5){
+        if (during_boost_phase || old_altitude >= 1e5){
             time_step = run_params->time_step_main;
         }
         else{
@@ -369,19 +370,25 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         // Update the thrust of the vehicle
         update_thrust(vehicle, &new_true_state);
         update_thrust(vehicle, &new_est_state);
-        update_thrust(vehicle, &new_des_state);
+        if (during_boost_phase) {
+            update_thrust(vehicle, &new_des_state);
+        }
         // Update the gravity acceleration components
         update_gravity(&true_grav, &new_true_state);
         update_gravity(&est_grav, &new_est_state);
-        update_gravity(&true_grav, &new_des_state);
+        if (during_boost_phase) {
+            update_gravity(&true_grav, &new_des_state);
+        }
 
         // Update the drag acceleration components
         update_drag(run_params, vehicle, &true_atm_cond, &new_true_state, &step_timer);
         update_drag(run_params, vehicle, &est_atm_cond, &new_est_state, &step_timer);
-        update_drag(run_params, vehicle, &est_atm_cond, &new_des_state, &step_timer);
+        if (during_boost_phase) {
+            update_drag(run_params, vehicle, &est_atm_cond, &new_des_state, &step_timer);
+        }
 
         // If maneuverable RV, use proportional navigation during reentry
-        if (run_params->rv_maneuv == 1 && old_true_state.t >= vehicle->booster.total_burn_time && get_altitude(new_true_state.x, new_true_state.y, new_true_state.z) < 1e5){
+        if (run_params->rv_maneuv == 1 && !during_boost_phase && get_altitude(new_true_state.x, new_true_state.y, new_true_state.z) < 1e5){
             // Get the acceleration command
             cart_vector a_command = prop_nav(run_params, &new_est_state);
             // printf("a_command: %f, %f, %f\n", a_command.x, a_command.y, a_command.z);
@@ -403,9 +410,11 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         new_est_state.ax_total = new_est_state.ax_grav + new_est_state.ax_drag + new_est_state.ax_lift + new_est_state.ax_thrust;
         new_est_state.ay_total = new_est_state.ay_grav + new_est_state.ay_drag + new_est_state.ay_lift + new_est_state.ay_thrust;
         new_est_state.az_total = new_est_state.az_grav + new_est_state.az_drag + new_est_state.az_lift + new_est_state.az_thrust;
-        new_des_state.ax_total = new_des_state.ax_grav + new_des_state.ax_drag + new_des_state.ax_lift + new_des_state.ax_thrust;
-        new_des_state.ay_total = new_des_state.ay_grav + new_des_state.ay_drag + new_des_state.ay_lift + new_des_state.ay_thrust;
-        new_des_state.az_total = new_des_state.az_grav + new_des_state.az_drag + new_des_state.az_lift + new_des_state.az_thrust;
+        if (during_boost_phase) {
+            new_des_state.ax_total = new_des_state.ax_grav + new_des_state.ax_drag + new_des_state.ax_lift + new_des_state.ax_thrust;
+            new_des_state.ay_total = new_des_state.ay_grav + new_des_state.ay_drag + new_des_state.ay_lift + new_des_state.ay_thrust;
+            new_des_state.az_total = new_des_state.az_grav + new_des_state.az_drag + new_des_state.az_lift + new_des_state.az_thrust;
+        }
 
         double a_drag = sqrt(new_true_state.ax_drag*new_true_state.ax_drag + new_true_state.ay_drag*new_true_state.ay_drag + new_true_state.az_drag*new_true_state.az_drag);
         if (run_params->ins_nav == 1){
@@ -415,7 +424,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             if (run_params->rv_maneuv == 0 ){ 
                 update_imu(&imu, time_step);
             }
-            else if (a_drag > 1e-3 || old_true_state.t < vehicle->booster.total_burn_time){
+            else if (a_drag > 1e-3 || during_boost_phase){
                 update_imu(&imu, time_step);
             }
         }
@@ -437,7 +446,9 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         // Perform a Runge-Kutta step
         rk4step(&new_true_state, time_step);
         rk4step(&new_est_state, time_step);
-        rk4step(&new_des_state, time_step);
+        if (during_boost_phase) {
+            rk4step(&new_des_state, time_step);
+        }
         // Update the mass of the vehicle
         update_mass(vehicle, new_true_state.t);
 
@@ -480,7 +491,9 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         // Update the old state
         old_true_state = new_true_state;
         old_est_state = new_est_state;
-        old_des_state = new_des_state;
+        if (during_boost_phase) {
+            old_des_state = new_des_state;
+        }
     }
     
     printf("Warning: Maximum number of steps reached with no impact\n");
