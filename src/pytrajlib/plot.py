@@ -196,6 +196,7 @@ def impact(run_params=None, data=None, output_dir=None):
         plt.savefig(output_dir + "/impact_plot.jpg", dpi=1000)
         plt.savefig(output_dir + "/impact_plot.pdf")
         plt.close()
+    return cep
 
 
 def _set_trajectory_plot_params():

@@ -58,6 +58,7 @@ typedef struct vehicle{
     // Vehicle parameters
     double total_mass; // total mass in kg
     double current_mass; // current mass in kg
+    double range; // range in m
     
 } vehicle;
 
@@ -194,6 +195,7 @@ vehicle init_mmiii_ballistic(){
     vehicle.rv = init_ballistic_rv();
     vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
     vehicle.current_mass = vehicle.total_mass;
+    vehicle.range = 15000e3;
 
     return vehicle;
 }
@@ -215,6 +217,7 @@ vehicle init_mmiii_swerve(){
     vehicle.rv = init_swerve_rv();
     vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
     vehicle.current_mass = vehicle.total_mass;
+    vehicle.range = 14400e3;
 
     return vehicle;
 }
@@ -426,6 +429,7 @@ vehicle init_scud_ballistic() {
     vehicle.rv = init_ballistic_rv();
     vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
     vehicle.current_mass = vehicle.total_mass;
+    vehicle.range = 220e3;
 
     return vehicle;
 }
@@ -443,6 +447,7 @@ vehicle init_scud_swerve() {
     vehicle.rv = init_swerve_rv();
     vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
     vehicle.current_mass = vehicle.total_mass;
+    vehicle.range = 265e3;
 
     return vehicle;
 }
@@ -494,6 +499,7 @@ vehicle init_scud_er_ballistic() {
     vehicle.rv = init_ballistic_rv();
     vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
     vehicle.current_mass = vehicle.total_mass;
+    vehicle.range = 625e3;
 
     return vehicle;
 }
@@ -511,6 +517,7 @@ vehicle init_scud_er_swerve() {
     vehicle.rv = init_swerve_rv();
     vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
     vehicle.current_mass = vehicle.total_mass;
+    vehicle.range = 700e3;
 
     return vehicle;
 }
@@ -583,6 +590,7 @@ vehicle init_gbsd_ballistic() {
     vehicle.rv = init_ballistic_rv();
     vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
     vehicle.current_mass = vehicle.total_mass;
+    vehicle.range = 8600e3;
 
     return vehicle;
 }
@@ -602,6 +610,7 @@ vehicle init_gbsd_swerve() {
     vehicle.rv = init_swerve_rv();
     vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
     vehicle.current_mass = vehicle.total_mass;
+    vehicle.range = 8400e3;
 
     return vehicle;
 }
@@ -675,6 +684,7 @@ vehicle init_d5_ballistic() {
     vehicle.rv = init_ballistic_rv();
     vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
     vehicle.current_mass = vehicle.total_mass;
+    vehicle.range = 9200e3;
 
     return vehicle;
 }
@@ -694,6 +704,7 @@ vehicle init_d5_swerve() {
     vehicle.rv = init_swerve_rv();
     vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
     vehicle.current_mass = vehicle.total_mass;
+    vehicle.range = 9100e3;
 
     return vehicle;
 }

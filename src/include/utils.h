@@ -297,6 +297,7 @@ runparams sanitize_runparams_for_aimpoint(runparams run_params){
     run_params_temp.gnss_noise = 0;
 
     // Use the mean EarthGRAM model instead of a specific one for aimpoint calculations
+    // if any EarthGRAM model is used
     if (run_params.atm_model >= 2){
         run_params_temp.atm_model = 3;
     }

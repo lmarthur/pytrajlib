@@ -647,9 +647,12 @@ void optimize_thrust_angles(double aim_lat, double aim_lon, double launch_lat, d
     float tol = 1e-6f;
     float xmin, fmin;
     fmin = brent(ax, bx, cx, aimpoint_error_wrapper, tol, &xmin);
+    if (fmin > 100) {
+        printf("Warning: Aimpoint error is high: %fm > 100m\n", fmin);
+    }
 }
 
-void get_thrust_angle(runparams *run_params){
+int get_thrust_angle(runparams *run_params){
     /*
     Find the thrust angles (theta_lat, theta_long) based on the latitude and longitude
     of the aimpoint. Update the run_params object with the new angles.
@@ -662,6 +665,9 @@ void get_thrust_angle(runparams *run_params){
             longitude of the aimpoint, in radians
         run_params: runparams*
             pointer to the run parameters struct
+    OUTPUTS:
+    ----------
+        1 if successful, 0 otherwise
     */
     double earth_radius = 6371e3; 
 
@@ -694,6 +700,14 @@ void get_thrust_angle(runparams *run_params){
     run_params->y_launch = 0.0;
     run_params->z_launch = 0.0;
 
+    // Check if the aimpoint is within the range of the vehicle
+    vehicle vehicle = init_vehicle(run_params->booster_type, run_params->rv_maneuv);
+    if (distance > vehicle.range) {
+        printf("Error: Aimpoint is out of range of the vehicle.\n");
+        printf("Distance: %f, Range: %f\n", distance, vehicle.range);
+        return 0;
+    }
+
     runparams rp = sanitize_runparams_for_aimpoint(*run_params);
     global_run_params = &rp;
 
@@ -706,6 +720,7 @@ void get_thrust_angle(runparams *run_params){
     run_params->theta_lat = global_run_params->theta_lat;
     run_params->theta_long = global_run_params->theta_long;
     global_run_params = NULL;
+    return 1;
 }
 
 impact_data mc_run(runparams run_params){
@@ -718,11 +733,14 @@ impact_data mc_run(runparams run_params){
             run parameters struct
     */
 
+   impact_data impact_data;
     // Print the run parameters to the console
     // print_config(&run_params);
 
     // Sets theta lat and theta long based on the user-provided launch and aimpoints
-    get_thrust_angle(&run_params);
+    if (!get_thrust_angle(&run_params)) {
+        return impact_data;
+    }
 
     // Initialize the variables
     int num_runs = run_params.num_runs;
@@ -730,10 +748,9 @@ impact_data mc_run(runparams run_params){
     if (num_runs > MAX_RUNS){
         printf("Error: Number of runs exceeds the maximum limit. Increase MAX_RUNS in src/include/trajectory.h and recompile. \n");
         printf("num_runs: %d, MAX_RUNS: %d\n", num_runs, MAX_RUNS);
-        exit(1);
+        return impact_data;
     }
     
-    impact_data impact_data;
     
 
     // Create a .txt file to store the impact data
