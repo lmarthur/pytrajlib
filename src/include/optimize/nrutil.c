@@ -1,3 +1,6 @@
+/*
+Press, William H., ed. Numerical Recipes in C: The Art of Scientific Computing. 2nd ed. Cambridge University Press, 1992. Appendix B.
+*/
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>

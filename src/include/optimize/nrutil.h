@@ -1,3 +1,6 @@
+/*
+Press, William H., ed. Numerical Recipes in C: The Art of Scientific Computing. 2nd ed. Cambridge University Press, 1992. Appendix B.
+*/
 #ifndef _NR_UTILS_H_ 
 #define _NR_UTILS_H_
 
