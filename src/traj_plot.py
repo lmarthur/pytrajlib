@@ -1,4 +1,4 @@
-# This script contains code to generate plots of the vehicle's trajectory and control surfaces. 
+# This script contains code to generate plots of the vehicle's trajectory and control surfaces.
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -115,6 +115,7 @@ def traj_plot(run_path):
     # altitude vs. time
     plt.figure(figsize=(10,10))
     plt.plot(true_t, true_altitude/1000)
+    # plt.plot(true_t, est_altitude/1000, label="Estimated Altitude")
     plt.xlabel("Time (s)")
     plt.ylabel("Altitude (km)")
     # remove top and right spines
@@ -122,6 +123,13 @@ def traj_plot(run_path):
     plt.gca().spines['right'].set_visible(False)
     # shade under the curve from 0 to 160 seconds
     plt.fill_between(true_t, true_altitude/1000, 0, where=(true_t < 188), color='lightblue', alpha=0.5)
+    # add line at 0km altitude
+    plt.axhline(0, color='black', linestyle='--')
+    # Get local minimum between 3000 and 3400 seconds
+    # local_minimum = np.argmin(true_altitude[3000:3400])
+    # print(local_minimum)
+    # print("Bounce altitude:", true_altitude[3000 + local_minimum] / 1000)
+
     # add "guided" label to shaded region with arrow
     # plt.annotate('Boost (INS)', xy=(188, 40), xytext=(500, 50), arrowprops=dict(facecolor='black', arrowstyle='->'))
     # add "ballistic phase"
@@ -242,18 +250,3 @@ def traj_plot(run_path):
     plt.grid()
     plt.savefig(run_path + "lift_acceleration.pdf")
     plt.close()
-
-    # plot y and z position vs. altitude
-    plt.figure(figsize=(10,10))
-    plt.plot(500000-true_altitude, true_y, label="y")
-    plt.plot(500000-true_altitude, true_z, label="z")
-    plt.xlabel("Altitude")
-    plt.ylabel("Position (m)")
-    # no x axis ticks
-    plt.xticks([])
-    plt.title("Lateral Position vs. Altitude")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "position_vs_altitude.pdf")
-    plt.close()
-
