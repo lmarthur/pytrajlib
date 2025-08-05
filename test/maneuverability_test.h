@@ -203,6 +203,10 @@ TEST(maneuverability, update_lift){
     run_params.deflection_time = 0.1; // Time to deflect the lift vector (seconds)
     run_params.actuator_force = 10; // Maximum actuator force (kN)
     run_params.gearing_ratio = 1; // Gearing ratio of the control surfaces
+    run_params.x_aim = 6371e3; // Target x-coordinate in meters
+    run_params.y_aim = 0; // Target y-coordinate in meters
+    run_params.z_aim = 0; // Target z-coordinate in meters
+    run_params.nav_gain = 5; // Navigation gain for proportional navigation guidance
 
     // Initialize the vehicle
     vehicle vehicle;
@@ -248,5 +252,32 @@ TEST(maneuverability, update_lift){
     REQUIRE_LT(true_state.ax_lift, 1);
     REQUIRE_LT(true_state.ay_lift, 1);
     REQUIRE_LT(true_state.az_lift, 1);
+
+
+    // Get command from proportional navigation
+    true_state.x = 6371e3 + 1000;
+    true_state.y = 0;
+    true_state.z = 0;
+    true_state.theta_lat = 0;
+    true_state.vx = -100;
+    true_state.vy = 100;
+    true_state.vz = 0;
+    true_state.ax_lift = 0;
+    true_state.ay_lift = 0;
+    true_state.az_lift = 0;
+
+    a_command = prop_nav(&run_params, &true_state);
+    // printf("Commanded acceleration: (%f, %f, %f)\n", a_command.x, a_command.y, a_command.z);
+    // Update the lift with the commanded acceleration
+    update_lift(&run_params, &true_state, &a_command, &atm_cond, &vehicle, 0.1);
+    // printf("Updated lift: (%f, %f, %f)\n", true_state.ax_lift, true_state.ay_lift, true_state.az_lift);
+    double a_dot_v = a_command.x * true_state.vx + a_command.y * true_state.vy + a_command.z * true_state.vz;
+    double a_com_dot_a_lift = a_command.x * true_state.ax_lift + a_command.y * true_state.ay_lift + a_command.z * true_state.az_lift;
+    double a_lift_norm = sqrt(true_state.ax_lift * true_state.ax_lift + true_state.ay_lift * true_state.ay_lift + true_state.az_lift * true_state.az_lift);
+    double a_command_norm = sqrt(a_command.x * a_command.x + a_command.y * a_command.y + a_command.z * a_command.z);
+    double a_com_dot_a_lift_norm = a_com_dot_a_lift / (a_lift_norm * a_command_norm);
+
+    REQUIRE_LT(fabs(a_com_dot_a_lift_norm - 1.0), 1e-5);
+    REQUIRE_LT(fabs(a_dot_v), 1e-6);
 
 }

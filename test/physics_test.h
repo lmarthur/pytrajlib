@@ -199,6 +199,20 @@ TEST(physics, update_drag){
     REQUIRE_LT(state.ax_drag, 0);
     REQUIRE_EQ(state.ay_drag, 0);
     REQUIRE_EQ(state.az_drag, 0);
+
+    // check that drag vector is in the opposite direction of velocity
+    atm_cond.vertical_wind = 2;
+    atm_cond.zonal_wind = 10;
+    atm_cond.meridional_wind = -4;
+
+    state.vx = -1000;
+    state.vy = 2;
+    state.vz = 65;
+    double v_mag = sqrt(state.vx*state.vx + state.vy*state.vy + state.vz*state.vz);
+    double drag_mag = sqrt(state.ax_drag*state.ax_drag + state.ay_drag*state.ay_drag + state.az_drag*state.az_drag);
+    double drag_v_dot = state.ax_drag * state.vx + state.ay_drag * state.vy + state.az_drag * state.vz;
+    REQUIRE_LT(fabs(drag_v_dot/(-drag_mag * v_mag) + 1.0), 1e-2); // drag vector is in the opposite direction of velocity
+
     
 }
 
