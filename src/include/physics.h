@@ -187,7 +187,7 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
             // if negative step_acc_mag, it means that the step acceleration duration is based on the dynamic pressure at the current altitude and velocity
             if (run_params->step_acc_mag < 0){
                 // If the step acceleration magnitude is negative, it means that the step acceleration is based on the dynamic pressure
-                run_params->step_acc_mag = 0.0315* dynamic_pressure * vehicle->rv.rv_radius * vehicle->rv.rv_length / vehicle->current_mass; // set the step acceleration magnitude based on the dynamic pressure
+                run_params->step_acc_mag = 0.031 * dynamic_pressure * vehicle->rv.rv_radius * vehicle->rv.rv_length / vehicle->current_mass; // set the step acceleration magnitude based on the dynamic pressure
                 printf("Step acceleration magnitude set to: %f m/s^2\n", run_params->step_acc_mag);
                 printf("Anomaly impulse: %f Ns\n", run_params->step_acc_mag * step_acc_duration);
             }

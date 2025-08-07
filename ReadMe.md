@@ -28,7 +28,9 @@ To generate a new ```trajectory.txt``` file, run the simulation with ```traj_out
 
 ## TODO: 
 - [X] Add AoA to the update_drag() function
-- [ ] Double check that behavior is independent of dt size
+- [ ] Combine drag and lift functions
+- [ ] Improve initial AoA estimation routine
+- [ ] Check boost phase/burnout filtering
 - [ ] Use mean EG16 atmosphere for update_aimpoint() routine 
 - [ ] Stop updating des_state after burnout
 - [ ] Generate plots of miss distance vs response time
@@ -36,8 +38,6 @@ To generate a new ```trajectory.txt``` file, run the simulation with ```traj_out
 - [ ] Rerun plots with multiple atmospheres
 - [ ] Explore initial reentry velocity errors
 - [ ] Merge branches
-- [ ] Re-validate previous results
-- [ ] Develop version without perfect/idealized maneuvering
 
 ## BUG REPORTS: 
 None

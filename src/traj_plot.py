@@ -163,6 +163,17 @@ def traj_plot(run_path):
     plt.savefig(run_path + "velocity.pdf")
     plt.close()
 
+    # Total speed vs. time
+    plt.figure(figsize=(10,10))
+    plt.plot(true_t, np.sqrt(np.square(true_vx) + np.square(true_vy) + np.square(true_vz)), label="True Speed")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Speed (m/s)")
+    plt.title("Total Speed")
+    plt.legend()
+    plt.grid()
+    plt.savefig(run_path + "total_speed.pdf")
+    plt.close()
+
     # # velocity error
     # plt.figure(figsize=(10,10))
     # plt.plot(true_t, true_vx - est_vx, label="vx")

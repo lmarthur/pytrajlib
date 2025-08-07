@@ -145,6 +145,8 @@ void update_lift(runparams *run_params, state *state, cart_vector *a_command, at
     double deflection_rate = aoa_max / deflection_time; // deflection rate in rad/seconds
     
     // get current trim angle
+    // TODO: Improve the estimated trim angle method
+
     double trim_angle_x = state->ax_lift * aoa_max / sqrt(max_a_exec/3); // this is the current flap deflection in the x-direction
     double trim_angle_y = state->ay_lift * aoa_max / sqrt(max_a_exec/3); // this is the current flap deflection in the y-direction
     double trim_angle_z = state->az_lift * aoa_max / sqrt(max_a_exec/3); // this is the current flap deflection in the z-direction
@@ -253,7 +255,16 @@ void update_lift(runparams *run_params, state *state, cart_vector *a_command, at
         state->az_lift = new_a_exec_mag * state->az_lift / a_exec_mag;
     }
 
+    // remove components of lift acceleration that are parallel to the velocity vector by projecting the lift acceleration onto the velocity vector
+    double v_mag = sqrt(state->vx*state->vx + state->vy*state->vy + state->vz*state->vz);
     
+    double v_unit_x = state->vx / v_mag;
+    double v_unit_y = state->vy / v_mag;
+    double v_unit_z = state->vz / v_mag;
+    double a_lift_dot_v = state->ax_lift * v_unit_x + state->ay_lift * v_unit_y + state->az_lift * v_unit_z;
+    state->ax_lift -= a_lift_dot_v * v_unit_x;
+    state->ay_lift -= a_lift_dot_v * v_unit_y;
+    state->az_lift -= a_lift_dot_v * v_unit_z;
 
 }
 
