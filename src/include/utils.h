@@ -295,6 +295,7 @@ runparams sanitize_runparams_for_aimpoint(runparams run_params){
     run_params_temp.gyro_bias_stability = 0;
     run_params_temp.gyro_noise = 0;
     run_params_temp.gnss_noise = 0;
+    run_params_temp.deflection_time = 0;
 
     // Use the mean EarthGRAM model instead of a specific one for aimpoint calculations
     // if any EarthGRAM model is used
