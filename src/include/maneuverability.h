@@ -262,7 +262,8 @@ void update_lift(runparams *run_params, state *state, cart_vector *a_command, at
     double angle_of_attack = vehicle->current_mass * a_exec_mag / (0.5 * atm_cond->density * velocity * velocity * vehicle->rv.c_l_alpha);
     
     if (angle_of_attack > aoa_max || angle_of_attack < -aoa_max){
-        double new_a_exec_mag = 0.5 * atm_cond->density * velocity * velocity * vehicle->rv.c_l_alpha * aoa_max / vehicle->current_mass;
+        double sign = (angle_of_attack > 0) ? 1 : -1;
+        double new_a_exec_mag = 0.5 * atm_cond->density * velocity * velocity * vehicle->rv.c_l_alpha * sign * aoa_max / vehicle->current_mass;
         state->ax_lift = new_a_exec_mag * state->ax_lift / a_exec_mag;
         state->ay_lift = new_a_exec_mag * state->ay_lift / a_exec_mag;
         state->az_lift = new_a_exec_mag * state->az_lift / a_exec_mag;
