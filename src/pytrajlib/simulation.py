@@ -214,7 +214,7 @@ def run(config=None, return_config=True, **kwargs):
 
     # Save plots to the output directory
     if run_params.get("plot"):
-        if not isinstance(run_params["plot"], list):
+        if not isinstance(run_params["plot"], (list, tuple)):
             run_params["plot"] = [run_params["plot"]]
         for plot_func in run_params["plot"]:
             plot_func(
@@ -249,6 +249,9 @@ def add_arguments_to_parser(parser):
     """
     Add command line arguments to the parser based on the run parameters.
 
+    No default values are actually included to make it easier to identify the
+    user-provided values. The true defaults are set in the default.toml.
+
     INPUTS:
     -------
         parser: argparse.ArgumentParser
@@ -262,7 +265,6 @@ def add_arguments_to_parser(parser):
         "--config",
         type=str,
         required=False,
-        default=default_config_path,
         help=f"Path to the configuration file (default: {default_config_path})",
     )
 
@@ -270,7 +272,6 @@ def add_arguments_to_parser(parser):
         "-l",
         "--launch",
         type=float,
-        default=[0.0, 0.0],
         nargs=2,
         metavar=("LATITUDE", "LONGITUDE"),
         dest="launch_lat_lon",
@@ -280,18 +281,16 @@ def add_arguments_to_parser(parser):
         "-a",
         "--aim",
         type=float,
-        default=[0.0, 120.64],
         nargs=2,
         metavar=("LATITUDE", "LONGITUDE"),
         dest="aim_lat_lon",
-        help="Aimpoint latitude and longitude in decimal degrees (default: 0.0 0.0)",
+        help="Aimpoint latitude and longitude in decimal degrees (default: 0.0 120.64)",
     )
 
     parser.add_argument(
         "-p",
         "--plot",
         type=plot_parser,
-        default=None,
         nargs="*",
         help=f"Plot type to use. One (or more) of the following: {get_all_plot_function_names()} (default: None, no plot will be generated). Plots are saved to the output directory.",
     )
@@ -350,7 +349,6 @@ def add_arguments_to_parser(parser):
             arg_type = booster_type_parser
         parser.add_argument(
             *flags,
-            default=value,
             type=arg_type,
             required=False,
             help=help_text.get(key),
@@ -413,30 +411,20 @@ def cli():
     configuration.
     """
     arg_parser = argparse.ArgumentParser()
-
     add_arguments_to_parser(arg_parser)
+    user_overrides_dict = {
+        k: v for k, v in vars(arg_parser.parse_args()).items() if v is not None
+    }
 
-    defaults_dict = vars(arg_parser.parse_args([]))
-    args_dict = vars(arg_parser.parse_args())
+    # Get the default config which will be used if no config file is provided
+    config_dict = get_run_params()
 
-    # Remove `config` param because it is not present in run_params
-    config_path = os.path.abspath(args_dict.pop("config"))
+    # Check if the user provided a config file
+    if "config" in user_overrides_dict:
+        config_path = os.path.abspath(user_overrides_dict.pop("config"))
+        # Ensure the configuration file provided exists
+        if not check_config_exists(config_path):
+            arg_parser.error(f"The input file {config_path} does not exist.")
+        config_dict = get_run_params(config_path)
 
-    # Ensure the configuration file provided exists
-    if not check_config_exists(config_path):
-        arg_parser.error(f"The input file {config_path} does not exist.")
-
-    # Read config file if it is not the default
-    if os.path.abspath(defaults_dict["config"]) != config_path:
-        config_parser = configparser.ConfigParser()
-        config_parser.read(config_path)
-        config_dict = {
-            key: value
-            for section in config_parser.sections()
-            for key, value in config_parser.items(section)
-        }
-    else:
-        config_dict = defaults_dict
-        config_dict.pop("config")
-
-    return run(config=config_dict, return_config=False, **args_dict)
+    return run(config=config_dict, return_config=False, **user_overrides_dict)
