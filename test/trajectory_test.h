@@ -79,6 +79,14 @@ TEST(trajectory, fly){
     run_params.gyro_noise = 0;
     run_params.gnss_noise = 0;
 
+    run_params.deflection_time = 0.1; // Time to deflect the lift vector (seconds)
+    run_params.actuator_force = 10; // Maximum actuator force (kN)
+    run_params.gearing_ratio = 1; // Gearing ratio of the control surfaces
+    run_params.nav_gain = 5; // Navigation gain for proportional navigation guidance
+    run_params.grav_error = 0;
+    run_params.run_type = 0;
+    run_params.cl_pert = 0; // Set to zero for this test, as we are only testing drag
+
     // print all of the vehicle parameters
     // printf("Booster total mass: %f\n", vehicle.booster.total_mass);
     // Mock vehicle with no thrust dropped from 10m above the surface
@@ -104,7 +112,7 @@ TEST(trajectory, fly){
     REQUIRE_LT(fabs(final_state.t - 2), 1);
 
     // MMIII ballistic vehicle launched vertically from the surface
-    vehicle = init_mmiii_ballistic();
+    vehicle = init_mmiii_swerve();
     initial_state = init_true_state(&run_params, rng);
     initial_state.theta_long = 0;
     final_state = fly(&run_params, &initial_state, &vehicle, rng);
@@ -154,6 +162,14 @@ TEST(trajectory, update_aimpoint){
     run_params.gyro_bias_stability = 0;
     run_params.gyro_noise = 0;
     run_params.gnss_noise = 0;
+
+    run_params.deflection_time = 0.1; // Time to deflect the lift vector (seconds)
+    run_params.actuator_force = 10; // Maximum actuator force (kN)
+    run_params.gearing_ratio = 1; // Gearing ratio of the control surfaces
+    run_params.nav_gain = 5; // Navigation gain for proportional navigation guidance
+    run_params.grav_error = 0;
+    run_params.run_type = 0;
+    run_params.cl_pert = 0; // Set to zero for this test, as we are only testing drag
 
     cart_vector aimpoint = update_aimpoint(run_params, 0);
     // printf("Aimpoint: %f, %f, %f\n", aimpoint.x, aimpoint.y, aimpoint.z);

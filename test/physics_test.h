@@ -186,6 +186,7 @@ TEST(physics, update_drag){
     REQUIRE_NE(state.az_drag, 0);
 
     // Check that for no wind, drag is only in the opposite direction of velocity
+
     atm_cond.vertical_wind = 0;
     atm_cond.zonal_wind = 0;
     atm_cond.meridional_wind = 0;
@@ -213,7 +214,6 @@ TEST(physics, update_drag){
     double drag_v_dot = state.ax_drag * state.vx + state.ay_drag * state.vy + state.az_drag * state.vz;
     REQUIRE_LT(fabs(drag_v_dot/(-drag_mag * v_mag) + 1.0), 1e-2); // drag vector is in the opposite direction of velocity
 
-    
 }
 
 TEST(physics, update_thrust){
