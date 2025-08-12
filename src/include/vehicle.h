@@ -290,14 +290,14 @@ rv init_mock_rv(){
     rv.rv_radius = 1;
     rv.rv_area = 1;
     rv.c_d_0 = 0.1;
-    rv.c_d_alpha = 0;
-    rv.c_m_alpha = 0;
-    rv.c_m_q = 0;
-    rv.c_l_alpha = 0;
-    rv.flap_area = 0;
-    rv.x_flap = 0;
-    rv.x_com = 0;
-    rv.Iyy = 0;
+    rv.c_d_alpha = 0.1;
+    rv.c_m_alpha = -0.1;
+    rv.c_m_q = -0.1;
+    rv.c_l_alpha = 1;
+    rv.flap_area = 0.01;
+    rv.x_flap = -1;
+    rv.x_com = -0.6*rv.rv_length; // Center of mass is at 60% of the length of the vehicle
+    rv.Iyy = 100;
 
     return rv;
 }
