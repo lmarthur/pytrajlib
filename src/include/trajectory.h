@@ -301,7 +301,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
 
     // Variables for step function anomaly (only used for run_type = 1)
     double step_timer = 0; // time since step function was activated
-    int bounce_flag = 0;
 
     // Begin the integration loop
     for (int i = 0; i < max_steps; i++){
@@ -359,7 +358,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             boost_drag(run_params, vehicle, &true_atm_cond, &new_true_state);
             boost_drag(run_params, vehicle, &est_atm_cond, &new_est_state);
             boost_drag(run_params, vehicle, &est_atm_cond, &new_des_state);
-            printf("Boost phase drag: %f, %f, %f\n", new_true_state.ax_drag, new_true_state.ay_drag, new_true_state.az_drag);
+
         }
         // Branch 2: Reentry phase, with lift and maneuverability
         else if (run_params->rv_maneuv == 1){
@@ -372,8 +371,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             // Calculate the aerodynamic drag and lift
             reentry_lift_drag(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step);
             reentry_lift_drag(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step);
-            printf("Reentry phase drag: %f, %f, %f\n", new_true_state.ax_drag, new_true_state.ay_drag, new_true_state.az_drag);
-            printf("Reentry phase lift: %f, %f, %f\n", new_true_state.ax_lift, new_true_state.ay_lift, new_true_state.az_lift);
+
         }
         // Branch 3: Reentry phase, drag only
         else if (run_params->rv_maneuv == 0){
@@ -381,8 +379,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             reentry_drag(run_params, vehicle, &true_atm_cond, &new_true_state, &step_timer);
             reentry_drag(run_params, vehicle, &est_atm_cond, &new_est_state, &step_timer);
         }
-
-        // TODO: Make sure that the drag and lift values are correct for each branch and set of conditions
 
         // Calculate the total acceleration components
         new_true_state.ax_total = new_true_state.ax_grav + new_true_state.ax_drag + new_true_state.ax_lift + new_true_state.ax_thrust;
@@ -417,7 +413,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             // Perform a perfect maneuver if before burnout
             // This accounts for the fact that we do not consider maneuverability errors during the boost phase, i.e. atmospheric errors during the boost phase are not considered
             new_true_state = perfect_maneuv(&new_true_state, &new_est_state, &new_des_state);
-            printf("Perfect maneuver performed at time %f\n", new_true_state.t);
+            // printf("Perfect maneuver performed at time %f\n", new_true_state.t);
             imu.gyro_error_lat = 0;
             imu.gyro_error_long = 0;
 
@@ -433,12 +429,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
         // Check if the vehicle has impacted the Earth
         double new_altitude = get_altitude(new_true_state.x, new_true_state.y, new_true_state.z);
 
-        if (new_altitude > old_altitude && new_true_state.t > 2000 && bounce_flag == 0){
-            printf("Altitude increasing: %f -> %f at time %f\n", old_altitude/1000, new_altitude/1000, new_true_state.t);
-            bounce_flag = 1;
-        }
         if (new_altitude < 0){
-            printf("Impact detected at time %f\n", new_true_state.t);
+            // printf("Impact detected at time %f\n", new_true_state.t);
             state true_final_state = impact_linterp(&old_true_state, &new_true_state);
             state est_final_state = impact_linterp(&old_est_state, &new_est_state);
             state des_final_state = impact_linterp(&old_des_state, &new_des_state);
