@@ -108,7 +108,7 @@ void init_mean_atm_data(char* atmprofilepath){
     // Open the atmospheric profile file
     FILE *fp = fopen(atmprofilepath, "r");
     if (fp == NULL){
-        printf("Error opening mean atmospheric profile file\n");
+        printf("Error opening mean atmospheric profile file %s\n", atmprofilepath);
     }
 
     // read the atmospheric profile data delimited by spaces

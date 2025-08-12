@@ -387,7 +387,9 @@ def get_run_params(config_path=None):
         # Override the default atm_profile_path because atmprofiles.txt does not
         # have a stable fixed path when the script is run as part of a package.
         run_params["atm_profile_path"] = get_default_atm_profile_path()
-        run_params["mean_atm_profile_path"] = save_mean_atm_profile()
+    run_params["mean_atm_profile_path"] = save_mean_atm_profile(
+        run_params["atm_profile_path"]
+    )
     return run_params
 
 
