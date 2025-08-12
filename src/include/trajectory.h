@@ -327,41 +327,62 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
         update_gravity(&est_grav, &new_est_state);
         update_gravity(&true_grav, &new_des_state);
 
-        // Update the drag acceleration components
-        // printf("True atmospheric conditions: %f, %f, %f, %f\n", true_atm_cond.density, true_atm_cond.meridional_wind, true_atm_cond.zonal_wind, true_atm_cond.vertical_wind);
-        update_drag(run_params, vehicle, &true_atm_cond, &new_true_state, &step_timer);
-        update_drag(run_params, vehicle, &est_atm_cond, &new_est_state, &step_timer);
-        update_drag(run_params, vehicle, &est_atm_cond, &new_des_state, &step_timer);
+        // Aerodynamic drag and lift calculations
+        // Branch 0: No aerodynamic forces (outside atmosphere)
+        if (old_altitude > 1e5){
+            // No aerodynamic forces
+            new_true_state.ax_drag = 0;
+            new_true_state.ay_drag = 0;
+            new_true_state.az_drag = 0;
+            new_true_state.ax_lift = 0;
+            new_true_state.ay_lift = 0;
+            new_true_state.az_lift = 0;
 
-        // If maneuverable RV, use proportional navigation during reentry
-        if (run_params->rv_maneuv == 1 && old_true_state.t >= vehicle->booster.total_burn_time && get_altitude(new_true_state.x, new_true_state.y, new_true_state.z) < 1e5){
-            // Get the acceleration command
-            cart_vector a_command = prop_nav(run_params, &new_est_state);
-            // printf("a_command: %f, %f, %f\n", a_command.x, a_command.y, a_command.z);
-            // Update the lift acceleration components
-            update_lift(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step);
-            // printf("new_true_state.ax_lift: %f, new_true_state.ay_lift: %f, new_true_state.az_lift: %f\n", new_true_state.ax_lift, new_true_state.ay_lift, new_true_state.az_lift);
+            new_est_state.ax_drag = 0;
+            new_est_state.ay_drag = 0;
+            new_est_state.az_drag = 0;
+            new_est_state.ax_lift = 0;
+            new_est_state.ay_lift = 0;
+            new_est_state.az_lift = 0;
 
-            // print dot product of lift acceleration and velocity
-            double a_l_dot_v = new_true_state.ax_lift * new_true_state.vx + new_true_state.ay_lift * new_true_state.vy + new_true_state.az_lift * new_true_state.vz;
-            double a_com_dot_v = a_command.x * new_est_state.vx + a_command.y * new_est_state.vy + a_command.z * new_est_state.vz;
-            // printf("Dot product of lift acceleration and velocity: %f\n", a_l_dot_v);
-            if (fabs(a_l_dot_v) > 1e-3){
-                printf("Warning: Lift acceleration is not perpendicular to velocity vector! A_L dot v: %f\nTime: %f\n", a_l_dot_v, new_true_state.t);
-                printf("A_com dot v: %f\n", a_com_dot_v);
-                printf("A_command: %f, %f, %f\n", a_command.x, a_command.y, a_command.z);
+            new_des_state.ax_drag = 0;
+            new_des_state.ay_drag = 0;
+            new_des_state.az_drag = 0;
+            new_des_state.ax_lift = 0;
+            new_des_state.ay_lift = 0;
+            new_des_state.az_lift = 0;
 
-                exit(1);
-            }
-            
-            // get the total acceleration command and the total lift acceleration
-            // a_command_total = sqrt(a_command.x*a_command.x + a_command.y*a_command.y + a_command.z*a_command.z);
-            // a_lift_total = sqrt(new_true_state.ax_lift*new_true_state.ax_lift + new_true_state.ay_lift*new_true_state.ay_lift + new_true_state.az_lift*new_true_state.az_lift);
-            // printf("a_command_total: %f, a_lift_total: %f\n", a_command_total, a_lift_total);
-
-            update_lift(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step);
-            
         }
+        // Branch 1: Boost phase
+        if (old_true_state.t < vehicle->booster.total_burn_time){
+            // Calculate the aerodynamic drag
+            boost_drag(run_params, vehicle, &true_atm_cond, &new_true_state);
+            boost_drag(run_params, vehicle, &est_atm_cond, &new_est_state);
+            boost_drag(run_params, vehicle, &est_atm_cond, &new_des_state);
+            printf("Boost phase drag: %f, %f, %f\n", new_true_state.ax_drag, new_true_state.ay_drag, new_true_state.az_drag);
+        }
+        // Branch 2: Reentry phase, with lift and maneuverability
+        else if (run_params->rv_maneuv == 1){
+            // Calculate the aerodynamic drag and lift
+            
+            // Calculate the acceleration command
+            cart_vector a_command = prop_nav(run_params, &new_est_state);
+            // printf("Commanded acceleration: %f, %f, %f\n", a_command.x, a_command.y, a_command.z);
+
+            // Calculate the aerodynamic drag and lift
+            reentry_lift_drag(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step);
+            reentry_lift_drag(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step);
+            printf("Reentry phase drag: %f, %f, %f\n", new_true_state.ax_drag, new_true_state.ay_drag, new_true_state.az_drag);
+            printf("Reentry phase lift: %f, %f, %f\n", new_true_state.ax_lift, new_true_state.ay_lift, new_true_state.az_lift);
+        }
+        // Branch 3: Reentry phase, drag only
+        else if (run_params->rv_maneuv == 0){
+            // Calculate the aerodynamic drag only
+            reentry_drag(run_params, vehicle, &true_atm_cond, &new_true_state, &step_timer);
+            reentry_drag(run_params, vehicle, &est_atm_cond, &new_est_state, &step_timer);
+        }
+
+        // TODO: Make sure that the drag and lift values are correct for each branch and set of conditions
 
         // Calculate the total acceleration components
         new_true_state.ax_total = new_true_state.ax_grav + new_true_state.ax_drag + new_true_state.ax_lift + new_true_state.ax_thrust;
