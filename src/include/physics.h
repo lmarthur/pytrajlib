@@ -100,6 +100,97 @@ void update_gravity(grav *grav, state *state){
 
 }
 
+void boost_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, state *state){
+    /*
+    Updates the drag acceleration components during the boost phase
+
+    INPUTS:
+    ----------
+        run_params: runparams *
+            pointer to the run parameters struct
+        vehicle: vehicle *
+            pointer to the vehicle struct
+        atm_cond: atm_cond *
+            pointer to the atmospheric conditions
+        state: state *
+            pointer to the state struct
+    */
+
+    // Get the relative airspeed
+    double cart_wind[3];
+    double spher_wind[3] = {atm_cond->vertical_wind, atm_cond->zonal_wind, atm_cond->meridional_wind};
+    double spher_coords[3];
+    double cart_coords[3] = {state->x, state->y, state->z};
+    cartcoords_to_sphercoords(cart_coords, spher_coords);
+
+    sphervec_to_cartvec(spher_wind, cart_wind, spher_coords);
+
+    double v_rel[3] = {state->vx - cart_wind[0], state->vy - cart_wind[1], state->vz - cart_wind[2]};
+    double v_rel_mag = sqrt(v_rel[0]*v_rel[0] + v_rel[1]*v_rel[1] + v_rel[2]*v_rel[2]);
+    
+    // Special case for zero relative velocity
+    if (v_rel_mag < 1e-6) {
+        state->ax_drag = 0;
+        state->ay_drag = 0;
+        state->az_drag = 0;
+        return;
+    }
+
+    double a_drag_mag = 0.5 * atm_cond->density * v_rel_mag * v_rel_mag * vehicle->booster.area * vehicle->booster.c_d_0 / vehicle->current_mass;
+    state->ax_drag = -a_drag_mag * v_rel[0] / v_rel_mag;
+    state->ay_drag = -a_drag_mag * v_rel[1] / v_rel_mag;
+    state->az_drag = -a_drag_mag * v_rel[2] / v_rel_mag;
+
+}
+
+void reentry_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, state *state, double *step_timer){
+    /*
+    Updates the drag acceleration components during the boost phase
+
+    INPUTS:
+    ----------
+        vehicle: vehicle *
+            pointer to the vehicle struct
+        state: state *
+            pointer to the state struct
+        step_timer: double *
+            pointer to the step timer
+    */
+
+    // Get the relative airspeed
+    double cart_wind[3];
+    double spher_wind[3] = {atm_cond->vertical_wind, atm_cond->zonal_wind, atm_cond->meridional_wind};
+    double spher_coords[3];
+    double cart_coords[3] = {state->x, state->y, state->z};
+    cartcoords_to_sphercoords(cart_coords, spher_coords);
+
+    sphervec_to_cartvec(spher_wind, cart_wind, spher_coords);
+
+    double v_rel[3] = {state->vx - cart_wind[0], state->vy - cart_wind[1], state->vz - cart_wind[2]};
+    
+    double v_rel_mag = sqrt(v_rel[0]*v_rel[0] + v_rel[1]*v_rel[1] + v_rel[2]*v_rel[2]);
+
+    // Special case for zero relative velocity
+    if (v_rel_mag < 1e-6) {
+        state->ax_drag = 0;
+        state->ay_drag = 0;
+        state->az_drag = 0;
+        return;
+    }
+    
+    double v_mag = sqrt(state->vx*state->vx + state->vy*state->vy + state->vz*state->vz);
+    double wind_mag = sqrt(cart_wind[0]*cart_wind[0] + cart_wind[1]*cart_wind[1] + cart_wind[2]*cart_wind[2]);
+
+    double aoa_total = atan(wind_mag/v_mag); // angle of attack in radians, assuming the vehicle is moving in the direction of the wind
+    double c_d = vehicle->rv.c_d_0 + fabs(vehicle->rv.c_d_alpha * aoa_total);
+
+    double a_drag_mag = 0.5 * atm_cond->density * v_rel_mag * v_rel_mag * vehicle->rv.rv_area * c_d / vehicle->current_mass;
+    state->ax_drag = -a_drag_mag * v_rel[0] / v_rel_mag;
+    state->ay_drag = -a_drag_mag * v_rel[1] / v_rel_mag;
+    state->az_drag = -a_drag_mag * v_rel[2] / v_rel_mag;
+
+}
+
 void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, state *state, double *step_timer){
     /*
     Updates the drag acceleration components
