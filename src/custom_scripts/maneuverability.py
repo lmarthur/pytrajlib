@@ -83,13 +83,13 @@ def moment_of_inertia(radius, length_cylinder, length_cone, density):
 # Define a moment function
 
 # Define a time constant function
-def time_constant(moment_of_inertia, atm_density, c_m_alpha, radius, vel):
+def time_constant(moment_of_inertia, atm_density, c_m_alpha, radius, vel, ref_length):
     """
     Calculate the time constant of a composite shape consisting of a cylinder and a cone, defined relative to the center of mass.
     """
     ref_area = np.pi * radius**2  # Reference area (cross-sectional area of the cylinder)
 
-    time_constant = np.sqrt(-2 * moment_of_inertia / (c_m_alpha * atm_density * ref_area * vel**2))
+    time_constant = np.sqrt(-2 * moment_of_inertia / (c_m_alpha * atm_density * ref_area * ref_length * vel**2))
 
     return time_constant
 
@@ -101,7 +101,7 @@ def time_constant(moment_of_inertia, atm_density, c_m_alpha, radius, vel):
 
 # plot the time constant as a function of velocity
 # Define the velocity range
-velocities = np.linspace(1, 10000, 99)  # Velocity range from 1 to 10000 m/s
+velocities = np.linspace(1000, 10000, 99)  # Velocity range from 1 to 10000 m/s
 time_constants_vel = np.zeros(len(velocities))
 # Calculate the atmospheric density at sea level
 rho = atm_density(altitude=0)
@@ -110,7 +110,7 @@ for i, vel in enumerate(velocities):
     Iy = moment_of_inertia(radius=0.25, length_cylinder=1.63, length_cone=1.12, density=rv_density)
     
     # Calculate the time constant
-    tc = time_constant(Iy, rho, c_m_alpha=-0.15, radius=0.5, vel=vel)
+    tc = time_constant(Iy, rho, c_m_alpha=-0.15, radius=0.5, vel=vel, ref_length=2.75)
     
     # Store the time constant
     time_constants_vel[i] = tc
@@ -138,7 +138,7 @@ for i, alt in enumerate(altitudes):
     Iy = moment_of_inertia(radius=0.25, length_cylinder=1.63, length_cone=1.12, density=rv_density)
     
     # Calculate the time constant
-    tc = time_constant(Iy, rho, c_m_alpha=-0.15, radius=0.5, vel=10000)  # Using a constant velocity of 10000 m/s
+    tc = time_constant(Iy, rho, c_m_alpha=-0.15, radius=0.5, vel=7500, ref_length=2.75)  # Using a constant velocity of 10000 m/s
     
     # Store the time constant
     time_constants_altitude[i] = tc

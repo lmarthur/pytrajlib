@@ -113,41 +113,15 @@ state perfect_maneuv(state *true_state, state *estimated_state, state *desired_s
     return updated_state;
 }
 
-double rv_time_constant(vehicle *vehicle, state *true_state, atm_cond *atm_cond){
-    /*
-    Calculates the time constant of the reentry vehicle based on the current state
-
-    INPUTS:
-    ----------
-        vehicle: vehicle *
-            pointer to the vehicle struct
-        true_state: state *
-            pointer to the true state of the vehicle
-        atm_cond: atm_cond *
-            pointer to the atmospheric conditions
-
-    OUTPUTS:
-    ----------
-        double: time_constant
-            time constant of the vehicle
-    */
-
-    // Get the current velocity
-    double velocity = sqrt(true_state->vx*true_state->vx + true_state->vy*true_state->vy + true_state->vz*true_state->vz);
-    
-    // Calculate the time constant
-    double time_constant = sqrt(-2 * vehicle->rv.Iyy / (vehicle->rv.c_m_alpha * vehicle->rv.rv_area * atm_cond->density * pow(velocity, 2) * vehicle->rv.rv_length));
-
-    return time_constant;
-}
-
-void update_lift(runparams *run_params, state *state, cart_vector *a_command, atm_cond *atm_cond, vehicle *vehicle, double time_step){
+void reentry_lift_drag(runparams *run_params, state *state, cart_vector *a_command, atm_cond *atm_cond, vehicle *vehicle, double time_step){
     /*
     Simulates maneuverability of a reentry vehicle by applying a commanded acceleration vector with a time delay and realistic atmospheric model
 
     INPUTS:
     ----------
-        true_state: state *
+        run_params: runparams *
+            pointer to the run parameters struct
+        state: state *
             pointer to the state of the vehicle
         a_command: cart_vector *
             pointer to the commanded acceleration vector
@@ -159,124 +133,195 @@ void update_lift(runparams *run_params, state *state, cart_vector *a_command, at
             time step for the simulation
     */
 
+    // First, get the lift acceleration
+
+    // Calculate the time constant of the vehicle
     // Calculate the time constant of the vehicle
     double time_constant = rv_time_constant(vehicle, state, atm_cond);
-    double max_a_exec = 25 * 9.8; // maximum acceleration in m/s^2
+    
+    double max_flap_force = run_params->actuator_force * run_params->gearing_ratio * 1000; // maximum flap force in N
+    double max_lift_force = vehicle->rv.c_l_alpha * max_flap_force * (vehicle->rv.x_flap-vehicle->rv.x_com) / (vehicle->rv.c_m_alpha * vehicle->rv.rv_length); // maximum lift force in N, based on moment arm and lift properties
+    double max_a_exec = max_lift_force / vehicle->rv.rv_mass; // maximum acceleration that can be executed by the flaps in m/s^2
     double aoa_max = 10 * M_PI / 180; // maximum angle of attack in radians
-    double deflection_time = run_params->deflection_time; // time to reach maximum flap deflection (seconds), this should be defined in runparams
+    double deflection_max = M_PI / 6; // maximum flap deflection in radians (30 degrees)
+    double deflection_time = run_params->deflection_time * run_params->gearing_ratio; // time to reach maximum flap deflection (seconds), this should be defined in runparams
     double deflection_rate = aoa_max / deflection_time; // deflection rate in rad/seconds
-    
-    // get current trim angle
-    double trim_angle_x = state->ax_lift * aoa_max / sqrt(max_a_exec/3); // this is the current flap deflection in the x-direction
-    double trim_angle_y = state->ay_lift * aoa_max / sqrt(max_a_exec/3); // this is the current flap deflection in the y-direction
-    double trim_angle_z = state->az_lift * aoa_max / sqrt(max_a_exec/3); // this is the current flap deflection in the z-direction
-    // printf("Current trim angles: trim_angle_x: %f, trim_angle_y: %f, trim_angle_z: %f\n", trim_angle_x, trim_angle_y, trim_angle_z);
-    
-    // Define target flap deflections
-    double target_trim_angle_x = a_command->x / max_a_exec * aoa_max; // target flap deflection in the x-direction
-    double target_trim_angle_y = a_command->y / max_a_exec * aoa_max; // target flap deflection in the y-direction
-    double target_trim_angle_z = a_command->z / max_a_exec * aoa_max; // target flap deflection in the z-direction
-    // printf("Target trim angles: target_trim_angle_x: %f, target_trim_angle_y: %f, target_trim_angle_z: %f\n", target_trim_angle_x, target_trim_angle_y, target_trim_angle_z);
 
-    // Update the current flap deflections with linear step
-    // Case 0: current flap deflection is within deflection_rate*dt of target flap deflection
-    if (fabs(trim_angle_x - target_trim_angle_x) < deflection_rate * time_step){
-        trim_angle_x = target_trim_angle_x;
-        // printf("Case 0");
-    }
-    // Case 1: current flap deflection is less than target flap deflection
-    else if (trim_angle_x < target_trim_angle_x){
-        trim_angle_x = trim_angle_x + deflection_rate * time_step;
-        // printf("Case 1");
-    }
-    // Case 2: current flap deflection is greater than target flap deflection
-    else if (trim_angle_x > target_trim_angle_x){
-        trim_angle_x = trim_angle_x - deflection_rate * time_step;
-        // printf("Case 2");
-    }
+    // Get the relative airspeed
+    double cart_wind[3];
+    double spher_wind[3] = {atm_cond->vertical_wind, atm_cond->zonal_wind, atm_cond->meridional_wind};
+    double spher_coords[3];
+    double cart_coords[3] = {state->x, state->y, state->z};
+    cartcoords_to_sphercoords(cart_coords, spher_coords);
 
-    // Repeat for y and z components
-    if (fabs(trim_angle_y - target_trim_angle_y) < deflection_rate * time_step){
-        trim_angle_y = target_trim_angle_y; // within range, set to target
-        // printf("Case 0 for Y\n");
-    }
-    else if (trim_angle_y < target_trim_angle_y){
-        trim_angle_y = trim_angle_y + deflection_rate * time_step; // increment towards target
-        // printf("Case 1 for Y\n");
-    }
-    else if (trim_angle_y > target_trim_angle_y){
-        trim_angle_y = trim_angle_y - deflection_rate * time_step; // decrement towards target
-        // printf("Case 2 for Y\n");
-    }
+    sphervec_to_cartvec(spher_wind, cart_wind, spher_coords);
+    // Get the relative velocity vector
+    double v_rel[3] = {state->vx - cart_wind[0], state->vy - cart_wind[1], state->vz - cart_wind[2]};
+    double v_rel_mag = sqrt(v_rel[0]*v_rel[0] + v_rel[1]*v_rel[1] + v_rel[2]*v_rel[2]);
 
-    if (fabs(trim_angle_z - target_trim_angle_z) < deflection_rate * time_step){
-        trim_angle_z = target_trim_angle_z; // within range, set to target
-        // printf("Case 0 for Z\n");
-    }
-    else if (trim_angle_z < target_trim_angle_z){
-        trim_angle_z = trim_angle_z + deflection_rate * time_step; // increment towards target
-        // printf("Case 1 for Z\n");
-    }
-    else if (trim_angle_z > target_trim_angle_z){
-        trim_angle_z = trim_angle_z - deflection_rate * time_step; // decrement towards target
-        // printf("Case 2 for Z\n");
-    }
+    double altitude = get_altitude(state->x, state->y, state->z); // Get the altitude of the vehicle
+    cart_vector initial_lift_vector;
+    initial_lift_vector.x = state->ax_lift;
+    initial_lift_vector.y = state->ay_lift;
+    initial_lift_vector.z = state->az_lift;
 
-    // if target flap deflection is nonphysical, set to max deflection
-    if (trim_angle_x > aoa_max) {
-        trim_angle_x = aoa_max;
-    }
-    if (trim_angle_x < -aoa_max) {
-        trim_angle_x = -aoa_max;
-    }
-    if (trim_angle_y > aoa_max) {
-        trim_angle_y = aoa_max;
-    }
-    if (trim_angle_y < -aoa_max) {
-        trim_angle_y = -aoa_max;
-    }
-    if (trim_angle_z > aoa_max) {
-        trim_angle_z = aoa_max;
-    }
-    if (trim_angle_z < -aoa_max) {
-        trim_angle_z = -aoa_max;
-    }
+    double initial_lift_mag = sqrt(initial_lift_vector.x * initial_lift_vector.x + initial_lift_vector.y * initial_lift_vector.y + initial_lift_vector.z * initial_lift_vector.z); // magnitude of the initial lift acceleration vector
+    // Define a local coordinate system such that unit vector e_1 points in the direction of the relative velocity vector
+    // and e_2 points in the direction of the lift acceleration vector
+    // e_3 will be orthogonal to both e_1 and e_2 defined as e_3 = e_1 x e_2
 
-    // Update the acceleration "commands" based on the current flap deflections
-    double a_transfer_x = trim_angle_x * max_a_exec/aoa_max;
-    double a_transfer_y = trim_angle_y * max_a_exec/aoa_max;
-    double a_transfer_z = trim_angle_z * max_a_exec/aoa_max;
-    // printf("a_transfer_x: %f, a_transfer_y: %f, a_transfer_z: %f\n", a_transfer_x, a_transfer_y, a_transfer_z);
+    // Special case for zero relative velocity or high altitude that simply returns the state with zero lift and drag
+    if (v_rel_mag < 1e-6 || altitude > 1e5) {
+        // If the relative velocity is zero, we cannot define a local coordinate system
+        // Set the lift and drag to zero and return the state
+        state->ax_lift = 0.0;
+        state->ay_lift = 0.0;
+        state->az_lift = 0.0;
+        state->ax_drag = 0.0;
+        state->ay_drag = 0.0;
+        state->az_drag = 0.0;
 
-    state->ax_lift = state->ax_lift + (a_transfer_x - state->ax_lift) * time_step / time_constant;
-    state->ay_lift = state->ay_lift + (a_transfer_y - state->ay_lift) * time_step / time_constant;
-    state->az_lift = state->az_lift + (a_transfer_z - state->az_lift) * time_step / time_constant;
-
-    // state->ax_lift = state->ax_lift + (a_command->x - state->ax_lift) * time_step / time_constant;
-    // state->ay_lift = state->ay_lift + (a_command->y - state->ay_lift) * time_step / time_constant;
-    // state->az_lift = state->az_lift + (a_command->z - state->az_lift) * time_step / time_constant;
-
-    double velocity = sqrt(state->vx*state->vx + state->vy*state->vy + state->vz*state->vz);
-    double a_exec_mag = sqrt(state->ax_lift*state->ax_lift + state->ay_lift*state->ay_lift + state->az_lift*state->az_lift);
-    
-    double angle_of_attack = vehicle->current_mass * a_exec_mag / (0.5 * atm_cond->density * velocity * velocity * vehicle->rv.c_l_alpha);
-    
-    if (angle_of_attack > aoa_max || angle_of_attack < -aoa_max){
-        double sign = (angle_of_attack > 0) ? 1 : -1;
-        double new_a_exec_mag = 0.5 * atm_cond->density * velocity * velocity * vehicle->rv.c_l_alpha * sign * aoa_max / vehicle->current_mass;
-        state->ax_lift = new_a_exec_mag * state->ax_lift / a_exec_mag;
-        state->ay_lift = new_a_exec_mag * state->ay_lift / a_exec_mag;
-        state->az_lift = new_a_exec_mag * state->az_lift / a_exec_mag;
-    }
-
-    if (a_exec_mag > max_a_exec){
-        double new_a_exec_mag = max_a_exec;
-        state->ax_lift = new_a_exec_mag * state->ax_lift / a_exec_mag;
-        state->ay_lift = new_a_exec_mag * state->ay_lift / a_exec_mag;
-        state->az_lift = new_a_exec_mag * state->az_lift / a_exec_mag;
+        return;
     }
 
     
+    cart_vector e_1, e_2, e_3;
+    e_1.x = v_rel[0] / v_rel_mag; // unit vector in the direction of the relative velocity vector
+    e_1.y = v_rel[1] / v_rel_mag; // unit vector in the direction of the relative velocity vector
+    e_1.z = v_rel[2] / v_rel_mag; // unit vector in the direction of the relative velocity vector
+
+    // Special case for zero initial lift
+    if (initial_lift_mag < 1e-6) {
+        // If the initial lift magnitude is zero, define e_2 based on a cross product between e_1 and global z-axis
+
+        double global_z_axis[3] = {0.0, 0.0, 1.0}; // global z-axis unit vector
+        e_2.x = e_1.y * global_z_axis[2] - e_1.z * global_z_axis[1];
+        e_2.y = e_1.z * global_z_axis[0] - e_1.x * global_z_axis[2];
+        e_2.z = e_1.x * global_z_axis[1] - e_1.y * global_z_axis[0];
+
+        // Normalize e_2 to make it a unit vector
+        double e_2_mag = sqrt(e_2.x * e_2.x + e_2.y * e_2.y + e_2.z * e_2.z);
+        if (e_2_mag < 1e-6) {
+            // If e_2 magnitude is still zero, we cannot define a local coordinate system
+            state->ax_lift = 0.0;
+            state->ay_lift = 0.0;
+            state->az_lift = 0.0;
+            state->ax_drag = 0.0;
+            state->ay_drag = 0.0;
+            state->az_drag = 0.0;
+        
+            return;
+        }
+        e_2.x /= e_2_mag; // normalize e_2
+        e_2.y /= e_2_mag; // normalize e_2
+        e_2.z /= e_2_mag; // normalize e_2
+
+    } else {
+        e_2.x = initial_lift_vector.x / initial_lift_mag; // unit vector in the direction of the lift acceleration vector
+        e_2.y = initial_lift_vector.y / initial_lift_mag; // unit vector in the direction of the lift acceleration vector
+        e_2.z = initial_lift_vector.z / initial_lift_mag; // unit vector in the direction of the lift acceleration vector
+    }
+
+    // Calculate the cross product to get e_3
+    e_3.x = e_1.y * e_2.z - e_1.z * e_2.y; // x-component of e_3
+    e_3.y = e_1.z * e_2.x - e_1.x * e_2.z; // y-component of e_3
+    e_3.z = e_1.x * e_2.y - e_1.y * e_2.x; // z-component of e_3
+
+    // printf("e_1: (%f, %f, %f)\n", e_1.x, e_1.y, e_1.z);
+    // printf("e_2: (%f, %f, %f)\n", e_2.x, e_2.y, e_2.z);
+    // printf("e_3: (%f, %f, %f)\n", e_3.x, e_3.y, e_3.z);
+
+    // Project the commanded acceleration vector onto the lift direction (e_2)
+    double a_command_e2 = (a_command->x * e_2.x + a_command->y * e_2.y + a_command->z * e_2.z);
+
+    // Project the commanded acceleration vector onto the e_3 direction
+    double a_command_e3 = (a_command->x * e_3.x + a_command->y * e_3.y + a_command->z * e_3.z);
+
+    // Update the control surface deflections based on the commanded acceleration vector
+    double pitch_deflection;  // pitch deflection is defined in the a_lift direction
+    double yaw_deflection = 0.0;    // yaw deflection is defined in the e_3 direction
+    
+    // Define the current pitch deflection based on the current lift acceleration
+    pitch_deflection = initial_lift_mag * deflection_max / max_a_exec; // pitch deflection in radians
+
+    // Define the target flap deflections based on the commanded acceleration vector
+    double target_pitch_deflection = a_command_e2 * deflection_max / max_a_exec; // target pitch deflection in radians
+    double target_yaw_deflection = a_command_e3 * deflection_max / max_a_exec; // target yaw deflection in radians
+
+    // Case 0: If the current flap deflection is within deflection_rate*dt of target flap deflection
+    if (fabs(pitch_deflection - target_pitch_deflection) < deflection_rate * time_step){
+        pitch_deflection = target_pitch_deflection; // within range, set to target
+    }
+    // Case 1: If the current flap deflection is less than target flap deflection
+    else if (pitch_deflection < target_pitch_deflection){
+        pitch_deflection += deflection_rate * time_step; // increment towards target
+    }
+    // Case 2: If the current flap deflection is greater than target flap deflection
+    else if (pitch_deflection > target_pitch_deflection){
+        pitch_deflection -= deflection_rate * time_step; // decrement towards target
+    }
+
+    // Repeat for yaw deflection
+    if (fabs(yaw_deflection - target_yaw_deflection) < deflection_rate * time_step){
+        yaw_deflection = target_yaw_deflection; // within range, set to target
+    }
+    else if (yaw_deflection < target_yaw_deflection){
+        yaw_deflection += deflection_rate * time_step; // increment towards target
+    }
+    else if (yaw_deflection > target_yaw_deflection){
+        yaw_deflection -= deflection_rate * time_step; // decrement towards target
+    }
+
+    // Enforce limits on the flap deflections
+    if (pitch_deflection > deflection_max){
+        pitch_deflection = deflection_max; // enforce maximum flap deflection
+    }
+    else if (pitch_deflection < -deflection_max){
+        pitch_deflection = -deflection_max; // enforce minimum flap deflection
+    }
+    if (yaw_deflection > deflection_max){
+        yaw_deflection = deflection_max; // enforce maximum flap deflection
+    }
+    else if (yaw_deflection < -deflection_max){
+        yaw_deflection = -deflection_max; // enforce minimum flap deflection
+    }
+
+    // Update the transferred acceleration vector based on the current flap deflections
+    double a_transfer_e2 = max_a_exec * (pitch_deflection / deflection_max); // transferred acceleration in the e_2 direction
+    double a_transfer_e3 = max_a_exec * (yaw_deflection / deflection_max); // transferred acceleration in the e_3 direction
+
+    // Get the new lift acceleration and update the state struct
+    double a_lift_e2 = initial_lift_mag + (a_transfer_e2 - initial_lift_mag) * time_step / time_constant;
+    double a_lift_e3 = a_transfer_e3 * time_step / time_constant; // lift acceleration in the e_3 direction
+
+    // Enforce limits on the lift acceleration
+
+    // Enforce the lift acceleration direction to be orthogonal to the relative velocity vector
+
+    // Transform the lift acceleration back to the global Cartesian basis
+    double lift_acc_x = a_lift_e2 * e_2.x + a_lift_e3 * e_3.x; // x-component of the lift acceleration
+    double lift_acc_y = a_lift_e2 * e_2.y + a_lift_e3 * e_3.y; // y-component of the lift acceleration
+    double lift_acc_z = a_lift_e2 * e_2.z + a_lift_e3 * e_3.z; // z-component of the lift acceleration
+
+    // Update the state with the new lift acceleration
+    state->ax_lift = lift_acc_x; // update the x-component of the lift
+    state->ay_lift = lift_acc_y; // update the y-component of the lift
+    state->az_lift = lift_acc_z; // update the z-component of the lift
+
+    // Second, get the drag acceleration
+
+    // Get the new total angle of attack based on the lift acceleration
+    double lift_magnitude = sqrt(state->ax_lift * state->ax_lift + state->ay_lift * state->ay_lift + state->az_lift * state->az_lift); // magnitude of the lift acceleration vector
+    double aoa = lift_magnitude * aoa_max / max_a_exec; // angle of attack in radians
+
+    // Get the drag coefficient based on the angle of attack
+    double c_d = vehicle->rv.c_d_0 + fabs(vehicle->rv.c_d_alpha * aoa); // drag coefficient based on angle of attack
+    // Get the drag magnitude
+    double a_drag_mag = 0.5 * atm_cond->density * v_rel_mag * v_rel_mag * vehicle->rv.rv_area * c_d / vehicle->current_mass;
+    // Update the drag acceleration vector based on the drag magnitude and direction
+    state->ax_drag = -a_drag_mag * v_rel[0] / v_rel_mag;
+    state->ay_drag = -a_drag_mag * v_rel[1] / v_rel_mag;
+    state->az_drag = -a_drag_mag * v_rel[2] / v_rel_mag;
 
 }
 

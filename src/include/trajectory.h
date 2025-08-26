@@ -295,7 +295,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
     */
 
     // Initialize the variables and structures
-    int max_steps = 100000000;
+    int max_steps = 2500000;
 
     grav true_grav = init_grav(run_params);
     grav est_grav = init_grav(run_params);
@@ -380,27 +380,58 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             update_gravity(&true_grav, &new_des_state);
         }
 
-        // Update the drag acceleration components
-        update_drag(run_params, vehicle, &true_atm_cond, &new_true_state, &step_timer);
-        update_drag(run_params, vehicle, &est_atm_cond, &new_est_state, &step_timer);
-        if (during_boost_phase) {
-            update_drag(run_params, vehicle, &est_atm_cond, &new_des_state, &step_timer);
+        // Aerodynamic drag and lift calculations
+        // Branch 0: No aerodynamic forces (outside atmosphere)
+        if (old_altitude > 1e5){
+            // No aerodynamic forces
+            new_true_state.ax_drag = 0;
+            new_true_state.ay_drag = 0;
+            new_true_state.az_drag = 0;
+            new_true_state.ax_lift = 0;
+            new_true_state.ay_lift = 0;
+            new_true_state.az_lift = 0;
+
+            new_est_state.ax_drag = 0;
+            new_est_state.ay_drag = 0;
+            new_est_state.az_drag = 0;
+            new_est_state.ax_lift = 0;
+            new_est_state.ay_lift = 0;
+            new_est_state.az_lift = 0;
+
+            new_des_state.ax_drag = 0;
+            new_des_state.ay_drag = 0;
+            new_des_state.az_drag = 0;
+            new_des_state.ax_lift = 0;
+            new_des_state.ay_lift = 0;
+            new_des_state.az_lift = 0;
+
         }
+        // Branch 1: Boost phase
+        if (during_boost_phase){
+            // Calculate the aerodynamic drag
+            boost_drag(run_params, vehicle, &true_atm_cond, &new_true_state);
+            boost_drag(run_params, vehicle, &est_atm_cond, &new_est_state);
+            boost_drag(run_params, vehicle, &est_atm_cond, &new_des_state);
 
-        // If maneuverable RV, use proportional navigation during reentry
-        if (run_params->rv_maneuv == 1 && !during_boost_phase && get_altitude(new_true_state.x, new_true_state.y, new_true_state.z) < 1e5){
-            // Get the acceleration command
+        }
+        // Branch 2: Reentry phase, with lift and maneuverability
+        else if (run_params->rv_maneuv == 1){
+            // Calculate the aerodynamic drag and lift
+            
+            // Calculate the acceleration command
             cart_vector a_command = prop_nav(run_params, &new_est_state);
-            // printf("a_command: %f, %f, %f\n", a_command.x, a_command.y, a_command.z);
-            // Update the lift acceleration components
-            update_lift(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step);
-            // get the total acceleration command and the total lift acceleration
-            a_command_total = sqrt(a_command.x*a_command.x + a_command.y*a_command.y + a_command.z*a_command.z);
-            a_lift_total = sqrt(new_true_state.ax_lift*new_true_state.ax_lift + new_true_state.ay_lift*new_true_state.ay_lift + new_true_state.az_lift*new_true_state.az_lift);
-            // printf("a_command_total: %f, a_lift_total: %f\n", a_command_total, a_lift_total);
+            // printf("Commanded acceleration: %f, %f, %f\n", a_command.x, a_command.y, a_command.z);
 
-            update_lift(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step);
+            // Calculate the aerodynamic drag and lift
+            reentry_lift_drag(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step);
+            reentry_lift_drag(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step);
 
+        }
+        // Branch 3: Reentry phase, drag only
+        else if (run_params->rv_maneuv == 0){
+            // Calculate the aerodynamic drag only
+            reentry_drag(run_params, vehicle, &true_atm_cond, &new_true_state, &step_timer);
+            reentry_drag(run_params, vehicle, &est_atm_cond, &new_est_state, &step_timer);
         }
 
         // Calculate the total acceleration components
@@ -410,12 +441,10 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         new_est_state.ax_total = new_est_state.ax_grav + new_est_state.ax_drag + new_est_state.ax_lift + new_est_state.ax_thrust;
         new_est_state.ay_total = new_est_state.ay_grav + new_est_state.ay_drag + new_est_state.ay_lift + new_est_state.ay_thrust;
         new_est_state.az_total = new_est_state.az_grav + new_est_state.az_drag + new_est_state.az_lift + new_est_state.az_thrust;
-        if (during_boost_phase) {
-            new_des_state.ax_total = new_des_state.ax_grav + new_des_state.ax_drag + new_des_state.ax_lift + new_des_state.ax_thrust;
-            new_des_state.ay_total = new_des_state.ay_grav + new_des_state.ay_drag + new_des_state.ay_lift + new_des_state.ay_thrust;
-            new_des_state.az_total = new_des_state.az_grav + new_des_state.az_drag + new_des_state.az_lift + new_des_state.az_thrust;
-        }
-
+        new_des_state.ax_total = new_des_state.ax_grav + new_des_state.ax_drag + new_des_state.ax_lift + new_des_state.ax_thrust;
+        new_des_state.ay_total = new_des_state.ay_grav + new_des_state.ay_drag + new_des_state.ay_lift + new_des_state.ay_thrust;
+        new_des_state.az_total = new_des_state.az_grav + new_des_state.az_drag + new_des_state.az_lift + new_des_state.az_thrust;
+        
         double a_drag = sqrt(new_true_state.ax_drag*new_true_state.ax_drag + new_true_state.ay_drag*new_true_state.ay_drag + new_true_state.az_drag*new_true_state.az_drag);
         if (run_params->ins_nav == 1){
             // INS Measurement
@@ -436,8 +465,9 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
 
         if  (new_true_state.t == (vehicle->booster.total_burn_time) && run_params->run_type == 0){
             // Perform a perfect maneuver if before burnout
-
+            // This accounts for the fact that we do not consider maneuverability errors during the boost phase, i.e. atmospheric errors during the boost phase are not considered
             new_true_state = perfect_maneuv(&new_true_state, &new_est_state, &new_des_state);
+            // printf("Perfect maneuver performed at time %f\n", new_true_state.t);
             imu.gyro_error_lat = 0;
             imu.gyro_error_long = 0;
 
@@ -454,11 +484,12 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
 
         // Check if the vehicle has impacted the Earth
         double new_altitude = get_altitude(new_true_state.x, new_true_state.y, new_true_state.z);
+
         if (new_altitude < 0){
+            // printf("Impact detected at time %f\n", new_true_state.t);
             state true_final_state = impact_linterp(&old_true_state, &new_true_state);
             state est_final_state = impact_linterp(&old_est_state, &new_est_state);
             state des_final_state = impact_linterp(&old_des_state, &new_des_state);
-
             // Add coriolis effect based on the latitude and the impact time error
             double lat = ran_flat(-M_PI/2, M_PI/2);
             double lon = ran_flat(-M_PI, M_PI);
@@ -474,6 +505,12 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             true_final_state.y = true_final_state.y + coriolis * cos(lon)*cos(lat);
             true_final_state.z = true_final_state.z + coriolis * sin(lat);
 
+            if (run_params->rv_maneuv == 2){
+                // If perfect rv maneuver, update the final position
+                true_final_state.x = true_final_state.x - est_final_state.x;
+                true_final_state.y = true_final_state.y - est_final_state.y;
+                true_final_state.z = true_final_state.z - est_final_state.z;
+            }
             if (traj_output == 1){
                 // Write the final state to the trajectory file
                 append_traj_data(traj_file, true_final_state, est_final_state, vehicle, a_command_total, a_lift_total, true_atm_cond, est_atm_cond);
