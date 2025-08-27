@@ -461,9 +461,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             // Perform a perfect maneuver if before burnout
             // This accounts for the fact that we do not consider maneuverability errors during the boost phase, i.e. atmospheric errors during the boost phase are not considered
             new_true_state = perfect_maneuv(&new_true_state, &new_est_state, &new_des_state);
-            imu.gyro_error_lat = 0;
-            imu.gyro_error_long = 0;
-
         }
     
         // Perform a Runge-Kutta step
