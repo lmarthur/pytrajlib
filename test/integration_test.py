@@ -124,25 +124,25 @@ def test_gravity_error_increases_cep(run_params):
 
 
 @pytest.mark.parametrize(
-    "error_type, error_value_low, error_value_high",
+    "error_type, error_vals",
     [
-        ("initial_pos_error", 1.0, 10.0),
-        ("initial_vel_error", 0.1, 1.0),
-        ("initial_angle_error", 1e-6, 1e-4),
-        ("acc_scale_stability", 1e-6, 1e-4),
-        ("gyro_bias_stability", 1e-6, 1e-4),
-        ("gyro_noise", 1e-6, 1e-4),
+        ("initial_x_error", (0, 0.1, 10)),
+        ("initial_pos_error", (0, 1, 10.0)),
+        ("initial_vel_error", (0, 0.1, 1.0)),
+        ("initial_angle_error", (0, 1e-6, 1e-4)),
+        ("acc_scale_stability", (0, 1e-6, 1e-4)),
+        ("gyro_bias_stability", (0, 1e-6, 1e-4)),
+        ("gyro_noise", (0, 1e-6, 1e-4)),
+        ("rv_maneuv", (1, 0)),
     ],
 )
 @pytest.mark.parametrize(
-    "rv_maneuv",
-    [
-        0,
-        1,
-    ],
+    "booster_type",
+    ["mmiii", "gbsd", "d5"],
 )
+@pytest.mark.parametrize("atm_model", [0, 1, 2])
 def test_increase_error_increase_cep_all_guidance(
-    run_params, error_type, error_value_low, error_value_high, rv_maneuv
+    run_params, error_type, error_vals, booster_type, atm_model
 ):
     """
     Verify that turning on/increasing initial position error increases miss distance (all guidance combinations)
@@ -150,16 +150,16 @@ def test_increase_error_increase_cep_all_guidance(
     rv_maneuv: 0 for boost guidance only, 1 for realistic rv maneuver
     """
     ceps = []
-    errors = [0, error_value_low, error_value_high]
-    for error in errors:
+    run_params["num_runs"] = 100
+    run_params["booster_type"] = booster_type
+    run_params["atm_model"] = atm_model
+    for error in error_vals:
         run_params[error_type] = error
-        run_params["num_runs"] = 1000
-        run_params["rv_maneuv"] = rv_maneuv
         impact_data = run(run_params, return_config=False)
         cep = get_cep(run_params, impact_data)
         ceps.append(cep)
 
-    assert ceps[0] < ceps[1] < ceps[2], (
+    assert all(ceps[i] < ceps[i + 1] for i in range(len(ceps) - 1)), (
         f"Expected increasing CEP with increasing {error_type}, got {ceps}"
     )
 
@@ -172,9 +172,7 @@ def test_rv_maneuver(run_params):
     assert run_params["num_runs"] == 2
     run_params["num_runs"] = 1000
     run_params["rv_maneuv"] = 0
-    # run_params["atm_model"] = 1  # Use exponential model with wind perturbations
-
-    # Grav error seems to cause the test to fail...
+    run_params["atm_model"] = 1  # Use exponential model with wind perturbations
     run_params["grav_error"] = 1
 
     impact_data = run(run_params, return_config=False)

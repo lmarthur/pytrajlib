@@ -11,9 +11,10 @@ impact_output = 1
 x_launch = 6371e3
 y_launch = 0.0
 z_launch = 0.0
-x_aim = -557819.616403   
-y_aim = 6.346534e+06
-z_aim = -31.37706
+x_aim = 1525536.630030 
+y_aim = -4453698.585795
+z_aim = 4292662.099131
+
 theta_long = 0.785398163397
 theta_lat = 0.0
 
