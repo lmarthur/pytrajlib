@@ -227,10 +227,6 @@ void reentry_lift_drag(runparams *run_params, state *state, cart_vector *a_comma
     e_3.y = e_1.z * e_2.x - e_1.x * e_2.z; // y-component of e_3
     e_3.z = e_1.x * e_2.y - e_1.y * e_2.x; // z-component of e_3
 
-    // printf("e_1: (%f, %f, %f)\n", e_1.x, e_1.y, e_1.z);
-    // printf("e_2: (%f, %f, %f)\n", e_2.x, e_2.y, e_2.z);
-    // printf("e_3: (%f, %f, %f)\n", e_3.x, e_3.y, e_3.z);
-
     // Project the commanded acceleration vector onto the lift direction (e_2)
     double a_command_e2 = (a_command->x * e_2.x + a_command->y * e_2.y + a_command->z * e_2.z);
 

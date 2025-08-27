@@ -45,7 +45,6 @@ state init_true_state(runparams *run_params){
     state state;
     // branch for initializing full trajectory run
     if (run_params->run_type == 0){
-        // printf("Initializing full trajectory run\n");
         state.t = 0;
         state.x = 6371e3 + run_params->initial_x_error * ran_gaussian(1);
         state.y = run_params->initial_pos_error * ran_gaussian(1);
@@ -58,7 +57,6 @@ state init_true_state(runparams *run_params){
     }
     // branch for initializing reentry only run
     if (run_params->run_type == 1){
-        // printf("Initializing reentry only run\n");
         state.t = 0;
         state.x = 6371e3 + 500e3 + run_params->initial_x_error * ran_gaussian(1);
         state.y = run_params->initial_pos_error * ran_gaussian(1);
@@ -112,7 +110,6 @@ state init_est_state(runparams *run_params){
 
     state state;
     if (run_params->run_type == 0){
-        // printf("Initializing full trajectory run\n");
         state.t = 0;
         state.x = 6371e3;
         state.y = 0;
@@ -125,7 +122,6 @@ state init_est_state(runparams *run_params){
     }
     // branch for initializing reentry only run
     if (run_params->run_type == 1){
-        // printf("Initializing reentry only run\n");
         state.t = 0;
         state.x = 6371e3 + 1000e3;
         state.y = 0;
@@ -358,7 +354,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         double old_altitude = get_altitude(old_true_state.x, old_true_state.y, old_true_state.z);
         
         true_atm_cond = get_atm_cond(old_altitude, &exp_atm_model, run_params, &atm_profile);
-        // printf("true_atm_cond: %f, %f, %f\n", true_atm_cond.density, true_atm_cond.meridional_wind, true_atm_cond.zonal_wind);
         est_atm_cond = get_exp_atm_cond(old_altitude, &exp_atm_model);
         // if during boost or outside atmosphere, dt = main time step, else dt = reentry time step
         if (during_boost_phase || old_altitude >= 1e5){
@@ -420,7 +415,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             
             // Calculate the acceleration command
             cart_vector a_command = prop_nav(run_params, &new_est_state);
-            // printf("Commanded acceleration: %f, %f, %f\n", a_command.x, a_command.y, a_command.z);
 
             // Calculate the aerodynamic drag and lift
             reentry_lift_drag(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step);
@@ -467,7 +461,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             // Perform a perfect maneuver if before burnout
             // This accounts for the fact that we do not consider maneuverability errors during the boost phase, i.e. atmospheric errors during the boost phase are not considered
             new_true_state = perfect_maneuv(&new_true_state, &new_est_state, &new_des_state);
-            // printf("Perfect maneuver performed at time %f\n", new_true_state.t);
             imu.gyro_error_lat = 0;
             imu.gyro_error_long = 0;
 
@@ -486,7 +479,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         double new_altitude = get_altitude(new_true_state.x, new_true_state.y, new_true_state.z);
 
         if (new_altitude < 0){
-            // printf("Impact detected at time %f\n", new_true_state.t);
             state true_final_state = impact_linterp(&old_true_state, &new_true_state);
             state est_final_state = impact_linterp(&old_est_state, &new_est_state);
             state des_final_state = impact_linterp(&old_des_state, &new_des_state);
@@ -495,7 +487,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             double lon = ran_flat(-M_PI, M_PI);
             double time_error = true_final_state.t - est_final_state.t;
             double rot_speed = 464 * cos(lat);
-            // printf("Impact time error: %f\n", time_error);
             double coriolis = rot_speed * time_error;
 
             // based on the coriolis effect, update the final state x and y
@@ -781,15 +772,12 @@ impact_data mc_run(runparams run_params){
 
     // Initialize the variables
     int num_runs = run_params.num_runs;
-    // printf("Simulating %d Monte Carlo runs...\n", num_runs);
     if (num_runs > MAX_RUNS){
         printf("Error: Number of runs exceeds the maximum limit. Increase MAX_RUNS in src/include/trajectory.h and recompile. \n");
         printf("num_runs: %d, MAX_RUNS: %d\n", num_runs, MAX_RUNS);
         return impact_data;
     }
     
-    
-
     // Create a .txt file to store the impact data
     FILE *impact_file;
     if (run_params.impact_output == 1){

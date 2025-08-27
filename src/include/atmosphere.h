@@ -189,8 +189,6 @@ atm_model init_exp_atm(runparams *run_params){
         }
 
     }
-
-    
     
     return atm_model;
 }
@@ -332,8 +330,6 @@ atm_cond get_eg_atm_cond(double altitude, eg16_profile *atm_profile){
     atm_conditions.zonal_wind = linterp(altitude, atm_profile->alt_data, atm_profile->zonal_wind_data, num_heights);
     atm_conditions.vertical_wind = linterp(altitude, atm_profile->alt_data, atm_profile->vertical_wind_data, num_heights);
     
-    // print the altitude and windspeeds
-    // printf("Altitude: %lf, Meridional wind: %lf, Zonal wind: %lf, Vertical wind: %lf\n", altitude, atm_conditions.meridional_wind, atm_conditions.zonal_wind, atm_conditions.vertical_wind);
     return atm_conditions;
 }
 

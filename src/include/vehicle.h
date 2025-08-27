@@ -399,7 +399,7 @@ booster init_scud_booster(){
     booster.maxdiam = 0.88; // [m] max diameter of missile
     booster.area = M_PI * (booster.maxdiam / 2) * (booster.maxdiam / 2);
     booster.c_d_0 = 0.15; // Using V2 drag characteristics
-    booster.bus_mass = 987; // TODO NOTE: this is the payload mass, not the bus mass
+    booster.bus_mass = 987; // NOTE: this is the payload mass, not the bus mass
 
     // Stage 1 parameters
     booster.wet_mass[0] = 4873;

@@ -75,8 +75,6 @@ TEST(trajectory, fly){
     run_params.run_type = 0;
     run_params.cl_pert = 0; // Set to zero for this test, as we are only testing drag
 
-    // print all of the vehicle parameters
-    // printf("Booster total mass: %f\n", vehicle.booster.total_mass);
     // Mock vehicle with no thrust dropped from 10m above the surface
     state initial_state = init_true_state(&run_params);
     initial_state.theta_long = 0;
@@ -169,7 +167,6 @@ TEST(trajectory, update_aimpoint){
     run_params.cl_pert = 0; // Set to zero for this test, as we are only testing drag
 
     cart_vector aimpoint = update_aimpoint(run_params);
-    // printf("Aimpoint: %f, %f, %f\n", aimpoint.x, aimpoint.y, aimpoint.z);
     REQUIRE_LT(fabs(get_altitude(aimpoint.x, aimpoint.y, aimpoint.z)), 1);
     REQUIRE_EQ(run_params.initial_pos_error, 1);
 }

@@ -23,10 +23,7 @@ cart_vector prop_nav(runparams *run_params, state *estimated_state){
     r_target.x = run_params->x_aim - estimated_state->x;
     r_target.y = run_params->y_aim - estimated_state->y;
     r_target.z = run_params->z_aim - estimated_state->z;
-    // print the aimpoint
 
-    // print the altitude of the Aimpoint
-    // printf("%f\n", get_altitude(run_params->x_aim, run_params->y_aim, run_params->z_aim));
     // Calculate the relative velocity vector to the target (currently configured for a stationary target)
     cart_vector v_rel;
     v_rel.x = 0 - estimated_state->vx;
