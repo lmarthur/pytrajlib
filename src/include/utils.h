@@ -190,7 +190,6 @@ void print_config(runparams *run_params){
     printf("Reentry phase guidance: %d\n", run_params->rv_maneuv);
     printf("Reentry velocity: %f\n", run_params->reentry_vel);
 
-    printf("Reentry vehicle type: %d\n", run_params->rv_type);
     printf("Flap deflection time: %f\n", run_params->deflection_time);
     printf("Actuator force: %f\n", run_params->actuator_force);
     printf("Gearing ratio: %f\n", run_params->gearing_ratio);

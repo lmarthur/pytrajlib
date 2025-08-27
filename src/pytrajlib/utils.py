@@ -356,7 +356,7 @@ def get_default_atm_profile_path():
     )
 
 
-def get_run_params(config_path=None):
+def get_run_params(config_path=None, use_mean_atm=True):
     """
     Get run params dict from the config file. If no config file is provided,
     the default config file is used.
@@ -365,6 +365,7 @@ def get_run_params(config_path=None):
     -------
         config_path (str): Path to the configuration file. If None, the default
             configuration file is used.
+        use_mean_atm (bool): Whether to use the mean atmospheric profile.
     OUTPUTS
     -------
         run_params (dict): Dictionary containing the run parameters.
@@ -383,7 +384,7 @@ def get_run_params(config_path=None):
         for section in config_parser.sections()
         for key, value in config_parser.items(section)
     }
-    if retrieving_default:
+    if use_mean_atm:
         # Override the default atm_profile_path because atmprofiles.txt does not
         # have a stable fixed path when the script is run as part of a package.
         run_params["atm_profile_path"] = get_default_atm_profile_path()

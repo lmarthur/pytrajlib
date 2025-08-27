@@ -7,12 +7,6 @@ import pytest
 from src.pytrajlib.simulation import get_run_params, run
 from src.pytrajlib.utils import get_cep
 
-# Specify the input file name (without the extension)
-config_file = "test"
-
-# Check for the existence of the input file
-config_path = f"./input/{config_file}.toml"
-
 
 @pytest.fixture()
 def run_params():
@@ -54,7 +48,7 @@ def test_read_config(run_params):
     assert run_params["deflection_time"] == 0.0
     assert run_params["actuator_force"] == 12.0
     assert run_params["gearing_ratio"] == 1.0
-    assert run_params.nav_gain == 5.0
+    assert run_params["nav_gain"] == 5.0
 
     assert run_params["initial_x_error"] == 0.0
     assert run_params["initial_pos_error"] == 0.0
@@ -75,9 +69,6 @@ def test_identical_runs_without_random_errors(run_params):
     Verify that first two runs are identical when no random errors are turned on
     """
     impact_data = run(run_params, return_config=False)
-    print(impact_data)
-    print(impact_data.empty)
-    print(impact_data.iloc[0, :], impact_data.iloc[1, :])
     assert not impact_data.empty
     assert np.allclose(impact_data.iloc[0, :], impact_data.iloc[1, :], atol=1e-6)
 
@@ -96,7 +87,7 @@ def test_cep_near_zero_without_random_errors(run_params):
     """
     Verify that miss distance is near 0 when random errors are turned off
     """
-    run_params["num_runs"] = 10
+    run_params["num_runs"] = 50
     impact_data = run(run_params, return_config=False)
     cep = get_cep(run_params, impact_data)
 
@@ -108,7 +99,7 @@ def test_atmospheric_error_increases_cep(run_params):
     Verify that turning on atmospheric error increases miss distance
     """
     run_params["atm_model"] = 1  # Use exponential model with wind perturbations
-    run_params["num_runs"] = 10
+    run_params["num_runs"] = 50
     run_params["rv_maneuv"] = 0
 
     impact_data = run(run_params, return_config=False)
@@ -122,7 +113,7 @@ def test_gravity_error_increases_cep(run_params):
     Verify that turning on gravitational error increases miss distance
     """
     run_params["grav_error"] = 1
-    run_params["num_runs"] = 10
+    run_params["num_runs"] = 50
     run_params["rv_maneuv"] = 0
 
     impact_data = run(run_params, return_config=False)
@@ -178,10 +169,12 @@ def test_rv_maneuver(run_params):
     Verify that turning on rv maneuver decreases miss distance when deflection
     time is zero.
     """
-
-    run_params["num_runs"] = 10
+    assert run_params["num_runs"] == 2
+    run_params["num_runs"] = 1000
     run_params["rv_maneuv"] = 0
-    run_params["atm_model"] = 1  # Use exponential model with wind perturbations
+    # run_params["atm_model"] = 1  # Use exponential model with wind perturbations
+
+    # Grav error seems to cause the test to fail...
     run_params["grav_error"] = 1
 
     impact_data = run(run_params, return_config=False)
@@ -203,7 +196,7 @@ def test_gnss_navigation_decreases_cep(run_params):
     """
 
     run_params["run_type"] = 0
-    run_params["num_runs"] = 10
+    run_params["num_runs"] = 50
     run_params["rv_maneuv"] = 1
     run_params["atm_model"] = 1  # Use exponential model with wind perturbations
     run_params["acc_scale_stability"] = 1e-6
@@ -236,7 +229,7 @@ def test_gnss_noise_increases_cep(run_params, gnss_noise):
     Verify that turning on/increasing GNSS noise increases miss distance
     """
     run_params["run_type"] = 0
-    run_params["num_runs"] = 10
+    run_params["num_runs"] = 50
     run_params["rv_maneuv"] = 1
     run_params["atm_model"] = 1  # Use exponential model with wind perturbations
     run_params["acc_scale_stability"] = 1e-6

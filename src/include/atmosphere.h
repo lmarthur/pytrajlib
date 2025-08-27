@@ -5,8 +5,8 @@
 #include "rng/rng.h"
 #include "utils.h"
 
-const int ATM_PROFILE_LEN = 100;
-const int ATM_PROFILE_NUM = 100;
+#define ATM_PROFILE_LEN 100
+#define ATM_PROFILE_NUM 100
 
 // Define an atm_cond struct to store local atmospheric conditions
 typedef struct atm_cond{

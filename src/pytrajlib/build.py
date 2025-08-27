@@ -41,9 +41,12 @@ ffibuilder.cdef(
         int ins_nav; 
         int rv_maneuv; 
         double reentry_vel; 
-        double deflection_time; 
 
         int booster_type;
+        double deflection_time; 
+        double actuator_force;
+        double gearing_ratio;
+        double nav_gain;
 
         double initial_x_error; 
         double initial_pos_error; 
