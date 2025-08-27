@@ -709,7 +709,7 @@ vehicle init_d5_swerve() {
     return vehicle;
 }
 
-vehicle init_vehicle(int booster_type, int rv_maneuv) {
+vehicle init_vehicle(int booster_type, int rv_type) {
     /*
     Initializes a vehicle based on the specified booster and reentry vehicle maneuverability
     INPUTS:
@@ -717,8 +717,8 @@ vehicle init_vehicle(int booster_type, int rv_maneuv) {
         booster_type: int
             type of booster to use (0: MMIII, 1: SCUD, 2: SCUD-ER, 3: GBSD, 4: D5,
             5: Mock)
-        rv_maneuv: int
-            reentry vehicle maneuverability (0: ballistic, 1+: maneuverable)
+        rv_type: int
+            type of reentry vehicle (0: ballistic, 1: maneuverable)
     OUTPUTS:
     ----------
         vehicle: vehicle
@@ -728,42 +728,42 @@ vehicle init_vehicle(int booster_type, int rv_maneuv) {
         printf("Invalid booster type specified.\n");
         exit(1);
     }
-    if (rv_maneuv < 0) {
-        printf("Invalid reentry vehicle maneuverability specified.\n");
+    if (rv_type < 0) {
+        printf("Invalid reentry vehicle type specified.\n");
         exit(1);
     }
 
     if (booster_type == 0) {
         // MMIII booster
-        if (rv_maneuv == 0) {
+        if (rv_type == 0) {
             return init_mmiii_ballistic();
         } else {
             return init_mmiii_swerve();
         }
     } else if (booster_type == 1) {
         // SCUD booster
-        if (rv_maneuv == 0) {
+        if (rv_type == 0) {
             return init_scud_ballistic();
         } else {
             return init_scud_swerve();
         }
     } else if (booster_type == 2) {
         // SCUD-ER booster
-        if (rv_maneuv == 0) {
+        if (rv_type == 0) {
             return init_scud_er_ballistic();
         } else {
             return init_scud_er_swerve();
         }
     } else if (booster_type == 3) {
         // GBSD booster
-        if (rv_maneuv == 0) {
+        if (rv_type == 0) {
             return init_gbsd_ballistic();
         } else {
             return init_gbsd_swerve();
         }
     } else if (booster_type == 4) {
         // D5 booster
-        if (rv_maneuv == 0) {
+        if (rv_type == 0) {
             return init_d5_ballistic();
         } else {
             return init_d5_swerve();

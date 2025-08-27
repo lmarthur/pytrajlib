@@ -34,6 +34,7 @@ typedef struct runparams{
     int gnss_nav; // flag to include GNSS navigation
     int ins_nav; // flag to include INS navigation
     int rv_maneuv; // flag to include guidance during the reentry phase
+    int rv_type; // type of reentry vehicle (0: ballistic, 1: maneuverable)
     double reentry_vel; // reentry velocity in meters per second
 
     int booster_type; // type of booster (0: MMIII, 1: SCUD, 2: SCUD-ER, 3: GBSD, 4: D5, 5: Mock)
@@ -306,7 +307,10 @@ runparams sanitize_runparams_for_aimpoint(runparams run_params){
     run_params_temp.gyro_bias_stability = 0;
     run_params_temp.gyro_noise = 0;
     run_params_temp.gnss_noise = 0;
-    run_params_temp.deflection_time = 0;
+
+    // If the simulation uses a maneuverable reentry vehicle, keep that vehicle 
+    // but don't have it maneuver
+    run_params_temp.rv_maneuv = 0;
 
     // Use the mean EarthGRAM model instead of a specific one for aimpoint calculations
     // if any EarthGRAM model is used

@@ -153,7 +153,7 @@ def test_increase_error_increase_cep_all_guidance(
     errors = [0, error_value_low, error_value_high]
     for error in errors:
         run_params[error_type] = error
-        run_params["num_runs"] = 100
+        run_params["num_runs"] = 1000
         run_params["rv_maneuv"] = rv_maneuv
         impact_data = run(run_params, return_config=False)
         cep = get_cep(run_params, impact_data)

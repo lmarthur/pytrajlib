@@ -196,6 +196,9 @@ def run(config=None, return_config=True, **kwargs):
         # Convert booster_type to int if it is a string
         run_params["booster_type"] = booster_type_parser(run_params["booster_type"])
 
+    if run_params["rv_maneuv"] > 0 and run_params["rv_type"] == 0:
+        raise ValueError("rv_maneuv > 0 requires rv_type=1 for a maneuverable vehicle.")
+
     create_output_dirs(run_params)
     run_params_struct = get_run_params_struct(run_params)
 
@@ -313,7 +316,8 @@ def add_arguments_to_parser(parser):
         "atm_model": f"Atmospheric model to use. 0 = exponential model, 1 = exponential model with Gaussian wind perturbations, 2 = EarthGRAM 2016 model below 100km altitude, 3 = mean EarthGRAM model. (default: {run_params['atm_model']})",
         "gnss_nav": f"Whether to use GNSS navigation (default: {run_params['gnss_nav']})",
         "ins_nav": f"If off, indicates perfect inertial navigation system state measurements (default: {run_params['ins_nav']})",
-        "rv_maneuv": f"If set to 0, there is no additional maneuverability. If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability (default: {run_params['rv_maneuv']})",
+        "rv_maneuv": f"If set to 0, there is no additional maneuverability. If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability (default: {run_params['rv_maneuv']}). rv_maneuv > 0 requires rv_type=1 for a maneuverable vehicle.",
+        "rv_type": f"0 for ballistic reentry vehicle, 1 for maneuverable reentry vehicle (default: {run_params.get('rv_type', 0)})",
         "reentry_vel": f"Reentry velocity (m/s) for reentry only simulation (run_type = 1) (default: {run_params['reentry_vel']})",
         "deflection_time": f"Deflection time (s) for control surfaces (default: {run_params['deflection_time']})",
         "booster_type": f"0 for MMIII, 1 for SCUD, 2 for SCUD-ER, 3 for GBSD, 4 for D5, 5 for Mock (default: {run_params['booster_type']}). You can also specify by name: MMIII, SCUD, SCUD-ER, GBSD, D5, MOCK.",

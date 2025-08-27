@@ -558,7 +558,7 @@ cart_vector update_aimpoint(runparams run_params){
     runparams run_params_temp = sanitize_runparams_for_aimpoint(run_params);
     
     // Initialize the vehicle 
-    vehicle vehicle = init_vehicle(run_params_temp.booster_type, run_params_temp.rv_maneuv);
+    vehicle vehicle = init_vehicle(run_params_temp.booster_type, run_params_temp.rv_type);
 
     state initial_state = init_true_state(&run_params_temp);
     initial_state.theta_long = run_params.theta_long;
@@ -726,7 +726,7 @@ int get_thrust_angle(runparams *run_params){
     run_params->z_launch = 0.0;
 
     // Check if the aimpoint is within the range of the vehicle
-    vehicle vehicle = init_vehicle(run_params->booster_type, run_params->rv_maneuv);
+    vehicle vehicle = init_vehicle(run_params->booster_type, run_params->rv_type);
     if (distance > vehicle.range) {
         printf("Error: Aimpoint is out of range of the vehicle.\n");
         printf("Distance: %f, Range: %f\n", distance, vehicle.range);
@@ -792,7 +792,7 @@ impact_data mc_run(runparams run_params){
 
         vehicle vehicle;
         if (run_params.run_type == 0){
-            vehicle = init_vehicle(run_params.booster_type, run_params.rv_maneuv);
+            vehicle = init_vehicle(run_params.booster_type, run_params.rv_type);
         }
         else if (run_params.run_type == 1){
             vehicle = init_reentry_only();

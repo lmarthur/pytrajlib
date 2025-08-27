@@ -27,7 +27,7 @@ theta_lat = 0.0
 [FLIGHT]
 # Gravitational error model
 grav_error = 1
-# Atmospheric model: 0=exponential, 1=exponential+wind, 2=EarthGRAM
+# Atmospheric model: 0=exponential, 1=exponential+wind, 2=EarthGRAM, 3=Mean EG
 atm_model = 1
 # Positioning updates during exoatmospheric flight (1 is on, 0 is off)
 gnss_nav = 0
@@ -35,6 +35,7 @@ gnss_nav = 0
 ins_nav = 1
 # If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability
 rv_maneuv = 0
+rv_type = 0
 # Reentry velocity (m/s) for reentry only simulation (run_type = 1)
 reentry_vel = 7500
 # Deflection time (s) for control surfaces
