@@ -136,7 +136,6 @@ void reentry_lift_drag(runparams *run_params, state *state, cart_vector *a_comma
     // First, get the lift acceleration
 
     // Calculate the time constant of the vehicle
-    // Calculate the time constant of the vehicle
     double time_constant = rv_time_constant(vehicle, state, atm_cond);
     
     double max_flap_force = run_params->actuator_force * run_params->gearing_ratio * 1000; // maximum flap force in N
@@ -186,9 +185,10 @@ void reentry_lift_drag(runparams *run_params, state *state, cart_vector *a_comma
 
     
     cart_vector e_1, e_2, e_3;
-    e_1.x = v_rel[0] / v_rel_mag; // unit vector in the direction of the relative velocity vector
-    e_1.y = v_rel[1] / v_rel_mag; // unit vector in the direction of the relative velocity vector
-    e_1.z = v_rel[2] / v_rel_mag; // unit vector in the direction of the relative velocity vector
+     // unit vector in the direction of the relative velocity vector
+    e_1.x = v_rel[0] / v_rel_mag;
+    e_1.y = v_rel[1] / v_rel_mag;
+    e_1.z = v_rel[2] / v_rel_mag;
 
     // Special case for zero initial lift
     if (initial_lift_mag < 1e-6) {
@@ -212,14 +212,16 @@ void reentry_lift_drag(runparams *run_params, state *state, cart_vector *a_comma
         
             return;
         }
-        e_2.x /= e_2_mag; // normalize e_2
-        e_2.y /= e_2_mag; // normalize e_2
-        e_2.z /= e_2_mag; // normalize e_2
+        // normalize e_2
+        e_2.x /= e_2_mag;
+        e_2.y /= e_2_mag;
+        e_2.z /= e_2_mag;
 
     } else {
-        e_2.x = initial_lift_vector.x / initial_lift_mag; // unit vector in the direction of the lift acceleration vector
-        e_2.y = initial_lift_vector.y / initial_lift_mag; // unit vector in the direction of the lift acceleration vector
-        e_2.z = initial_lift_vector.z / initial_lift_mag; // unit vector in the direction of the lift acceleration vector
+        // unit vector in the direction of the lift acceleration vector
+        e_2.x = initial_lift_vector.x / initial_lift_mag;
+        e_2.y = initial_lift_vector.y / initial_lift_mag;
+        e_2.z = initial_lift_vector.z / initial_lift_mag;
     }
 
     // Calculate the cross product to get e_3
