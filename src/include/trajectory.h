@@ -355,7 +355,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         true_atm_cond = get_atm_cond(old_altitude, &exp_atm_model, run_params, &atm_profile);
         est_atm_cond = get_exp_atm_cond(old_altitude, &exp_atm_model);
         // if during boost or outside atmosphere, dt = main time step, else dt = reentry time step
-        if (during_boost_phase || old_altitude >= 1e5){
+        if (during_boost_phase || old_altitude > 1e5){
             time_step = run_params->time_step_main;
         }
         else{
@@ -437,10 +437,13 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         new_est_state.ax_total = new_est_state.ax_grav + new_est_state.ax_drag + new_est_state.ax_lift + new_est_state.ax_thrust;
         new_est_state.ay_total = new_est_state.ay_grav + new_est_state.ay_drag + new_est_state.ay_lift + new_est_state.ay_thrust;
         new_est_state.az_total = new_est_state.az_grav + new_est_state.az_drag + new_est_state.az_lift + new_est_state.az_thrust;
-        new_des_state.ax_total = new_des_state.ax_grav + new_des_state.ax_drag + new_des_state.ax_lift + new_des_state.ax_thrust;
-        new_des_state.ay_total = new_des_state.ay_grav + new_des_state.ay_drag + new_des_state.ay_lift + new_des_state.ay_thrust;
-        new_des_state.az_total = new_des_state.az_grav + new_des_state.az_drag + new_des_state.az_lift + new_des_state.az_thrust;
         
+        if (during_boost_phase) {
+            new_des_state.ax_total = new_des_state.ax_grav + new_des_state.ax_drag + new_des_state.ax_lift + new_des_state.ax_thrust;
+            new_des_state.ay_total = new_des_state.ay_grav + new_des_state.ay_drag + new_des_state.ay_lift + new_des_state.ay_thrust;
+            new_des_state.az_total = new_des_state.az_grav + new_des_state.az_drag + new_des_state.az_lift + new_des_state.az_thrust;
+        }
+
         double a_drag = sqrt(new_true_state.ax_drag*new_true_state.ax_drag + new_true_state.ay_drag*new_true_state.ay_drag + new_true_state.az_drag*new_true_state.az_drag);
         if (run_params->ins_nav == 1){
             // INS Measurement
@@ -459,7 +462,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             gnss_measurement(&gnss, &new_true_state, &new_est_state);
         }
 
-        if  (new_true_state.t == (vehicle->booster.total_burn_time) && run_params->run_type == 0){
+        // Add conditional for > 0 to account for mock booster with 0s for burn time
+        if  (new_true_state.t > 0 && new_true_state.t == (vehicle->booster.total_burn_time) && run_params->run_type == 0){
             // Perform a perfect maneuver if before burnout
             // This accounts for the fact that we do not consider maneuverability errors during the boost phase, i.e. atmospheric errors during the boost phase are not considered
             new_true_state = perfect_maneuv(&new_true_state, &new_est_state, &new_des_state);
