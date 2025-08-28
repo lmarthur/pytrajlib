@@ -50,7 +50,7 @@ def run_type_sweep(func):
     The decorated function should accept run_params as parameter.
     """
     def wrapper():
-        run_types = [0, 1]  # 0 = full trajectory, 1 = reentry only
+        run_types = [0, 1]
         
         for run_type in run_types:
             run_params = get_base_run_params()
@@ -72,12 +72,10 @@ def deflection_time(run_params):
     """
     Plot the CEP for multiple deflection times.
 
-    Produces plots for deflection times from .0001 to 100 s for both
-    reentry and full simulations. Creates multiple plots with different x-axis limits
-    for better visualization of different ranges.
+    Produces plots for deflection times from 1e-4 to 1e2 s for both
+    reentry and full simulations.
     """
-    # Generate a comprehensive range of deflection times
-    deflection_times = np.logspace(-4, 2, 30)  # From 0.0001 to 100 seconds
+    deflection_times = np.logspace(-4, 2, 30)
     ceps = []
     
     run_type = run_params["run_type"]
@@ -88,39 +86,24 @@ def deflection_time(run_params):
         impact_data, _ = simulation.run(run_params)
         cep = utils.get_cep(run_params=run_params, impact_data=impact_data)
         ceps.append(cep)
-    
-    # Define different x-axis limits for multiple plots
-    x_limits = [
-        (1e-4, 1e-1, "low"),    # Low range: 0.0001 to 0.1 s
-        (1e-3, 1, "mid"),       # Mid range: 0.001 to 1 s  
-        (1e-2, 100, "high")     # High range: 0.01 to 100 s
-    ]
-    
+
     run_type_label = "full" if run_type == 0 else "reentry"
     ceps = np.array(ceps)
     
-    for x_min, x_max, range_label in x_limits:
-        plt.figure(figsize=(10, 6))
-        sns.regplot(x=deflection_times, y=ceps, scatter_kws={'alpha': 0.6})
-        plt.xscale('log')
-        plt.xlim(x_min, x_max)
-        
-        # Set ylim based on the data range within the x-axis limits
-        x_mask = (deflection_times >= x_min) & (deflection_times <= x_max)
-        ceps_in_range = ceps[x_mask]
-        y_min, y_max = np.min(ceps_in_range), np.max(ceps_in_range)
-        y_padding = (y_max - y_min) * 0.1
-        plt.ylim(y_min - y_padding, y_max + y_padding)
-
-        plt.xlabel("Deflection times (s)")
-        plt.ylabel("CEP (m)")
-        plt.title(f"Deflection Time Diagnostic ({range_label} range) | run_type {run_type_label}")
-        plt.grid(True, alpha=0.3)
-        
-        path = f"{deflection_time_dir}/deflection-rt_{run_type_label}-range_{range_label}.png"
-        plt.savefig(path, dpi=150, bbox_inches='tight')
-        print(f"Saved to: {path}")
-        plt.close()
+    plt.figure(figsize=(10, 6))
+    sns.regplot(x=deflection_times, y=ceps, scatter_kws={'alpha': 0.6})
+    plt.semilogx()
+    plt.semilogy()
+    
+    plt.xlabel("Deflection times (s)")
+    plt.ylabel("CEP (m)")
+    plt.title(f"Deflection Time Diagnostic | run_type {run_type_label}")
+    plt.grid(True, alpha=0.3)
+    
+    path = f"{deflection_time_dir}/deflection-rt_{run_type_label}.png"
+    plt.savefig(path, dpi=150, bbox_inches='tight')
+    print(f"Saved to: {path}")
+    plt.close()
 
 
 @run_type_sweep
