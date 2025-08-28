@@ -9,7 +9,7 @@ trajectory_path =
 
 atm_profile_path = ./input/atmprofiles.txt
 mean_atm_profile_path = ./input/mean_atmprofiles.txt
-num_runs = 300
+num_runs = 1000
 time_step_main = 1.0
 time_step_reentry = 0.01
 traj_output = 0
@@ -39,7 +39,7 @@ rv_type = 1
 # Reentry velocity (m/s) for reentry only simulation (run_type = 1)
 reentry_vel = 7500
 # Deflection time (s) for control surfaces
-deflection_time = 0.0
+deflection_time = 0.02
 
 
 [VEHICLE]
