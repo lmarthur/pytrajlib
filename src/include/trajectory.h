@@ -123,7 +123,7 @@ state init_est_state(runparams *run_params){
     // branch for initializing reentry only run
     if (run_params->run_type == 1){
         state.t = 0;
-        state.x = 6371e3 + 1000e3;
+        state.x = 6371e3 + 500e3;
         state.y = 0;
         state.z = 0;
 
@@ -253,7 +253,7 @@ void append_traj_data(FILE *traj_file, state new_state, state est_state, vehicle
             atmospheric conditions at the current state
         
     */
-    fprintf(traj_file, "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n", \
+    fprintf(traj_file, "%.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g, %.15g\n", \
         new_state.t, vehicle->current_mass, \
         new_state.x, new_state.y, new_state.z, \
         new_state.vx, new_state.vy, new_state.vz, \
@@ -419,6 +419,9 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             // Calculate the aerodynamic drag and lift
             reentry_lift_drag(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step);
             reentry_lift_drag(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step);
+            
+            a_command_total = sqrt(pow(a_command.x, 2) + pow(a_command.y, 2) + pow(a_command.z, 2));
+            a_lift_total = sqrt(pow(new_true_state.ax_lift, 2) + pow(new_true_state.ay_lift, 2) + pow(new_true_state.az_lift, 2));
 
         }
         // Branch 3: Reentry phase, drag only
