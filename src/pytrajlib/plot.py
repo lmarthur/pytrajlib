@@ -111,7 +111,7 @@ def impact(run_params=None, data=None, output_dir=None):
     a0.text(
         -0.6 * plotrange,
         0.8 * plotrange,
-        "N = " + str(len(miss_distance)) + "\nCEP = " + str(cep) + "m",
+        f"N = {len(miss_distance)}\nCEP = {cep:.2f}m",
         fontsize=10,
         verticalalignment="top",
         horizontalalignment="center",

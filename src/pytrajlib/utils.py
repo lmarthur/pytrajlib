@@ -314,7 +314,7 @@ def get_cep_miss_distance_from_local_impact(impact_x_local, impact_y_local):
     """
     miss_distance = np.sqrt(impact_x_local**2 + impact_y_local**2)
     cep = np.percentile(miss_distance, 50)
-    return miss_distance, round(cep, 2)
+    return miss_distance, cep
 
 
 def get_cep(run_params, impact_data):
