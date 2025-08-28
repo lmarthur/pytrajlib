@@ -49,10 +49,10 @@ typedef struct eg16_profile{
 
 } eg16_profile;
 
-double atm_data[10000][6];
+double atm_data[ATM_PROFILE_LEN * ATM_PROFILE_NUM][6];
 // The mean atmospheric profile data has 5 columns, not 6, because there is no 
 // profile number column
-double mean_atm_data[100][5];
+double mean_atm_data[ATM_PROFILE_LEN][5];
 int atm_data_is_filled = 0;
 int mean_atm_data_is_filled = 0;
 
@@ -81,7 +81,7 @@ void init_atm_data(char* atmprofilepath){
     }
 
     // read the atmospheric profile data delimited by spaces
-    for (int i = 0; i < 100*100; i++){
+    for (int i = 0; i < ATM_PROFILE_LEN*ATM_PROFILE_NUM; i++){
         for (int j = 0; j < 6; j++){
             fscanf(fp, "%lfe", &atm_data[i][j]);
         }
@@ -115,7 +115,7 @@ void init_mean_atm_data(char* atmprofilepath){
     }
 
     // read the atmospheric profile data delimited by spaces
-    for (int i = 0; i < 100; i++){
+    for (int i = 0; i < ATM_PROFILE_LEN; i++){
         for (int j = 0; j < 5; j++){
             fscanf(fp, "%lfe", &mean_atm_data[i][j]);
         }
@@ -393,7 +393,7 @@ eg16_profile parse_atm(char* atmprofilepath, int profilenum){
     if (profilenum < 0) {
         init_mean_atm_data(atmprofilepath);
         // Update the atmospheric profile struct using mean data
-        for (int i = 0; i < 100; i++){
+        for (int i = 0; i < ATM_PROFILE_LEN; i++){
             atm_profile.alt_data[i] = mean_atm_data[i][0];
             atm_profile.density_data[i] = mean_atm_data[i][1];
             atm_profile.meridional_wind_data[i] = mean_atm_data[i][2];
