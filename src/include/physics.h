@@ -117,9 +117,6 @@ void boost_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, sta
     cartcoords_to_sphercoords(cart_coords, spher_coords);
 
     sphervec_to_cartvec(spher_wind, cart_wind, spher_coords);
-    
-    double v_mag = sqrt(state->vx*state->vx + state->vy*state->vy + state->vz*state->vz);
-    double wind_mag = sqrt(cart_wind[0]*cart_wind[0] + cart_wind[1]*cart_wind[1] + cart_wind[2]*cart_wind[2]);
 
     double v_rel[3] = {state->vx - cart_wind[0], state->vy - cart_wind[1], state->vz - cart_wind[2]};
     double v_rel_mag = sqrt(v_rel[0]*v_rel[0] + v_rel[1]*v_rel[1] + v_rel[2]*v_rel[2]);
