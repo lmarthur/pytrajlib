@@ -57,6 +57,7 @@ TEST(trajectory, fly){
     run_params.atm_model = 0;  // Exponential model without perturbations
     run_params.gnss_nav = 0;
     run_params.ins_nav = 1;
+    run_params.rv_type = 0;
     run_params.rv_maneuv = 0;
     run_params.initial_x_error = 0;
     run_params.initial_pos_error = 0;
@@ -72,7 +73,6 @@ TEST(trajectory, fly){
     run_params.gearing_ratio = 1; // Gearing ratio of the control surfaces
     run_params.nav_gain = 5; // Navigation gain for proportional navigation guidance
     run_params.grav_error = 0;
-    run_params.run_type = 0;
     run_params.cl_pert = 0; // Set to zero for this test, as we are only testing drag
 
     // Mock vehicle with no thrust dropped from 10m above the surface
