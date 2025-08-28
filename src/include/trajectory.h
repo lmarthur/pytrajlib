@@ -303,15 +303,14 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
 
     // Initialize either a randomly chosen EarthGRAM profile or the average EarthGRAM profile
     eg16_profile atm_profile;
-    eg16_profile mean_atm_profile = parse_atm(run_params->mean_atm_profile_path, -1);
     if (run_params->atm_model == 2) {
         // Generate a random integer between 0 and 100
         int atm_profile_num = (int)ran_flat(0, 100); 
-
+        
         atm_profile = parse_atm(run_params->atm_profile_path, atm_profile_num);
     }
     else if (run_params->atm_model == 3) {
-        atm_profile = mean_atm_profile;
+        atm_profile = parse_atm(run_params->mean_atm_profile_path, -1);
     }
 
     state old_true_state = *initial_state;
