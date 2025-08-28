@@ -4,7 +4,7 @@
 echo "Compiling the program..."
 
 rm -f ./test/build/PyTraj_test
-rm -f ./src/pytrajlib/_traj.so
+rm -f ./src/pytrajlib/*.so
 
 # Compile with CMake
 cmake -S ./test -B test/build -Wno-dev
