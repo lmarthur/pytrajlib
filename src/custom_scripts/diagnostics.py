@@ -75,7 +75,7 @@ def deflection_time(run_params):
     Produces plots for deflection times from 1e-4 to 1e2 s for both
     reentry and full simulations.
     """
-    deflection_times = np.logspace(-4, 2, 30)
+    deflection_times = np.logspace(-4, 4, 30)
     ceps = []
     
     run_type = run_params["run_type"]
