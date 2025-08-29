@@ -283,8 +283,6 @@ def get_local_impact(run_params, impact_data):
     impact_z = impact_z - run_params["z_aim"]
 
     # convert impact data to local tangent plane coordinates
-    print(f"aimpont_lat: {aimpoint_lat}, aimpoint_lon: {aimpoint_lon}")
-    print(f"launch_lat: {launch_lat}, launch_lon: {launch_lon}")
     impact_x_local = -np.sin(aimpoint_lon) * impact_x + np.cos(aimpoint_lon) * impact_y
     impact_y_local = (
         -np.sin(aimpoint_lat) * np.cos(aimpoint_lon) * impact_x
