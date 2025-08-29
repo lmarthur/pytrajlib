@@ -154,7 +154,7 @@ def plot_parser(plot_name):
     return getattr(plot, plot_name, None)
 
 
-def run(config=None, return_config=True, **kwargs):
+def run(config=None, **kwargs):
     """
     Run the Monte Carlo code with the given parameters. If neither are provided,
     the default configuration is used. If both are provided, config_dict will be used.
@@ -163,9 +163,6 @@ def run(config=None, return_config=True, **kwargs):
     -------
         config: optional, Dictionary containing the run parameters from the
             config file or command line.
-        return_config: optional, If True, the function will return the
-            configuration dictionary used for the run. E.g. if kwargs are passed
-            in, the returned config will be updated with those values.
         kwargs: optional, Override the values in the config file, pass in arguments
             like launch_lat_lon=[0,0], aim_lat_lon=[10, 10].,
 
@@ -225,8 +222,6 @@ def run(config=None, return_config=True, **kwargs):
                 data=impact_df,
                 output_dir=run_params["output_dir"],
             )
-    if return_config:
-        return impact_df, run_params
     return impact_df
 
 

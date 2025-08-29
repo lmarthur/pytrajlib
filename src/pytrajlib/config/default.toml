@@ -4,6 +4,7 @@ run_name = default
 run_type = 0
 # The output paths are dynamically set in Python unless overridden in the cmd line
 output_dir = 
+# Uses the output dir unless overridden
 impact_data_path = 
 trajectory_path = 
 
@@ -35,7 +36,6 @@ gnss_nav = 0
 ins_nav = 1
 # If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability
 rv_maneuv = 0
-rv_type = 0
 # Reentry velocity (m/s) for reentry only simulation (run_type = 1)
 reentry_vel = 7500
 # Deflection time (s) for control surfaces
@@ -43,6 +43,7 @@ deflection_time = 0.0
 
 
 [VEHICLE]
+rv_type = 0
 booster_type = 0
 # Deflection time (s) for control surfaces 
 deflection_time = 0.02
