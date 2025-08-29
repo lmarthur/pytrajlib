@@ -16,7 +16,7 @@ Navigation gain vs gearing ratio heatmap
 `uv run src/custom_scripts/diagnostics.py -hm`
 """
 
-from pytrajlib import simulation, plot, utils
+from pytrajlib import simulation, utils
 import seaborn as sns
 import numpy as np
 import os
