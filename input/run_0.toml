@@ -2,23 +2,32 @@
 run_name = run_0
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 0
-output_dir = ./output
+# The output paths are dynamically set in Python unless overridden in the cmd line
+output_dir = output/run_0
+impact_data_path = 
+trajectory_path = 
+
+atm_profile_path = ./input/atmprofiles.txt
+mean_atm_profile_path = ./input/mean_atmprofiles.txt
 num_runs = 1000
 time_step_main = 1.0
 time_step_reentry = 0.01
 traj_output = 0
 impact_output = 1
-# Note that the aimpoint coords are currently superseded by the thrust angle
-x_aim = 0
-y_aim = 0
-z_aim = 0
+x_launch = 6371e3
+y_launch = 0.0
+z_launch = 0.0
+x_aim = -3.246651e6
+y_aim = 5.481688e6
+z_aim = -6.187522
+# Note that the thrust angle is currently superseded by the launch and aimpoints
 theta_long = 1.04719755
 theta_lat = 0.0
 
 [FLIGHT]
 # Gravitational error model
 grav_error = 1
-# Atmospheric model: 0=exponential, 1=exponential+wind, 2=EarthGRAM
+# Atmospheric model: 0=exponential, 1=exponential+wind, 2=EarthGRAM, 3=Mean EG
 atm_model = 1
 # Positioning updates during exoatmospheric flight (1 is on, 0 is off)
 gnss_nav = 0
@@ -34,6 +43,7 @@ deflection_time = 0.0
 
 [VEHICLE]
 rv_type = 1
+booster_type = 0
 # Deflection time (s) for control surfaces 
 deflection_time = 0.02
 # Actuator max force at max speed (kN)
@@ -51,11 +61,11 @@ initial_angle_error = 1e-6
 acc_scale_stability = 1e-6
 gyro_bias_stability = 1e-8
 gyro_noise = 1e-8
-gnss_noise = 0
-cl_pert = 0
+gnss_noise = 0.0
+cl_pert = 0.0
 # Step function acceleration magnitude (m/s^2)
-step_acc_mag = 0
+step_acc_mag = 0.0
 # Step function acceleration height (m)
-step_acc_hgt = 0
+step_acc_hgt = 0.0
 # Step function acceleration duration (s)
-step_acc_dur = 0
+step_acc_dur = 0.0
