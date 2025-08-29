@@ -27,17 +27,14 @@ To generate trajectory plots from an existing ```trajectory.txt``` file, run
 To generate a new ```trajectory.txt``` file, run the simulation with ```traj_output = 1``` in the relevant ```.toml``` file. 
 
 ## TODO: 
-- [X] Add AoA to the update_drag() function
-- [ ] Combine drag and lift functions
-- [ ] Improve initial AoA estimation routine
-- [ ] Check boost phase/burnout filtering
-- [ ] Use mean EG16 atmosphere for update_aimpoint() routine 
-- [ ] Stop updating des_state after burnout
-- [ ] Generate plots of miss distance vs response time
-- [ ] Generate plot of miss distance vs gearing for a range of nav gains
-- [ ] Rerun plots with multiple atmospheres
-- [ ] Explore initial reentry velocity errors
-- [ ] Merge branches
+- [ ] Determine the optimal values of the navigation gain and the gearing ratio
+- [ ] Plots: (Note that all of these should be done with the optimal nav gain and gearing)
+    - [ ] Initial position error vs miss distance (or CEP)
+    - [ ] Initial velocity error vs miss distance (or CEP)
+    - [ ] Pitching mode excitation magnitude vs miss distance (Use a step function to model the pitching mode excitation and note that the expected excitation magnitude and duration is a function of velocity and altitude)
+    - [ ] Boundary layer excitation magnitude vs miss distance (Note that this is probably negligible, we may not even want to include a plot)
+    - [ ] Anomalous lift coefficient vs miss distance
+- [ ] Explore the relationship between reentry speed, reentry angle, and accuracy
 
 ## BUG REPORTS: 
 None
