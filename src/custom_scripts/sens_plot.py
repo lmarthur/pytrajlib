@@ -33,8 +33,11 @@ def sens_plot(x, sens_data, run_params):
     cep_acc = sens_data["cep"][3 * length : 4 * length].values
     cep_gyrob = sens_data["cep"][4 * length : 5 * length].values
     cep_gyron = sens_data["cep"][5 * length : 6 * length].values
-    cep_gnssn = sens_data["cep"][6 * length : 7 * length].values
-    cep_total = sens_data["cep"][7 * length : 8 * length].values
+    if run_params["gnss_nav"]:
+        cep_gnssn = sens_data["cep"][6 * length : 7 * length].values
+        cep_total = sens_data["cep"][7 * length : 8 * length].values
+    else:
+        cep_total = sens_data["cep"][6 * length : 7 * length].values
 
     plt.figure(figsize=(5, 5))
     ax = plt.gca()

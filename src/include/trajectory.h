@@ -462,7 +462,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             gnss_measurement(&gnss, &new_true_state, &new_est_state);
         }
 
-        // Add conditional for > 0 to account for mock booster with 0s for burn time
+        // Add conditional for t > 0 to account for mock booster with 0s for burn time
         if  (new_true_state.t > 0 && new_true_state.t == (vehicle->booster.total_burn_time) && run_params->run_type == 0){
             // Perform a perfect maneuver if before burnout
             // This accounts for the fact that we do not consider maneuverability errors during the boost phase, i.e. atmospheric errors during the boost phase are not considered

@@ -1,7 +1,3 @@
-# This script contains code to generate sensitivity plots from the output sensitivity_data.csv files.
-
-import sys
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import scienceplots
@@ -11,7 +7,6 @@ assert scienceplots
 plt.style.use(["science"])
 plt.style.use(["no-latex"])
 # plt.style.use(['grayscale'])
-sys.path.append(".")
 import numpy as np
 
 from pytrajlib import utils

@@ -94,8 +94,10 @@ def run_sensitivity_analysis(run_params):
         "acc_scale_stability",
         "gyro_bias_stability",
         "gyro_noise",
-        "gnss_noise",
     ]
+    if run_params["gnss_nav"]:
+        sensitivity_params.append("gnss_noise")
+        print("Including GNSS noise in sensitivity analysis.")
 
     # initialize the sensitivity data structure with pandas
     sensitivity_data = pd.DataFrame(columns=sensitivity_params + ["cep"])
@@ -104,9 +106,11 @@ def run_sensitivity_analysis(run_params):
     for param_name in sensitivity_params + [sensitivity_params]:
         print(f"Testing sensitivity for {param_name}...")
         param_name = param_name if isinstance(param_name, list) else [param_name]
-        for i in grid_points:
+        for scale_factor in grid_points:
             # Reset all parameters to baseline (0.0) except the one being tested
-            current_params = scale_params(run_params, sensitivity_params, param_name, i)
+            current_params = scale_params(
+                run_params, sensitivity_params, param_name, scale_factor
+            )
 
             impact_data = simulation.run(current_params)
 
