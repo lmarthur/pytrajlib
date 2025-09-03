@@ -135,9 +135,6 @@ def impact(run_params=None, data=None, output_dir=None):
     elif run_params["run_name"] != "test":
         a0.set_title("Trajectory Impact Points")
     # plot the histogram of the miss distances
-
-    cep = round(np.percentile(miss_distance, 50), 2)
-
     # Fit a Nakagami distribution to the data
     x = np.linspace(0, 5 * cep, 100)
     shape, loc, scale = stats.nakagami.fit(miss_distance, floc=0)
