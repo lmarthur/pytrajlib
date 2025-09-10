@@ -27,8 +27,9 @@ reentry_velocities = [1e2, 1e3, 5e3, 7.5e3, 1e4]
 
 run_params = simulation.get_run_params("input/reentry.toml")
 run_params["num_runs"] = 100
-# run_params["initial_vel_error"] = 1e-2
-# run_params["initial_pos_error"] = 0.01
+run_params["step_acc_mag"] = -1
+run_params["step_acc_dur"] = -1
+
 
 for reentry_vel in reentry_velocities:
     ceps = []
