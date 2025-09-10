@@ -17,6 +17,7 @@ from pytrajlib.utils import (
     get_local_impact,
     get_run_params,
     haversine_distance,
+    sphervec2cartvec,
     transform_to_earth_coords,
 )
 
@@ -867,3 +868,111 @@ def map(run_params=None, data=None, output_dir=None, show_attribution=True):
     if output_dir is not None:
         m.save(output_dir + "/trajectory_map.html")
     return m
+
+
+def mack_magnitude(run_params=None, data=None, output_dir=None):
+    _set_trajectory_plot_params()
+    data = _get_trajectory_data(run_params, data)
+
+    true_t = data[:, 0]
+    true_vx = data[:, 5]
+    true_vy = data[:, 6]
+    true_vz = data[:, 7]
+    density = data[:, 31]
+    v = np.sqrt(np.square(true_vx) + np.square(true_vy) + np.square(true_vz))
+
+    magnitude = 1 / 2 * density * v**2
+
+    plt.figure(figsize=(10, 10))
+    plt.plot(true_t, magnitude)
+    plt.xlabel("Time (s)")
+    plt.ylabel("Mack Magnitude")
+    plt.title("Mack Magnitude")
+    plt.legend()
+    plt.grid()
+    if output_dir is not None:
+        plt.savefig(output_dir + "/mack_magnitude.pdf")
+        plt.close()
+
+
+def get_reynolds_number(data):
+    wind_vec = data[:, 32:35]
+    x, y, z = data[:, 2], data[:, 3], data[:, 4]
+    lat, lon = cart2sphere(x, y, z)
+    spher_coords = np.zeros_like(wind_vec)
+    spher_coords[:, 0] = np.nan  # radius not needed
+    spher_coords[:, 1] = lon
+    spher_coords[:, 2] = lat
+    cart_wind_vec = sphervec2cartvec(wind_vec, spher_coords).reshape(-1, 3)
+
+    # TODO: use relative velocity (ie minus wind velocity) instead of absolute velocity
+    density = data[:, 31]
+
+    rel_v = data[:, 5:8] - cart_wind_vec
+
+    rho = density
+    molar_mass = 0.0289652
+    Na = 6.022e23
+    n = rho * Na / molar_mass
+    sigma = 3.5e-10  # between nitrogen and oxygen
+    gamma = 7 / 5  # Regan 11.6 p. 313
+    R = 8.314
+    T = 288  # approx sea level temp in K
+    # T = 180 # temperature at ~86km (Regan p. 40)
+
+    # This is speed of sound in perfect gas, but it is not giving ~300 m/s..
+    a = np.sqrt(gamma * R * T)
+    print(f"{a=}")
+    lmbda = 1 / (np.sqrt(2) * np.pi * sigma**2 * n)
+    mu = 1 / 2 * rho * lmbda * a * np.sqrt(8 / (np.pi * gamma))
+    L = 2.75  # Length of RV. Should it be length of flap? something else?
+    # L = 0.3 # guess for length of flap
+
+    V = np.sqrt(np.sum(np.square(rel_v)))
+    Re = rho * V * L / mu
+    return Re
+
+
+def reynolds_number(run_params=None, data=None, output_dir=None):
+    _set_trajectory_plot_params()
+    data = _get_trajectory_data(run_params, data)
+
+    true_t = data[:, 0]
+    Re = get_reynolds_number(data)
+    plt.figure(figsize=(10, 10))
+    plt.plot(true_t, Re)
+    plt.xlabel("Time (s)")
+    plt.ylabel("Reynolds Number")
+    plt.title("Reynolds Number")
+    plt.legend()
+    plt.grid()
+    if output_dir is not None:
+        plt.savefig(output_dir + "/reynolds_number.pdf")
+        plt.close()
+    return Re
+
+
+def boundary_layer_thickness(run_params=None, data=None, output_dir=None):
+    _set_trajectory_plot_params()
+    data = _get_trajectory_data(run_params, data)
+
+    true_t = data[:, 0]
+    Re = get_reynolds_number(data)
+
+    L = 2.75  # Length of RV. Should it be length of flap? something else?
+    L = 0.3
+
+    delta = L / np.sqrt(Re)
+    # delta = 0.37 * L / Re**(1/5)
+
+    plt.figure(figsize=(10, 10))
+    plt.plot(true_t, delta)
+    plt.xlabel("Time (s)")
+    plt.ylabel("Boundary Layer Thickness")
+    plt.title("Boundary Layer Thickness (m)")
+    plt.legend()
+    plt.grid()
+    if output_dir is not None:
+        plt.savefig(output_dir + "/boundary_layer.pdf")
+        plt.close()
+    return delta

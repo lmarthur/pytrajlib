@@ -121,6 +121,40 @@ def sphere2cart(r, lon, lat):
     return x, y, z
 
 
+def sphervec2cartvec(sphervec, spher_coords):
+    """
+    Converts a spherical vector to a Cartesian vector at a given set of spherical coordinates.
+
+    INPUTS:
+    ----------
+        sphervec: array-like
+            Spherical vector [r, lon, lat]
+        spher_coords: array-like
+            Spherical coordinates [r, lon, lat]
+
+    OUTPUTS:
+    ----------
+        cartvec: np.ndarray
+            Cartesian vector [x, y, z]
+    """
+    r, lon, lat = spher_coords[:, 0], spher_coords[:, 1], spher_coords[:, 2]
+    s_r, s_lon, s_lat = sphervec[:, 0], sphervec[:, 1], sphervec[:, 2]
+
+    x = (
+        -s_lon * np.sin(lon)
+        - s_lat * np.sin(lat) * np.cos(lon)
+        + s_r * np.cos(lon) * np.cos(lat)
+    )
+    y = (
+        s_lon * np.cos(lon)
+        - s_lat * np.sin(lat) * np.sin(lon)
+        + s_r * np.sin(lon) * np.cos(lat)
+    )
+    z = s_lat * np.cos(lat) + s_r * np.sin(lat)
+
+    return np.array([x, y, z])
+
+
 def calc_bearing(start, end):
     """
     Calculate the bearing (in radians) from start to end (lat, lon in radians).

@@ -9,7 +9,7 @@ trajectory_path =
 
 atm_profile_path = ./input/atmprofiles.txt
 mean_atm_profile_path = ./input/mean_atmprofiles.txt
-num_runs = 1000
+num_runs = 100
 time_step_main = 1.0
 time_step_reentry = 0.01
 traj_output = 0

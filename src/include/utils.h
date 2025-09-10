@@ -36,6 +36,7 @@ typedef struct runparams{
     int rv_maneuv; // flag to include guidance during the reentry phase
     int rv_type; // type of reentry vehicle (0: ballistic, 1: maneuverable)
     double reentry_vel; // reentry velocity in meters per second
+    double reentry_angle; // reentry angle in x-z plane from z-axis in radians
 
     int booster_type; // type of booster (0: MMIII, 1: SCUD, 2: SCUD-ER, 3: GBSD, 4: D5, 5: Mock)
     double deflection_time; // time to make full flap deflection in seconds, used for maneuverability

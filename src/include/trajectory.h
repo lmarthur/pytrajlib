@@ -62,10 +62,9 @@ state init_true_state(runparams *run_params){
         state.y = run_params->initial_pos_error * ran_gaussian(1);
         state.z = run_params->initial_pos_error * ran_gaussian(1);
 
-        state.vx = -run_params->reentry_vel + run_params->initial_vel_error * ran_gaussian(1);
-        state.vy = run_params->initial_vel_error * ran_gaussian(1);
+        state.vx = -(run_params->reentry_vel + run_params->initial_vel_error * ran_gaussian(1)) * cos(run_params->reentry_angle);
+        state.vy = (run_params->reentry_vel + run_params->initial_vel_error * ran_gaussian(1)) * sin(run_params->reentry_angle);
         state.vz = run_params->initial_vel_error * ran_gaussian(1);
-
     }
     
     double initial_rot_pert = run_params->initial_angle_error * ran_gaussian(1);
@@ -127,8 +126,8 @@ state init_est_state(runparams *run_params){
         state.y = 0;
         state.z = 0;
 
-        state.vx = -run_params->reentry_vel;
-        state.vy = 0;
+        state.vx = -run_params->reentry_vel * cos(run_params->reentry_angle);
+        state.vy = run_params->reentry_vel * sin(run_params->reentry_angle);
         state.vz = 0;
 
     }
@@ -500,10 +499,14 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             true_final_state.z = true_final_state.z + coriolis * sin(lat);
 
             if (run_params->rv_maneuv == 2){
-                // If perfect rv maneuver, update the final position
-                true_final_state.x = true_final_state.x - est_final_state.x;
-                true_final_state.y = true_final_state.y - est_final_state.y;
-                true_final_state.z = true_final_state.z - est_final_state.z;
+                // If perfect rv maneuver, update the final position to isolate 
+                // errors due to the guidance system. All errors in the guidance
+                // system are from the difference of the true final state and the
+                // estimated state. These errors are shifted to be over the aimpoint
+                // for ease of plotting and analysis.
+                true_final_state.x = run_params->x_aim + (true_final_state.x - est_final_state.x);
+                true_final_state.y = run_params->y_aim + (true_final_state.y - est_final_state.y);
+                true_final_state.z = run_params->z_aim + (true_final_state.z - est_final_state.z);
             }
             if (traj_output == 1){
                 // Write the final state to the trajectory file
@@ -678,8 +681,8 @@ void optimize_thrust_angles(double aim_lat, double aim_lon, double launch_lat, d
     float tol = 1e-6f;
     float xmin, fmin;
     fmin = brent(ax, bx, cx, aimpoint_error_wrapper, tol, &xmin);
-    if (fmin > 100) {
-        printf("Warning: Aimpoint error is high: %fm > 100m\n", fmin);
+    if (fmin > 10) {
+        printf("Warning: Aimpoint error is high: %fm > 10m\n", fmin);
     }
 }
 
@@ -772,6 +775,7 @@ impact_data mc_run(runparams run_params){
     if (!get_thrust_angle(&run_params)) {
         return impact_data;
     }
+    printf("Thrust angles (radians): theta_lat = %f, theta_long = %f\n", run_params.theta_lat, run_params.theta_long);
 
     // Initialize the variables
     int num_runs = run_params.num_runs;

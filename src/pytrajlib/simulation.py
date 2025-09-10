@@ -314,6 +314,7 @@ def add_arguments_to_parser(parser):
         "rv_maneuv": f"If set to 0, there is no additional maneuverability. If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability (default: {run_params['rv_maneuv']}). rv_maneuv > 0 requires rv_type=1 for a maneuverable vehicle.",
         "rv_type": f"0 for ballistic reentry vehicle, 1 for maneuverable reentry vehicle (default: {run_params.get('rv_type', 0)})",
         "reentry_vel": f"Reentry velocity (m/s) for reentry only simulation (run_type = 1) (default: {run_params['reentry_vel']})",
+        "reentry_angle": f"Reentry angle in x-z plane from z-axis for reentry only simulation (run_type = 1) (default: {run_params['reentry_angle']})",
         "deflection_time": f"Deflection time (s) for control surfaces (default: {run_params['deflection_time']})",
         "booster_type": f"0 for MMIII, 1 for SCUD, 2 for SCUD-ER, 3 for GBSD, 4 for D5, 5 for Mock (default: {run_params['booster_type']}). You can also specify by name: MMIII, SCUD, SCUD-ER, GBSD, D5, MOCK.",
         "actuator_force": f"Actuator max force in kilonewtons, used for maneuverability (default {run_params['actuator_force']})",

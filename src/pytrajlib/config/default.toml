@@ -37,7 +37,9 @@ ins_nav = 1
 # If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability
 rv_maneuv = 0
 # Reentry velocity (m/s) for reentry only simulation (run_type = 1)
-reentry_vel = 7500
+reentry_vel = 7200
+# Reentry angle in x-z plane from z-axis for reentry only simulation (run_type = 1)
+reentry_angle = 0
 
 [VEHICLE]
 rv_type = 0
