@@ -229,8 +229,12 @@ TEST(maneuverability, reentry_lift){
     a_command.y = 0;
     a_command.z = 0;
 
+    // Step function anomaly timer (unused in this test, but required for the function signature)
+    double step_timer = 0; // Timer for the step function
+
+
     // Update the lift
-    reentry_lift_drag(&run_params, &true_state, &a_command, &atm_cond, &vehicle, 0.1);
+    reentry_lift_drag(&run_params, &true_state, &a_command, &atm_cond, &vehicle, 0.1, &step_timer);
 
     // Verify that the lift is unchanged when the command is zero and the current lift is zero
     REQUIRE_EQ(true_state.ax_lift, 0);
@@ -246,7 +250,7 @@ TEST(maneuverability, reentry_lift){
     true_state.ay_lift = 1;
     true_state.az_lift = 1;
 
-    reentry_lift_drag(&run_params, &true_state, &a_command, &atm_cond, &vehicle, 0.1);
+    reentry_lift_drag(&run_params, &true_state, &a_command, &atm_cond, &vehicle, 0.1, &step_timer);
     
     // Verify that the lift is updated correctly
     REQUIRE_LT(true_state.ax_lift, 1);
@@ -268,7 +272,7 @@ TEST(maneuverability, reentry_lift){
 
     a_command = prop_nav(&run_params, &true_state);
     // Update the lift with the commanded acceleration
-    reentry_lift_drag(&run_params, &true_state, &a_command, &atm_cond, &vehicle, 0.1);
+    reentry_lift_drag(&run_params, &true_state, &a_command, &atm_cond, &vehicle, 0.1, &step_timer);
     double a_dot_v = a_command.x * true_state.vx + a_command.y * true_state.vy + a_command.z * true_state.vz;
     double a_com_dot_a_lift = a_command.x * true_state.ax_lift + a_command.y * true_state.ay_lift + a_command.z * true_state.az_lift;
     double a_lift_norm = sqrt(true_state.ax_lift * true_state.ax_lift + true_state.ay_lift * true_state.ay_lift + true_state.az_lift * true_state.az_lift);
@@ -334,7 +338,7 @@ TEST(maneuverability, reentry_drag){
     state.ay_thrust = 0;
     state.az_thrust = 0;
 
-    reentry_lift_drag(&run_params, &state, &a_command, &atm_cond, &vehicle, 0.1);
+    reentry_lift_drag(&run_params, &state, &a_command, &atm_cond, &vehicle, 0.1, &step_timer);
 
     // Check that the drag acceleration components are zero
     REQUIRE_LT(state.ax_drag, 1e-6);
@@ -355,7 +359,7 @@ TEST(maneuverability, reentry_drag){
     state.ay_lift = 0;
     state.az_lift = 0;
     
-    reentry_lift_drag(&run_params, &state, &a_command, &atm_cond, &vehicle, 0.1);
+    reentry_lift_drag(&run_params, &state, &a_command, &atm_cond, &vehicle, 0.1, &step_timer);
 
     REQUIRE_LT(state.ax_drag, 1e-6);
     REQUIRE_LT(state.ay_drag, 1e-6);
@@ -375,7 +379,7 @@ TEST(maneuverability, reentry_drag){
     state.ay_lift = 0;
     state.az_lift = 0;
 
-    reentry_lift_drag(&run_params, &state, &a_command, &atm_cond, &vehicle, 0.1);
+    reentry_lift_drag(&run_params, &state, &a_command, &atm_cond, &vehicle, 0.1, &step_timer);
 
     REQUIRE_NE(state.ax_drag, 0);
     REQUIRE_NE(state.ay_drag, 0);
@@ -396,7 +400,7 @@ TEST(maneuverability, reentry_drag){
     state.ay_lift = 0;
     state.az_lift = 0;
 
-    reentry_lift_drag(&run_params, &state, &a_command, &atm_cond, &vehicle, 0.1);
+    reentry_lift_drag(&run_params, &state, &a_command, &atm_cond, &vehicle, 0.1, &step_timer);
 
     REQUIRE_LT(state.ax_drag, 0);
     REQUIRE_EQ(state.ay_drag, 0);

@@ -415,8 +415,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             cart_vector a_command = prop_nav(run_params, &new_est_state);
 
             // Calculate the aerodynamic drag and lift
-            reentry_lift_drag(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step);
-            reentry_lift_drag(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step);
+            reentry_lift_drag(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step, &step_timer);
+            reentry_lift_drag(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step, &step_timer);
             
             a_command_total = sqrt(pow(a_command.x, 2) + pow(a_command.y, 2) + pow(a_command.z, 2));
             a_lift_total = sqrt(pow(new_true_state.ax_lift, 2) + pow(new_true_state.ay_lift, 2) + pow(new_true_state.az_lift, 2));
@@ -425,8 +425,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         // Branch 3: Reentry phase, drag only
         else if (run_params->rv_maneuv == 0){
             // Calculate the aerodynamic drag only
-            reentry_drag(run_params, vehicle, &true_atm_cond, &new_true_state, &step_timer);
-            reentry_drag(run_params, vehicle, &est_atm_cond, &new_est_state, &step_timer);
+            reentry_drag(run_params, vehicle, &true_atm_cond, &new_true_state);
+            reentry_drag(run_params, vehicle, &est_atm_cond, &new_est_state);
         }
 
         // Calculate the total acceleration components

@@ -116,7 +116,46 @@ state perfect_maneuv(state *true_state, state *estimated_state, state *desired_s
     return updated_state;
 }
 
-void reentry_lift_drag(runparams *run_params, state *state, cart_vector *a_command, atm_cond *atm_cond, vehicle *vehicle, double time_step){
+
+void add_anomalous_lift_forces(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, state *state, double *step_timer, double v_rel_mag) {
+    // Add anomalous lift forces
+    double dynamic_pressure = 0.5 * atm_cond->density * v_rel_mag * v_rel_mag; // dynamic pressure in Pascals (N/m^2)
+    // printf("Dynamic pressure: %f\n", dynamic_pressure);
+        // printf("run_params->cl_pert: %f\n", run_params->cl_pert);
+
+    // Update the drag based on a perturbed coefficient of lift
+    state->ay_drag = state->ay_drag + run_params->cl_pert * dynamic_pressure * vehicle->rv.rv_area/vehicle->current_mass; // add lift in the y-direction for reentry vehicles
+
+    if (run_params->step_acc_mag != 0){
+        double step_acc_duration = run_params->step_acc_dur;
+        
+        // If the step acceleration duration is negative, it means that the step duration is based on the time constant
+        if (run_params->step_acc_dur < 0){
+            double time_constant = rv_time_constant(vehicle, state, atm_cond);
+            step_acc_duration = time_constant/M_PI_2; // set the step duration based on the time constant
+        }
+        if ((get_altitude(state->x, state->y, state->z) < run_params->step_acc_hgt) && (*step_timer < step_acc_duration)) {
+            // start timer
+            // printf("Time constant: %f seconds\n", time_constant);
+
+            // if negative step_acc_mag, it means that the step acceleration duration is based on the dynamic pressure at the current altitude and velocity
+            if (run_params->step_acc_mag < 0){
+                // If the step acceleration magnitude is negative, it means that the step acceleration is based on the dynamic pressure
+                run_params->step_acc_mag = 0.031 * dynamic_pressure * vehicle->rv.rv_radius * vehicle->rv.rv_length / vehicle->current_mass; // set the step acceleration magnitude based on the dynamic pressure
+                printf("Step acceleration magnitude set to: %f m/s^2\n", run_params->step_acc_mag);
+                printf("Anomaly impulse: %f Ns\n", run_params->step_acc_mag * step_acc_duration);
+            }
+
+            *step_timer += run_params->time_step_reentry; // increment the timer by the time step
+            // printf("Step timer: %f seconds\n", *step_timer);
+            // apply step function
+            state->ay_drag += run_params->step_acc_mag;
+            printf("Applying step function anomaly: %f at altitude: %f and time: %f\n", run_params->step_acc_mag, get_altitude(state->x, state->y, state->z), *step_timer);
+        }
+    }
+}
+
+void reentry_lift_drag(runparams *run_params, state *state, cart_vector *a_command, atm_cond *atm_cond, vehicle *vehicle, double time_step, double *step_timer){
     /*
     Simulates maneuverability of a reentry vehicle by applying a commanded acceleration vector with a time delay and realistic atmospheric model
 
@@ -134,6 +173,9 @@ void reentry_lift_drag(runparams *run_params, state *state, cart_vector *a_comma
             pointer to the vehicle struct
         time_step: double
             time step for the simulation
+        step_timer: double *
+            pointer to the step timer. The step timer keeps track of elapsed time
+            for anomalous accelerations because they only last for step_acc_duration.
     */
 
     // First, get the lift acceleration
@@ -323,6 +365,12 @@ void reentry_lift_drag(runparams *run_params, state *state, cart_vector *a_comma
     state->ax_drag = -a_drag_mag * v_rel[0] / v_rel_mag;
     state->ay_drag = -a_drag_mag * v_rel[1] / v_rel_mag;
     state->az_drag = -a_drag_mag * v_rel[2] / v_rel_mag;
+
+
+    // Add anomalous lift forces for reentry-only simulations
+    if (run_params->run_type == 1){
+        add_anomalous_lift_forces(run_params, vehicle, atm_cond, state, step_timer, v_rel_mag);
+    }
 
 }
 

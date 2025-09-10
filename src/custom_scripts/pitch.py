@@ -1,4 +1,4 @@
-# Script to analyze relationship between CEP and reentry angle and velocity
+# Script to analyze relationship between CEP and pitch excitations
 import matplotlib.pyplot as plt
 import numpy as np
 import scienceplots
@@ -22,33 +22,37 @@ params = {
 plt.rcParams.update(params)
 
 
-reentry_angles = np.logspace(-5, np.log10(np.pi / 10), 20)
+heights = np.logspace(0, np.log10(5e5), 100)
 reentry_velocities = [1e2, 1e3, 5e3, 7.5e3, 1e4]
 
 run_params = simulation.get_run_params("input/reentry.toml")
 run_params["num_runs"] = 100
+# run_params["initial_vel_error"] = 1e-2
+# run_params["initial_pos_error"] = 0.01
 
 for reentry_vel in reentry_velocities:
     ceps = []
-    for reentry_angle in reentry_angles:
+    for height in heights:
         print(
-            f"Running simulation for reentry angle {reentry_angle:.2e} rad and velocity {reentry_vel:.2e} m/s"
+            f"Running simulation for height {height:.2e} rad and velocity {reentry_vel:.2e} m/s"
         )
         run_params["reentry_vel"] = reentry_vel
-        run_params["reentry_angle"] = reentry_angle
+        run_params["step_acc_hgt"] = height
 
         impact_data = simulation.run(run_params)
 
         cep = utils.get_cep(run_params, impact_data)
         ceps.append(cep)
 
-    plt.plot(reentry_angles, ceps, label=f"v={reentry_vel / 1e3:.1f} km/s")
+    plt.plot(heights, ceps, label=f"v={reentry_vel / 1e3:.1f} km/s")
 
 plt.xscale("log")
 plt.yscale("log")
-plt.xlabel("Reentry Angle (rad)")
+plt.xlabel("Altitude of excitation (m)")
 plt.ylabel("CEP (m)")
-plt.title("Sensitivity to Reentry Angle and Velocity")
+plt.title("Pitching Mode Excitation")
 plt.legend()
 plt.tight_layout()
-plt.savefig("./output/" + "angle_vel.pdf")
+filepath = "./output/" + "pitch.pdf"
+plt.savefig(filepath)
+print("Saved to", filepath)
