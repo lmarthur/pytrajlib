@@ -25,8 +25,8 @@ plt.rcParams.update(params)
 cl_perturbations = np.logspace(-5, -3, 100)
 
 run_params = simulation.get_run_params("input/reentry.toml")
-run_params["num_runs"] = 1000
-run_params["time_step_reentry"] = 0.001
+# run_params["num_runs"] = 100
+# run_params["time_step_reentry"] = 0.01
 
 ceps = []
 for cl_pert in cl_perturbations:

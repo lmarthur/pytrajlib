@@ -26,7 +26,8 @@ reentry_angles = np.logspace(-5, np.log10(np.pi / 10), 20)
 reentry_velocities = [1e2, 1e3, 5e3, 7.5e3, 1e4]
 
 run_params = simulation.get_run_params("input/reentry.toml")
-run_params["num_runs"] = 100
+# run_params["num_runs"] = 100
+# run_params["time_step_reentry"] = 0.01
 
 for reentry_vel in reentry_velocities:
     ceps = []
