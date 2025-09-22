@@ -22,7 +22,7 @@ params = {
 plt.rcParams.update(params)
 
 
-reentry_angles = np.logspace(-5, np.log10(np.pi / 10), 20)
+reentry_angles = np.linspace(np.pi / 2, np.pi / 2 - 0.1, 100)
 reentry_velocities = [1e2, 1e3, 5e3, 7.5e3, 1e4]
 
 run_params = simulation.get_run_params("input/reentry.toml")
@@ -45,11 +45,13 @@ for reentry_vel in reentry_velocities:
 
     plt.plot(reentry_angles, ceps, label=f"v={reentry_vel / 1e3:.1f} km/s")
 
-plt.xscale("log")
+# plt.xscale("log")
 plt.yscale("log")
 plt.xlabel("Reentry Angle (rad)")
 plt.ylabel("CEP (m)")
 plt.title("Sensitivity to Reentry Angle and Velocity")
 plt.legend()
 plt.tight_layout()
-plt.savefig("./output/" + "angle_vel.pdf")
+path = "./output/" + "angle_vel.pdf"
+plt.savefig(path)
+print("Saved to", path)

@@ -9,7 +9,7 @@ atm_profile_path = ./input/atmprofiles.txt
 mean_atm_profile_path = ./input/mean_atmprofiles.txt
 num_runs = 1000
 time_step_main = 1.0
-time_step_reentry = 0.0001
+time_step_reentry = 1e-5
 traj_output = 0
 impact_output = 0
 x_launch = 6371e3
@@ -34,9 +34,10 @@ ins_nav = 1
 # If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability
 rv_maneuv = 1
 # Reentry velocity (m/s) for reentry only simulation (run_type = 1)
-reentry_vel = 7200
-# Reentry angle in x-z plane from z-axis for reentry only simulation (run_type = 1)
-reentry_angle = 0
+reentry_vel = 7500
+# Reentry angle from right-triangle estimate of local horizon. pi/2 = 1.57 is reentry
+# directly above aimpoint
+reentry_angle = 1.57079
 
 [VEHICLE]
 rv_type = 1
@@ -66,3 +67,5 @@ step_acc_mag = 0
 step_acc_hgt = 0
 # Step function acceleration duration--if < 0, use variable duration based on time constant--(s)
 step_acc_dur = 0
+# Perturbation of the angle of attack
+aoa_pert = 0

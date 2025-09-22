@@ -22,7 +22,7 @@ params = {
 plt.rcParams.update(params)
 
 
-init_pos_errs = np.logspace(-2, 3, 100)
+init_pos_errs = np.logspace(-2, 6, 100)
 
 run_params = simulation.get_run_params("input/reentry.toml")
 # run_params["num_runs"] = 100

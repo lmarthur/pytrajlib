@@ -19,7 +19,7 @@ y_launch = 0.0
 z_launch = 0.0
 x_aim = -3.246651e6
 y_aim = 5.481688e6
-z_aim = -6.187522
+z_aim = 0
 # Note that the thrust angle is currently superseded by the launch and aimpoints
 theta_long = 1.04719755
 theta_lat = 0.0
@@ -61,6 +61,8 @@ gyro_bias_stability = 1e-8
 gyro_noise = 1e-8
 gnss_noise = 0.0
 cl_pert = 0.0
+# Perturbation of the angle of attack
+aoa_pert = 0.0
 # Step function acceleration magnitude (m/s^2)
 step_acc_mag = 0.0
 # Step function acceleration height (m)
