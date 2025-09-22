@@ -321,7 +321,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
     */
 
     // Initialize the variables and structures
-    int max_steps = 2500000;
+    int max_steps = 25000000;
 
     grav true_grav = init_grav(run_params);
     grav est_grav = init_grav(run_params);
