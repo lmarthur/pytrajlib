@@ -60,8 +60,6 @@ gyro_bias_stability = 0.0
 gyro_noise = 0.0
 gnss_noise = 0.0
 cl_pert = 0.0
-# Perturbation of the angle of attack
-aoa_pert = 0.0
 # Step function acceleration magnitude (m/s^2)
 step_acc_mag = 0.0
 # Step function acceleration height (m)

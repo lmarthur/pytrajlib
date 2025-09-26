@@ -67,5 +67,3 @@ step_acc_mag = 0
 step_acc_hgt = 0
 # Step function acceleration duration--if < 0, use variable duration based on time constant--(s)
 step_acc_dur = 0
-# Perturbation of the angle of attack
-aoa_pert = 0
