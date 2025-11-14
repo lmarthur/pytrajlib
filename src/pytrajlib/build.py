@@ -40,8 +40,13 @@ ffibuilder.cdef(
         int gnss_nav; 
         int ins_nav; 
         int rv_maneuv; 
-        double reentry_vel; 
-        double reentry_angle;
+        int rv_type;
+        double vx_reentry; 
+        double vy_reentry; 
+        double vz_reentry;
+        double x_reentry; 
+        double y_reentry; 
+        double z_reentry;
 
         int booster_type;
         double deflection_time; 

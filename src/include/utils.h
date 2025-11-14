@@ -35,8 +35,12 @@ typedef struct runparams{
     int ins_nav; // flag to include INS navigation
     int rv_maneuv; // flag to include guidance during the reentry phase
     int rv_type; // type of reentry vehicle (0: ballistic, 1: maneuverable)
-    double reentry_vel; // reentry velocity in meters per second
-    double reentry_angle; // reentry angle in x-z plane from z-axis in radians
+    double vx_reentry; // reentry x-velocity in meters per second
+    double vy_reentry; // reentry y-velocity in meters per second
+    double vz_reentry; // reentry z-velocity in meters per second
+    double x_reentry; // reentry x-position in meters
+    double y_reentry; // reentry y-position in meters
+    double z_reentry; // reentry z-position in meters
 
     int booster_type; // type of booster (0: MMIII, 1: SCUD, 2: SCUD-ER, 3: GBSD, 4: D5, 5: Mock)
     double deflection_time; // time to make full flap deflection in seconds, used for maneuverability
@@ -191,7 +195,8 @@ void print_config(runparams *run_params){
     printf("GNSS navigation: %d\n", run_params->gnss_nav);
     printf("INS navigation: %d\n", run_params->ins_nav);
     printf("Reentry phase guidance: %d\n", run_params->rv_maneuv);
-    printf("Reentry velocity: %f\n", run_params->reentry_vel);
+    printf("Reentry velocities (vx, vy, vz): %f, %f, %f\n", run_params->vx_reentry, run_params->vy_reentry, run_params->vz_reentry);
+    printf("Reentry position (x, y, z): %f, %f, %f\n", run_params->x_reentry, run_params->y_reentry, run_params->z_reentry);
 
     printf("Flap deflection time: %f\n", run_params->deflection_time);
     printf("Actuator force: %f\n", run_params->actuator_force);
@@ -368,6 +373,41 @@ void get_location(double bearing, double distance, double *start_location, doubl
                                     cos(angular_distance) - sin(start_lat) * sin(end_lat));
     end_location[0] = end_lat;
     end_location[1] = end_lon;
+}
+
+void cross_product(cart_vector *a, cart_vector *b, cart_vector *c){
+    /*
+    Calculate the cross product of two 3-vectors a and b, store the result in c
+
+    INPUTS:
+    ----------
+        a: cart_vector *
+            pointer to the first vector
+        b: cart_vector *
+            pointer to the second vector
+        c: cart_vector *
+            pointer to the result vector
+    */
+
+    c->x = a->y * b->z - a->z * b->y;
+    c->y = a->z * b->x - a->x * b->z;
+    c->z = a->x * b->y - a->y * b->x;
+}
+
+double dot_product(cart_vector a, cart_vector b){
+    /*
+    Calculate the dot product of two 3-vectors a and b
+    INPUTS:
+    ----------
+        a: cart_vector *
+            pointer to the first vector
+        b: cart_vector *
+            pointer to the second vector
+    OUTPUTS:
+    ---------- 
+        double: dot product of a and b
+    */
+    return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
 #endif

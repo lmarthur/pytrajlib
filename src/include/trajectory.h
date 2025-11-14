@@ -58,32 +58,16 @@ state init_true_state(runparams *run_params){
     // branch for initializing reentry only run
     if (run_params->run_type == 1){
         state.t = 0;
-        state.z = run_params->initial_pos_error * ran_gaussian(1);
-        state.vz = run_params->initial_vel_error * ran_gaussian(1);
+        
+        // Initialize position from reentry parameters
+        state.x = run_params->x_reentry + run_params->initial_pos_error * ran_gaussian(1);
+        state.y = run_params->y_reentry + run_params->initial_pos_error * ran_gaussian(1);
+        state.z = run_params->z_reentry + run_params->initial_pos_error * ran_gaussian(1);
 
-        // If the reentry angle is pi/2, drop the vehicle from 500km directly above the
-        // aimpoint. Otherwise, set position to form a right triangle with 500km
-        // above the aimpoint and the aimpoint.
-        if (fabs(run_params->reentry_angle - M_PI_2) > 1e-5){
-            state.x = 6371e3 + 500e3;
-            state.y = 6371e3 / tan(run_params->reentry_angle);
-
-            state.vx = -run_params->reentry_vel * sin(run_params->reentry_angle);
-            state.vy = -run_params->reentry_vel * cos(run_params->reentry_angle);
-            printf("vx, vy: %f, %f %f\n", state.vx, state.vy, sqrt(pow(state.vx, 2) + pow(state.vy, 2)));
-        }
-        else {
-            state.x = 6371e3 + 500e3;
-            state.y = 0;
-
-            state.vx = -run_params->reentry_vel;
-            state.vy = 0;
-            state.vz = 0;
-        }
-
-        state.vx += run_params->initial_vel_error * ran_gaussian(1);
-        state.vy += run_params->initial_vel_error * ran_gaussian(1);
-        state.vz += run_params->initial_vel_error * ran_gaussian(1);
+        // Initialize velocity from reentry parameters
+        state.vx = run_params->vx_reentry + run_params->initial_vel_error * ran_gaussian(1);
+        state.vy = run_params->vy_reentry + run_params->initial_vel_error * ran_gaussian(1);
+        state.vz = run_params->vz_reentry + run_params->initial_vel_error * ran_gaussian(1);
     }
     
     double initial_rot_pert = run_params->initial_angle_error * ran_gaussian(1);
@@ -141,26 +125,16 @@ state init_est_state(runparams *run_params){
     // branch for initializing reentry only run
     if (run_params->run_type == 1){
         state.t = 0;
-        state.z = 0;
-        state.vz = 0;
+        
+        // Initialize position from reentry parameters
+        state.x = run_params->x_reentry;
+        state.y = run_params->y_reentry;
+        state.z = run_params->z_reentry;
 
-        // If the reentry angle is pi/2, drop the vehicle from 500km directly above the
-        // aimpoint. Otherwise, set position to form a right triangle with 500km
-        // above the aimpoint and the aimpoint.
-        if (fabs(run_params->reentry_angle - M_PI_2) > 1e-5){
-            state.x = 6371e3 + 500e3;
-            state.y = 6371e3 / tan(run_params->reentry_angle);
-
-            state.vx = -run_params->reentry_vel * sin(run_params->reentry_angle);
-            state.vy = -run_params->reentry_vel * cos(run_params->reentry_angle);
-        }
-        else {
-            state.x = 6371e3 + 500e3;
-            state.y = 0;
-
-            state.vx = -run_params->reentry_vel;
-            state.vy = 0;
-        }
+        // Initialize velocity from reentry parameters
+        state.vx = run_params->vx_reentry;
+        state.vy = run_params->vy_reentry;
+        state.vz = run_params->vz_reentry;
     }
 
     state.theta_long = run_params->theta_long;

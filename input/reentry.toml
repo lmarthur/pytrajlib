@@ -33,11 +33,15 @@ gnss_nav = 1
 ins_nav = 1
 # If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability
 rv_maneuv = 1
-# Reentry velocity (m/s) for reentry only simulation (run_type = 1)
-reentry_vel = 7500
-# Reentry angle from right-triangle estimate of local horizon. pi/2 = 1.57 is reentry
-# directly above aimpoint
-reentry_angle = 1.57079
+# Reentry velocity components (m/s) for reentry only simulation (run_type = 1)
+vx_reentry = -7500
+vy_reentry = 0
+vz_reentry = 0
+# Reentry position components (m) for reentry only simulation (run_type = 1)
+# 200 km above Earth
+x_reentry = 6571e3
+y_reentry = 0
+z_reentry = 0
 
 [VEHICLE]
 rv_type = 1
