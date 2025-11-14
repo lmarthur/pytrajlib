@@ -5,7 +5,7 @@ Press, William H., ed. Numerical Recipes in C: The Art of Scientific Computing. 
 #define BRENT_H
 #include <math.h> 
 #include "nrutil.h" 
-#define ITMAX 100 
+#define ITMAX 1000
 #define CGOLD 0.3819660 
 #define ZEPS 1.0e-10  
 // Here ITMAX is the maximum allowed number of iterations; CGOLD is the golden ratio; 

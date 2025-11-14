@@ -405,7 +405,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
 
         }
         // Branch 1: Boost phase
-        if (during_boost_phase){
+        else if (during_boost_phase){
             // Calculate the aerodynamic drag
             boost_drag(run_params, vehicle, &true_atm_cond, &new_true_state);
             boost_drag(run_params, vehicle, &est_atm_cond, &new_est_state);
@@ -488,7 +488,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         if (new_altitude < 0){
             state true_final_state = impact_linterp(&old_true_state, &new_true_state);
             state est_final_state = impact_linterp(&old_est_state, &new_est_state);
-            state des_final_state = impact_linterp(&old_des_state, &new_des_state);
+
             // Add coriolis effect based on the latitude and the impact time error
             double lat = ran_flat(-M_PI/2, M_PI/2);
             double lon = ran_flat(-M_PI, M_PI);
@@ -679,15 +679,15 @@ void optimize_thrust_angles(double aim_lat, double aim_lon, double launch_lat, d
     // North component
     global_run_params->north = cos(launch_lat) * sin(aim_lat) - sin(launch_lat) * cos(aim_lat) * cos(lon_diff);
 
-    float ax = 0.5f, bx = 1.5f, cx;
+    float ax = 0.5f, bx = 2.5f, cx;
     float fa, fb, fc;
     mnbrak(&ax, &bx, &cx, &fa, &fb, &fc, aimpoint_error_wrapper);
 
-    float tol = 1e-6f;
+    float tol = 1e-7f;
     float xmin, fmin;
     fmin = brent(ax, bx, cx, aimpoint_error_wrapper, tol, &xmin);
     if (fmin > 10) {
-        printf("Warning: Aimpoint error is high: %fm > 10m\n", fmin);
+        printf("Warning: Aimpoint error is high: %fm > 10m xmin: %f\n", fmin, xmin);
     }
 }
 
@@ -777,9 +777,12 @@ impact_data mc_run(runparams run_params){
     // print_config(&run_params);
 
     // Sets theta lat and theta long based on the user-provided launch and aimpoints
-    if (!get_thrust_angle(&run_params)) {
-        return impact_data;
+    if (run_params.run_type != 1) {
+        if (!get_thrust_angle(&run_params)) {
+            return impact_data;
+        }
     }
+
     printf("Thrust angles (radians): theta_lat = %f, theta_long = %f\n", run_params.theta_lat, run_params.theta_long);
 
     // Initialize the variables
@@ -803,8 +806,12 @@ impact_data mc_run(runparams run_params){
     if (run_params.traj_output == 2){
         run_params.traj_output = 1;
     }
-    for (int i = 0; i < num_runs; i++){
 
+    // Reset step acceleration angle because it is overwritten when adding the 
+    // step acceleration
+    double original_step_acc_angle = run_params.step_acc_angle;
+    for (int i = 0; i < num_runs; i++){
+        run_params.step_acc_angle = original_step_acc_angle;
         vehicle vehicle;
         if (run_params.run_type == 0){
             vehicle = init_vehicle(run_params.booster_type, run_params.rv_type);

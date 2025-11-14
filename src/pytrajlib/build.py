@@ -63,10 +63,10 @@ ffibuilder.cdef(
         double gyro_noise; 
         double gnss_noise; 
         double cl_pert; 
-        double aoa_pert;
         double step_acc_mag; 
         double step_acc_hgt; 
         double step_acc_dur; 
+        double step_acc_angle;
     };
     struct cart_vector{
         double x;

@@ -327,7 +327,9 @@ def get_local_impact(run_params, impact_data):
     return impact_x_local, impact_y_local
 
 
-def get_cep_miss_distance_from_local_impact(impact_x_local, impact_y_local):
+def get_cep_miss_distance_from_local_impact(
+    impact_x_local, impact_y_local, quantile=0.5
+):
     """
     Calculate the circular error probable (CEP) from the local impact coordinates.
 
@@ -345,11 +347,11 @@ def get_cep_miss_distance_from_local_impact(impact_x_local, impact_y_local):
             The circular error probable.
     """
     miss_distance = np.sqrt(impact_x_local**2 + impact_y_local**2)
-    cep = np.percentile(miss_distance, 50)
+    cep = np.quantile(miss_distance, quantile)
     return miss_distance, cep
 
 
-def get_cep(run_params, impact_data):
+def get_cep(run_params, impact_data, quantile=0.5):
     """
     Calculate the circular error probable (CEP) from the impact data.
 
@@ -365,7 +367,9 @@ def get_cep(run_params, impact_data):
             The circular error probable.
     """
     impact_x_local, impact_y_local = get_local_impact(run_params, impact_data)
-    _, cep = get_cep_miss_distance_from_local_impact(impact_x_local, impact_y_local)
+    _, cep = get_cep_miss_distance_from_local_impact(
+        impact_x_local, impact_y_local, quantile
+    )
     return cep
 
 

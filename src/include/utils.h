@@ -57,11 +57,10 @@ typedef struct runparams{
     double gyro_noise; // gyro noise in rad/s/sqrt(s)
     double gnss_noise; // GNSS error in meters
     double cl_pert; // Coefficient of lift perturbation 
-    double aoa_pert; // Angle of attack perturbation
     double step_acc_mag; // Step acceleration perturbation magnitude
     double step_acc_hgt; // Step acceleration perturbation height (altitude) in meters
     double step_acc_dur; // Step acceleration perturbation duration in seconds
-
+    double step_acc_angle; // Step acceleration perturbation angle in radians. 0 = along lift vector, -1 is single random direction for duration of run
 } runparams;
 
 // Create a globally accessible runparams to easily pass data between the functions
@@ -212,7 +211,6 @@ void print_config(runparams *run_params){
     printf("Gyro noise: %f\n", run_params->gyro_noise);
     printf("GNSS noise: %f\n", run_params->gnss_noise);
     printf("Coefficient of lift perturbation: %f\n", run_params->cl_pert);
-    printf("Angle of attack perturbation: %f\n", run_params->aoa_pert);
     printf("Step acceleration perturbation magnitude: %f\n", run_params->step_acc_mag);
     printf("Step acceleration perturbation height: %f\n", run_params->step_acc_hgt);
     printf("Step acceleration perturbation duration: %f\n", run_params->step_acc_dur);

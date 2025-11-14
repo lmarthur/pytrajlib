@@ -326,10 +326,10 @@ def add_arguments_to_parser(parser):
         "gyro_noise": f"Gyroscope noise in radians/s/sqrt(s) (default: {run_params['gyro_noise']})",
         "gnss_noise": f"GNSS noise in m (default: {run_params['gnss_noise']})",
         "cl_pert": f"Coefficient of lift perturbation {run_params['cl_pert']})",
-        "aoa_pert": f"Angle of attack perturbation (default: {run_params['aoa_pert']})",
         "step_acc_mag": f"Step acceleration perturbation magnitude for reentry simulation run_type = 1 (default: {run_params['step_acc_mag']})",
         "step_acc_hgt": f"Step acceleration perturbation height (altitude) in meters for reentry simulation run_type = 1 (default: {run_params['step_acc_hgt']})",
         "step_acc_dur": f"Step acceleration perturbation duration in seconds for reentry simulation run_type = 1 (default: {run_params['step_acc_dur']})",
+        "step_acc_angle": f"Step acceleration perturbation angle (0 is in direction of lift vector; -1 is single random direction for duration of run) in radians for reentry simulation run_type = 1 (default: {run_params['step_acc_angle']})",
     }
 
     short_names = {
