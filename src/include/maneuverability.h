@@ -116,54 +116,50 @@ state perfect_maneuv(state *true_state, state *estimated_state, state *desired_s
     return updated_state;
 }
 
-
-void add_anomalous_lift_forces(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, state *state, double *step_timer, double v_rel[3], double v_rel_mag) {
+void add_anomalous_lift_forces(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, state *state, double *step_timer, double v_rel_mag) {
     /*
     Simulates trajectory anomalies by adding lift and drag forces for a specified
     duration.
 
-    Anomalies:
-    - Drag due to shear stress from asymmetric transition to turbulence caused by 
-        boundary layer excitations. The magnitude depends on the perturbed angle 
-        of attack. Duration and height are free parameters.
-    - Pitching mode excitations. The magnitude depends on the perturbed angle of 
-        attack. Duration depends on the time constant. Height is a free parameter.
-    - Asymmetric ablation modelled as a frozen perturbation to the lift coefficient.
     */
-    // Add anomalous lift forces
-    double dynamic_pressure = 0.5 * atm_cond->density * v_rel_mag * v_rel_mag; // dynamic pressure in Pascals (N/m^2)
-    // Update the drag based on a perturbed coefficient of lift
-    state->ay_drag = state->ay_drag + run_params->cl_pert * dynamic_pressure * vehicle->rv.rv_area/vehicle->current_mass; // add lift in the y-direction for reentry vehicles
-
-    if (run_params->step_acc_mag != 0){
-        double step_acc_duration = run_params->step_acc_dur;
+    if ((get_altitude(state->x, state->y, state->z) < run_params->step_acc_hgt) && (*step_timer < run_params->step_acc_dur)) {
+        double lift_magnitude = sqrt(state->ax_lift * state->ax_lift + state->ay_lift * state->ay_lift + state->az_lift * state->az_lift); // magnitude of the lift acceleration vector
+        *step_timer += run_params->time_step_reentry; // increment the timer by the time step
         
-        // If the step acceleration duration is negative, it means that the step duration is based on the time constant
-        if (run_params->step_acc_dur < 0){
-            double time_constant = rv_time_constant(vehicle, state, atm_cond);
-            step_acc_duration = time_constant/M_PI_2; // set the step duration based on the time constant
+        // Angle from lift
+        double step_acc_angle;
+        if (run_params->step_acc_angle < 0) {
+            step_acc_angle = ran_flat(0, 2 * M_PI);
+            run_params->step_acc_angle = step_acc_angle;
+            // printf("angle of anomaly: %f degrees\n", step_acc_angle * 180 / M_PI);
         }
-        if ((get_altitude(state->x, state->y, state->z) < run_params->step_acc_hgt) && (*step_timer < step_acc_duration)) {
-            // if negative step_acc_mag, it means that the step acceleration duration is based on the dynamic pressure at the current altitude and velocity
-            if (run_params->step_acc_mag < 0){
-                // Calculate lift and drag coefficients based on perturbed angle of attack
-                double c_d = vehicle->rv.c_d_alpha * run_params->aoa_pert;
-                double c_l = vehicle->rv.c_l_alpha * run_params->aoa_pert;
-
-                // Update drag and lift
-                double a_drag_mag = dynamic_pressure * vehicle->rv.rv_area * c_d / vehicle->current_mass;
-                double a_lift_mag = dynamic_pressure * vehicle->rv.rv_area * c_l / vehicle->current_mass;
-                
-                double theta = atan2(v_rel[1], v_rel[0]);
-                state->ax_drag -= cos(theta) * a_drag_mag; 
-                state->ay_drag -= sin(theta) * a_drag_mag;
-
-                state->ax_lift -= sin(theta) * a_lift_mag;
-                state->ay_lift += cos(theta) * a_lift_mag;
-            }
-
-            *step_timer += run_params->time_step_reentry; // increment the timer by the time step
+        else {
+            step_acc_angle = run_params->step_acc_angle;
         }
+
+        cart_vector drag = {state->ax_drag, state->ay_drag, state->az_drag};
+        cart_vector lift = {state->ax_lift, state->ay_lift, state->az_lift};
+        double drag_mag = sqrt(dot_product(drag, drag));
+        
+        cart_vector drag_unit = {state->ax_drag / drag_mag, state->ay_drag / drag_mag, state->az_drag / drag_mag};
+        
+        // Anomaly in the direction of lift
+        double anomaly_lift_x = run_params->step_acc_mag * state->ax_lift / lift_magnitude;
+        double anomaly_lift_y = run_params->step_acc_mag * state->ay_lift / lift_magnitude;
+        double anomaly_lift_z = run_params->step_acc_mag * state->az_lift / lift_magnitude;
+
+        cart_vector anomaly = {anomaly_lift_x, anomaly_lift_y, anomaly_lift_z};
+        cart_vector drag_unit_cross_anomaly;
+        cross_product(&drag_unit, &anomaly, &drag_unit_cross_anomaly);
+        double drag_unit_dot_anomaly = dot_product(drag_unit, anomaly);
+
+        // Anomaly rotated around the unit vector in the drag direction using Rodrigues' rotation formula
+        double anomaly_x = anomaly_lift_x * cos(step_acc_angle) + drag_unit_cross_anomaly.x * sin(step_acc_angle) + drag_unit.x * drag_unit_dot_anomaly * (1 - cos(step_acc_angle));
+        double anomaly_y = anomaly_lift_y * cos(step_acc_angle) + drag_unit_cross_anomaly.y * sin(step_acc_angle) + drag_unit.y * drag_unit_dot_anomaly * (1 - cos(step_acc_angle));
+        double anomaly_z = anomaly_lift_z * cos(step_acc_angle) + drag_unit_cross_anomaly.z * sin(step_acc_angle) + drag_unit.z * drag_unit_dot_anomaly * (1 - cos(step_acc_angle));
+        state->ax_drag += anomaly_x;
+        state->ay_drag += anomaly_y;
+        state->az_drag += anomaly_z;
     }
 }
 
@@ -379,10 +375,10 @@ void reentry_lift_drag(runparams *run_params, state *state, cart_vector *a_comma
     state->az_drag = -a_drag_mag * v_rel[2] / v_rel_mag;
 
 
-    // Add anomalous lift forces for reentry-only simulations
-    if (run_params->run_type == 1){
-        add_anomalous_lift_forces(run_params, vehicle, atm_cond, state, step_timer, v_rel, v_rel_mag);
-    }
+    // // Add anomalous lift forces for reentry-only simulations
+    // if (run_params->run_type == 1){
+    //     add_anomalous_lift_forces(run_params, vehicle, atm_cond, state, step_timer, v_rel_mag);
+    // }
 
 }
 
