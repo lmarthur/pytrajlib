@@ -19,7 +19,7 @@
 
 // Define a constant upper limit for the number of Monte Carlo runs
 #define MAX_RUNS 10000
-
+#define USE_NEW_LIFT 1
 // Define a struct to store impact data
 typedef struct impact_data{
     // Impact data
@@ -93,6 +93,10 @@ state init_true_state(runparams *run_params){
     state.ay_total = 0;
     state.az_total = 0;
 
+    state.d_a_lift_x_dt = 0;
+    state.d_a_lift_y_dt = 0;
+    state.d_a_lift_z_dt = 0;
+
     return state;
 }
 
@@ -157,6 +161,10 @@ state init_est_state(runparams *run_params){
     state.ax_total = 0;
     state.ay_total = 0;
     state.az_total = 0;
+
+    state.d_a_lift_x_dt = 0;
+    state.d_a_lift_y_dt = 0;
+    state.d_a_lift_z_dt = 0;
 
     return state;
 }
@@ -385,9 +393,11 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             new_true_state.ax_drag = 0;
             new_true_state.ay_drag = 0;
             new_true_state.az_drag = 0;
-            new_true_state.ax_lift = 0;
-            new_true_state.ay_lift = 0;
-            new_true_state.az_lift = 0;
+            if (USE_NEW_LIFT){
+                new_true_state.d_a_lift_x_dt = 0;
+                new_true_state.d_a_lift_y_dt = 0;
+                new_true_state.d_a_lift_z_dt = 0;
+            }
 
             new_est_state.ax_drag = 0;
             new_est_state.ay_drag = 0;
@@ -395,6 +405,11 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             new_est_state.ax_lift = 0;
             new_est_state.ay_lift = 0;
             new_est_state.az_lift = 0;
+            if (USE_NEW_LIFT){
+                new_est_state.d_a_lift_x_dt = 0;
+                new_est_state.d_a_lift_y_dt = 0;
+                new_est_state.d_a_lift_z_dt = 0;
+            }
 
             new_des_state.ax_drag = 0;
             new_des_state.ay_drag = 0;
@@ -402,7 +417,11 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             new_des_state.ax_lift = 0;
             new_des_state.ay_lift = 0;
             new_des_state.az_lift = 0;
-
+            if (USE_NEW_LIFT){
+                new_des_state.d_a_lift_x_dt = 0;
+                new_des_state.d_a_lift_y_dt = 0;
+                new_des_state.d_a_lift_z_dt = 0;
+            }
         }
         // Branch 1: Boost phase
         else if (during_boost_phase){
@@ -420,9 +439,15 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             cart_vector a_command = prop_nav(run_params, &new_est_state);
 
             // Calculate the aerodynamic drag and lift
-            reentry_lift_drag(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step, &step_timer);
-            reentry_lift_drag(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step, &step_timer);
-            
+            if (USE_NEW_LIFT){
+                reentry_lift_drag_dt(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step, &step_timer);
+                reentry_lift_drag_dt(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step, &step_timer);
+            }
+            else{
+                reentry_lift_drag(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step, &step_timer);
+                reentry_lift_drag(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step, &step_timer); 
+            }
+
             a_command_total = sqrt(pow(a_command.x, 2) + pow(a_command.y, 2) + pow(a_command.z, 2));
             a_lift_total = sqrt(pow(new_true_state.ax_lift, 2) + pow(new_true_state.ay_lift, 2) + pow(new_true_state.az_lift, 2));
 
@@ -474,11 +499,21 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         }
     
         // Perform a Runge-Kutta step
-        rk4step(&new_true_state, time_step);
-        rk4step(&new_est_state, time_step);
-        if (during_boost_phase) {
-            rk4step(&new_des_state, time_step);
+        if (USE_NEW_LIFT){
+            rk4step_withlift(&new_true_state, time_step);
+            rk4step_withlift(&new_est_state, time_step);
+            if (during_boost_phase) {
+                rk4step_withlift(&new_des_state, time_step);
+            }
         }
+        else{
+            rk4step(&new_true_state, time_step);
+            rk4step(&new_est_state, time_step);
+            if (during_boost_phase) {
+                rk4step(&new_des_state, time_step);
+            }
+        }
+
         // Update the mass of the vehicle
         update_mass(vehicle, new_true_state.t);
 

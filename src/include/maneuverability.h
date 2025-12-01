@@ -382,4 +382,191 @@ void reentry_lift_drag(runparams *run_params, state *state, cart_vector *a_comma
 
 }
 
+
+
+void reentry_lift_drag_dt(runparams *run_params, state *state, cart_vector *a_command, atm_cond *atm_cond, vehicle *vehicle, double time_step, double *step_timer){
+    /*
+    Simulates maneuverability of a reentry vehicle by applying a commanded acceleration vector with a time delay and realistic atmospheric model
+
+    INPUTS:
+    ----------
+        run_params: runparams *
+            pointer to the run parameters struct
+        state: state *
+            pointer to the state of the vehicle
+        a_command: cart_vector *
+            pointer to the commanded acceleration vector
+        atm_cond: atm_cond *
+            pointer to the atmospheric conditions
+        vehicle: vehicle *
+            pointer to the vehicle struct
+        time_step: double
+            time step for the simulation
+        step_timer: double *
+            pointer to the step timer. The step timer keeps track of elapsed time
+            for anomalous accelerations because they only last for step_acc_duration.
+    */
+
+    // First, get the lift acceleration
+
+    // Calculate the time constant of the vehicle
+    double time_constant = rv_time_constant(vehicle, state, atm_cond);
+    
+    double max_flap_force = run_params->actuator_force * run_params->gearing_ratio * 1000; // maximum flap force in N
+    double max_lift_force = vehicle->rv.c_l_alpha * max_flap_force * (vehicle->rv.x_flap-vehicle->rv.x_com) / (vehicle->rv.c_m_alpha * vehicle->rv.rv_length); // maximum lift force in N, based on moment arm and lift properties
+    double max_a_exec = max_lift_force / vehicle->rv.rv_mass; // maximum acceleration that can be executed by the flaps in m/s^2
+    double aoa_max = 10 * M_PI / 180; // maximum angle of attack in radians
+    double deflection_time = run_params->deflection_time * run_params->gearing_ratio; // time to reach maximum flap deflection (seconds), this should be defined in runparams
+    
+    // Get the relative airspeed
+    double cart_wind[3];
+    double spher_wind[3] = {atm_cond->vertical_wind, atm_cond->zonal_wind, atm_cond->meridional_wind};
+    double spher_coords[3];
+    double cart_coords[3] = {state->x, state->y, state->z};
+    cartcoords_to_sphercoords(cart_coords, spher_coords);
+
+    sphervec_to_cartvec(spher_wind, cart_wind, spher_coords);
+    // Get the relative velocity vector
+    double v_rel[3] = {state->vx - cart_wind[0], state->vy - cart_wind[1], state->vz - cart_wind[2]};
+    double v_rel_mag = sqrt(v_rel[0]*v_rel[0] + v_rel[1]*v_rel[1] + v_rel[2]*v_rel[2]);
+
+    double altitude = get_altitude(state->x, state->y, state->z); // Get the altitude of the vehicle
+    cart_vector initial_lift_vector;
+    initial_lift_vector.x = state->ax_lift;
+    initial_lift_vector.y = state->ay_lift;
+    initial_lift_vector.z = state->az_lift;
+
+    double initial_lift_mag = sqrt(initial_lift_vector.x * initial_lift_vector.x + initial_lift_vector.y * initial_lift_vector.y + initial_lift_vector.z * initial_lift_vector.z); // magnitude of the initial lift acceleration vector
+    // Define a local coordinate system such that unit vector e_1 points in the direction of the relative velocity vector
+    // and e_2 points in the direction of the lift acceleration vector
+    // e_3 will be orthogonal to both e_1 and e_2 defined as e_3 = e_1 x e_2
+
+    // Special case for zero relative velocity or high altitude that simply returns the state with zero lift and drag
+    if (v_rel_mag < 1e-6 || altitude > 1e5) {
+        // If the relative velocity is zero, we cannot define a local coordinate system
+        // Set the lift and drag to zero and return the state
+        state->ax_lift = 0.0;
+        state->ay_lift = 0.0;
+        state->az_lift = 0.0;
+        state->ax_drag = 0.0;
+        state->ay_drag = 0.0;
+        state->az_drag = 0.0;
+
+        return;
+    }
+
+    
+    cart_vector e_1, e_2, e_3;
+     // unit vector in the direction of the relative velocity vector
+    e_1.x = v_rel[0] / v_rel_mag;
+    e_1.y = v_rel[1] / v_rel_mag;
+    e_1.z = v_rel[2] / v_rel_mag;
+
+    // Special case for zero initial lift
+    if (initial_lift_mag < 1e-6) {
+        // If the initial lift magnitude is zero, define e_2 based on a cross product between e_1 and global z-axis
+
+        double global_z_axis[3] = {0.0, 0.0, 1.0}; // global z-axis unit vector
+        e_2.x = e_1.y * global_z_axis[2] - e_1.z * global_z_axis[1];
+        e_2.y = e_1.z * global_z_axis[0] - e_1.x * global_z_axis[2];
+        e_2.z = e_1.x * global_z_axis[1] - e_1.y * global_z_axis[0];
+
+        // Normalize e_2 to make it a unit vector
+        double e_2_mag = sqrt(e_2.x * e_2.x + e_2.y * e_2.y + e_2.z * e_2.z);
+        if (e_2_mag < 1e-6) {
+            // If e_2 magnitude is still zero, we cannot define a local coordinate system
+            state->ax_lift = 0.0;
+            state->ay_lift = 0.0;
+            state->az_lift = 0.0;
+            state->ax_drag = 0.0;
+            state->ay_drag = 0.0;
+            state->az_drag = 0.0;
+        
+            return;
+        }
+        // normalize e_2
+        e_2.x /= e_2_mag;
+        e_2.y /= e_2_mag;
+        e_2.z /= e_2_mag;
+
+    } else {
+        // unit vector in the direction of the lift acceleration vector
+        e_2.x = initial_lift_vector.x / initial_lift_mag;
+        e_2.y = initial_lift_vector.y / initial_lift_mag;
+        e_2.z = initial_lift_vector.z / initial_lift_mag;
+    }
+
+    // Calculate the cross product to get e_3
+    e_3.x = e_1.y * e_2.z - e_1.z * e_2.y; // x-component of e_3
+    e_3.y = e_1.z * e_2.x - e_1.x * e_2.z; // y-component of e_3
+    e_3.z = e_1.x * e_2.y - e_1.y * e_2.x; // z-component of e_3
+
+    // Project the commanded acceleration vector onto the lift direction (e_2)
+    double a_command_e2 = (a_command->x * e_2.x + a_command->y * e_2.y + a_command->z * e_2.z);
+
+    // Project the commanded acceleration vector onto the e_3 direction
+    double a_command_e3 = (a_command->x * e_3.x + a_command->y * e_3.y + a_command->z * e_3.z);
+
+    // Restrict commanded acceleration in lift e2 and e3 directions to the maximum
+    // acceleration achievable by the control surfaces
+    if (a_command_e2 > max_a_exec) {
+        a_command_e2 = max_a_exec;
+    }
+    else if (a_command_e2 < -max_a_exec) {
+        a_command_e2 = -max_a_exec;
+    }
+    if (a_command_e3 > max_a_exec) {
+        a_command_e3 = max_a_exec;
+    }
+    else if (a_command_e3 < -max_a_exec) {
+        a_command_e3 = -max_a_exec;
+    }
+    double target_lift_x = a_command_e2 * e_2.x + a_command_e3 * e_3.x;
+    double target_lift_y = a_command_e2 * e_2.y + a_command_e3 * e_3.y;
+    double target_lift_z = a_command_e2 * e_2.z + a_command_e3 * e_3.z;
+
+
+    // double deflection_rate = aoa_max / deflection_time; // deflection rate in rad/seconds
+    double jerk_max = max_a_exec / deflection_time; // maximum jerk in m/s^3
+
+	double tol = 1e-3;
+	double gain = log(tol / max_a_exec) / (deflection_time + time_constant);
+
+    // Multiply gain by -1 because we want the lift adjusted to make the difference
+	// between commanded and current lift go to zero 
+    state->d_a_lift_x_dt = -gain * (target_lift_x - state->ax_lift);
+    state->d_a_lift_y_dt = -gain * (target_lift_y - state->ay_lift);
+    state->d_a_lift_z_dt = -gain * (target_lift_z - state->az_lift);
+    
+    // Clip the derivatives to the maximum jerk
+    if (state->d_a_lift_x_dt > jerk_max) {
+        state->d_a_lift_x_dt = jerk_max;
+    }
+    else if (state->d_a_lift_x_dt < -jerk_max) {
+        state->d_a_lift_x_dt = -jerk_max;
+    }
+    if (state->d_a_lift_y_dt > jerk_max) {
+        state->d_a_lift_y_dt = jerk_max;
+    }
+    else if (state->d_a_lift_y_dt < -jerk_max) {
+        state->d_a_lift_y_dt = -jerk_max;
+    }
+    if (state->d_a_lift_z_dt > jerk_max) {
+        state->d_a_lift_z_dt = jerk_max;
+    }
+    else if (state->d_a_lift_z_dt < -jerk_max) {
+        state->d_a_lift_z_dt = -jerk_max;
+    }
+
+    // printf("Lift Accel dt: %f, %f, %f\n", state->d_a_lift_x_dt, state->d_a_lift_y_dt, state->d_a_lift_z_dt);
+    // printf("Lift Accel: %f, %f, %f\n", state->ax_lift, state->ay_lift, state->az_lift);
+
+
+    // // Add anomalous lift forces for reentry-only simulations
+    // if (run_params->run_type == 1){
+    //     add_anomalous_lift_forces(run_params, vehicle, atm_cond, state, step_timer, v_rel_mag);
+    // }
+
+}
+
 #endif

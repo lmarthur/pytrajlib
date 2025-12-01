@@ -32,6 +32,9 @@ typedef struct state{
     double ax_total; // total x-acceleration in meters per second squared
     double ay_total; // total y-acceleration in meters per second squared
     double az_total; // total z-acceleration in meters per second squared
+    double d_a_lift_x_dt; // time derivative of x-acceleration due to lift in meters per second cubed
+    double d_a_lift_y_dt; // time derivative of y-acceleration due to lift in meters per second cubed
+    double d_a_lift_z_dt; // time derivative of z-acceleration due to lift in meters per second cubed
     double initial_theta_long_pert; // initial perturbation in the longitudinal thrust angle in radians
     double initial_theta_lat_pert; // initial perturbation in the latitudinal thrust angle in radians
     double theta_long; // thrust angle in the longitudinal direction measured from the x-z plane in radians
@@ -161,7 +164,7 @@ void reentry_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, s
     double v_rel[3] = {state->vx - cart_wind[0], state->vy - cart_wind[1], state->vz - cart_wind[2]};
     
     double v_rel_mag = sqrt(v_rel[0]*v_rel[0] + v_rel[1]*v_rel[1] + v_rel[2]*v_rel[2]);
-
+    
     // Special case for zero relative velocity
     if (v_rel_mag < 1e-6) {
         state->ax_drag = 0;
@@ -316,6 +319,23 @@ void rk4step(state *state, double time_step){
     state->vy = state->vy + time_step / 6 * (k1[4] + 2*k2[4] + 2*k3[4] + k4[4]);
     state->vz = state->vz + time_step / 6 * (k1[5] + 2*k2[5] + 2*k3[5] + k4[5]);
 
+}
+
+void rk4step_withlift(state *state, double time_step){
+    /*
+    Calculates the new position and velocity of the vehicle using a 4th order Runge-Kutta method
+
+    INPUTS:
+    ----------
+        state: state
+            initial state of the vehicle
+        time_step: double
+            time step in seconds
+    */
+    rk4step(state, time_step);
+    state->ax_lift = state->ax_lift + time_step * state->d_a_lift_x_dt;// / 6 * (k1[6] + 2 * k2[6] + 2 * k3[6] + k4[6]);
+    state->ay_lift = state->ay_lift + time_step * state->d_a_lift_y_dt;// / 6 * (k1[7] + 2 * k2[7] + 2 * k3[7] + k4[7]);
+    state->az_lift = state->az_lift + time_step * state->d_a_lift_z_dt;// / 6 * (k1[8] + 2 * k2[8] + 2 * k3[8] + k4[8]);
 }
 
 #endif

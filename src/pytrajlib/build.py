@@ -96,6 +96,9 @@ ffibuilder.cdef(
         double ax_total; 
         double ay_total; 
         double az_total; 
+        double d_a_lift_x_dt;
+        double d_a_lift_y_dt;
+        double d_a_lift_z_dt;
         double initial_theta_long_pert; 
         double initial_theta_lat_pert; 
         double theta_long; 
