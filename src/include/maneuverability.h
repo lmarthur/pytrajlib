@@ -558,6 +558,19 @@ void reentry_lift_drag_dt(runparams *run_params, state *state, cart_vector *a_co
         state->d_a_lift_z_dt = -jerk_max;
     }
 
+
+    double lift_magnitude = sqrt(state->ax_lift * state->ax_lift + state->ay_lift * state->ay_lift + state->az_lift * state->az_lift); // magnitude of the lift acceleration vector
+    double aoa = lift_magnitude * aoa_max / max_a_exec; // angle of attack in radians
+
+    // Get the drag coefficient based on the angle of attack
+    double c_d = vehicle->rv.c_d_0 + fabs(vehicle->rv.c_d_alpha * aoa); // drag coefficient based on angle of attack
+    // Get the drag magnitude
+    double a_drag_mag = 0.5 * atm_cond->density * v_rel_mag * v_rel_mag * vehicle->rv.rv_area * c_d / vehicle->current_mass;
+    // Update the drag acceleration vector based on the drag magnitude and direction
+    state->ax_drag = -a_drag_mag * v_rel[0] / v_rel_mag;
+    state->ay_drag = -a_drag_mag * v_rel[1] / v_rel_mag;
+    state->az_drag = -a_drag_mag * v_rel[2] / v_rel_mag;
+
     // printf("Lift Accel dt: %f, %f, %f\n", state->d_a_lift_x_dt, state->d_a_lift_y_dt, state->d_a_lift_z_dt);
     // printf("Lift Accel: %f, %f, %f\n", state->ax_lift, state->ay_lift, state->az_lift);
 
