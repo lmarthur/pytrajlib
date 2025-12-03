@@ -35,6 +35,17 @@ typedef struct state{
     double d_a_lift_x_dt; // time derivative of x-acceleration due to lift in meters per second cubed
     double d_a_lift_y_dt; // time derivative of y-acceleration due to lift in meters per second cubed
     double d_a_lift_z_dt; // time derivative of z-acceleration due to lift in meters per second cubed
+
+    double ax_lift_avail; // x-acceleration of available lift in m/s^2 (encodes the flap positions)
+    double ay_lift_avail; // y-acceleration of available lift in m/s^2
+    double az_lift_avail; // z-acceleration of available lift in m/s^2
+    double ax_lift_target; // x-acceleration of targeted lift in m/s^2 (encodes the commanded flap positions)
+    double ay_lift_target; // y-acceleration of targeted lift in m/s^2
+    double az_lift_target; // z-acceleration of targeted lift in m/s^2
+    double d_a_lift_avail_x_dt; // time derivative of x-acceleration due to available lift in m/s^3
+    double d_a_lift_avail_y_dt;
+    double d_a_lift_avail_z_dt;
+
     double initial_theta_long_pert; // initial perturbation in the longitudinal thrust angle in radians
     double initial_theta_lat_pert; // initial perturbation in the latitudinal thrust angle in radians
     double theta_long; // thrust angle in the longitudinal direction measured from the x-z plane in radians
@@ -176,7 +187,7 @@ void reentry_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, s
     double v_mag = sqrt(state->vx*state->vx + state->vy*state->vy + state->vz*state->vz);
     double wind_mag = sqrt(cart_wind[0]*cart_wind[0] + cart_wind[1]*cart_wind[1] + cart_wind[2]*cart_wind[2]);
 
-    double aoa_total = atan(wind_mag/v_mag); // angle of attack in radians, assuming the vehicle is moving in the direction of the wind
+    double aoa_total = atan(wind_mag/v_mag); // angle of attack in radians, assuming the vehicle is oriented in the direction of the velocity
     double c_d = vehicle->rv.c_d_0 + fabs(vehicle->rv.c_d_alpha * aoa_total);
 
     double a_drag_mag = 0.5 * atm_cond->density * v_rel_mag * v_rel_mag * vehicle->rv.rv_area * c_d / vehicle->current_mass;
@@ -336,6 +347,9 @@ void rk4step_withlift(state *state, double time_step){
     state->ax_lift = state->ax_lift + time_step * state->d_a_lift_x_dt;// / 6 * (k1[6] + 2 * k2[6] + 2 * k3[6] + k4[6]);
     state->ay_lift = state->ay_lift + time_step * state->d_a_lift_y_dt;// / 6 * (k1[7] + 2 * k2[7] + 2 * k3[7] + k4[7]);
     state->az_lift = state->az_lift + time_step * state->d_a_lift_z_dt;// / 6 * (k1[8] + 2 * k2[8] + 2 * k3[8] + k4[8]);
+    state->ax_lift_avail = state->ax_lift_avail + time_step * state->d_a_lift_avail_x_dt;
+    state->ay_lift_avail = state->ay_lift_avail + time_step * state->d_a_lift_avail_y_dt;
+    state->az_lift_avail = state->az_lift_avail + time_step * state->d_a_lift_avail_z_dt;
 }
 
 #endif

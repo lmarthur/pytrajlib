@@ -408,4 +408,33 @@ double dot_product(cart_vector a, cart_vector b){
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
+double clip(double value, double min, double max){
+    /*
+    Clip a value to a specified range
+
+    INPUTS:
+    ----------
+        value: double
+            value to be clipped
+        min: double
+            minimum value
+        max: double
+            maximum value
+    OUTPUTS:
+    ----------
+        clipped_value: double
+            clipped value
+    */
+
+    if (value < min){
+        return min;
+    }
+    else if (value > max){
+        return max;
+    }
+    else{
+        return value;
+    }
+}
+
 #endif

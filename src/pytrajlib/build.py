@@ -99,6 +99,17 @@ ffibuilder.cdef(
         double d_a_lift_x_dt;
         double d_a_lift_y_dt;
         double d_a_lift_z_dt;
+
+        double ax_lift_avail;
+        double ay_lift_avail;
+        double az_lift_avail;
+        double ax_lift_target;
+        double ay_lift_target;
+        double az_lift_target;
+        double d_a_lift_avail_x_dt;
+        double d_a_lift_avail_y_dt;
+        double d_a_lift_avail_z_dt;
+
         double initial_theta_long_pert; 
         double initial_theta_lat_pert; 
         double theta_long; 
@@ -107,7 +118,7 @@ ffibuilder.cdef(
         double north;
         double up;
     };
-    #define MAX_RUNS 10000
+    #define MAX_RUNS 1000
     struct impact_data{
         struct state impact_states[MAX_RUNS];
     };

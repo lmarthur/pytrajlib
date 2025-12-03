@@ -18,7 +18,7 @@
 #include "optimize/brent.h"
 
 // Define a constant upper limit for the number of Monte Carlo runs
-#define MAX_RUNS 10000
+#define MAX_RUNS 1000
 #define USE_NEW_LIFT 1
 // Define a struct to store impact data
 typedef struct impact_data{
@@ -97,6 +97,16 @@ state init_true_state(runparams *run_params){
     state.d_a_lift_y_dt = 0;
     state.d_a_lift_z_dt = 0;
 
+    state.ax_lift_avail = 0;
+    state.ay_lift_avail = 0;
+    state.az_lift_avail = 0;
+    state.ax_lift_target = 0;
+    state.ay_lift_target = 0;
+    state.az_lift_target = 0;
+    state.d_a_lift_avail_x_dt = 0;
+    state.d_a_lift_avail_y_dt = 0;
+    state.d_a_lift_avail_z_dt = 0;
+
     return state;
 }
 
@@ -165,6 +175,16 @@ state init_est_state(runparams *run_params){
     state.d_a_lift_x_dt = 0;
     state.d_a_lift_y_dt = 0;
     state.d_a_lift_z_dt = 0;
+
+    state.ax_lift_avail = 0;
+    state.ay_lift_avail = 0;
+    state.az_lift_avail = 0;
+    state.ax_lift_target = 0;
+    state.ay_lift_target = 0;
+    state.az_lift_target = 0;
+    state.d_a_lift_avail_x_dt = 0;
+    state.d_a_lift_avail_y_dt = 0;
+    state.d_a_lift_avail_z_dt = 0;
 
     return state;
 }
