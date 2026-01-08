@@ -508,7 +508,10 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
 
         if (run_params->gnss_nav == 1){
             // GNSS Measurement
-            gnss_measurement(&gnss, &new_true_state, &new_est_state);
+            if(old_altitude > 100e3){
+                gnss_measurement(&gnss, &new_true_state, &new_est_state);
+
+            }
         }
 
         // Add conditional for t > 0 to account for mock booster with 0s for burn time

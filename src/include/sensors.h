@@ -105,8 +105,8 @@ void update_imu(imu *imu, double time_step){
     */
 
     // Update the gyro error by recursively adding noise and bias drift
-    imu->gyro_error_long = imu->gyro_error_long + (imu->gyro_noise * ran_gaussian(1) + imu->gyro_bias_long) * time_step;
-    imu->gyro_error_lat = imu->gyro_error_lat + (imu->gyro_noise * ran_gaussian(1) + imu->gyro_bias_lat) * time_step;
+    imu->gyro_error_long = imu->gyro_error_long + imu->gyro_noise * ran_gaussian(1) * sqrt(time_step) + imu->gyro_bias_long * time_step;
+    imu->gyro_error_lat = imu->gyro_error_lat + imu->gyro_noise * ran_gaussian(1) * sqrt(time_step) + imu->gyro_bias_lat * time_step;
 
 }
 
