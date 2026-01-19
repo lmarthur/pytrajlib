@@ -1,7 +1,7 @@
 [project]
 name = "pytrajlib"
 version = "1.0.0-alpha.6"
-description = "Simulate the flight of a ballistic missile"
+description = "Simulate the flight of a ballistic or maneuverable missile"
 readme = "README.md"
 authors = [
     { name = "L.M. Arthur" },
@@ -14,24 +14,21 @@ dependencies = [
     "pandas>=2.2.3",
     "scipy>=1.15.2",
     "cffi>=1.17.1",
-    "folium>=0.20.0",
     "tqdm>=4.67.1",
     "scienceplots>=2.1.1",
-    "ipykernel>=6.29.5",
-    "pre-commit>=4.5.1",
 ]
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.5.1",
     "build>=1.2.2.post1",
     "cibuildwheel>=2.23.3",
     "pytest>=8.3.5",
     "setuptools>=79.0.0",
-    "seaborn>=0.13.2",
     "ruff>=0.12.11",
 ]
 jupyter = [
-    "ipywidgets>=8.1.7",
+    "ipykernel>=6.29.5",
 ]
 
 [project.scripts]
