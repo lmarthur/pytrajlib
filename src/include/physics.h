@@ -350,6 +350,18 @@ void rk4step_withlift(state *state, double time_step){
     state->ax_lift_avail = state->ax_lift_avail + time_step * state->d_a_lift_avail_x_dt;
     state->ay_lift_avail = state->ay_lift_avail + time_step * state->d_a_lift_avail_y_dt;
     state->az_lift_avail = state->az_lift_avail + time_step * state->d_a_lift_avail_z_dt;
+    
+    // // Debug: Print lift values after integration
+    // double lift_mag = sqrt(state->ax_lift * state->ax_lift + 
+    //                        state->ay_lift * state->ay_lift + 
+    //                        state->az_lift * state->az_lift);
+    // double lift_avail_mag = sqrt(state->ax_lift_avail * state->ax_lift_avail + 
+    //                               state->ay_lift_avail * state->ay_lift_avail + 
+    //                               state->az_lift_avail * state->az_lift_avail);
+    // if (lift_mag > 1e-6 || lift_avail_mag > 1e-6) {
+    //     printf("[DEBUG] rk4step_withlift at t=%.2f: lift_mag=%.6f m/s^2, lift_avail_mag=%.6f m/s^2\n", 
+    //            state->t, lift_mag, lift_avail_mag);
+    // }
 }
 
 #endif

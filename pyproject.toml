@@ -18,6 +18,7 @@ dependencies = [
     "tqdm>=4.67.1",
     "scienceplots>=2.1.1",
     "ipykernel>=6.29.5",
+    "pre-commit>=4.5.1",
 ]
 
 [dependency-groups]

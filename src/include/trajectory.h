@@ -378,6 +378,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
     // Variables for step function anomaly (only used for run_type = 1)
     double step_timer = 0; // time since step function was activated
 
+    int did_gnss = 0;
     // Begin the integration loop
     for (int i = 0; i < max_steps; i++){
         int during_boost_phase = old_true_state.t < vehicle->booster.total_burn_time;
@@ -401,7 +402,11 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         }
         // Update the gravity acceleration components
         update_gravity(&true_grav, &new_true_state);
-        update_gravity(&est_grav, &new_est_state);
+        // update_gravity(&est_grav, &new_est_state);
+        new_est_state.ax_grav = new_true_state.ax_grav;
+        new_est_state.ay_grav = new_true_state.ay_grav;
+        new_est_state.az_grav = new_true_state.az_grav;
+
         if (during_boost_phase) {
             update_gravity(&true_grav, &new_des_state);
         }
@@ -454,18 +459,51 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
         // Branch 2: Reentry phase, with lift and maneuverability
         else if (run_params->rv_maneuv == 1){
             // Calculate the aerodynamic drag and lift
-            
+            // New: gnss updates only once just at the start of reentry
+            if ((run_params->gnss_nav == 1) & !did_gnss){
+                // GNSS Measurement
+                gnss_measurement(&gnss, &new_true_state, &new_est_state);
+                did_gnss = 1;
+            }
             // Calculate the acceleration command
             cart_vector a_command = prop_nav(run_params, &new_est_state);
 
             // Calculate the aerodynamic drag and lift
             if (USE_NEW_LIFT){
-                reentry_lift_drag_dt(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step, &step_timer);
-                reentry_lift_drag_dt(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step, &step_timer);
+                // reentry_lift_drag_dt(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step, &step_timer);
+                // reentry_lift_drag_dt(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step, &step_timer);
+                
+                // Calculate available lift jerk (derivative of available lift acceleration)
+                cart_vector d_a_lift_avail_dt_true, d_a_lift_avail_dt_est;
+                get_a_lift_avail_jerk(new_true_state.t, &new_true_state, &new_est_state, 
+                                     run_params, vehicle, &true_atm_cond, &est_atm_cond,
+                                     &d_a_lift_avail_dt_true, &d_a_lift_avail_dt_est);
+                
+                // Update the available lift jerk in the state
+                new_true_state.d_a_lift_avail_x_dt = d_a_lift_avail_dt_true.x;
+                new_true_state.d_a_lift_avail_y_dt = d_a_lift_avail_dt_true.y;
+                new_true_state.d_a_lift_avail_z_dt = d_a_lift_avail_dt_true.z;
+                new_est_state.d_a_lift_avail_x_dt = d_a_lift_avail_dt_est.x;
+                new_est_state.d_a_lift_avail_y_dt = d_a_lift_avail_dt_est.y;
+                new_est_state.d_a_lift_avail_z_dt = d_a_lift_avail_dt_est.z;
+                
+                // Calculate lift jerk (derivative of lift acceleration)
+                cart_vector d_a_lift_dt_true, d_a_lift_dt_est;
+                get_a_lift_jerk(new_true_state.t, &new_true_state, &new_est_state,
+                               run_params, vehicle, &true_atm_cond, &est_atm_cond,
+                               &d_a_lift_dt_true, &d_a_lift_dt_est);
+                
+                // Update the lift jerk in the state
+                new_true_state.d_a_lift_x_dt = d_a_lift_dt_true.x;
+                new_true_state.d_a_lift_y_dt = d_a_lift_dt_true.y;
+                new_true_state.d_a_lift_z_dt = d_a_lift_dt_true.z;
+                new_est_state.d_a_lift_x_dt = d_a_lift_dt_est.x;
+                new_est_state.d_a_lift_y_dt = d_a_lift_dt_est.y;
+                new_est_state.d_a_lift_z_dt = d_a_lift_dt_est.z;
             }
             else{
-                reentry_lift_drag(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step, &step_timer);
-                reentry_lift_drag(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step, &step_timer); 
+                // reentry_lift_drag(run_params, &new_true_state, &a_command, &true_atm_cond, vehicle, time_step, &step_timer);
+                // reentry_lift_drag(run_params, &new_est_state, &a_command, &est_atm_cond, vehicle, time_step, &step_timer); 
             }
 
             a_command_total = sqrt(pow(a_command.x, 2) + pow(a_command.y, 2) + pow(a_command.z, 2));
@@ -506,13 +544,13 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
             }
         }
 
-        if (run_params->gnss_nav == 1){
-            // GNSS Measurement
-            if(old_altitude > 100e3){
-                gnss_measurement(&gnss, &new_true_state, &new_est_state);
-
-            }
-        }
+        // // Original: gnss updates during exoatmospheric phase
+        // if (run_params->gnss_nav == 1){
+        //     // GNSS Measurement
+        //     if(old_altitude > 100e3){
+        //         gnss_measurement(&gnss, &new_true_state, &new_est_state);
+        //     }
+        // }
 
         // Add conditional for t > 0 to account for mock booster with 0s for burn time
         if  (new_true_state.t > 0 && new_true_state.t == (vehicle->booster.total_burn_time) && run_params->run_type == 0){
