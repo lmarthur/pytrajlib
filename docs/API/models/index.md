@@ -1,0 +1,1 @@
+Models contain all the immutable structs.

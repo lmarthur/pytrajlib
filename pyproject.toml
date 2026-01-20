@@ -20,6 +20,9 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "mkdocstrings-c>=0.1.0",
+    "zensical>=0.0.17",
+    "mkdocstrings-python>=2.0.1",
     "pre-commit>=4.5.1",
     "build>=1.2.2.post1",
     "cibuildwheel>=2.23.3",

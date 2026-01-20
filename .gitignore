@@ -1,1 +1,7 @@
 OLD
+
+site
+
+*.egg-info
+
+uv.lock
