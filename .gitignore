@@ -5,3 +5,5 @@ site
 *.egg-info
 
 uv.lock
+
+test/build
