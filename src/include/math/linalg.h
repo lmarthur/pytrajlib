@@ -1,19 +1,67 @@
 #ifndef LINALG_H
 #define LINALG_H
 
+struct {
+    double x;
+    double y;
+    double z;
+
+} typedef cartvec;
+
+/**
+ * A quaternion has a real component w and a vector component x, y, z
+ */
+typedef struct {
+    double w;
+    double x;
+    double y;
+    double z;
+} quaternion;
+
+/**
+ * Get the L2 norm of a 3-vector
+ * 
+ */
+double norm(cartvec vec) {
+    return sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
+}
+
+/**
+ * Multiply a 3-vector by a scalar
+ */
+cartvec smultiply(cartvec vec, double s) {
+    cartvec result;
+    result.x = vec.x * s;
+    result.y = vec.y * s;
+    result.z = vec.z * s;
+    return result;
+}
+
+/**
+ * Divide a 3-vector by a scalar
+ */
+cartvec divide(cartvec vec, double s) {
+    cartvec result;
+    result.x = vec.x / s;
+    result.y = vec.y / s;
+    result.z = vec.z / s;
+    return result;
+}
+
 /**
  * Multiply two quaternions: result = q1 * q2
- * Quaternion format: [w, x, y, z] where w is the scalar part
  * 
- * @param q1 First quaternion [w, x, y, z]
- * @param q2 Second quaternion [w, x, y, z]
- * @param result Output quaternion [w, x, y, z]
+ * @param q1 First quaternion
+ * @param q2 Second quaternion
+ * @return The product quaternion q1 * q2
  */
-static inline void quat_multiply(const double q1[4], const double q2[4], double result[4]) {
-    result[0] = q1[0]*q2[0] - q1[1]*q2[1] - q1[2]*q2[2] - q1[3]*q2[3];  // w
-    result[1] = q1[0]*q2[1] + q1[1]*q2[0] + q1[2]*q2[3] - q1[3]*q2[2];  // x
-    result[2] = q1[0]*q2[2] - q1[1]*q2[3] + q1[2]*q2[0] + q1[3]*q2[1];  // y
-    result[3] = q1[0]*q2[3] + q1[1]*q2[2] - q1[2]*q2[1] + q1[3]*q2[0];  // z
+quaternion qmultiply(quaternion q1, quaternion q2) {
+    quaternion result;
+    result.w = q1.w*q2.w - q1.x*q2.x - q1.y*q2.y - q1.z*q2.z;
+    result.x = q1.w*q2.x + q1.x*q2.w + q1.y*q2.z - q1.z*q2.y;
+    result.y = q1.w*q2.y - q1.x*q2.z + q1.y*q2.w + q1.z*q2.x;
+    result.z = q1.w*q2.z + q1.x*q2.y - q1.y*q2.x + q1.z*q2.w;
+    return result;
 }
 
 #endif // LINALG_H

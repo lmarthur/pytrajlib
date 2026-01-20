@@ -11,5 +11,6 @@
 // #include "maneuverability_test.h"
 
 #include "linalg_test.h"
+#include "euler_test.h"
 
 TAU_MAIN()

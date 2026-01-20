@@ -4,6 +4,6 @@
 
 struct {
 
-} typedef Args;
+} typedef integrator_args;
 
 #endif

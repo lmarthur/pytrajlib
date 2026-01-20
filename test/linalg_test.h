@@ -5,43 +5,81 @@
 
 TEST(linalg, quat_multiply_identity){
     // Test identity quaternion multiplication: q * [1, 0, 0, 0] = q
-    double q1[4] = {0.5, 0.5, 0.5, 0.5};
-    double identity[4] = {1.0, 0.0, 0.0, 0.0};
-    double result[4];
+    quaternion q1 = {0.5, 0.5, 0.5, 0.5};
+    quaternion identity = {1.0, 0.0, 0.0, 0.0};
     
-    quat_multiply(q1, identity, result);
+    quaternion result = qmultiply(q1, identity);
     
-    REQUIRE_EQ(result[0], 0.5);
-    REQUIRE_EQ(result[1], 0.5);
-    REQUIRE_EQ(result[2], 0.5);
-    REQUIRE_EQ(result[3], 0.5);
+    REQUIRE_EQ(result.w, 0.5);
+    REQUIRE_EQ(result.x, 0.5);
+    REQUIRE_EQ(result.y, 0.5);
+    REQUIRE_EQ(result.z, 0.5);
 }
 
 TEST(linalg, quat_multiply_basic){
     // Test basic quaternion multiplication
-    double q1[4] = {1.0, 0.0, 1.0, 0.0};
-    double q2[4] = {1.0, 0.5, 0.5, 0.75};
-    double result[4];
+    quaternion q1 = {1.0, 0.0, 1.0, 0.0};
+    quaternion q2 = {1.0, 0.5, 0.5, 0.75};
     
-    quat_multiply(q1, q2, result);
+    quaternion result = qmultiply(q1, q2);
     
-    REQUIRE_EQ(result[0], 0.5);   // w: 1*1 - 0*0.5 - 1*0.5 - 0*0.75 = 0.5
-    REQUIRE_EQ(result[1], 1.25);  // x: 1*0.5 + 0*1 + 1*0.75 - 0*0.5 = 1.25
-    REQUIRE_EQ(result[2], 1.5);   // y: 1*0.5 - 0*0.75 + 1*1 + 0*0.5 = 1.5
-    REQUIRE_EQ(result[3], 0.25);  // z: 1*0.75 + 0*0.5 - 1*0.5 + 0*1 = 0.25
+    REQUIRE_EQ(result.w, 0.5);        // w: 1*1 - 0*0.5 - 1*0.5 - 0*0.75 = 0.5
+    REQUIRE_EQ(result.x, 1.25);   // x: 1*0.5 + 0*1 + 1*0.75 - 0*0.5 = 1.25
+    REQUIRE_EQ(result.y, 1.5);    // y: 1*0.5 - 0*0.75 + 1*1 + 0*0.5 = 1.5
+    REQUIRE_EQ(result.z, 0.25);   // z: 1*0.75 + 0*0.5 - 1*0.5 + 0*1 = 0.25
 }
 
 TEST(linalg, quat_multiply_90deg_rotations){
     // Test 90-degree rotation about z-axis
     double theta = M_PI / 2;
-    double q_z_90[4] = {cos(theta / 2), 0.0, 0.0, sin(theta / 2)};
-    double result[4];
+    quaternion q_z_90 = {cos(theta / 2), 0.0, 0.0, sin(theta / 2)};
     
     // Multiplying 90-degree rotation by itself should give 180-degree rotation
-    quat_multiply(q_z_90, q_z_90, result);
+    quaternion result = qmultiply(q_z_90, q_z_90);
     
-    REQUIRE_LT(fabs(result[0]), 1e-10);  // cos(90°) = 0
-    REQUIRE_EQ(result[1], 0.0);
-    REQUIRE_EQ(result[2], 0.0);
-    REQUIRE_EQ(result[3], 1.0);  // sin(90°) = 1
+    REQUIRE_LT(fabs(result.w), 1e-10);  // cos(90°) = 0
+    REQUIRE_EQ(result.x, 0.0);
+    REQUIRE_EQ(result.y, 0.0);
+    REQUIRE_EQ(result.z, 1.0);  // sin(90°) = 1
+}
+
+TEST(linalg, norm_basic){
+    // Test L2 norm calculation
+    cartvec v = {3.0, 4.0, 0.0};
+    double result = norm(v);
+    REQUIRE_EQ(result, 5.0);
+}
+
+TEST(linalg, norm_unit_vector){
+    // Test norm of unit vector
+    cartvec v = {1.0, 0.0, 0.0};
+    double result = norm(v);
+    REQUIRE_EQ(result, 1.0);
+}
+
+TEST(linalg, smultiply_basic){
+    // Test scalar multiplication
+    cartvec v = {1.0, 2.0, 3.0};
+    cartvec result = smultiply(v, 2.0);
+    REQUIRE_EQ(result.x, 2.0);
+    REQUIRE_EQ(result.y, 4.0);
+    REQUIRE_EQ(result.z, 6.0);
+}
+
+TEST(linalg, smultiply_zero){
+    // Test scalar multiplication by zero
+    cartvec v = {1.0, 2.0, 3.0};
+    cartvec result = smultiply(v, 0.0);
+    REQUIRE_EQ(result.x, 0.0);
+    REQUIRE_EQ(result.y, 0.0);
+    REQUIRE_EQ(result.z, 0.0);
+}
+
+TEST(linalg, divide_basic){
+    // Test scalar division
+    cartvec v = {2.0, 4.0, 6.0};
+    cartvec result = divide(v, 2.0);
+    REQUIRE_EQ(result.x, 1.0);
+    REQUIRE_EQ(result.y, 2.0);
+    REQUIRE_EQ(result.z, 3.0);
 }

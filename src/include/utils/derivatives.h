@@ -2,9 +2,13 @@
 #define DERIVATIVES_H
 
 #include "utils.h"
-#include "state.h"
+#include "models/state.h"
 
-typedef void (*DerivFunction)(State *state, Args *args);
+typedef state (*DerivFunction)(double t, state *state, integrator_args *args);
 
+
+// TODO ballistic derivative
+
+// TODO maneuverable derivative
 
 #endif

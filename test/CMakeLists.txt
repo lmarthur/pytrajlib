@@ -21,6 +21,8 @@ add_executable(${PROJECT_NAME}
     # ../src/include/optimize/nrutil.c
 )
 
+target_include_directories(${PROJECT_NAME} PRIVATE ../src/include)
+
 target_link_libraries(
     PyTraj_test
     Tau
