@@ -83,3 +83,44 @@ TEST(linalg, divide_basic){
     REQUIRE_EQ(result.y, 2.0);
     REQUIRE_EQ(result.z, 3.0);
 }
+TEST(linalg, matvec_multiply_identity){
+    // Test matrix-vector multiplication with identity matrix
+    double identity[3][3] = {
+        {1.0, 0.0, 0.0},
+        {0.0, 1.0, 0.0},
+        {0.0, 0.0, 1.0}
+    };
+    cartvec v = {1.0, 2.0, 3.0};
+    cartvec result = matvec_multiply(identity, v);
+    REQUIRE_EQ(result.x, 1.0);
+    REQUIRE_EQ(result.y, 2.0);
+    REQUIRE_EQ(result.z, 3.0);
+}
+
+TEST(linalg, matvec_multiply_scale){
+    // Test matrix-vector multiplication with scaling matrix
+    double scale[3][3] = {
+        {2.0, 0.0, 0.0},
+        {0.0, 3.0, 0.0},
+        {0.0, 0.0, 4.0}
+    };
+    cartvec v = {1.0, 1.0, 1.0};
+    cartvec result = matvec_multiply(scale, v);
+    REQUIRE_EQ(result.x, 2.0);
+    REQUIRE_EQ(result.y, 3.0);
+    REQUIRE_EQ(result.z, 4.0);
+}
+
+TEST(linalg, matvec_multiply_general){
+    // Test general matrix-vector multiplication
+    double matrix[3][3] = {
+        {1.0, 2.0, 3.0},
+        {4.0, 5.0, 6.0},
+        {7.0, 8.0, 9.0}
+    };
+    cartvec v = {2.0, 1.0, 1.0};
+    cartvec result = matvec_multiply(matrix, v);
+    REQUIRE_EQ(result.x, 7.0);  // 1*2 + 2*1 + 3*1
+    REQUIRE_EQ(result.y, 19.0);  // 4*2 + 5*1 + 6*1
+    REQUIRE_EQ(result.z, 31.0);  // 7*2 + 8*1 + 9*1
+}
