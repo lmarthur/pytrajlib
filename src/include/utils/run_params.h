@@ -1,5 +1,7 @@
 #ifndef RUN_PARAMS_H
 #define RUN_PARAMS_H
+
+#include "rng/rng.h"
 typedef struct runparams{
     // char *run_name; // name of the run
     // int run_type; // 0 for full trajectory, 1 for reentry only

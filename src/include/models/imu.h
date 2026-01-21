@@ -58,9 +58,6 @@ imu imu_init(runparams *run_params, state *initial_state){
     imu.gyro_bias_lat = imu.gyro_bias_stability * ran_gaussian(1); // rad/s
     imu.gyro_bias_long = imu.gyro_bias_stability * ran_gaussian(1); // rad/s
     
-    imu.theta_lat = run_params->theta_lat + initial_state->gyro_error.lat;
-    imu.theta_long = run_params->theta_long + initial_state->gyro_error.lon;
-
     return imu;
 
 }
@@ -76,8 +73,8 @@ imu imu_init(runparams *run_params, state *initial_state){
 anglevec gyro_measurement(state *current_state, vehicle *vehicle, runparams *run_params) {
     anglevec thrust_angles;
 
-    thrust_angles.lat = run_params->theta_lat + current_state->gyro_error.lat - run_params->init_thrust_lat_pert;
-    thrust_angles.lon = run_params->theta_long + current_state->gyro_error.lon - run_params->init_thrust_lon_pert;
+    thrust_angles.lat = vehicle->booster.thrust_angles.lat + current_state->gyro_error.lat - run_params->init_thrust_lat_pert;
+    thrust_angles.lon = vehicle->booster.thrust_angles.lon + current_state->gyro_error.lon - run_params->init_thrust_lon_pert;
     return thrust_angles;
 }
 
