@@ -1,10 +1,10 @@
 #include <math.h>
 #include <tau/tau.h>
 
-#include "../src/include/integrator/euler.h"
+#include "../src/include/integrator/integrate.h"
 
 
-TEST(euler, quaternion_update_small_rotation){
+TEST(integrate, quaternion_update_small_rotation){
 	// Identity quaternion rotated about z-axis with small timestep
 	state current_state = {0};
 	current_state.quaternion = (quaternion){1.0, 0.0, 0.0, 0.0};
@@ -34,8 +34,8 @@ state constant_z_rotation_drift(double t, state *current_state, integrator_args 
 }
 
 
-TEST(euler, full_integration_quaternion_rotation){
-	// Test full Euler integration with constant z-axis angular velocity
+TEST(integrate, full_integration_quaternion_rotation){
+	// Test full integration with constant z-axis angular velocity
 	state initial_state = {0};
 	initial_state.quaternion = (quaternion){1.0, 0.0, 0.0, 0.0}; // identity
 	
@@ -48,7 +48,7 @@ TEST(euler, full_integration_quaternion_rotation){
 	double expected_w = cos(0.5);
 	double expected_z = sin(0.5);
 	
-	state final_state = euler(initial_state, constant_z_rotation_drift, args, num_steps, dt, dummy_event);
+	state final_state = integrate(initial_state, constant_z_rotation_drift, args, num_steps, dt, dummy_event);
 	
 	// Verify the quaternion was updated
 	REQUIRE_LT(fabs(final_state.quaternion.w - expected_w), 1e-10);
@@ -69,8 +69,8 @@ state exponential_decay(double t, state *current_state, integrator_args *args) {
 	return deriv;
 }
 
-TEST(euler, exponential_decay){
-	// Test Euler integration with exponential decay: dv/dt = -v
+TEST(integrate, exponential_decay){
+	// Test integration with exponential decay: dv/dt = -v
 	// Solution: v(t) = v0 * exp(-t)
 	state initial_state = {0};
 	initial_state.velocity.x = 1.0;
@@ -81,12 +81,12 @@ TEST(euler, exponential_decay){
 	double dt = 1e-3;
 	int num_steps = 1000; // 1 second total
 	
-	state final_state = euler(initial_state, exponential_decay, args, num_steps, dt, dummy_event);
+	state final_state = integrate(initial_state, exponential_decay, args, num_steps, dt, dummy_event);
 	
 	// After 1 second with decay constant 1, v(1) = v0 * exp(-1)
 	double expected_velocity = 1.0 * exp(-1.0);
 	
-	// Euler method has error ~ time step 
+	// Integration method has error < time step 
 	REQUIRE_LT(fabs(final_state.velocity.x - expected_velocity), dt);
 	REQUIRE_LT(fabs(final_state.velocity.y - expected_velocity), dt);
 	REQUIRE_LT(fabs(final_state.velocity.z - expected_velocity), dt);
