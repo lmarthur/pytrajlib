@@ -28,3 +28,10 @@ target_link_libraries(
     Tau
     m
 )
+
+# Set working directory for tests to the project root
+add_test(
+    NAME ${PROJECT_NAME}
+    COMMAND ${PROJECT_NAME}
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/.."
+)
