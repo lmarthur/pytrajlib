@@ -7,3 +7,17 @@ repos:
         files: ^src/.*\.py$|^test/.*\.py$
       - id: ruff-format
         files: ^src/.*\.py$|^test/.*\.py$
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v21.1.8
+    hooks:
+      - id: clang-format
+        files: \.(c|h)$
+
+  - repo: local
+    hooks:
+      - id: clang-tidy
+        name: clang-tidy
+        entry: clang-tidy --extra-arg=-Isrc/include
+        language: system
+        files: ^src/.*\.(c|h)$
