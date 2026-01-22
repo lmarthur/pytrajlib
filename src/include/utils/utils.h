@@ -54,4 +54,23 @@ double get_max_a_exec(runparams run_params, vehicle veh) {
   return max_a_exec;
 }
 
+/**
+ * Clip a value to a specified range
+ *
+ * @param value value to be clipped
+ * @param min minimum value
+ * @param max maximum value
+ * @return clipped value
+ */
+double clip(double value, double min, double max) {
+
+  if (value < min) {
+    return min;
+  } else if (value > max) {
+    return max;
+  } else {
+    return value;
+  }
+}
+
 #endif

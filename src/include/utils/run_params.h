@@ -18,9 +18,9 @@ typedef struct runparams {
   // double x_launch; // launch x-coordinate in meters
   // double y_launch; // launch y-coordinate in meters
   // double z_launch; // launch z-coordinate in meters
-  // double x_aim; // target x-coordinate in meters
-  // double y_aim; // target y-coordinate in meters
-  // double z_aim; // target z-coordinate in meters
+  double x_aim;      // target x-coordinate in meters
+  double y_aim;      // target y-coordinate in meters
+  double z_aim;      // target z-coordinate in meters
   double theta_long; // thrust angle in the longitudinal direction in radians
   double theta_lat;  // thrust angle in the latitudinal direction in radians
 
@@ -39,13 +39,16 @@ typedef struct runparams {
   // double z_reentry; // reentry z-position in meters
 
   // int booster_type; // type of booster (0: MMIII, 1: SCUD, 2: SCUD-ER, 3:
-  // GBSD, 4: D5, 5: Mock) double deflection_time; // time to make full flap
-  // deflection in seconds, used for maneuverability
-  double actuator_force; // actuator max force in kilonewtons, used for
-                         // maneuverability
-  double gearing_ratio;  // gearing ratio of the control surfaces, used for
-  // maneuverability double nav_gain; // navigation gain for proportional
-  // navigation guidance
+  // GBSD, 4: D5, 5: Mock)
+  double deflection_time; // time to make full flap deflection in seconds, used
+                          // for maneuverability
+  double actuator_force;  // actuator max force in kilonewtons, used for
+                          // maneuverability
+  double gearing_ratio;   // gearing ratio of the control surfaces, used for
+                          // maneuverability
+  double nav_gain;  // navigation gain for proportional navigation guidance
+  double flap_gain; // Gain for approaching the commanded flap position when
+                    // slower than max rate.
 
   // double initial_x_error; // initial x-error in meters
   // double initial_pos_error; // initial position error in meters
@@ -81,6 +84,8 @@ void init_default_run_params() {
       run_params.initial_angle_error * ran_gaussian(1) -
       run_params.theta_lat * initial_rot_pert -
       fabs(run_params.theta_long * initial_rot_pert);
+
+  run_params.flap_gain = 100;
 }
 
 #endif

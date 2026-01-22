@@ -13,6 +13,11 @@ struct {
   quaternion quaternion;
 } typedef state;
 
+struct {
+  state true_state;
+  state est_state;
+} typedef dualstate;
+
 state init_true_state(runparams *run_params) {
   state true_state;
   true_state.gyro_error.lat = run_params->init_thrust_lat_pert;
