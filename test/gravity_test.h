@@ -1,4 +1,4 @@
-#include "../src/include/models/gravity.h"
+#include "../src/include/models/grav.h"
 #include <tau/tau.h>
 
 TEST(gravity, init_grav) {

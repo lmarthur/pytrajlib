@@ -1,5 +1,5 @@
-#ifndef GRAVITY_H
-#define GRAVITY_H
+#ifndef GRAV_H
+#define GRAV_H
 
 #include "rng/rng.h"
 #include "utils/constants.h"
