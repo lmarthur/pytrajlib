@@ -40,9 +40,10 @@ typedef struct runparams {
 
   // int booster_type; // type of booster (0: MMIII, 1: SCUD, 2: SCUD-ER, 3:
   // GBSD, 4: D5, 5: Mock) double deflection_time; // time to make full flap
-  // deflection in seconds, used for maneuverability double actuator_force; //
-  // actuator max force in kilonewtons, used for maneuverability double
-  // gearing_ratio; // gearing ratio of the control surfaces, used for
+  // deflection in seconds, used for maneuverability
+  double actuator_force; // actuator max force in kilonewtons, used for
+                         // maneuverability
+  double gearing_ratio;  // gearing ratio of the control surfaces, used for
   // maneuverability double nav_gain; // navigation gain for proportional
   // navigation guidance
 

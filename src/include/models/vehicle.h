@@ -855,35 +855,35 @@ int get_current_stage(booster b, double t) {
  * Calculate the mass of the vehicle based on the current stage and burn time.
  *
  * @param t current time in seconds
- * @param veh vehicle struct containing booster and RV parameters
+ * @param vehicle vehicle struct containing booster and RV parameters
  * @return current mass at time t
  */
-double get_mass(double t, vehicle veh) {
-  int active_stage = get_current_stage(veh.booster, t);
+double get_mass(double t, vehicle vehicle) {
+  int active_stage = get_current_stage(vehicle.booster, t);
 
   // If all fuel has burned, return only the rv mass
-  if (t > veh.booster.total_burn_time) {
-    return veh.rv.rv_mass;
+  if (t > vehicle.booster.total_burn_time) {
+    return vehicle.rv.rv_mass;
   }
 
   // Calculate cumulative burn time up to previous stage
   double prev_cum_burn_time = 0;
   for (int i = 0; i < active_stage; i++) {
-    prev_cum_burn_time += veh.booster.burn_time[i];
+    prev_cum_burn_time += vehicle.booster.burn_time[i];
   }
 
   // Calculate burned mass from previous stages
   double prev_stages_mass = 0;
   for (int i = 0; i < active_stage; i++) {
-    prev_stages_mass += veh.booster.wet_mass[i];
+    prev_stages_mass += vehicle.booster.wet_mass[i];
   }
 
   // Calculate burned mass from current stage
   double current_stage_burn_mass =
-      (t - prev_cum_burn_time) * veh.booster.fuel_burn_rate[active_stage];
+      (t - prev_cum_burn_time) * vehicle.booster.fuel_burn_rate[active_stage];
   double burned_mass = prev_stages_mass + current_stage_burn_mass;
 
-  return veh.total_mass - burned_mass;
+  return vehicle.total_mass - burned_mass;
 }
 
 #endif

@@ -96,4 +96,12 @@ cartvec matvec_multiply(double matrix[3][3], cartvec vec) {
   return result;
 }
 
+cartvec zeros() {
+  cartvec z;
+  z.x = 0;
+  z.y = 0;
+  z.z = 0;
+  return z;
+}
+
 #endif // LINALG_H
