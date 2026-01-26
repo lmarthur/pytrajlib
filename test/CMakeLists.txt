@@ -25,4 +25,5 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(
     PyTraj_test
     Tau
+    m
 )

@@ -29,6 +29,7 @@ ins_nav = 1
 rv_maneuv = 0
 # Reentry velocity (m/s) for reentry only simulation (run_type = 1)
 reentry_vel = 7500
+deflection_time = 0
 
 [VEHICLE]
 rv_type = 1

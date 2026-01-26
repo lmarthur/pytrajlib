@@ -18,7 +18,7 @@ echo "Running the library tests..."
 
 # Compile the shared library with gsl
 echo "Compiling the shared library..."
-gcc -shared -fPIC -o ./build/libPyTraj.so ./src/main.c -lgsl
+gcc -shared -fPIC -o ./build/libPyTraj.so ./src/main.c -lgsl -lgslcblas
 
 # Run integration tests
 echo "Running integration tests..."
