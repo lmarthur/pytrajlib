@@ -371,7 +371,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             }
         }
 
-        if (run_params->gnss_nav == 1){
+        if ((run_params->gnss_nav == 1) && (old_altitude > 100e3)){
             // GNSS Measurement
             gnss_measurement(&gnss, &new_true_state, &new_est_state, rng);
         }
