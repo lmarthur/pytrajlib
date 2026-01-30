@@ -311,12 +311,16 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
         // printf("true_atm_cond: %f, %f, %f\n", true_atm_cond.density, true_atm_cond.meridional_wind, true_atm_cond.zonal_wind);
         atm_cond est_atm_cond = get_exp_atm_cond(old_altitude, &exp_atm_model);
         // if during boost or outside atmosphere, dt = main time step, else dt = reentry time step
-        if (old_true_state.t < vehicle->booster.total_burn_time || old_altitude > 1e6){
-            time_step = run_params->time_step_main;
-        }
-        else{
+        // go a bit above 100km to 2e5 to ensure accuracy at very close to 100km
+        int during_reentry_phase = (old_true_state.t > vehicle->booster.total_burn_time) && (old_altitude < 2e5);
+
+        if (during_reentry_phase) {
             time_step = run_params->time_step_reentry;
         }
+        else {
+            time_step = run_params->time_step_main;
+        }
+
         // Update the thrust of the vehicle
         update_thrust(vehicle, &new_true_state);
         update_thrust(vehicle, &new_est_state);
