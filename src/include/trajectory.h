@@ -363,10 +363,9 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             // INS Measurement
             imu_measurement(&imu, &new_true_state, &new_est_state, vehicle, rng);
 
-            if (run_params->rv_maneuv == 0 ){ 
-                update_imu(&imu, time_step, rng);
-            }
-            else if (a_drag > 1e-3 || old_true_state.t < vehicle->booster.total_burn_time){
+            // There are no net torques on the vehicle during midcourse, so we can
+            // calibrate out the midcourse gyro errors
+            if (a_drag > 1e-3 || old_true_state.t < vehicle->booster.total_burn_time){
                 update_imu(&imu, time_step, rng);
             }
         }
@@ -380,9 +379,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             // Perform a perfect maneuver if before burnout
 
             new_true_state = perfect_maneuv(&new_true_state, &new_est_state, &new_des_state);
-            imu.gyro_error_lat = 0;
-            imu.gyro_error_long = 0;
-
         }
     
         // Perform a Runge-Kutta step
