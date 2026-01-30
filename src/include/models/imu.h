@@ -25,6 +25,7 @@ typedef struct imu {
   double gyro_error_long; // Gyro error in the longitude direction (rad/s,
                           // defined recursively)
 
+  // TODO are theta long and theta lat needed?
   double
       theta_long;   // Measured thrust angle in the longitudinal direction (rad)
   double theta_lat; // Measured thrust angle in the latitudinal direction (rad)
@@ -71,16 +72,16 @@ imu imu_init(runparams *run_params, state *initial_state) {
  * returns perturbed angles with accumulated drift. The perturbation appears
  * because estimated state (by default) initializes gyro_error to zero.
  */
-anglevec gyro_measurement(state *current_state, vehicle *vehicle,
-                          runparams *run_params) {
+anglevec gyro_measurement(state current_state, vehicle vehicle,
+                          runparams run_params) {
   anglevec thrust_angles;
 
-  thrust_angles.lat = vehicle->booster.thrust_angles.lat +
-                      current_state->gyro_error.lat -
-                      run_params->init_thrust_lat_pert;
-  thrust_angles.lon = vehicle->booster.thrust_angles.lon +
-                      current_state->gyro_error.lon -
-                      run_params->init_thrust_lon_pert;
+  thrust_angles.lat = vehicle.booster.thrust_angles.lat +
+                      current_state.gyro_error.lat -
+                      run_params.init_thrust_lat_pert;
+  thrust_angles.lon = vehicle.booster.thrust_angles.lon +
+                      current_state.gyro_error.lon -
+                      run_params.init_thrust_lon_pert;
   return thrust_angles;
 }
 

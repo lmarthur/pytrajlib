@@ -2,6 +2,7 @@
 
 #include "atmosphere_test.h"
 #include "gravity_test.h"
+#include "thrust_test.h"
 #include "vehicle_test.h"
 // #include "physics_test.h"
 // #include "utils_test.h"

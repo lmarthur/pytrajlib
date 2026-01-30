@@ -37,6 +37,22 @@ spherevec cartcoords_to_sphercoords(cartvec cart_coords) {
 }
 
 /**
+ * Converts spherical coordinates to Cartesian coordinates
+ *
+ * @param spherevec spherevec to convert
+ * @return x, y, z
+ */
+cartvec sphercoords_to_cartcoords(spherevec spherecoords) {
+  cartvec cart_vec;
+
+  cart_vec.x = spherecoords.r * cos(spherecoords.lat) * cos(spherecoords.lon);
+  cart_vec.y = spherecoords.r * cos(spherecoords.lat) * sin(spherecoords.lon);
+  cart_vec.z = spherecoords.r * sin(spherecoords.lat);
+
+  return cart_vec;
+}
+
+/**
  * Converts a spherical vector to a Cartesian vector at a given set of spherical
  * coordinates
  * @param sphervec pointer to spherical vector [r, long, lat]
