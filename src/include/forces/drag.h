@@ -140,6 +140,12 @@ cartvec get_maneuverable_reentry_drag(double t, state current_state,
  */
 cartvec get_drag_acceleration(double t, state current_state,
                               integrator_args args) {
+
+  double altitude = get_altitude(current_state);
+  // If above 100km, no drag
+  if (altitude > 1e5) {
+    return zeros();
+  }
   // Get atmospheric conditions at current altitude
   cartvec winds_cart = get_cart_wind(current_state, args);
 
