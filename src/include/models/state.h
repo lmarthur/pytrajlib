@@ -18,6 +18,12 @@ struct {
   state est_state;
 } typedef dualstate;
 
+struct {
+  state true_state;
+  state est_state; // estimated state
+  state des_state; // desired state
+} typedef multistate;
+
 state init_true_state(runparams *run_params) {
   state true_state;
   true_state.gyro_error.lat = run_params->init_thrust_lat_pert;

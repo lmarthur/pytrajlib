@@ -4,7 +4,8 @@
 #include "models/state.h"
 #include "utils.h"
 
-typedef state (*DerivFunction)(double t, state *state, integrator_args *args);
+typedef multistate (*DerivFunction)(double t, multistate *state,
+                                    integrator_args *args);
 
 // TODO ballistic derivative
 

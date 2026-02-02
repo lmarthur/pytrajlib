@@ -10,6 +10,7 @@ struct {
   runparams run_params;
   vehicle vehicle;
   grav gravity;
+  int update_desired_state; // 0 no update, 1 update desired state
 
 } typedef integrator_args;
 

@@ -9,12 +9,15 @@
 /**
  @returns 1 if integration should continue, 0 if integration should stop
  */
-typedef int (*EventFunction)(double t, state *state, integrator_args *args);
+typedef int (*EventFunction)(double t, multistate *state,
+                             integrator_args *args);
 
 /**
  * Dummy event function that always returns 1 (continue integration)
  */
-int dummy_event(double t, state *state, integrator_args *args) { return 1; }
+int dummy_event(double t, multistate *state, integrator_args *args) {
+  return 1;
+}
 
 /**
  * Quaternion update: q_new = q_old otimes q_omega
@@ -47,11 +50,11 @@ quaternion quaternion_update(state current_state, state state_deriv_drift,
 }
 
 /**
- * Use the Velocity Verlet method for integrating the deterministic drift
- * component, the Milstein (reduces to Euler-Maruyama for diffusion term
- * because the noise is additive) method for integrating the stochastic
- * gyro error, and an exact quaternion updator method based on the angular
- * velocity for updating the quaternion.
+ * Use the Milstein (reduces to Euler-Maruyama for diffusion term
+ * because the noise is additive; gives Ito solution) method for integrating the
+ * position, velocity, lift acceleration, and gyro error. Use a second-order
+ * position update and an exact quaternion updator method based on the angular
+ * velocity.
  *
  * @param current_state: initial state object
  * @param drift: function for deterministic terms
@@ -63,69 +66,60 @@ quaternion quaternion_update(state current_state, state state_deriv_drift,
  * continue and 0 if it should stop
  * @return: final state after integration
  */
-state integrate(state current_state, DerivFunction drift,
-                DerivFunction diffusion, integrator_args args, int max_steps,
-                double dt, EventFunction event) {
+multistate integrate(multistate current_state, DerivFunction drift,
+                     DerivFunction diffusion, integrator_args args,
+                     int max_steps, double dt, EventFunction event) {
   double t = 0;
   int step_counter = 0;
-  state drift_deriv = drift(t, &current_state, &args);
-  t += dt;
+  while (event(t, &current_state, &args) && (step_counter < max_steps)) {
+    multistate drift_deriv = drift(t, &current_state, &args);
+    multistate diffusion_deriv = diffusion(t, &current_state, &args);
 
-  while (dummy_event(t, &current_state, &args) && (step_counter < max_steps)) {
-    // Velocity Verlet for integrating the position and velocity updates
-    cartvec d_a_lift_dt = drift_deriv.a_lift;
-    cartvec d_a_lift_avail_dt = drift_deriv.a_lift_avail;
+    // Setup state pointers for true, estimated, and desired states
+    state *states[] = {&current_state.true_state, &current_state.est_state,
+                       &current_state.des_state};
+    state *deriv_states[] = {&drift_deriv.true_state, &drift_deriv.est_state,
+                             &drift_deriv.des_state};
+    state *diffusion_states[] = {&diffusion_deriv.true_state,
+                                 &diffusion_deriv.est_state,
+                                 &diffusion_deriv.des_state};
 
-    // Update position
-    cartvec acc = drift_deriv.velocity;
-    current_state.position.x +=
-        current_state.velocity.x * dt + 0.5 * dt * dt * acc.x;
-    current_state.position.y +=
-        current_state.velocity.y * dt + 0.5 * dt * dt * acc.y;
-    current_state.position.z +=
-        current_state.velocity.z * dt + 0.5 * dt * dt * acc.z;
+    // Loop over true, estimated, and desired states (if applicable)
+    int num_states = args.update_desired_state ? 3 : 2;
+    for (int i = 0; i < num_states; i++) {
+      cartvec velocity = deriv_states[i]->position;
+      cartvec acceleration = deriv_states[i]->velocity;
+      cartvec d_a_lift_dt = deriv_states[i]->a_lift;
+      cartvec d_a_lift_avail_dt = deriv_states[i]->a_lift_avail;
 
-    // Velocity half-step
-    current_state.velocity.x += 0.5 * dt * acc.x;
-    current_state.velocity.y += 0.5 * dt * acc.y;
-    current_state.velocity.z += 0.5 * dt * acc.z;
+      // Second-order position update: dx = velocity dt + 1/2 acceleration dt^2
+      states[i]->position =
+          add(add(states[i]->position, smultiply(velocity, dt)),
+              smultiply(acceleration, 0.5 * dt * dt));
 
-    // Get acceleration & other derivatives
-    drift_deriv = drift(t, &current_state, &args);
+      // Velocity update: dv = acceleration dt
+      states[i]->velocity =
+          add(states[i]->velocity, smultiply(acceleration, dt));
 
-    // Update velocity
-    current_state.velocity.x += drift_deriv.velocity.x * 0.5 * dt;
-    current_state.velocity.y += drift_deriv.velocity.y * 0.5 * dt;
-    current_state.velocity.z += drift_deriv.velocity.z * 0.5 * dt;
+      // Lift acceleration update
+      states[i]->a_lift = add(states[i]->a_lift, smultiply(d_a_lift_dt, dt));
+      states[i]->a_lift_avail =
+          add(states[i]->a_lift_avail, smultiply(d_a_lift_avail_dt, dt));
 
-    // Update lift acceleration
-    current_state.a_lift.x += (d_a_lift_dt.x + drift_deriv.a_lift.x) * 0.5 * dt;
-    current_state.a_lift.y += (d_a_lift_dt.y + drift_deriv.a_lift.y) * 0.5 * dt;
-    current_state.a_lift.z += (d_a_lift_dt.z + drift_deriv.a_lift.z) * 0.5 * dt;
+      // Quaternion update
+      states[i]->quaternion =
+          quaternion_update(*states[i], *deriv_states[i], dt);
+    }
 
-    // Update available lift acceleration
-    current_state.a_lift_avail.x +=
-        (d_a_lift_avail_dt.x + drift_deriv.a_lift_avail.x) * 0.5 * dt;
-    current_state.a_lift_avail.y +=
-        (d_a_lift_avail_dt.y + drift_deriv.a_lift_avail.y) * 0.5 * dt;
-    current_state.a_lift_avail.z +=
-        (d_a_lift_avail_dt.z + drift_deriv.a_lift_avail.z) * 0.5 * dt;
-
-    // Milstein (equivalent to Euler-Maruyama with additive noise) for
-    // integrating the gyro error
-    state diffusion_deriv = diffusion(t, &current_state, &args);
-
-    // Update gyro noise drift (deterministic) component
-    current_state.gyro_error.lat += drift_deriv.gyro_error.lat * dt;
-    current_state.gyro_error.lon += drift_deriv.gyro_error.lon * dt;
-    // Update gyro noise diffusion (stochastic) component
+    // Gyro error deterministic and stochastic updates
+    // The estimated state is the only state with gyro error
+    // The stochastic update uses the Milstein method for additive noise
+    // (reduces to Euler-Maruyama)
     double dW[2] = {ran_gaussian(sqrt(dt)), ran_gaussian(sqrt(dt))};
-    current_state.gyro_error.lat += diffusion_deriv.gyro_error.lat * dW[0];
-    current_state.gyro_error.lon += diffusion_deriv.gyro_error.lon * dW[1];
-
-    // Update quaternion based on angular velocity
-    current_state.quaternion =
-        quaternion_update(current_state, drift_deriv, dt);
+    states[1]->gyro_error.lat += deriv_states[1]->gyro_error.lat * dt +
+                                 diffusion_states[1]->gyro_error.lat * dW[0];
+    states[1]->gyro_error.lon += deriv_states[1]->gyro_error.lon * dt +
+                                 diffusion_states[1]->gyro_error.lon * dW[1];
 
     t += dt;
     step_counter++;

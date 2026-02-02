@@ -27,17 +27,28 @@ TEST(integrate, quaternion_update_small_rotation) {
 /**
  * Drift function for quaternion integration test: constant z-axis rotation
  */
-state constant_z_rotation_drift(double t, state *current_state,
-                                integrator_args *args) {
-  state deriv = {0};
-  deriv.quaternion = (quaternion){0.0, 0.0, 0.0, 1.0}; // 1 rad/s about z-axis
+multistate constant_z_rotation_drift(double t, multistate *current_state,
+                                     integrator_args *args) {
+  multistate deriv = {0};
+  deriv.true_state.quaternion =
+      (quaternion){0.0, 0.0, 0.0, 1.0}; // 1 rad/s about z-axis
+  return deriv;
+}
+
+/**
+ * Diffusion function (zero for deterministic test)
+ */
+multistate constant_z_rotation_diffusion(double t, multistate *current_state,
+                                         integrator_args *args) {
+  multistate deriv = {0};
   return deriv;
 }
 
 TEST(integrate, full_integration_quaternion_rotation) {
   // Test full integration with constant z-axis angular velocity
-  state initial_state = {0};
-  initial_state.quaternion = (quaternion){1.0, 0.0, 0.0, 0.0}; // identity
+  multistate initial_state = {0};
+  initial_state.true_state.quaternion =
+      (quaternion){1.0, 0.0, 0.0, 0.0}; // identity
 
   integrator_args args = {0};
   double dt = 0.01;    // 10ms time step
@@ -48,47 +59,59 @@ TEST(integrate, full_integration_quaternion_rotation) {
   double expected_w = cos(0.5);
   double expected_z = sin(0.5);
 
-  state final_state = integrate(initial_state, constant_z_rotation_drift, args,
-                                num_steps, dt, dummy_event);
+  multistate final_state = integrate(initial_state, constant_z_rotation_drift,
+                                     constant_z_rotation_diffusion, args,
+                                     num_steps, dt, dummy_event);
 
   // Verify the quaternion was updated
-  REQUIRE_LT(fabs(final_state.quaternion.w - expected_w), 1e-10);
-  REQUIRE_LT(fabs(final_state.quaternion.x), 1e-10);
-  REQUIRE_LT(fabs(final_state.quaternion.y), 1e-10);
-  REQUIRE_LT(fabs(final_state.quaternion.z - expected_z), 1e-10);
+  REQUIRE_LT(fabs(final_state.true_state.quaternion.w - expected_w), 1e-10);
+  REQUIRE_LT(fabs(final_state.true_state.quaternion.x), 1e-10);
+  REQUIRE_LT(fabs(final_state.true_state.quaternion.y), 1e-10);
+  REQUIRE_LT(fabs(final_state.true_state.quaternion.z - expected_z), 1e-10);
 }
 
 /**
  * Drift function for exponential decay: dv/dt = -k*v (decay constant k=1.0)
  */
-state exponential_decay(double t, state *current_state, integrator_args *args) {
-  state deriv = {0};
-  deriv.velocity.x = -1.0 * current_state->velocity.x;
-  deriv.velocity.y = -1.0 * current_state->velocity.y;
-  deriv.velocity.z = -1.0 * current_state->velocity.z;
+multistate exponential_decay(double t, multistate *current_state,
+                             integrator_args *args) {
+  multistate deriv = {0};
+  deriv.true_state.velocity.x = -1.0 * current_state->true_state.velocity.x;
+  deriv.true_state.velocity.y = -1.0 * current_state->true_state.velocity.y;
+  deriv.true_state.velocity.z = -1.0 * current_state->true_state.velocity.z;
+  return deriv;
+}
+
+/**
+ * Diffusion function for exponential decay (zero for deterministic test)
+ */
+multistate exponential_decay_diffusion(double t, multistate *current_state,
+                                       integrator_args *args) {
+  multistate deriv = {0};
   return deriv;
 }
 
 TEST(integrate, exponential_decay) {
   // Test integration with exponential decay: dv/dt = -v
   // Solution: v(t) = v0 * exp(-t)
-  state initial_state = {0};
-  initial_state.velocity.x = 1.0;
-  initial_state.velocity.y = 1.0;
-  initial_state.velocity.z = 1.0;
+  multistate initial_state = {0};
+  initial_state.true_state.velocity.x = 1.0;
+  initial_state.true_state.velocity.y = 1.0;
+  initial_state.true_state.velocity.z = 1.0;
 
   integrator_args args = {0};
   double dt = 1e-3;
   int num_steps = 1000; // 1 second total
 
-  state final_state = integrate(initial_state, exponential_decay, args,
-                                num_steps, dt, dummy_event);
+  multistate final_state =
+      integrate(initial_state, exponential_decay, exponential_decay_diffusion,
+                args, num_steps, dt, dummy_event);
 
   // After 1 second with decay constant 1, v(1) = v0 * exp(-1)
   double expected_velocity = 1.0 * exp(-1.0);
 
   // Integration method has error < time step
-  REQUIRE_LT(fabs(final_state.velocity.x - expected_velocity), dt);
-  REQUIRE_LT(fabs(final_state.velocity.y - expected_velocity), dt);
-  REQUIRE_LT(fabs(final_state.velocity.z - expected_velocity), dt);
+  REQUIRE_LT(fabs(final_state.true_state.velocity.x - expected_velocity), dt);
+  REQUIRE_LT(fabs(final_state.true_state.velocity.y - expected_velocity), dt);
+  REQUIRE_LT(fabs(final_state.true_state.velocity.z - expected_velocity), dt);
 }
