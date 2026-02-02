@@ -5,19 +5,17 @@
 #include "rng/rng.h"
 #include "utils/derivatives.h"
 #include <math.h>
+#include <stdio.h>
 
 /**
  @returns 1 if integration should continue, 0 if integration should stop
  */
-typedef int (*EventFunction)(double t, multistate *state,
-                             integrator_args *args);
+typedef int (*EventFunction)(double t, multistate *state, dualargs *args);
 
 /**
  * Dummy event function that always returns 1 (continue integration)
  */
-int dummy_event(double t, multistate *state, integrator_args *args) {
-  return 1;
-}
+int dummy_event(double t, multistate *state, dualargs *args) { return 1; }
 
 /**
  * Quaternion update: q_new = q_old otimes q_omega
@@ -64,14 +62,22 @@ quaternion quaternion_update(state current_state, state state_deriv_drift,
  * @param dt: time step
  * @param event: function that returns 1 on each step if integration should
  * continue and 0 if it should stop
- * @return: final state after integration
+ * @param state_history: array to store state at each integration step
+ * @return: number of steps taken
  */
-multistate integrate(multistate current_state, DerivFunction drift,
-                     DerivFunction diffusion, dualargs args, int max_steps,
-                     double dt, EventFunction event) {
+int euler_maruyama(multistate current_state, DerivFunction drift,
+                   DerivFunction diffusion, dualargs args, int max_steps,
+                   double dt, EventFunction event, multistate *state_history) {
+  printf("Inside euler_maruyama...\n");
+
   double t = 0;
   int step_counter = 0;
+
+  // Store initial state
+  state_history[0] = current_state;
+
   while (event(t, &current_state, &args) && (step_counter < max_steps)) {
+    // printf("Integration step %f\n", step_counter);
     multistate drift_deriv = drift(t, &current_state, &args);
     multistate diffusion_deriv = diffusion(t, &current_state, &args);
 
@@ -123,9 +129,12 @@ multistate integrate(multistate current_state, DerivFunction drift,
 
     t += dt;
     step_counter++;
+
+    // Store state in history
+    state_history[step_counter] = current_state;
   }
 
-  return current_state;
+  return step_counter;
 }
 
 #endif

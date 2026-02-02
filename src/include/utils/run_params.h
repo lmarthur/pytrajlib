@@ -73,6 +73,10 @@ typedef struct runparams {
 
 runparams init_default_run_params() {
   runparams run_params;
+
+  run_params.theta_lat = 0.0;
+  run_params.theta_long = 1.04719755;
+
   double initial_rot_pert = run_params.initial_angle_error * ran_gaussian(1);
 
   // TODO should this be in vehicle?

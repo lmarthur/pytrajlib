@@ -59,15 +59,21 @@ TEST(euler_maruyama, full_integration_quaternion_rotation) {
   double expected_w = cos(0.5);
   double expected_z = sin(0.5);
 
-  multistate final_state = euler_maruyama(
-      initial_state, constant_z_rotation_drift, constant_z_rotation_diffusion,
-      args, num_steps, dt, dummy_event);
+  multistate *state_history =
+      (multistate *)malloc((num_steps + 1) * sizeof(multistate));
+  int steps_taken = euler_maruyama(initial_state, constant_z_rotation_drift,
+                                   constant_z_rotation_diffusion, args,
+                                   num_steps, dt, dummy_event, state_history);
+
+  multistate final_state = state_history[steps_taken];
 
   // Verify the quaternion was updated
   REQUIRE_LT(fabs(final_state.true_state.quaternion.w - expected_w), 1e-10);
   REQUIRE_LT(fabs(final_state.true_state.quaternion.x), 1e-10);
   REQUIRE_LT(fabs(final_state.true_state.quaternion.y), 1e-10);
   REQUIRE_LT(fabs(final_state.true_state.quaternion.z - expected_z), 1e-10);
+
+  free(state_history);
 }
 
 /**
@@ -103,9 +109,13 @@ TEST(euler_maruyama, exponential_decay) {
   double dt = 1e-3;
   int num_steps = 1000; // 1 second total
 
-  multistate final_state = euler_maruyama(initial_state, exponential_decay,
-                                          exponential_decay_diffusion, args,
-                                          num_steps, dt, dummy_event);
+  multistate *state_history =
+      (multistate *)malloc((num_steps + 1) * sizeof(multistate));
+  int steps_taken = euler_maruyama(initial_state, exponential_decay,
+                                   exponential_decay_diffusion, args, num_steps,
+                                   dt, dummy_event, state_history);
+
+  multistate final_state = state_history[steps_taken];
 
   // After 1 second with decay constant 1, v(1) = v0 * exp(-1)
   double expected_velocity = 1.0 * exp(-1.0);
@@ -114,4 +124,6 @@ TEST(euler_maruyama, exponential_decay) {
   REQUIRE_LT(fabs(final_state.true_state.velocity.x - expected_velocity), dt);
   REQUIRE_LT(fabs(final_state.true_state.velocity.y - expected_velocity), dt);
   REQUIRE_LT(fabs(final_state.true_state.velocity.z - expected_velocity), dt);
+
+  free(state_history);
 }
