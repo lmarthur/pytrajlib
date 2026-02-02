@@ -7,3 +7,9 @@ site
 uv.lock
 
 test/build
+
+*.pyc
+
+_traj*
+*.o
+*.so

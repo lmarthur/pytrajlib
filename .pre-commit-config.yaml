@@ -21,3 +21,10 @@ repos:
         entry: clang-tidy --extra-arg=-Isrc/include
         language: system
         files: ^src/.*\.(c|h)$
+
+      - id: comptest
+        name: Compile and Test
+        entry: bash scripts/comptest.sh
+        language: system
+        pass_filenames: false
+        always_run: true
