@@ -6,7 +6,7 @@ TEST(gravity, init_grav) {
   runparams run_params;
   run_params.grav_error = 0;
 
-  grav grav = init_grav(&run_params);
+  grav grav = init_grav(run_params);
 
   REQUIRE_GT(grav.earth_mass, 0);
   REQUIRE_GT(grav.earth_radius, 0);
@@ -17,7 +17,7 @@ TEST(gravity, init_grav) {
   // Gravitational error case
   run_params.grav_error = 1;
 
-  grav = init_grav(&run_params);
+  grav = init_grav(run_params);
 
   REQUIRE_NE(grav.geoid_height_std, 0);
   REQUIRE_NE(grav.geoid_height_error, 0);

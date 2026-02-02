@@ -3,7 +3,7 @@
 
 #include "../src/include/integrator/integrate.h"
 
-TEST(integrate, quaternion_update_small_rotation) {
+TEST(euler_maruyama, quaternion_update_small_rotation) {
   // Identity quaternion rotated about z-axis with small timestep
   state current_state = {0};
   current_state.quaternion = (quaternion){1.0, 0.0, 0.0, 0.0};
@@ -28,7 +28,7 @@ TEST(integrate, quaternion_update_small_rotation) {
  * Drift function for quaternion integration test: constant z-axis rotation
  */
 multistate constant_z_rotation_drift(double t, multistate *current_state,
-                                     integrator_args *args) {
+                                     dualargs *args) {
   multistate deriv = {0};
   deriv.true_state.quaternion =
       (quaternion){0.0, 0.0, 0.0, 1.0}; // 1 rad/s about z-axis
@@ -39,18 +39,18 @@ multistate constant_z_rotation_drift(double t, multistate *current_state,
  * Diffusion function (zero for deterministic test)
  */
 multistate constant_z_rotation_diffusion(double t, multistate *current_state,
-                                         integrator_args *args) {
+                                         dualargs *args) {
   multistate deriv = {0};
   return deriv;
 }
 
-TEST(integrate, full_integration_quaternion_rotation) {
+TEST(euler_maruyama, full_integration_quaternion_rotation) {
   // Test full integration with constant z-axis angular velocity
   multistate initial_state = {0};
   initial_state.true_state.quaternion =
       (quaternion){1.0, 0.0, 0.0, 0.0}; // identity
 
-  integrator_args args = {0};
+  dualargs args = {0};
   double dt = 0.01;    // 10ms time step
   int num_steps = 100; // total 1 second of integration
 
@@ -59,9 +59,9 @@ TEST(integrate, full_integration_quaternion_rotation) {
   double expected_w = cos(0.5);
   double expected_z = sin(0.5);
 
-  multistate final_state = integrate(initial_state, constant_z_rotation_drift,
-                                     constant_z_rotation_diffusion, args,
-                                     num_steps, dt, dummy_event);
+  multistate final_state = euler_maruyama(
+      initial_state, constant_z_rotation_drift, constant_z_rotation_diffusion,
+      args, num_steps, dt, dummy_event);
 
   // Verify the quaternion was updated
   REQUIRE_LT(fabs(final_state.true_state.quaternion.w - expected_w), 1e-10);
@@ -74,7 +74,7 @@ TEST(integrate, full_integration_quaternion_rotation) {
  * Drift function for exponential decay: dv/dt = -k*v (decay constant k=1.0)
  */
 multistate exponential_decay(double t, multistate *current_state,
-                             integrator_args *args) {
+                             dualargs *args) {
   multistate deriv = {0};
   deriv.true_state.velocity.x = -1.0 * current_state->true_state.velocity.x;
   deriv.true_state.velocity.y = -1.0 * current_state->true_state.velocity.y;
@@ -86,12 +86,12 @@ multistate exponential_decay(double t, multistate *current_state,
  * Diffusion function for exponential decay (zero for deterministic test)
  */
 multistate exponential_decay_diffusion(double t, multistate *current_state,
-                                       integrator_args *args) {
+                                       dualargs *args) {
   multistate deriv = {0};
   return deriv;
 }
 
-TEST(integrate, exponential_decay) {
+TEST(euler_maruyama, exponential_decay) {
   // Test integration with exponential decay: dv/dt = -v
   // Solution: v(t) = v0 * exp(-t)
   multistate initial_state = {0};
@@ -99,13 +99,13 @@ TEST(integrate, exponential_decay) {
   initial_state.true_state.velocity.y = 1.0;
   initial_state.true_state.velocity.z = 1.0;
 
-  integrator_args args = {0};
+  dualargs args = {0};
   double dt = 1e-3;
   int num_steps = 1000; // 1 second total
 
-  multistate final_state =
-      integrate(initial_state, exponential_decay, exponential_decay_diffusion,
-                args, num_steps, dt, dummy_event);
+  multistate final_state = euler_maruyama(initial_state, exponential_decay,
+                                          exponential_decay_diffusion, args,
+                                          num_steps, dt, dummy_event);
 
   // After 1 second with decay constant 1, v(1) = v0 * exp(-1)
   double expected_velocity = 1.0 * exp(-1.0);

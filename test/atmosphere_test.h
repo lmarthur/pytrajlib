@@ -7,7 +7,7 @@ TEST(atmosphere, init_exp_atm) {
   run_params.atm_model = 0; // Exponential model without perturbations
 
   // Initialize the atmospheric model
-  atm_model atm_model = init_exp_atm(&run_params);
+  atm_model atm_model = init_exp_atm(run_params);
 
   // Check the sea level density
   REQUIRE_EQ(atm_model.sea_level_density, 1.225);
@@ -27,7 +27,7 @@ TEST(atmosphere, init_exp_atm) {
   }
 
   run_params.atm_model = 1; // Exponential model with wind perturbations
-  atm_model = init_exp_atm(&run_params);
+  atm_model = init_exp_atm(run_params);
 
   // Check the perturbations
   for (int i = 0; i < 4; i++) {
@@ -51,7 +51,7 @@ TEST(atmosphere, get_exp_atm_cond) {
   run_params.atm_model = 0; // Exponential model without perturbations
 
   // Initialize the atmospheric model
-  atm_model atm_model = init_exp_atm(&run_params);
+  atm_model atm_model = init_exp_atm(run_params);
 
   // Get the atmospheric conditions at sea level
   atm_cond atm_conditions = get_exp_atm_cond(0, &atm_model);
@@ -108,7 +108,7 @@ TEST(atmosphere, get_exp_atm_cond) {
   run_params.atm_model = 1; // Exponential model with wind perturbations
 
   // Initialize the atmospheric model
-  atm_model = init_exp_atm(&run_params);
+  atm_model = init_exp_atm(run_params);
 
   // Get the atmospheric conditions at sea level
   atm_conditions = get_exp_atm_cond(0, &atm_model);
@@ -182,7 +182,7 @@ TEST(atmosphere, get_pert_atm_cond) {
   run_params.atm_model = 0; // Exponential model with wind perturbations
 
   // Initialize the atmospheric model
-  atm_model atm_model = init_exp_atm(&run_params);
+  atm_model atm_model = init_exp_atm(run_params);
 
   // Get the atmospheric conditions at sea level
   atm_cond atm_conditions = get_pert_atm_cond(0, &atm_model);
@@ -239,7 +239,7 @@ TEST(atmosphere, get_pert_atm_cond) {
   run_params.atm_model = 1; // Exponential model with wind perturbations
 
   // Initialize the atmospheric model
-  atm_model = init_exp_atm(&run_params);
+  atm_model = init_exp_atm(run_params);
 
   // Get the atmospheric conditions at sea level
   atm_conditions = get_pert_atm_cond(0, &atm_model);
@@ -304,7 +304,7 @@ TEST(atmosphere, get_atm_cond) {
   run_params.atm_model = 0; // Exponential model without perturbations
 
   // Initialize the atmospheric model
-  atm_model atm_model = init_exp_atm(&run_params);
+  atm_model atm_model = init_exp_atm(run_params);
 
   eg16_profile atm_profile;
 
@@ -321,7 +321,7 @@ TEST(atmosphere, get_atm_cond) {
   run_params.atm_model = 1; // Exponential model with wind perturbations
 
   // Initialize the atmospheric model
-  atm_model = init_exp_atm(&run_params);
+  atm_model = init_exp_atm(run_params);
 
   // Get the atmospheric conditions at sea level
 
