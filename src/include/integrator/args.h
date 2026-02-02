@@ -10,7 +10,6 @@ struct {
   runparams run_params;
   vehicle vehicle;
   grav gravity;
-  int update_desired_state; // 0 no update, 1 update desired state
 
 } typedef integrator_args;
 
@@ -23,10 +22,10 @@ struct {
 
 struct {
   dualatm dual_atm;
-  eg16_profile atm_profile;
   runparams run_params;
   vehicle vehicle;
   grav gravity;
+  int update_desired_state; // 0 no update, 1 update desired state
 } typedef dualargs;
 
 integrator_args get_est_args(dualargs dual_args) {

@@ -19,14 +19,13 @@ typedef struct grav {
 } grav;
 
 // Define a function to initialize gravity parameters
-grav init_grav(runparams *run_params) {
+grav init_grav(runparams run_params) {
   /*
   Initializes gravity parameters
 
   INPUTS:
   ----------
-      run_params: *runparams
-          Pointer to the runparams struct
+      run_params: the runparams struct
   OUTPUTS:
   ----------
       grav: grav
@@ -41,7 +40,7 @@ grav init_grav(runparams *run_params) {
   grav.grav_g0 = -grav.grav_const * grav.earth_mass /
                  (grav.earth_radius * grav.earth_radius);
   grav.geoid_height_std = 0.05;
-  if (run_params->grav_error != 0) {
+  if (run_params.grav_error != 0) {
     // Set nonzero geoid height error
     grav.geoid_height_error = ran_gaussian(grav.geoid_height_std);
   } else {

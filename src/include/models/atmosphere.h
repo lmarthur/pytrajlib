@@ -130,14 +130,13 @@ void init_mean_atm_data(char *atmprofilepath) {
   fclose(fp);
 }
 
-atm_model init_exp_atm(runparams *run_params) {
+atm_model init_exp_atm(runparams run_params) {
   /*
   Initializes the atmospheric model
 
   INPUTS:
   ----------
-      run_params: runparams *
-          pointer to the run parameters struct
+      run_params: run parameters struct
   OUTPUT:
   ----------
       atm_model: atm_model
@@ -151,7 +150,7 @@ atm_model init_exp_atm(runparams *run_params) {
   atm_model.sea_level_density = 1.225; // sea level density in kg/m^3
 
   // Non-perturbed branch (atm_model == 0)
-  if (run_params->atm_model == 0) {
+  if (run_params.atm_model == 0) {
 
     for (int i = 0; i < 4; i++) {
       atm_model.std_densities[i] = 0;

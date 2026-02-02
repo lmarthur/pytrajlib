@@ -71,7 +71,7 @@ typedef struct runparams {
 
 } runparams;
 
-void init_default_run_params() {
+runparams init_default_run_params() {
   runparams run_params;
   double initial_rot_pert = run_params.initial_angle_error * ran_gaussian(1);
 
@@ -86,6 +86,7 @@ void init_default_run_params() {
       fabs(run_params.theta_long * initial_rot_pert);
 
   run_params.flap_gain = 100;
+  return run_params;
 }
 
 #endif

@@ -67,8 +67,8 @@ quaternion quaternion_update(state current_state, state state_deriv_drift,
  * @return: final state after integration
  */
 multistate integrate(multistate current_state, DerivFunction drift,
-                     DerivFunction diffusion, integrator_args args,
-                     int max_steps, double dt, EventFunction event) {
+                     DerivFunction diffusion, dualargs args, int max_steps,
+                     double dt, EventFunction event) {
   double t = 0;
   int step_counter = 0;
   while (event(t, &current_state, &args) && (step_counter < max_steps)) {
