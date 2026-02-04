@@ -68,21 +68,19 @@ imu imu_init(runparams *run_params, state *initial_state) {
 /**
  * Calculate gyro-measured thrust angles adjusted for gyro error.
  *
- * True state: returns unmodified vehicle thrust angles because (by default) the
- * true state initializes gyro_error to init_thrust_angle_pert. Estimated state:
- * returns perturbed angles with accumulated drift. The perturbation appears
- * because estimated state (by default) initializes gyro_error to zero.
+ * True state: uses vehicle thrust angles with some initial perturbation.
+ * Estimated state: uses vehicle thrust angles without initial perturbation (the
+ * estimated state's gyro error is initialized such that the initial
+ * perturbation is removed), but with gyro error.
  */
 anglevec gyro_measurement(state current_state, vehicle vehicle,
                           runparams run_params) {
     anglevec thrust_angles;
 
-    thrust_angles.lat = vehicle.booster.thrust_angles.lat +
-                        current_state.gyro_error.lat -
-                        run_params.init_thrust_lat_pert;
-    thrust_angles.lon = vehicle.booster.thrust_angles.lon +
-                        current_state.gyro_error.lon -
-                        run_params.init_thrust_lon_pert;
+    thrust_angles.lat =
+        vehicle.booster.thrust_angles.lat + current_state.gyro_error.lat;
+    thrust_angles.lon =
+        vehicle.booster.thrust_angles.lon + current_state.gyro_error.lon;
     return thrust_angles;
 }
 

@@ -13,7 +13,7 @@
 #define MAX_RUNS 1000
 
 typedef struct {
-    multistate impact_event;
+    state impact_event;
     double t;
 } integration_result;
 
@@ -60,9 +60,9 @@ int impact_event(double t, multistate *state, dualargs *args) {
 integration_result fly_single(runparams run_params) {
     // Initialize state
     multistate current_state;
-    current_state.true_state = init_state(run_params);
-    current_state.est_state = init_state(run_params);
-    current_state.des_state = init_state(run_params);
+    current_state.true_state = init_true_state(run_params);
+    current_state.est_state = init_est_state(run_params);
+    current_state.des_state = init_est_state(run_params);
 
     // Initialize integrator fn_args
     dualatm atm;
@@ -92,6 +92,8 @@ integration_result fly_single(runparams run_params) {
         current_state, ballistic_derivs, dummy_deriv, args, max_boost_steps, &t,
         run_params.boost_dt, end_boost_event, boost_history);
 
+    args.update_desired_state = 0;
+
     // Midcourse phase
     int end_midcourse_idx = euler_maruyama(
         boost_history[end_boost_idx], ballistic_derivs, dummy_deriv, args,
@@ -104,16 +106,37 @@ integration_result fly_single(runparams run_params) {
                        dummy_deriv, args, max_reentry_steps, &t,
                        run_params.reentry_dt, impact_event, reentry_history);
 
+    // print estimated impact altitude
+    double est_impact_altitude =
+        get_altitude(reentry_history[end_reentry_idx].est_state);
+
     // Use impact_linterp to get precise impact state at altitude 0
-    double impact_time;
-    multistate impact_state =
-        impact_linterp(&reentry_history[end_reentry_idx - 1],
-                       &reentry_history[end_reentry_idx], 0,
-                       t - run_params.reentry_dt, t, &impact_time);
+    double true_impact_time;
+    state true_impact_state =
+        impact_linterp(&reentry_history[end_reentry_idx - 1].true_state,
+                       &reentry_history[end_reentry_idx].true_state, 0,
+                       t - run_params.reentry_dt, t, &true_impact_time);
+
+    double est_impact_time;
+    state est_impact_state =
+        impact_linterp(&reentry_history[end_reentry_idx - 1].est_state,
+                       &reentry_history[end_reentry_idx].est_state, 0,
+                       t - run_params.reentry_dt, t, &est_impact_time);
+
+    printf("est impact time, true impact time: %f, %f\n", est_impact_time,
+           true_impact_time);
+    printf("est impact altitude before interpolation: %f meters\n",
+           est_impact_altitude);
+    printf("true impact position: x=%f, y=%f, z=%f meters\n",
+           true_impact_state.position.x, true_impact_state.position.y,
+           true_impact_state.position.z);
+    printf("est  impact position: x=%f, y=%f, z=%f meters\n",
+           est_impact_state.position.x, est_impact_state.position.y,
+           est_impact_state.position.z);
 
     integration_result res;
-    res.impact_event = impact_state;
-    res.t = impact_time;
+    res.impact_event = true_impact_state;
+    res.t = true_impact_time;
     return res;
 }
 

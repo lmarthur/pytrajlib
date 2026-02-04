@@ -42,18 +42,7 @@ ffibuilder.cdef(
     } state;
 
     typedef struct {
-        state true_state;
-        state est_state;
-    } dualstate;
-
-    typedef struct {
-        state true_state;
-        state est_state;
-        state des_state;
-    } multistate;
-
-    typedef struct {
-        multistate impact_event;
+        state impact_event;
         double t;
     } integration_result;
 

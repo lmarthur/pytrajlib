@@ -50,8 +50,10 @@ typedef struct runparams {
                       // slower than max rate.
 
     // double initial_x_error; // initial x-error in meters
-    // double initial_pos_error; // initial position error in meters
-    // double initial_vel_error; // initial velocity error in meters per second
+
+    // Error parameters
+    double initial_pos_error;   // initial position error in meters
+    double initial_vel_error;   // initial velocity error in meters per second
     double initial_angle_error; // initial angle error in radians
     double acc_scale_stability; // accelerometer scale stability in ppm
     double gyro_bias_stability; // gyro bias stability in rad/s
@@ -80,13 +82,20 @@ runparams init_default_run_params() {
     run_params.theta_lat = 0.0;
     run_params.theta_long = 1.04719755;
 
-    double initial_rot_pert = run_params.initial_angle_error * ran_gaussian(1);
+    // Set error params
+    run_params.initial_pos_error = 1e-1;
+    run_params.initial_vel_error = 1e-3;
+    run_params.initial_angle_error = 1e-6;
+    run_params.acc_scale_stability = 1e-6;
+    run_params.gyro_bias_stability = 1e-8;
+    run_params.gyro_noise = 1e-8;
 
+    // Set time steps for each phase
     run_params.boost_dt = 1.0;
     run_params.midcourse_dt = 1.0;
     run_params.reentry_dt = 0.01;
 
-    // TODO should this be in vehicle?
+    double initial_rot_pert = run_params.initial_angle_error * ran_gaussian(1);
     run_params.init_thrust_lat_pert =
         run_params.initial_angle_error * ran_gaussian(1) +
         run_params.theta_long * initial_rot_pert -
