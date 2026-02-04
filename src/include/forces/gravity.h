@@ -27,16 +27,16 @@
  */
 cartvec get_gravitational_acceleration(double t, state current_state,
                                        integrator_args args) {
-  // Distance from Earth's center
-  double r = norm(current_state.position);
+    // Distance from Earth's center
+    double r = norm(current_state.position);
 
-  // Radial gravitational acceleration magnitude
-  double r_earth = R_EARTH + args.gravity.geoid_height_error;
-  double ar_grav = args.gravity.grav_g0 * r_earth * r_earth / (r * r);
+    // Radial gravitational acceleration magnitude
+    double r_earth = R_EARTH + args.gravity.geoid_height_error;
+    double ar_grav = args.gravity.grav_g0 * r_earth * r_earth / (r * r);
 
-  // Acceleration vector in direction of Earth's center
-  cartvec acceleration = smultiply(current_state.position, ar_grav / r);
-  return acceleration;
+    // Acceleration vector in direction of Earth's center
+    cartvec acceleration = smultiply(current_state.position, ar_grav / r);
+    return acceleration;
 }
 
 #endif

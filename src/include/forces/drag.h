@@ -38,15 +38,16 @@ The drag acceleration is in the direction opposing the relative velocity.
 cartvec get_drag_acceleration_generic(double t, state current_state,
                                       integrator_args args, double c_d,
                                       double area) {
-  cartvec wind_vec = get_cart_wind(current_state, args);
-  cartvec v_rel = subtract(current_state.velocity, wind_vec);
-  double v_rel_mag = norm(v_rel);
-  double mass = get_mass(t, args.vehicle);
-  double density = get_atm_density(current_state, args);
+    cartvec wind_vec = get_cart_wind(current_state, args);
+    cartvec v_rel = subtract(current_state.velocity, wind_vec);
+    double v_rel_mag = norm(v_rel);
+    double mass = get_mass(t, args.vehicle);
+    double density = get_atm_density(current_state, args);
 
-  double a_drag_mag = 0.5 * density * v_rel_mag * v_rel_mag * area * c_d / mass;
+    double a_drag_mag =
+        0.5 * density * v_rel_mag * v_rel_mag * area * c_d / mass;
 
-  return smultiply(v_rel, -a_drag_mag / v_rel_mag);
+    return smultiply(v_rel, -a_drag_mag / v_rel_mag);
 }
 
 /**
@@ -55,9 +56,9 @@ cartvec get_drag_acceleration_generic(double t, state current_state,
  * in run_params. The characteristic area is the booster's cross-sectional area.
  */
 cartvec get_boost_drag(double t, state current_state, integrator_args args) {
-  return get_drag_acceleration_generic(t, current_state, args,
-                                       args.vehicle.booster.c_d_0,
-                                       args.vehicle.booster.area);
+    return get_drag_acceleration_generic(t, current_state, args,
+                                         args.vehicle.booster.c_d_0,
+                                         args.vehicle.booster.area);
 }
 
 /*
@@ -79,19 +80,19 @@ cartvec get_boost_drag(double t, state current_state, integrator_args args) {
 */
 cartvec get_ballistic_reentry_drag(double t, state current_state,
                                    integrator_args args) {
-  cartvec winds_cart = get_cart_wind(current_state, args);
-  double wind_mag = norm(winds_cart);
-  double v_mag = norm(current_state.velocity);
+    cartvec winds_cart = get_cart_wind(current_state, args);
+    double wind_mag = norm(winds_cart);
+    double v_mag = norm(current_state.velocity);
 
-  // Angle of attack (assuming vehicle oriented along velocity vector)
-  double aoa = atan(wind_mag / v_mag);
+    // Angle of attack (assuming vehicle oriented along velocity vector)
+    double aoa = atan(wind_mag / v_mag);
 
-  // Drag coefficient varies with angle of attack
-  double c_d = args.vehicle.rv.c_d_0 + fabs(args.vehicle.rv.c_d_alpha * aoa);
+    // Drag coefficient varies with angle of attack
+    double c_d = args.vehicle.rv.c_d_0 + fabs(args.vehicle.rv.c_d_alpha * aoa);
 
-  cartvec a_drag = get_drag_acceleration_generic(t, current_state, args, c_d,
-                                                 args.vehicle.rv.rv_area);
-  return a_drag;
+    cartvec a_drag = get_drag_acceleration_generic(t, current_state, args, c_d,
+                                                   args.vehicle.rv.rv_area);
+    return a_drag;
 }
 
 /*
@@ -105,29 +106,29 @@ cartvec get_ballistic_reentry_drag(double t, state current_state,
 */
 cartvec get_maneuverable_reentry_drag(double t, state current_state,
                                       integrator_args args) {
-  double lift_magnitude = norm(current_state.a_lift);
-  double max_a_exec = get_max_a_exec(args.run_params, args.vehicle);
-  cartvec wind_vec = get_cart_wind(current_state, args);
-  cartvec v_rel = subtract(current_state.velocity, wind_vec);
+    double lift_magnitude = norm(current_state.a_lift);
+    double max_a_exec = get_max_a_exec(args.run_params, args.vehicle);
+    cartvec wind_vec = get_cart_wind(current_state, args);
+    cartvec v_rel = subtract(current_state.velocity, wind_vec);
 
-  double v_rel_mag = norm(v_rel);
-  double density = get_atm_density(current_state, args);
-  double mass = get_mass(t, args.vehicle);
+    double v_rel_mag = norm(v_rel);
+    double density = get_atm_density(current_state, args);
+    double mass = get_mass(t, args.vehicle);
 
-  // Calculate angle of attack in radians
-  double aoa = lift_magnitude * (AOA_MAX / max_a_exec * M_PI / 180);
+    // Calculate angle of attack in radians
+    double aoa = lift_magnitude * (AOA_MAX / max_a_exec * M_PI / 180);
 
-  // Get the drag coefficient based on the angle of attack
-  double c_d = args.vehicle.rv.c_d_0 + fabs(args.vehicle.rv.c_d_alpha * aoa);
+    // Get the drag coefficient based on the angle of attack
+    double c_d = args.vehicle.rv.c_d_0 + fabs(args.vehicle.rv.c_d_alpha * aoa);
 
-  // Get the drag magnitude
-  double a_drag_mag = 0.5 * density * v_rel_mag * v_rel_mag *
-                      args.vehicle.rv.rv_area * c_d /
-                      mass; // Update the drag acceleration vector based on the
-                            // drag magnitude and direction
+    // Get the drag magnitude
+    double a_drag_mag = 0.5 * density * v_rel_mag * v_rel_mag *
+                        args.vehicle.rv.rv_area * c_d /
+                        mass; // Update the drag acceleration vector based on
+                              // the drag magnitude and direction
 
-  cartvec a_drag = smultiply(v_rel, -a_drag_mag / v_rel_mag);
-  return a_drag;
+    cartvec a_drag = smultiply(v_rel, -a_drag_mag / v_rel_mag);
+    return a_drag;
 }
 
 /**
@@ -141,32 +142,32 @@ cartvec get_maneuverable_reentry_drag(double t, state current_state,
 cartvec get_drag_acceleration(double t, state current_state,
                               integrator_args args) {
 
-  double altitude = get_altitude(current_state);
-  // If above 100km, no drag
-  if (altitude > 1e5) {
-    return zeros();
-  }
-  // Get atmospheric conditions at current altitude
-  cartvec winds_cart = get_cart_wind(current_state, args);
+    double altitude = get_altitude(current_state);
+    // If above 100km, no drag
+    if (altitude > 1e5) {
+        return zeros();
+    }
+    // Get atmospheric conditions at current altitude
+    cartvec winds_cart = get_cart_wind(current_state, args);
 
-  // Relative velocity (vehicle velocity - wind velocity)
-  cartvec v_rel = subtract(current_state.velocity, winds_cart);
-  double v_rel_mag = norm(v_rel);
+    // Relative velocity (vehicle velocity - wind velocity)
+    cartvec v_rel = subtract(current_state.velocity, winds_cart);
+    double v_rel_mag = norm(v_rel);
 
-  // Avoid division by zero for near-zero relative velocity
-  if (v_rel_mag < 1e-6) {
-    return zeros();
-  }
+    // Avoid division by zero for near-zero relative velocity
+    if (v_rel_mag < 1e-6) {
+        return zeros();
+    }
 
-  // Drag calculation differs whether we are in boost phase or reentry phase
-  // and whether the vehicle is maneuverable or ballistic
-  if (t < args.vehicle.booster.total_burn_time) {
-    return get_boost_drag(t, current_state, args);
-  }
-  if (norm(current_state.a_lift) > 0) {
-    return get_maneuverable_reentry_drag(t, current_state, args);
-  }
-  return get_ballistic_reentry_drag(t, current_state, args);
+    // Drag calculation differs whether we are in boost phase or reentry phase
+    // and whether the vehicle is maneuverable or ballistic
+    if (t < args.vehicle.booster.total_burn_time) {
+        return get_boost_drag(t, current_state, args);
+    }
+    if (norm(current_state.a_lift) > 0) {
+        return get_maneuverable_reentry_drag(t, current_state, args);
+    }
+    return get_ballistic_reentry_drag(t, current_state, args);
 }
 
 #endif
