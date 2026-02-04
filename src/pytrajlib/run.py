@@ -1,8 +1,9 @@
 from tqdm import tqdm
 
+import pytrajlib.plot as plot
 from pytrajlib._traj import ffi
 from pytrajlib._traj import lib as traj
-from pytrajlib.utils import parse_impact_results_to_dfs
+from pytrajlib.utils import parse_impact_result
 
 _keep_alive = {}
 
@@ -25,13 +26,19 @@ def update_loading_bar(n, total):
 
 def main():
     print("running...")
-    N = 1
-    r = traj.fly(N)
-    results = r.results
+    N = 1000
+    rv_type = 1  # maneuverable rv
+    atm_model = 1  # exponential + wind
+    r = traj.fly(N, rv_type, atm_model)
 
-    true_df = parse_impact_results_to_dfs(results, N)
+    # Minuteman III: Perfectly Maneuverable RV, INS-Only
+    # Minuteman III: Perfectly Maneuverable RV, INS+GNSS
+    # Minuteman III: Maneuverable RV, INS+GNSS
+    result = parse_impact_result(r, N, "MMIII: Ballistic RV, INS-Only")
 
-    true_df.to_csv("results/impact_states.csv", index=False)
+    result.impact_df.to_csv("results/impact_states.csv", index=False)
+
+    plot.impact(result)
 
     print("finished!")
 

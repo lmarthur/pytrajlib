@@ -19,6 +19,7 @@ typedef struct {
 
 typedef struct {
     integration_result results[MAX_RUNS];
+    cartvec aimpoint;
 } integration_results;
 
 /**
@@ -93,9 +94,8 @@ integration_result fly_single(runparams run_params) {
         current_state, ballistic_derivs, dummy_deriv, args, max_boost_steps, &t,
         run_params.boost_dt, end_boost_event, boost_history);
 
-    args.update_desired_state = 0;
-
     // Midcourse phase
+    args.update_desired_state = 0;
     int end_midcourse_idx = euler_maruyama(
         boost_history[end_boost_idx], ballistic_derivs, dummy_deriv, args,
         max_midcourse_steps, &t, run_params.midcourse_dt, end_midcourse_event,
@@ -106,10 +106,6 @@ integration_result fly_single(runparams run_params) {
         euler_maruyama(midcourse_history[end_midcourse_idx], ballistic_derivs,
                        dummy_deriv, args, max_reentry_steps, &t,
                        run_params.reentry_dt, impact_event, reentry_history);
-
-    // print estimated impact altitude
-    double est_impact_altitude =
-        get_altitude(reentry_history[end_reentry_idx].est_state);
 
     // Use impact_linterp to get precise impact state at altitude 0
     double true_impact_time;
@@ -123,17 +119,6 @@ integration_result fly_single(runparams run_params) {
         impact_linterp(&reentry_history[end_reentry_idx - 1].est_state,
                        &reentry_history[end_reentry_idx].est_state, 0,
                        t - run_params.reentry_dt, t, &est_impact_time);
-
-    printf("est impact time, true impact time: %f, %f\n", est_impact_time,
-           true_impact_time);
-    printf("est impact altitude before interpolation: %f meters\n",
-           est_impact_altitude);
-    printf("true impact position: x=%f, y=%f, z=%f meters\n",
-           true_impact_state.position.x, true_impact_state.position.y,
-           true_impact_state.position.z);
-    printf("est  impact position: x=%f, y=%f, z=%f meters\n",
-           est_impact_state.position.x, est_impact_state.position.y,
-           est_impact_state.position.z);
 
     // Add coriolis effect based on the latitude and the impact time error
     double lat = ran_flat(-M_PI / 2, M_PI / 2);
@@ -152,6 +137,18 @@ integration_result fly_single(runparams run_params) {
     true_impact_state.position.z =
         true_impact_state.position.z + coriolis * sin(lat);
 
+    if (run_params.rv_maneuv == 2) {
+        // If perfect rv maneuver, update the final position to isolate
+        // errors due to the guidance system. All errors in the guidance
+        // system are from the difference of the true final state and the
+        // estimated state. These errors are shifted to be over the aimpoint
+        // for ease of plotting and analysis.
+
+        true_impact_state.position =
+            add(run_params.aimpoint, subtract(true_impact_state.position,
+                                              est_impact_state.position));
+    }
+
     integration_result res;
     res.impact_event = true_impact_state;
     res.t = true_impact_time;
@@ -169,6 +166,7 @@ integration_results fly(int N, int rv_type, int atm_model) {
     cartvec aimpoint = get_aimpoint(rv_type, atm_model);
 
     integration_results results;
+    results.aimpoint = aimpoint;
 
     for (int i = 0; i < N; i++) {
         runparams run_params = init_ballistic_run_params(aimpoint);

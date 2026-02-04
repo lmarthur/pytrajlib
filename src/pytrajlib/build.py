@@ -48,6 +48,7 @@ ffibuilder.cdef(
 
     typedef struct {
         integration_result results[MAX_RUNS];
+        cartvec aimpoint;
     } integration_results;
 
     integration_results fly(int N, int rv_type, int atm_model);

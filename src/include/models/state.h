@@ -32,9 +32,9 @@ state init_true_state(runparams run_params) {
     current_state.position.y = run_params.initial_pos_error * ran_gaussian(1);
     current_state.position.z = run_params.initial_pos_error * ran_gaussian(1);
 
-    current_state.velocity.x = ran_gaussian(run_params.initial_vel_error);
-    current_state.velocity.y = ran_gaussian(run_params.initial_vel_error);
-    current_state.velocity.z = ran_gaussian(run_params.initial_vel_error);
+    current_state.velocity.x = run_params.initial_vel_error * ran_gaussian(1);
+    current_state.velocity.y = run_params.initial_vel_error * ran_gaussian(1);
+    current_state.velocity.z = run_params.initial_vel_error * ran_gaussian(1);
 
     current_state.a_lift = zeros();
     current_state.a_lift_avail = zeros();

@@ -91,10 +91,15 @@ runparams init_base_run_params() {
     return run_params;
 }
 
+/**
+ * Bases runparams for Emerging Accuracy paper with perfect maneuverability
+ * during the boost phase using INS navigation or GNSS+INS navigation.
+ */
 runparams init_base_error_run_params() {
     runparams run_params = init_base_run_params();
 
     run_params.atm_model = 1; // exponential + wind
+    run_params.ins_nav = 1;
 
     // Set error params
     run_params.grav_error = 1;
@@ -145,6 +150,9 @@ runparams init_aimpoint_run_params(int rv_type, int atm_model) {
     run_params.gyro_bias_stability = 0.0;
     run_params.gyro_noise = 0.0;
 
+    run_params.init_thrust_lat_pert = 0;
+    run_params.init_thrust_lon_pert = 0;
+
     return run_params;
 }
 
@@ -152,8 +160,7 @@ runparams init_ballistic_run_params(cartvec aimpoint) {
     runparams run_params = init_base_error_run_params();
     run_params.aimpoint = aimpoint;
 
-    run_params.rv_maneuv = 0; // no maneuverability
-    run_params.ins_nav = 0;
+    run_params.rv_maneuv = 0; // no maneuverability during reentry
     run_params.gnss_nav = 0;
 
     return run_params;
@@ -164,7 +171,6 @@ runparams init_ins_run_params(cartvec aimpoint) {
     run_params.aimpoint = aimpoint;
 
     run_params.rv_maneuv = 2; // perfect maneuverability
-    run_params.ins_nav = 1;
     run_params.gnss_nav = 0;
 
     return run_params;
@@ -175,7 +181,6 @@ runparams init_ins_gnss_run_params(cartvec aimpoint) {
     run_params.aimpoint = aimpoint;
 
     run_params.rv_maneuv = 2; // perfect maneuverability
-    run_params.ins_nav = 1;
     run_params.gnss_nav = 1;
 
     return run_params;

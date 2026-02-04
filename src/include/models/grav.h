@@ -42,7 +42,7 @@ grav init_grav(runparams run_params) {
     grav.geoid_height_std = 0.05;
     if (run_params.grav_error != 0) {
         // Set nonzero geoid height error
-        grav.geoid_height_error = ran_gaussian(grav.geoid_height_std);
+        grav.geoid_height_error = grav.geoid_height_std * ran_gaussian(1);
     } else {
         grav.geoid_height_error = 0;
     }
