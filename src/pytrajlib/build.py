@@ -8,7 +8,60 @@ include_dirs = ["src/include"]
 ffibuilder = FFI()
 ffibuilder.cdef(
     """
-    void run();
+    extern "Python" void update_loading_bar(int, int);
+    void loading_bar_callback(int x, int y);
+
+    #define MAX_RUNS 1000
+
+    typedef struct {
+        double x;
+        double y;
+        double z;
+
+    } cartvec;
+
+    typedef struct {
+        double lat;
+        double lon;
+    } anglevec;
+
+    typedef struct {
+        double w;
+        double x;
+        double y;
+        double z;
+    } quaternion;
+
+    typedef struct {
+        cartvec position;
+        cartvec velocity;
+        cartvec a_lift;
+        cartvec a_lift_avail;
+        anglevec gyro_error;
+        quaternion quaternion;
+    } state;
+
+    typedef struct {
+        state true_state;
+        state est_state;
+    } dualstate;
+
+    typedef struct {
+        state true_state;
+        state est_state;
+        state des_state;
+    } multistate;
+
+    typedef struct {
+        multistate impact_event;
+        double t;
+    } integration_result;
+
+    typedef struct {
+        integration_result results[MAX_RUNS];
+    } integration_results;
+
+    integration_results fly(int N);
     """
 )
 
@@ -17,6 +70,11 @@ module_name = "_traj" if __name__ == "__main__" else "pytrajlib._traj"
 ffibuilder.set_source(
     module_name,
     """
+static void update_loading_bar(int, int);
+
+void loading_bar_callback(int x, int y) {
+    update_loading_bar(x, y);
+}
 #include "run.h"
 """,
     include_dirs=include_dirs,

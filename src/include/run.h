@@ -10,6 +10,17 @@
 #include <math.h>
 #include <stdio.h>
 
+#define MAX_RUNS 1000
+
+typedef struct {
+    multistate impact_event;
+    double t;
+} integration_result;
+
+typedef struct {
+    integration_result results[MAX_RUNS];
+} integration_results;
+
 /**
  * Event function that returns 1 (continue integration) if during boost phase
  * and 0 (stop integration) if after boost phase.
@@ -46,17 +57,12 @@ int impact_event(double t, multistate *state, dualargs *args) {
     return 1;
 }
 
-void run() {
-    printf("starting integration run.h\n");
-
-    runparams run_params = init_default_run_params();
-    printf("run params init done\n");
+integration_result fly_single(runparams run_params) {
     // Initialize state
     multistate current_state;
     current_state.true_state = init_state(run_params);
     current_state.est_state = init_state(run_params);
     current_state.des_state = init_state(run_params);
-    printf("state init done\n");
 
     // Initialize integrator fn_args
     dualatm atm;
@@ -70,86 +76,69 @@ void run() {
     args.gravity = init_grav(run_params);
     args.update_desired_state = 1;
 
-    double dt = 1;
-    int max_steps = 4000;
-
     // Allocate state history array on stack
-    multistate boost_history[max_steps];
-    multistate midcourse_history[max_steps];
-    multistate reentry_history[max_steps];
+    // Arrays sized to hold maximum expected steps for each phase
+    int max_boost_steps =
+        (int)(args.vehicle.booster.total_burn_time / run_params.boost_dt) + 1;
+    int max_midcourse_steps = (int)(3600 / run_params.midcourse_dt);
+    int max_reentry_steps = (int)(60 / run_params.reentry_dt);
+    multistate boost_history[max_boost_steps];
+    multistate midcourse_history[max_midcourse_steps];
+    multistate reentry_history[max_reentry_steps];
 
-    printf("about to integrate...\n");
+    // Boost phase
+    double t = 0;
+    int end_boost_idx = euler_maruyama(
+        current_state, ballistic_derivs, dummy_deriv, args, max_boost_steps, &t,
+        run_params.boost_dt, end_boost_event, boost_history);
 
-    double t0 = 0;
-    int end_boost_idx =
-        euler_maruyama(current_state, ballistic_derivs, dummy_deriv, args,
-                       max_steps, t0, dt, end_boost_event, boost_history);
-    printf("boost final position: %f %f %f\n",
-           boost_history[end_boost_idx].true_state.position.x,
-           boost_history[end_boost_idx].true_state.position.y,
-           boost_history[end_boost_idx].true_state.position.z);
-    printf("boost final time : %f\n", (double)end_boost_idx * dt);
-    printf("number of boost steps: %d\n", end_boost_idx);
-    t0 += end_boost_idx * dt;
+    // Midcourse phase
     int end_midcourse_idx = euler_maruyama(
         boost_history[end_boost_idx], ballistic_derivs, dummy_deriv, args,
-        max_steps, t0, dt, end_midcourse_event, midcourse_history);
-    printf("midcourse final position: %f %f %f\n",
-           midcourse_history[end_midcourse_idx].true_state.position.x,
-           midcourse_history[end_midcourse_idx].true_state.position.y,
-           midcourse_history[end_midcourse_idx].true_state.position.z);
-    // midcourse altitude
-    double midcourse_altitude =
-        get_altitude(midcourse_history[end_midcourse_idx].true_state);
-    printf("midcourse altitude : %f\n", midcourse_altitude);
-    printf("midcourse final time : %f\n",
-           (double)(end_midcourse_idx * dt) + t0);
-    printf("number of midcourse steps: %d\n", end_midcourse_idx);
+        max_midcourse_steps, &t, run_params.midcourse_dt, end_midcourse_event,
+        midcourse_history);
 
-    t0 += end_midcourse_idx * dt;
-    dt = 0.01;
-    max_steps = 10000;
-    int end_reentry_idx = euler_maruyama(
-        midcourse_history[end_midcourse_idx], ballistic_derivs, dummy_deriv,
-        args, max_steps, t0, dt, impact_event, reentry_history);
-    printf("final position: %f %f %f\n",
-           reentry_history[end_reentry_idx].true_state.position.x,
-           reentry_history[end_reentry_idx].true_state.position.y,
-           reentry_history[end_reentry_idx].true_state.position.z);
-    // final altitude
-    double final_altitude =
-        get_altitude(reentry_history[end_reentry_idx].true_state);
-    printf("final altitude : %f\n", final_altitude);
-    printf("final time : %f\n", (double)(end_reentry_idx * dt) + t0);
-    printf("number of reentry steps: %d\n", end_reentry_idx);
+    // Reentry phase
+    int end_reentry_idx =
+        euler_maruyama(midcourse_history[end_midcourse_idx], ballistic_derivs,
+                       dummy_deriv, args, max_reentry_steps, &t,
+                       run_params.reentry_dt, impact_event, reentry_history);
+
     // Use impact_linterp to get precise impact state at altitude 0
-    if (end_reentry_idx > 0) {
-        double impact_time = 0;
-        multistate impact_state =
-            impact_linterp(&reentry_history[end_reentry_idx - 1],
-                           &reentry_history[end_reentry_idx], 0,
-                           (double)((end_reentry_idx - 1) * dt) + t0,
-                           (double)(end_reentry_idx * dt) + t0, &impact_time);
-        printf("\ninterpolated impact position: %f %f %f\n",
-               impact_state.true_state.position.x,
-               impact_state.true_state.position.y,
-               impact_state.true_state.position.z);
-        printf("interpolated impact altitude: %f\n",
-               get_altitude(impact_state.true_state));
-        printf("interpolated impact time: %f\n", impact_time);
-    }
+    double impact_time;
+    multistate impact_state =
+        impact_linterp(&reentry_history[end_reentry_idx - 1],
+                       &reentry_history[end_reentry_idx], 0,
+                       t - run_params.reentry_dt, t, &impact_time);
 
-    max_steps = 5000;
-    multistate state_history[max_steps];
-    dt = 1;
-    int final_step =
-        euler_maruyama(current_state, ballistic_derivs, dummy_deriv, args,
-                       max_steps, 0, dt, impact_event, state_history);
-    printf("\n\ncomplete final position: %f %f %f\n",
-           state_history[final_step].true_state.position.x,
-           state_history[final_step].true_state.position.y,
-           state_history[final_step].true_state.position.z);
-    printf("complete final time : %f\n", (double)final_step * dt);
+    integration_result res;
+    res.impact_event = impact_state;
+    res.t = impact_time;
+    return res;
+}
+
+integration_results fly(int N) {
+    integration_results results;
+
+    for (int i = 0; i < N; i++) {
+        runparams run_params = init_default_run_params();
+
+        integration_result res = fly_single(run_params);
+        results.results[i] = res;
+
+        // Update tqdm loading bar in Python
+#ifdef FROM_PYTHON
+        int five_percent = (int)(N / 20);
+        five_percent = (int)clip(five_percent, 1, 100);
+        if ((i + 1) % five_percent == 0) {
+            update_loading_bar(i + 1, N);
+        }
+        if (i == N - 1) {
+            update_loading_bar(N, N);
+        }
+#endif
+    }
+    return results;
 }
 
 #endif

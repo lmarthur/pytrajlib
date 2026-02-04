@@ -5,25 +5,25 @@
 #include "utils/constants.h"
 #include "utils/run_params.h"
 
-struct {
+typedef struct {
     cartvec position;
     cartvec velocity;
     cartvec a_lift;
     cartvec a_lift_avail;
     anglevec gyro_error;
     quaternion quaternion;
-} typedef state;
+} state;
 
-struct {
+typedef struct {
     state true_state;
     state est_state;
-} typedef dualstate;
+} dualstate;
 
-struct {
+typedef struct {
     state true_state;
     state est_state; // estimated state
     state des_state; // desired state
-} typedef multistate;
+} multistate;
 
 state init_state(runparams run_params) {
     state current_state;

@@ -2,17 +2,17 @@
 #define LINALG_H
 
 #include <math.h>
-struct {
+typedef struct {
     double x;
     double y;
     double z;
 
-} typedef cartvec;
+} cartvec;
 
-struct {
+typedef struct {
     double lat;
     double lon;
-} typedef anglevec;
+} anglevec;
 
 /**
  * A quaternion has a real component w and a vector component x, y, z

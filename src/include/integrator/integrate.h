@@ -68,20 +68,19 @@ quaternion quaternion_update(state current_state, state state_deriv_drift,
  */
 int euler_maruyama(multistate current_state, DerivFunction drift,
                    DerivFunction diffusion, dualargs args, int max_steps,
-                   double t0, double dt, EventFunction event,
+                   double *t, double dt, EventFunction event,
                    multistate *state_history) {
-    printf("Inside euler_maruyama...\n");
+    // printf("Inside euler_maruyama...\n");
 
-    double t = t0;
     int step_counter = 0;
 
     // Store initial state
     state_history[0] = current_state;
 
-    while (event(t, &current_state, &args) && (step_counter < max_steps)) {
+    while (event(*t, &current_state, &args) && (step_counter < max_steps)) {
         // printf("Integration step %f\n", step_counter);
-        multistate drift_deriv = drift(t, &current_state, &args);
-        multistate diffusion_deriv = diffusion(t, &current_state, &args);
+        multistate drift_deriv = drift(*t, &current_state, &args);
+        multistate diffusion_deriv = diffusion(*t, &current_state, &args);
 
         // Setup state pointers for true, estimated, and desired states
         state *states[] = {&current_state.true_state, &current_state.est_state,
@@ -134,7 +133,7 @@ int euler_maruyama(multistate current_state, DerivFunction drift,
             deriv_states[1]->gyro_error.lon * dt +
             diffusion_states[1]->gyro_error.lon * dW[1];
 
-        t += dt;
+        *t += dt;
         step_counter++;
 
         // Store state in history

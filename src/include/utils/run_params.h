@@ -65,6 +65,10 @@ typedef struct runparams {
     // in radians. 0 = along lift vector, -1 is single random direction for
     // duration of run
 
+    double boost_dt;
+    double midcourse_dt;
+    double reentry_dt;
+
     double init_thrust_lat_pert; // Not set by user. Derived from other params
     double init_thrust_lon_pert; // Not set by user. Derived from other params
 
@@ -77,6 +81,10 @@ runparams init_default_run_params() {
     run_params.theta_long = 1.04719755;
 
     double initial_rot_pert = run_params.initial_angle_error * ran_gaussian(1);
+
+    run_params.boost_dt = 1.0;
+    run_params.midcourse_dt = 1.0;
+    run_params.reentry_dt = 0.01;
 
     // TODO should this be in vehicle?
     run_params.init_thrust_lat_pert =

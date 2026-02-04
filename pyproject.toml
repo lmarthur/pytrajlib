@@ -34,6 +34,9 @@ jupyter = [
     "ipykernel>=6.29.5",
 ]
 
+[project.scripts]
+pytrajlib = "pytrajlib:run"
+
 [build-system]
 requires = ["setuptools", "cffi"]
 build-backend = "setuptools.build_meta"
