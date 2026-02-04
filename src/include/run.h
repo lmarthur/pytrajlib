@@ -134,6 +134,23 @@ integration_result fly_single(runparams run_params) {
            est_impact_state.position.x, est_impact_state.position.y,
            est_impact_state.position.z);
 
+    // Add coriolis effect based on the latitude and the impact time error
+    double lat = ran_flat(-M_PI / 2, M_PI / 2);
+    double lon = ran_flat(-M_PI, M_PI);
+    double time_error = true_impact_time - est_impact_time;
+    double rot_speed = 464 * cos(lat);
+    double coriolis = rot_speed * time_error;
+
+    // based on the coriolis effect, update the final state x and y
+    // This might seem like a bug, but I promise it's just clever
+    // This replicates flying in a random direction, not just along the equator
+    true_impact_state.position.x =
+        true_impact_state.position.x - coriolis * sin(lon) * cos(lat);
+    true_impact_state.position.y =
+        true_impact_state.position.y + coriolis * cos(lon) * cos(lat);
+    true_impact_state.position.z =
+        true_impact_state.position.z + coriolis * sin(lat);
+
     integration_result res;
     res.impact_event = true_impact_state;
     res.t = true_impact_time;
