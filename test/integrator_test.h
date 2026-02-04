@@ -61,9 +61,9 @@ TEST(euler_maruyama, full_integration_quaternion_rotation) {
 
   multistate *state_history =
       (multistate *)malloc((num_steps + 1) * sizeof(multistate));
-  int steps_taken = euler_maruyama(initial_state, constant_z_rotation_drift,
-                                   constant_z_rotation_diffusion, args,
-                                   num_steps, dt, dummy_event, state_history);
+  int steps_taken = euler_maruyama(
+      initial_state, constant_z_rotation_drift, constant_z_rotation_diffusion,
+      args, num_steps, 0, dt, dummy_event, state_history);
 
   multistate final_state = state_history[steps_taken];
 
@@ -113,7 +113,7 @@ TEST(euler_maruyama, exponential_decay) {
       (multistate *)malloc((num_steps + 1) * sizeof(multistate));
   int steps_taken = euler_maruyama(initial_state, exponential_decay,
                                    exponential_decay_diffusion, args, num_steps,
-                                   dt, dummy_event, state_history);
+                                   0, dt, dummy_event, state_history);
 
   multistate final_state = state_history[steps_taken];
 

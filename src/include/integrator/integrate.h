@@ -62,15 +62,17 @@ quaternion quaternion_update(state current_state, state state_deriv_drift,
  * @param dt: time step
  * @param event: function that returns 1 on each step if integration should
  * continue and 0 if it should stop
- * @param state_history: array to store state at each integration step
+ * @param state_history: array to store state at each integration step. Expected
+ * size is max_steps.
  * @return: number of steps taken
  */
 int euler_maruyama(multistate current_state, DerivFunction drift,
                    DerivFunction diffusion, dualargs args, int max_steps,
-                   double dt, EventFunction event, multistate *state_history) {
+                   double t0, double dt, EventFunction event,
+                   multistate *state_history) {
   printf("Inside euler_maruyama...\n");
 
-  double t = 0;
+  double t = t0;
   int step_counter = 0;
 
   // Store initial state
