@@ -72,7 +72,8 @@ integration_result fly_single(runparams run_params) {
     dualargs args;
     args.dual_atm = atm;
     args.run_params = run_params;
-    args.vehicle = init_mmiii_ballistic(run_params);
+    args.vehicle = run_params.rv_type ? init_mmiii_swerve(run_params)
+                                      : init_mmiii_ballistic(run_params);
     args.gravity = init_grav(run_params);
     args.update_desired_state = 1;
 
@@ -157,11 +158,20 @@ integration_result fly_single(runparams run_params) {
     return res;
 }
 
-integration_results fly(int N) {
+cartvec get_aimpoint(int rv_type, int atm_model) {
+    runparams aimpoint_run_params =
+        init_aimpoint_run_params(rv_type, atm_model);
+    integration_result res = fly_single(aimpoint_run_params);
+    return res.impact_event.position;
+}
+
+integration_results fly(int N, int rv_type, int atm_model) {
+    cartvec aimpoint = get_aimpoint(rv_type, atm_model);
+
     integration_results results;
 
     for (int i = 0; i < N; i++) {
-        runparams run_params = init_default_run_params();
+        runparams run_params = init_ballistic_run_params(aimpoint);
 
         integration_result res = fly_single(run_params);
         results.results[i] = res;
