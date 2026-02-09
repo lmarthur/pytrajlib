@@ -106,9 +106,23 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
         double c_d = vehicle->rv.c_d_0 + fabs(vehicle->rv.c_d_alpha * aoa);
         drag = get_drag_acceleration_generic(state->t, *state, atm_cond, vehicle, c_d, vehicle->rv.rv_area);
     }
-    // Calculate the drag acceleration components for a perfectly maneuvering reentry vehicle
+    // Calculate the drag acceleration components for a ballistic or perfectly maneuvering reentry vehicle
     else{
-        drag = get_drag_acceleration_generic(state->t, *state, atm_cond, vehicle, vehicle->rv.c_d_0, vehicle->rv.rv_area);
+        cart_vector winds_cart = get_cart_wind(state, atm_cond);
+        double wind_mag = norm(winds_cart);
+        cart_vector velocity;
+        velocity.x = state->vx;
+        velocity.y = state->vy;
+        velocity.z = state->vz;
+
+        double v_mag = norm(velocity);
+
+        // Angle of attack (assuming vehicle oriented along velocity vector)
+        double aoa = atan(wind_mag / v_mag);
+
+        // Drag coefficient varies with angle of attack
+        double c_d = vehicle->rv.c_d_0 + fabs(vehicle->rv.c_d_alpha * aoa);
+        drag = get_drag_acceleration_generic(state->t, *state, atm_cond, vehicle, c_d, vehicle->rv.rv_area);
     }
     state->ax_drag = drag.x;
     state->ay_drag = drag.y;
