@@ -5,7 +5,7 @@
 #include <math.h>
 #include "utils.h"
 #include "vehicle.h"
-#include "gravity.h"
+#include "grav.h"
 #include "atmosphere.h"
 #include "physics.h"
 #include "sensors.h"
@@ -14,6 +14,7 @@
 #include <gsl/gsl_randist.h>
 
 #include "forces/thrust.h"
+#include "forces/gravity.h"
 
 // Define a constant upper limit for the number of Monte Carlo runs
 #define MAX_RUNS 1000

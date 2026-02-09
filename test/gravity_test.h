@@ -1,5 +1,5 @@
 #include <tau/tau.h>
-#include "../src/include/gravity.h"
+#include "../src/include/grav.h"
 
 TEST(gravity, init_grav){
     // No gravitational error case

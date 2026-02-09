@@ -3,7 +3,7 @@
 
 #include <math.h>
 #include "../vehicle.h"
-#include "../gravity.h"
+#include "../grav.h"
 #include "../atmosphere.h"
 #include "../utils.h"
 

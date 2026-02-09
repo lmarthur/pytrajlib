@@ -1,5 +1,5 @@
-#ifndef GRAVITY_H
-#define GRAVITY_H
+#ifndef GRAV_H
+#define GRAV_H
 
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
