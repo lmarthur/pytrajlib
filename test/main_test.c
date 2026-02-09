@@ -13,5 +13,6 @@
 #include "forces/drag_test.h"
 #include "forces/thrust_test.h"
 #include "forces/gravity_test.h"
+#include "forces/lift_test.h"
 
 TAU_MAIN()

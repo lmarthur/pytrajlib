@@ -16,6 +16,7 @@
 #include "forces/thrust.h"
 #include "forces/gravity.h"
 #include "forces/drag.h"
+#include "forces/lift.h"
 
 // Define a constant upper limit for the number of Monte Carlo runs
 #define MAX_RUNS 1000
