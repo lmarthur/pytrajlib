@@ -13,6 +13,8 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
+#include "forces/thrust.h"
+
 // Define a constant upper limit for the number of Monte Carlo runs
 #define MAX_RUNS 1000
 
