@@ -1,7 +1,7 @@
 #include <tau/tau.h>
-#include "../src/include/forces/gravity.h"
+#include "../../src/include/forces/gravity.h"
 
-TEST(physics, update_gravity){
+TEST(gravity, update_gravity){
     // Define a grav struct
     grav grav;
     // Define a state struct

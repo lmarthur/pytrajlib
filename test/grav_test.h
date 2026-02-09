@@ -1,7 +1,7 @@
 #include <tau/tau.h>
 #include "../src/include/grav.h"
 
-TEST(gravity, init_grav){
+TEST(gravity_model, init_grav){
     // No gravitational error case
     runparams run_params;
     run_params.grav_error = 0;

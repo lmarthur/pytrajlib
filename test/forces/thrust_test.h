@@ -1,7 +1,7 @@
 #include <tau/tau.h>
-#include "../src/include/forces/thrust.h"
+#include "../../src/include/forces/thrust.h"
 
-TEST(physics, update_thrust){
+TEST(thrust, update_thrust){
     vehicle vehicle;
     vehicle.rv = init_ballistic_rv();
     vehicle.booster = init_mmiii_booster();
