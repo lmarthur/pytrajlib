@@ -3,6 +3,7 @@
 
 #include "trajectory.h"
 #include "utils.h"
+#include "math/linalg.h"
 
 cart_vector prop_nav(runparams *run_params, state *estimated_state){
     /*

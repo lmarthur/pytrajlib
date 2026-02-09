@@ -46,11 +46,6 @@ typedef struct runparams{
 
 } runparams;
 
-typedef struct cart_vector{
-    double x;
-    double y;
-    double z;
-} cart_vector;
 
 double get_altitude(double x, double y, double z){
     /*
