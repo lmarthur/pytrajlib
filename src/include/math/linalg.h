@@ -46,6 +46,29 @@ cart_vector smultiply(cart_vector vec, double s) {
     return result;
 }
 
+
+/**
+ * Divide a 3-vector by a scalar
+ */
+cart_vector sdivide(cart_vector vec, double s) {
+    cart_vector result;
+    result.x = vec.x / s;
+    result.y = vec.y / s;
+    result.z = vec.z / s;
+    return result;
+}
+
+/**
+ * Add vector b to vector a
+ */
+cart_vector add(cart_vector a, cart_vector b) {
+    cart_vector result;
+    result.x = a.x + b.x;
+    result.y = a.y + b.y;
+    result.z = a.z + b.z;
+    return result;
+}
+
 /**
  * Subtract vector b from vector a
  */
@@ -56,4 +79,20 @@ cart_vector subtract(cart_vector a, cart_vector b) {
     result.z = a.z - b.z;
     return result;
 }
+
+/**
+ * Compute the cross product of two 3-vectors: result = a x b
+ *
+ * @param a First vector
+ * @param b Second vector
+ * @return The cross product vector
+ */
+cart_vector cross(cart_vector a, cart_vector b) {
+    cart_vector result;
+    result.x = a.y * b.z - a.z * b.y;
+    result.y = a.z * b.x - a.x * b.z;
+    result.z = a.x * b.y - a.y * b.x;
+    return result;
+}
+
 #endif

@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include "vehicle.h"
 
 typedef struct runparams{
     char *run_name; // name of the run
@@ -277,6 +278,40 @@ double sign(double x){
     }
     else{
         return 0;
+    }
+}
+
+double get_max_a_exec(runparams *run_params, vehicle *vehicle) {
+    double max_flap_force =
+        run_params->actuator_force * run_params->gearing_ratio * 1000;
+    double max_lift_force =
+        (vehicle->rv.c_l_alpha * max_flap_force * (vehicle->rv.x_flap - vehicle->rv.x_com) /
+         (vehicle->rv.c_m_alpha *
+          vehicle->rv.rv_length)); // maximum lift force in N, based on moment arm
+                              // and lift properties
+    double max_a_exec =
+        (max_lift_force / vehicle->rv.rv_mass); // maximum acceleration that can be
+                                           // executed by the flaps in m/s^2
+    return max_a_exec;
+}
+
+
+/**
+ * Clip a value to a specified range
+ *
+ * @param value value to be clipped
+ * @param min minimum value
+ * @param max maximum value
+ * @return clipped value
+ */
+double clip(double value, double min, double max) {
+
+    if (value < min) {
+        return min;
+    } else if (value > max) {
+        return max;
+    } else {
+        return value;
     }
 }
 

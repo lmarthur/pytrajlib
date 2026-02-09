@@ -4,47 +4,11 @@
 
 #include <math.h>
 #include "../vehicle.h"
-#include "../atmosphere.h"
+#include "../models/atmosphere.h"
 #include "../utils.h"
 #include "../math/linalg.h"
 
 static const double AOA_MAX = 10; // Maximum angle of attack is 10 degrees
-
-/**
- * Helper function to get wind at current location in standard cartesian basis
- */
-cart_vector get_cart_wind(state *state, atm_cond *atm_cond) {
-    double cart_wind[3];
-    double spher_wind[3] = {atm_cond->vertical_wind, atm_cond->zonal_wind, atm_cond->meridional_wind};
-    double spher_coords[3];
-    double cart_coords[3] = {state->x, state->y, state->z};
-    cartcoords_to_sphercoords(cart_coords, spher_coords);
-
-    sphervec_to_cartvec(spher_wind, cart_wind, spher_coords);
-
-    cart_vector cartvec_wind;
-    cartvec_wind.x = cart_wind[0];
-    cartvec_wind.y = cart_wind[1];
-    cartvec_wind.z = cart_wind[2];
-
-    return cartvec_wind;
-
-}
-
-double get_max_a_exec(runparams run_params, vehicle veh) {
-    double max_flap_force =
-        run_params.actuator_force * run_params.gearing_ratio * 1000;
-    double max_lift_force =
-        (veh.rv.c_l_alpha * max_flap_force * (veh.rv.x_flap - veh.rv.x_com) /
-         (veh.rv.c_m_alpha *
-          veh.rv.rv_length)); // maximum lift force in N, based on moment arm
-                              // and lift properties
-    double max_a_exec =
-        (max_lift_force / veh.rv.rv_mass); // maximum acceleration that can be
-                                           // executed by the flaps in m/s^2
-    return max_a_exec;
-}
-
 
 /**
  * Get the drag acceleration based on the drag coefficient
@@ -101,7 +65,7 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
         lift.y = state->ay_lift;
         lift.z = state->az_lift;
         double lift_magnitude = norm(lift);
-        double max_a_exec = get_max_a_exec(*run_params, *vehicle);
+        double max_a_exec = get_max_a_exec(run_params, vehicle);
         double aoa = lift_magnitude * (AOA_MAX / max_a_exec * M_PI / 180);
         double c_d = vehicle->rv.c_d_0 + fabs(vehicle->rv.c_d_alpha * aoa);
         drag = get_drag_acceleration_generic(state->t, *state, atm_cond, vehicle, c_d, vehicle->rv.rv_area);

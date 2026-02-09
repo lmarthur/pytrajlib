@@ -4,7 +4,9 @@
 #include <math.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
-#include "utils.h"
+#include "../utils.h"
+#include "state.h"
+#include "../math/linalg.h"
 
 // Define an atm_cond struct to store local atmospheric conditions
 typedef struct atm_cond{
@@ -357,6 +359,27 @@ eg16_profile parse_atm(char* atmprofilepath, int profilenum){
     fclose(fp);
 
     return atm_profile;
+}
+
+/**
+ * Helper function to get wind at current location in standard cartesian basis
+ */
+cart_vector get_cart_wind(state *state, atm_cond *atm_cond) {
+    double cart_wind[3];
+    double spher_wind[3] = {atm_cond->vertical_wind, atm_cond->zonal_wind, atm_cond->meridional_wind};
+    double spher_coords[3];
+    double cart_coords[3] = {state->x, state->y, state->z};
+    cartcoords_to_sphercoords(cart_coords, spher_coords);
+
+    sphervec_to_cartvec(spher_wind, cart_wind, spher_coords);
+
+    cart_vector cartvec_wind;
+    cartvec_wind.x = cart_wind[0];
+    cartvec_wind.y = cart_wind[1];
+    cartvec_wind.z = cart_wind[2];
+
+    return cartvec_wind;
+
 }
 
 #endif

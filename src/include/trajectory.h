@@ -6,7 +6,7 @@
 #include "utils.h"
 #include "vehicle.h"
 #include "grav.h"
-#include "atmosphere.h"
+#include "models/atmosphere.h"
 #include "physics.h"
 #include "sensors.h"
 #include "maneuverability.h"

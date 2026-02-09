@@ -4,7 +4,7 @@
 #include <math.h>
 #include "../vehicle.h"
 #include "../grav.h"
-#include "../atmosphere.h"
+#include "../models/atmosphere.h"
 #include "../utils.h"
 
 void update_thrust(vehicle *vehicle, state *state){

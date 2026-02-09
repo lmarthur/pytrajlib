@@ -1,5 +1,5 @@
 #include <tau/tau.h>
-#include "../src/include/atmosphere.h"
+#include "../src/include/models/atmosphere.h"
 
 TEST(atmosphere, init_exp_atm){
     // Initialize the run parameters
