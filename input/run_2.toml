@@ -27,12 +27,16 @@ gnss_nav = 0
 ins_nav = 1
 # If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability
 rv_maneuv = 2
-deflection_time = 0
 # Reentry velocity (m/s) for reentry only simulation (run_type = 1)
 reentry_vel = 7500
 
 [VEHICLE]
 rv_type = 1
+deflection_time = 0.02
+actuator_force = 100
+gearing_ratio = 1
+nav_gain = 5
+flap_gain = 100
 
 [ERRORPARAMS]
 initial_x_error = 0.0

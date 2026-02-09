@@ -33,6 +33,11 @@ deflection_time = 0
 
 [VEHICLE]
 rv_type = 1
+deflection_time = 0.02
+actuator_force = 100
+gearing_ratio = 1
+nav_gain = 5
+flap_gain = 100
 
 [ERRORPARAMS]
 initial_x_error = 0.0
