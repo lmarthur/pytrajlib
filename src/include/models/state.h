@@ -33,7 +33,7 @@ typedef struct state{
     double initial_theta_lat_pert; // initial perturbation in the latitudinal thrust angle in radians
     double theta_long; // thrust angle in the longitudinal direction measured from the x-z plane in radians
     double theta_lat; // thrust angle in the latitudinal direction measured from the x-y plane in radians
-
+    double roll; // change in roll angle in radians from the initial orientation at the start of reentry. A positive yaw angle and pitch corresponds to a positive roll. 
 
 } state;
 

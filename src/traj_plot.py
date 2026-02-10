@@ -57,6 +57,7 @@ def traj_plot(run_path):
     est_ax_lift = traj_data[:,34]
     est_ay_lift = traj_data[:,35]
     est_az_lift = traj_data[:,36]
+    roll = traj_data[:,37]
 
 
 
@@ -260,5 +261,15 @@ def traj_plot(run_path):
     plt.legend()
     plt.grid()
     plt.savefig(run_path + "position_vs_altitude.pdf")
+    plt.close()
+
+    # roll angle vs. time
+    plt.figure(figsize=(10,10))
+    plt.plot(true_t[(true_altitude < 1e5) & (true_t > 200)], roll[(true_altitude < 1e5) & (true_t > 200)])
+    plt.xlabel("Time (s)")
+    plt.ylabel("Roll Angle (rad)")
+    plt.title("Roll Angle")
+    plt.grid()
+    plt.savefig(run_path + "roll.pdf")
     plt.close()
 

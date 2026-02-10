@@ -112,14 +112,21 @@ double get_acc_resolution(runparams *run_params, vehicle *vehicle) {
 
 /**
  * Define a local coordinate system where
+ *
  * - $\vec e_1$ points in the direction of relative velocity
+ *
  * - $\vec e_2$ points in the direction of lift acceleration (or the global
  * z-axis if lift is zero)
+ *
  * - $\vec e_3$ is orthogonal to both ($\vec e_3 = \vec e_1 \times \vec e_2$)
  *
+ *
  * The basis is only successfully defined if
+ *
  * 1. the relative velocity is not zero AND
+ *
  * 2. inside the atmosphere (below 100km) AND
+ *
  * 3. $|e_2| > 0$
  * @return 1 if successfully defined basis, 0 if unsuccessful
  */
@@ -413,6 +420,24 @@ void get_a_lift_jerk(double t, state *true_state, state *est_state,
                                                   vehicle, est_atm_cond);
 }
 
+void update_roll(state *true_state, state *est_state, cart_vector true_d_a_lift,
+                 cart_vector est_d_a_lift, atm_cond *true_atm_cond,
+                 atm_cond *est_atm_cond) {
+  // Update roll based on the change in pitch and yaw accelerations
+  cart_vector e1, e2, e3;
+  compute_lift_basis(true_state, true_atm_cond, &e1, &e2, &e3);
+  double true_pitch_acceleration = dot(true_d_a_lift, e2);
+  double true_yaw_acceleration = dot(true_d_a_lift, e3);
+  true_state->roll += atan2(true_yaw_acceleration, true_pitch_acceleration);
+  true_state->roll = fmod(true_state->roll + 2 * M_PI, 2 * M_PI);
+
+  compute_lift_basis(est_state, est_atm_cond, &e1, &e2, &e3);
+  double est_pitch_acceleration = dot(est_d_a_lift, e2);
+  double est_yaw_acceleration = dot(est_d_a_lift, e3);
+  est_state->roll += atan2(est_yaw_acceleration, est_pitch_acceleration);
+  est_state->roll = fmod(est_state->roll + 2 * M_PI, 2 * M_PI);
+}
+
 void update_lift(state *true_state, state *est_state, runparams *run_params,
                  atm_cond *true_atm_cond, atm_cond *est_atm_cond,
                  vehicle *vehicle, double time_step) {
@@ -435,22 +460,27 @@ void update_lift(state *true_state, state *est_state, runparams *run_params,
   }
 
   // Update true state
-  true_state->ax_lift += true_d_a_lift_dt.x * time_step;
-  true_state->ay_lift += true_d_a_lift_dt.y * time_step;
-  true_state->az_lift += true_d_a_lift_dt.z * time_step;
+  cart_vector true_d_a_lift = smultiply(true_d_a_lift_dt, time_step);
+  true_state->ax_lift += true_d_a_lift.x;
+  true_state->ay_lift += true_d_a_lift.y;
+  true_state->az_lift += true_d_a_lift.z;
 
   true_state->ax_lift_avail += true_d_a_lift_avail_dt.x * time_step;
   true_state->ay_lift_avail += true_d_a_lift_avail_dt.y * time_step;
   true_state->az_lift_avail += true_d_a_lift_avail_dt.z * time_step;
 
   // Update estimated state
-  est_state->ax_lift += est_d_a_lift_dt.x * time_step;
-  est_state->ay_lift += est_d_a_lift_dt.y * time_step;
-  est_state->az_lift += est_d_a_lift_dt.z * time_step;
+  cart_vector est_d_a_lift = smultiply(est_d_a_lift_dt, time_step);
+  est_state->ax_lift += est_d_a_lift.x;
+  est_state->ay_lift += est_d_a_lift.y;
+  est_state->az_lift += est_d_a_lift.z;
 
   est_state->ax_lift_avail += est_d_a_lift_avail_dt.x * time_step;
   est_state->ay_lift_avail += est_d_a_lift_avail_dt.y * time_step;
   est_state->az_lift_avail += est_d_a_lift_avail_dt.z * time_step;
+
+  update_roll(true_state, est_state, true_d_a_lift, est_d_a_lift, true_atm_cond,
+              est_atm_cond);
 }
 
 #endif
