@@ -32,7 +32,7 @@ TEST(maneuverability, instant_maneuv){
 
     // Get the commanded acceleration vector
     cart_vector a_command;
-    a_command = prop_nav(&run_params, &estimated_state);
+    a_command = prop_nav(&estimated_state, &run_params);
 
     // Get the updated state
     true_state = instant_maneuv(&true_state, &a_command);
@@ -160,14 +160,14 @@ TEST(maneuverability, rv_time_constant){
     atm_cond.vertical_wind = 0;
 
     // Get the time constant
-    double time_constant_0 = rv_time_constant(&vehicle, &true_state, &atm_cond);
+    double time_constant_0 = rv_time_constant(&true_state, &atm_cond, &vehicle);
 
     // Verify that the time constant is correct
     REQUIRE_GT(time_constant_0, 0);
 
     // For a different state, the time constant should be different
     true_state.vx = -10;
-    double time_constant_1 = rv_time_constant(&vehicle, &true_state, &atm_cond);
+    double time_constant_1 = rv_time_constant(&true_state, &atm_cond, &vehicle);
 
     REQUIRE_GT(time_constant_1, 0);
     REQUIRE_NE(time_constant_0, time_constant_1);

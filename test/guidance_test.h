@@ -1,5 +1,5 @@
 #include <tau/tau.h>
-#include "../src/include/guidance.h"
+#include "../src/include/forces/lift.h"
 
 TEST(guidance, prop_nav){
     runparams run_params;
@@ -16,7 +16,7 @@ TEST(guidance, prop_nav){
     estimated_state.vy = 0;
     estimated_state.vz = 0;
 
-    cart_vector a_command = prop_nav(&run_params, &estimated_state);
+    cart_vector a_command = prop_nav(&estimated_state, &run_params);
     REQUIRE_EQ(a_command.x, 0);
     REQUIRE_EQ(a_command.y, 0);
     REQUIRE_EQ(a_command.z, 0);
@@ -28,7 +28,7 @@ TEST(guidance, prop_nav){
     estimated_state.vy = 1;
     estimated_state.vz = 0;
 
-    a_command = prop_nav(&run_params, &estimated_state);
+    a_command = prop_nav(&estimated_state, &run_params);
     REQUIRE_LT(a_command.x, 0);
     REQUIRE_LT(a_command.y, 0);
     REQUIRE_EQ(a_command.z, 0);

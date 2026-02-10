@@ -4,6 +4,7 @@
 TEST(lift, update_lift){
     // Initialize the state
     state true_state;
+    true_state.t = 1000;
     true_state.x = 6371e3 + 10;
     true_state.y = 0;
     true_state.z = 0;
@@ -23,11 +24,16 @@ TEST(lift, update_lift){
     true_state.ax_thrust = 0;
     true_state.ay_thrust = 0;
     true_state.az_thrust = 0;
+    true_state.ax_lift_avail = 0;
+    true_state.ay_lift_avail = 0;
+    true_state.az_lift_avail = 0;
+
+    state est_state = true_state;
 
     // Initialize the run parameters
     runparams run_params;
     run_params.deflection_time = 0.1; // Time to deflect the lift vector (seconds)
-
+    run_params.actuator_force = 100;
     // Initialize the vehicle
     vehicle vehicle;
     vehicle.rv = init_swerve_rv();
@@ -50,8 +56,7 @@ TEST(lift, update_lift){
     a_command.z = 0;
 
     // Update the lift
-    update_lift(&run_params, &true_state, &a_command, &atm_cond, &vehicle, 0.1);
-
+    update_lift(&true_state, &est_state, &run_params, &atm_cond, &atm_cond, &vehicle, 0.1);
     // Verify that the lift is unchanged when the command is zero and the current lift is zero
     REQUIRE_EQ(true_state.ax_lift, 0);
     REQUIRE_EQ(true_state.ay_lift, 0);
@@ -66,8 +71,8 @@ TEST(lift, update_lift){
     true_state.ay_lift = 1;
     true_state.az_lift = 1;
 
-    update_lift(&run_params, &true_state, &a_command, &atm_cond, &vehicle, 0.1);
-    
+    update_lift(&true_state, &est_state, &run_params, &atm_cond, &atm_cond, &vehicle, 0.1);
+    update_lift(&true_state, &est_state, &run_params, &atm_cond, &atm_cond, &vehicle, 0.1);
     // Verify that the lift is updated correctly
     REQUIRE_LT(true_state.ax_lift, 1);
     REQUIRE_LT(true_state.ay_lift, 1);

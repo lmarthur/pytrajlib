@@ -51,6 +51,13 @@ def traj_plot(run_path):
     est_ax_total = traj_data[:,28]
     est_ay_total = traj_data[:,29]
     est_az_total = traj_data[:,30]
+    true_ax_lift = traj_data[:,31]
+    true_ay_lift = traj_data[:,32]
+    true_az_lift = traj_data[:,33]
+    est_ax_lift = traj_data[:,34]
+    est_ay_lift = traj_data[:,35]
+    est_az_lift = traj_data[:,36]
+
 
 
     true_altitude = np.sqrt(np.square(true_x) + np.square(true_y) + np.square(true_z)) - 6371e3
@@ -227,13 +234,12 @@ def traj_plot(run_path):
     plt.savefig(run_path + "drag_acceleration.pdf")
     plt.close()
 
+
     # lift acceleration
     plt.figure(figsize=(10,10))
-    plt.plot(true_t[0:-10], a_command[0:-10], label="a_command")
-    plt.plot(true_t[0:-10], a_exec[0:-10], label="a_exec")
-    #plt.ylim(0, 25) # limit y-axis to 0-50 for better visibility of the lift acceleration
-
-    plt.yscale('symlog')
+    plt.plot(true_t[(true_altitude < 1e5) & (true_t > 200)], true_ax_lift[(true_altitude < 1e5) & (true_t > 200)], label="ax")
+    plt.plot(true_t[(true_altitude < 1e5) & (true_t > 200)], true_ay_lift[(true_altitude < 1e5) & (true_t > 200)], label="ay")
+    plt.plot(true_t[(true_altitude < 1e5) & (true_t > 200)], true_az_lift[(true_altitude < 1e5) & (true_t > 200)], label="az")
     plt.xlabel("Time (s)")
     plt.ylabel("Lift Acceleration (m/s^2)")
     plt.title("Lift Acceleration")
