@@ -105,7 +105,6 @@ def read_config(run_name):
     # set the flight parameters
     run_params.grav_error = c_int(int(config['FLIGHT']['grav_error']))
     run_params.atm_model = c_int(int(config['FLIGHT']['atm_model']))
-    run_params.atm_error = c_int(int(config['FLIGHT']['atm_error']))
     run_params.gnss_nav = c_int(int(config['FLIGHT']['gnss_nav']))
     run_params.ins_nav = c_int(int(config['FLIGHT']['ins_nav']))
     run_params.rv_maneuv = c_int(int(config['FLIGHT']['rv_maneuv']))

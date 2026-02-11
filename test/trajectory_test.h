@@ -66,7 +66,7 @@ TEST(trajectory, fly){
 
     run_params.rv_type = 0;
     run_params.grav_error = 0;
-    run_params.atm_error = 0;
+    run_params.atm_model = 0;
     run_params.gnss_nav = 0;
     run_params.ins_nav = 1;
     run_params.rv_maneuv = 0;
@@ -140,7 +140,7 @@ TEST(trajectory, update_aimpoint){
     run_params.theta_lat = 0;
 
     run_params.grav_error = 0;
-    run_params.atm_error = 0;
+    run_params.atm_model = 0;
     run_params.gnss_nav = 0;
     run_params.ins_nav = 0;
 

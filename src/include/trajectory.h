@@ -285,11 +285,17 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     double a_command_total = 0;
     double a_lift_total = 0;
 
-    int atm_profile_num;
-    // Generate a random integer between 0 and 100
-    atm_profile_num = (int)gsl_ran_flat(rng, 0, 100);
-
-    eg16_profile atm_profile = parse_atm(atmprofilepath, atm_profile_num);
+    // Initialize either a randomly chosen EarthGRAM profile or the average EarthGRAM profile
+    eg16_profile atm_profile;
+    if (run_params->atm_model == 2) {
+        // Generate a random integer between 0 and 100
+        int atm_profile_num = (int)gsl_ran_flat(rng, 0, 100);
+        
+        atm_profile = parse_atm("input/atmprofiles.txt", atm_profile_num);
+    }
+    else if (run_params->atm_model == 3) {
+        atm_profile = parse_atm("input/mean_atm.txt", -1);
+    }
 
     state old_true_state = *initial_state;
     state new_true_state = *initial_state;
@@ -487,7 +493,6 @@ cart_vector update_aimpoint(runparams run_params, double thrust_angle_long){
     run_params_temp.ins_nav = 0;
     // Set all error parameters to zero
     run_params_temp.grav_error = 0;
-    run_params_temp.atm_error = 0;
     run_params_temp.atm_model = 0;
     run_params_temp.initial_x_error = 0;
     run_params_temp.initial_pos_error = 0;

@@ -8,6 +8,9 @@
 #include "state.h"
 #include "../math/linalg.h"
 
+#define ATM_PROFILE_LEN 100
+#define ATM_PROFILE_NUM 100
+
 // Define an atm_cond struct to store local atmospheric conditions
 typedef struct atm_cond{
     double altitude; // altitude in meters
@@ -41,13 +44,91 @@ typedef struct atm_model{
 // Define an eg16_profile struct to store the atmospheric profile data
 typedef struct eg16_profile{
     int profile_num; // profile number
-    double alt_data[100]; // altitude data
-    double density_data[100]; // density data
-    double meridional_wind_data[100]; // meridional wind data
-    double zonal_wind_data[100]; // zonal wind data
-    double vertical_wind_data[100]; // vertical wind data
+    double alt_data[ATM_PROFILE_LEN]; // altitude data
+    double density_data[ATM_PROFILE_LEN]; // density data
+    double meridional_wind_data[ATM_PROFILE_LEN]; // meridional wind data
+    double zonal_wind_data[ATM_PROFILE_LEN]; // zonal wind data
+    double vertical_wind_data[ATM_PROFILE_LEN]; // vertical wind data
 
 } eg16_profile;
+
+double atm_data[ATM_PROFILE_LEN * ATM_PROFILE_NUM][6];
+// The mean atmospheric profile data has 5 columns, not 6, because there is no 
+// profile number column
+double mean_atm_data[ATM_PROFILE_LEN][5];
+int atm_data_is_filled = 0;
+int mean_atm_data_is_filled = 0;
+
+void init_atm_data(char* atmprofilepath){
+    /*
+    Initializes the atmospheric profile data so we only read the file once.
+
+    INPUTS:
+    ----------
+        atmprofilepath: char *
+            path to the atmospheric profile file
+    OUTPUTS:
+    ----------
+        atm_profile: eg16_profile
+            atmospheric profile struct
+    */
+
+    if (atm_data_is_filled == 1){
+        return;
+    }
+
+    // Open the atmospheric profile file
+    FILE *fp = fopen(atmprofilepath, "r");
+    if (fp == NULL){
+        printf("Error opening atmospheric profile file\n");
+        return;
+    }
+
+    // read the atmospheric profile data delimited by spaces
+    for (int i = 0; i < ATM_PROFILE_LEN*ATM_PROFILE_NUM; i++){
+        for (int j = 0; j < 6; j++){
+            fscanf(fp, "%lfe", &atm_data[i][j]);
+        }
+    }
+    atm_data_is_filled = 1;
+    fclose(fp);
+}
+
+void init_mean_atm_data(char* atmprofilepath){
+    /*
+    Initializes the mean atmospheric profile data so we only read the file once.
+
+    INPUTS:
+    ----------
+        atmprofilepath: char *
+            path to the mean atmospheric profile file
+    OUTPUTS:
+    ----------
+        atm_profile: eg16_profile
+            atmospheric profile struct
+    */
+
+    if (mean_atm_data_is_filled == 1){
+        return;
+    }
+
+    // Open the atmospheric profile file
+    FILE *fp = fopen(atmprofilepath, "r");
+    if (fp == NULL){
+        printf("Error opening mean atmospheric profile file %s\n", atmprofilepath);
+        return;
+    }
+
+    // read the atmospheric profile data delimited by spaces
+    for (int i = 0; i < ATM_PROFILE_LEN; i++){
+        for (int j = 0; j < 5; j++){
+            fscanf(fp, "%lfe", &mean_atm_data[i][j]);
+        }
+    }
+    mean_atm_data_is_filled = 1;
+    fclose(fp);
+}
+    
 
 atm_model init_exp_atm(runparams *run_params, gsl_rng *rng){
     /*
@@ -72,8 +153,8 @@ atm_model init_exp_atm(runparams *run_params, gsl_rng *rng){
     atm_model.sea_level_density = 1.225; // sea level density in kg/m^3
 
 
-    // Non-perturbed branch
-    if (run_params->atm_error == 0){
+    // Non-perturbed branch (atm_model == 0)
+    if (run_params->atm_model == 0){
 
         for (int i = 0; i < 4; i++){
             atm_model.std_densities[i] = 0;
@@ -87,6 +168,7 @@ atm_model init_exp_atm(runparams *run_params, gsl_rng *rng){
 
     }
     else{
+        // Perturbed branch (atm_model == 1)
         // Density standard deviations
         atm_model.std_densities[0] = 0.00009;
         atm_model.std_densities[1] = 0.00001;
@@ -114,8 +196,6 @@ atm_model init_exp_atm(runparams *run_params, gsl_rng *rng){
         }
 
     }
-
-    
     
     return atm_model;
 }
@@ -250,12 +330,12 @@ atm_cond get_eg_atm_cond(double altitude, eg16_profile *atm_profile){
         atm_conditions.vertical_wind = 0;
         return atm_conditions;
     }
-
+    int num_heights = ATM_PROFILE_LEN;
     // Use linear interpolation to get the atmospheric conditions
-    atm_conditions.density = linterp(altitude, atm_profile->alt_data, atm_profile->density_data, 100);
-    atm_conditions.meridional_wind = linterp(altitude, atm_profile->alt_data, atm_profile->meridional_wind_data, 100);
-    atm_conditions.zonal_wind = linterp(altitude, atm_profile->alt_data, atm_profile->zonal_wind_data, 100);
-    atm_conditions.vertical_wind = linterp(altitude, atm_profile->alt_data, atm_profile->vertical_wind_data, 100);
+    atm_conditions.density = linterp(altitude, atm_profile->alt_data, atm_profile->density_data, num_heights);
+    atm_conditions.meridional_wind = linterp(altitude, atm_profile->alt_data, atm_profile->meridional_wind_data, num_heights);
+    atm_conditions.zonal_wind = linterp(altitude, atm_profile->alt_data, atm_profile->zonal_wind_data, num_heights);
+    atm_conditions.vertical_wind = linterp(altitude, atm_profile->alt_data, atm_profile->vertical_wind_data, num_heights);
     
     return atm_conditions;
 }
@@ -280,19 +360,17 @@ atm_cond get_atm_cond(double altitude, atm_model *exp_atm_model, runparams *run_
 
     atm_cond atm_conditions;
 
-    if (run_params->atm_error == 0){
+    if (run_params->atm_model == 0){
+        // Exponential model without perturbations
         atm_conditions = get_exp_atm_cond(altitude, exp_atm_model);
     }
-    else{
-        if (run_params->atm_model == 0){
-            atm_conditions = get_pert_atm_cond(altitude, exp_atm_model);
-        }
-        else{
-            // EarthGRAM branch
-
-            atm_conditions = get_eg_atm_cond(altitude, atm_profile);
-        }
-
+    else if (run_params->atm_model == 1){
+        // Exponential model with Gaussian wind perturbations
+        atm_conditions = get_pert_atm_cond(altitude, exp_atm_model);
+    }
+    else if (run_params->atm_model >= 2){
+        // EarthGRAM model (random or average)
+        atm_conditions = get_eg_atm_cond(altitude, atm_profile);
     }
     
     return atm_conditions;
@@ -307,7 +385,8 @@ eg16_profile parse_atm(char* atmprofilepath, int profilenum){
         atmprofilepath: char *
             path to the atmospheric profile file
         profilenum: int
-            index number of the atmospheric profile to use
+            index number of the atmospheric profile to use. -1 signifies the mean 
+            atmospheric profile
     OUTPUTS:
     ----------
         atm_profile: eg16_profile
@@ -315,48 +394,31 @@ eg16_profile parse_atm(char* atmprofilepath, int profilenum){
         
     */
     // Initialize the atmospheric profile struct
-    double atm_data[10000][6];
     eg16_profile atm_profile;
     atm_profile.profile_num = profilenum;
 
-    // Open the atmospheric profile file
-    FILE *fp = fopen(atmprofilepath, "r");
-    if (fp == NULL){
-        printf("Error opening atmospheric profile file\n");
-    }
-
-    // read the atmospheric profile data delimited by spaces
-    for (int i = 0; i < 100*100; i++){
-        for (int j = 0; j < 6; j++){
-            fscanf(fp, "%lfe", &atm_data[i][j]);
+    if (profilenum < 0) {
+        init_mean_atm_data(atmprofilepath);
+        // Update the atmospheric profile struct using mean data
+        for (int i = 0; i < ATM_PROFILE_LEN; i++){
+            atm_profile.alt_data[i] = mean_atm_data[i][0];
+            atm_profile.density_data[i] = mean_atm_data[i][1];
+            atm_profile.meridional_wind_data[i] = mean_atm_data[i][2];
+            atm_profile.zonal_wind_data[i] = mean_atm_data[i][3];
+            atm_profile.vertical_wind_data[i] = mean_atm_data[i][4];
         }
     }
-
-    // print the atmospheric profile data
-    // for (int i = 0; i < 100*100; i++){
-    //     for (int j = 0; j < 6; j++){
-    //         printf("%lf ", atm_data[i][j]);
-    //     }
-    //     printf("\n");
-    // }
-    
-    // Update the atmospheric profile struct by iterating over only the requested profile
-    for (int i = 0; i < 100; i++){
-        atm_profile.alt_data[i] = atm_data[100*profilenum+i][1];
-        atm_profile.density_data[i] = atm_data[100*profilenum+i][2];
-        atm_profile.meridional_wind_data[i] = atm_data[100*profilenum+i][3];
-        atm_profile.zonal_wind_data[i] = atm_data[100*profilenum+i][4];
-        atm_profile.vertical_wind_data[i] = atm_data[100*profilenum+i][5];
+    else {
+        init_atm_data(atmprofilepath);
+        // Update the atmospheric profile struct by iterating over only the requested profile
+        for (int i = 0; i < ATM_PROFILE_LEN; i++){
+            atm_profile.alt_data[i] = atm_data[ATM_PROFILE_NUM*profilenum+i][1];
+            atm_profile.density_data[i] = atm_data[ATM_PROFILE_NUM*profilenum+i][2];
+            atm_profile.meridional_wind_data[i] = atm_data[ATM_PROFILE_NUM*profilenum+i][3];
+            atm_profile.zonal_wind_data[i] = atm_data[ATM_PROFILE_NUM*profilenum+i][4];
+            atm_profile.vertical_wind_data[i] = atm_data[ATM_PROFILE_NUM*profilenum+i][5];
+        }
     }
-
-
-    // Print the atmospheric profile data
-    // printf("Profile number: %d\n", atm_profile.profile_num);
-    // for (int i = 0; i < 100; i++){
-    //     printf("Data: %lf %lf %lf %lf %lf\n", atm_profile.alt_data[i], atm_profile.density_data[i], atm_profile.meridional_wind_data[i], atm_profile.zonal_wind_data[i], atm_profile.vertical_wind_data[i]);
-    // }
-
-    fclose(fp);
 
     return atm_profile;
 }

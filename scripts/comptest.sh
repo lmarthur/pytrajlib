@@ -20,6 +20,8 @@ echo "Running the library tests..."
 echo "Compiling the shared library..."
 gcc -shared -fPIC -o ./build/libPyTraj.so ./src/main.c -lgsl -lgslcblas
 
+uv run src/mean_atm.py
+
 # Run integration tests
 echo "Running integration tests..."
 pytest -v -s ./test/
