@@ -18,8 +18,6 @@ theta_lat = 0.0
 grav_error = 0
 # Atmospheric model
 atm_model = 0
-# Atmospheric perturbations
-atm_error = 0
 # Positioning updates during exoatmospheric flight
 gnss_nav = 0
 # If set to 0, indicates perfect acceleration measurements
@@ -30,11 +28,18 @@ boost_guidance = 1
 rv_maneuv = 1
 # Reentry velocity (m/s) for reentry only simulation (run_type = 1)
 reentry_vel = 7500
-# Deflection time (s) for control surfaces
-deflection_time = 0.0
 
 [VEHICLE]
 rv_type = 1
+# Deflection time (s) for control surfaces
+deflection_time = 0.0
+# Actuator max force at max speed (kN)
+actuator_force = 12.0
+# Gearing ratio---greater values correspond to increased max force and decreased max speed
+gearing_ratio = 1.0
+# Navigation gain for proportional navigation guidance law
+nav_gain = 5.0
+flap_gain = 100
 
 [ERRORPARAMS]
 initial_x_error = 0.0
@@ -52,3 +57,8 @@ step_acc_mag = 0
 step_acc_hgt = 0
 # Step function acceleration duration (s)
 step_acc_dur = 0
+step_acc_roll_angle = -1
+# If anomaly is independent of roll angle, specify the local lat and lon angles
+# of the anomaly. The anomaly is vector [magnitude, lon, lat]
+step_acc_lat = -1
+step_acc_lon = -1

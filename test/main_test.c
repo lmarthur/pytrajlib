@@ -15,4 +15,6 @@
 #include "forces/gravity_test.h"
 #include "forces/lift_test.h"
 
+#include "linalg_test.h"
+
 TAU_MAIN()

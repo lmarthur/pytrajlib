@@ -81,6 +81,24 @@ cart_vector subtract(cart_vector a, cart_vector b) {
 }
 
 /**
+ * Multiply a 3x3 matrix by a 3-vector: result = matrix * vec
+ *
+ * @param matrix 3x3 matrix stored as double[3][3]
+ * @param vec 3-vector
+ * @return The product vector
+ */
+cart_vector matvec_multiply(double matrix[3][3], cart_vector vec) {
+    cart_vector result;
+    result.x =
+        matrix[0][0] * vec.x + matrix[0][1] * vec.y + matrix[0][2] * vec.z;
+    result.y =
+        matrix[1][0] * vec.x + matrix[1][1] * vec.y + matrix[1][2] * vec.z;
+    result.z =
+        matrix[2][0] * vec.x + matrix[2][1] * vec.y + matrix[2][2] * vec.z;
+    return result;
+}
+
+/**
  * Compute the cross product of two 3-vectors: result = a x b
  *
  * @param a First vector
@@ -94,5 +112,19 @@ cart_vector cross(cart_vector a, cart_vector b) {
     result.z = a.x * b.y - a.y * b.x;
     return result;
 }
+
+/**
+ * Rotate vector v around unit vector k by specified angle.
+ * Uses Rodrigues' rotation formula https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
+ */
+cart_vector rotate(cart_vector v, cart_vector k, double angle) {
+    cart_vector v_rot  = add(add(
+        smultiply(v, cos(angle)),
+        smultiply(cross(k, v), sin(angle))),
+        smultiply(smultiply(k, dot(k, v)), 1 - cos(angle))
+    );
+    return v_rot;
+}
+
 
 #endif
