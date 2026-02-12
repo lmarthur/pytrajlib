@@ -11,9 +11,13 @@ TEST(lift, update_lift) {
   state est_state = true_state;
 
   // Initialize the run parameters
-  runparams run_params;
-  run_params.deflection_time = 0.1; // Time to deflect the lift vector (seconds)
+  runparams run_params = {0};
+  run_params.deflection_time = 0.02;
   run_params.actuator_force = 100;
+  run_params.gearing_ratio = 1;
+  run_params.nav_gain = 5;
+  run_params.flap_gain = 100;
+
   // Initialize the vehicle
   vehicle vehicle;
   vehicle.rv = init_swerve_rv();
