@@ -26,7 +26,6 @@ class runparams(Structure):
         
         ("grav_error", c_int),
         ("atm_model", c_int),
-        ("atm_error", c_int),
         ("gnss_nav", c_int),
         ("ins_nav", c_int),
         ("rv_maneuv", c_int),
@@ -51,6 +50,9 @@ class runparams(Structure):
         ("step_acc_mag", c_double),
         ("step_acc_hgt", c_double),
         ("step_acc_dur", c_double),
+        ("step_acc_roll_angle", c_double),
+        ("step_acc_lat", c_double),
+        ("step_acc_lon", c_double),
     ]
 
 class cart_vector(Structure):
@@ -131,7 +133,9 @@ def read_config(run_name):
     run_params.step_acc_mag = c_double(float(config['ERRORPARAMS']['step_acc_mag'])) # magnitude of step acceleration
     run_params.step_acc_hgt = c_double(float(config['ERRORPARAMS']['step_acc_hgt'])) # height of step acceleration
     run_params.step_acc_dur = c_double(float(config['ERRORPARAMS']['step_acc_dur'])) # duration of step acceleration
-
+    run_params.step_acc_roll_angle = c_double(float(config['ERRORPARAMS']['step_acc_roll_angle']))
+    run_params.step_acc_lat = c_double(float(config['ERRORPARAMS']['step_acc_lat']))
+    run_params.step_acc_lon = c_double(float(config['ERRORPARAMS']['step_acc_lon']))
     return run_params
 
 def get_cep(impact_data, run_params):
