@@ -18,7 +18,7 @@ theta_lat = 0.0
 # Gravitational error model
 grav_error = 1
 # Atmospheric model. 0 is exponential, 1 is exponential with perturbations, 2 is EarthGram, 3 is mean EarthGram
-atm_model = 0
+atm_model = 1
 # Positioning updates during exoatmospheric flight (1 is on, 0 is off)
 gnss_nav = 0
 # If set to 0, indicates perfect state measurements

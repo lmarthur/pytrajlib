@@ -273,3 +273,13 @@ def traj_plot(run_path):
     plt.savefig(run_path + "roll.pdf")
     plt.close()
 
+    # roll angle vs. altitude
+    plt.figure(figsize=(10,10))
+    plt.plot(roll[true_altitude < 1e5], true_altitude[true_altitude < 1e5])
+    plt.ylabel("Altitude (m)")
+    plt.xlabel("Roll Angle (rad)")
+    plt.title("Roll Angle vs. Altitude")
+    plt.grid()
+    plt.savefig(run_path + "roll_vs_altitude.pdf")
+    plt.close()
+
