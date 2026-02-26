@@ -5,13 +5,7 @@ TEST(trajectory, impact_linterp){
     runparams run_params;
     run_params.grav_error = 0;
 
-    const gsl_rng_type *T;
-    gsl_rng *rng;
-    gsl_rng_env_setup();
-    T = gsl_rng_default;
-    rng = gsl_rng_alloc(T);
-
-    grav grav = init_grav(&run_params, rng);
+    grav grav = init_grav(&run_params);
     state state_0;
     state state_1;
     state_0.t = 0;
@@ -44,11 +38,7 @@ TEST(trajectory, impact_linterp){
 
 TEST(trajectory, fly){
     // Initialize the random number generator
-    const gsl_rng_type *T;
-    gsl_rng *rng;
-    gsl_rng_env_setup();
-    T = gsl_rng_default;
-    rng = gsl_rng_alloc(T);
+
 
     vehicle vehicle = init_mock_vehicle();
     runparams run_params;
@@ -82,11 +72,11 @@ TEST(trajectory, fly){
     // print all of the vehicle parameters
     // printf("Booster total mass: %f\n", vehicle.booster.total_mass);
     // Mock vehicle with no thrust dropped from 10m above the surface
-    state initial_state = init_true_state(&run_params, rng);
+    state initial_state = init_true_state(&run_params);
     initial_state.theta_long = 0;
     initial_state.x += 10;
     
-    state final_state = fly(&run_params, &initial_state, &vehicle, rng);
+    state final_state = fly(&run_params, &initial_state, &vehicle);
 
     REQUIRE_LT(fabs(final_state.t - 1), 1);
     REQUIRE_EQ(final_state.ax_thrust, 0);
@@ -94,12 +84,12 @@ TEST(trajectory, fly){
     REQUIRE_EQ(final_state.az_thrust, 0);
     
     // Mock vehicle with no thrust launched from the surface
-    initial_state = init_true_state(&run_params, rng);
+    initial_state = init_true_state(&run_params);
     initial_state.theta_long = 0;
     initial_state.vx = 10;
     initial_state.vy = 10;
     initial_state.vz = 10;
-    final_state = fly(&run_params, &initial_state, &vehicle, rng);
+    final_state = fly(&run_params, &initial_state, &vehicle);
 
     REQUIRE_LT(fabs(final_state.t - 2), 1);
 }

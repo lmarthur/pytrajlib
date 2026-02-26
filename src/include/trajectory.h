@@ -10,13 +10,14 @@
 #include "physics.h"
 #include "sensors.h"
 #include "maneuverability.h"
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
+#include "rng/rng.h"
 
 #include "forces/thrust.h"
 #include "forces/gravity.h"
 #include "forces/drag.h"
 #include "forces/lift.h"
+
+#include <stdlib.h>
 
 // Define a constant upper limit for the number of Monte Carlo runs
 #define MAX_RUNS 1000
@@ -28,7 +29,7 @@ typedef struct impact_data{
 
 } impact_data;
 
-state init_true_state(runparams *run_params, gsl_rng *rng){
+state init_true_state(runparams *run_params){
     /*
     Initializes a true state struct at the launch site with zero velocity and acceleration
 
@@ -36,9 +37,6 @@ state init_true_state(runparams *run_params, gsl_rng *rng){
     ----------
         run_params: runparams *
             pointer to the run parameters struct
-        rng: gsl_rng *
-            pointer to the random number generator
-
     OUTPUTS:
     ----------
         state: state
@@ -48,38 +46,34 @@ state init_true_state(runparams *run_params, gsl_rng *rng){
     state state;
     // branch for initializing full trajectory run
     if (run_params->run_type == 0){
-        // printf("Initializing full trajectory run\n");
         state.t = 0;
-        state.x = 6371e3 + run_params->initial_x_error * gsl_ran_gaussian(rng, 1);
-        state.y = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
-        state.z = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
+        state.x = 6371e3 + run_params->initial_x_error * ran_gaussian(1);
+        state.y = run_params->initial_pos_error * ran_gaussian(1);
+        state.z = run_params->initial_pos_error * ran_gaussian(1);
 
-        state.vx = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
-        state.vy = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
-        state.vz = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
-        
+        state.vx = run_params->initial_vel_error * ran_gaussian(1);
+        state.vy = run_params->initial_vel_error * ran_gaussian(1);
+        state.vz = run_params->initial_vel_error * ran_gaussian(1);
     }
     // branch for initializing reentry only run
     if (run_params->run_type == 1){
-        // printf("Initializing reentry only run\n");
         state.t = 0;
-        state.x = 6371e3 + 500e3 + run_params->initial_x_error * gsl_ran_gaussian(rng, 1);
-        state.y = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
-        state.z = run_params->initial_pos_error * gsl_ran_gaussian(rng, 1);
+        state.x = 6371e3 + 500e3 + run_params->initial_x_error * ran_gaussian(1);
+        state.y = run_params->initial_pos_error * ran_gaussian(1);
+        state.z = run_params->initial_pos_error * ran_gaussian(1);
 
-        state.vx = -run_params->reentry_vel + run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
-        state.vy = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
-        state.vz = run_params->initial_vel_error * gsl_ran_gaussian(rng, 1);
-
+        state.vx = -run_params->reentry_vel + run_params->initial_vel_error * ran_gaussian(1);
+        state.vy = run_params->initial_vel_error * ran_gaussian(1);
+        state.vz = run_params->initial_vel_error * ran_gaussian(1);
     }
-    
-    double initial_rot_pert = run_params->initial_angle_error * gsl_ran_gaussian(rng, 1);
 
-    state.initial_theta_lat_pert = run_params->initial_angle_error * gsl_ran_gaussian(rng, 1) + run_params->theta_long * initial_rot_pert - fabs(run_params->theta_lat * initial_rot_pert);
-    state.initial_theta_long_pert = run_params->initial_angle_error * gsl_ran_gaussian(rng, 1) - run_params->theta_lat * initial_rot_pert - fabs(run_params->theta_long * initial_rot_pert);
+    double initial_rot_pert = run_params->initial_angle_error * ran_gaussian(1);
+
+    state.initial_theta_lat_pert = run_params->initial_angle_error * ran_gaussian(1) + run_params->theta_long * initial_rot_pert - fabs(run_params->theta_lat * initial_rot_pert);
+    state.initial_theta_long_pert = run_params->initial_angle_error * ran_gaussian(1) - run_params->theta_lat * initial_rot_pert - fabs(run_params->theta_long * initial_rot_pert);
     state.theta_long = run_params->theta_long + state.initial_theta_long_pert;
     state.theta_lat = run_params->theta_lat + state.initial_theta_lat_pert;
-        
+
     state.ax_grav = 0;
     state.ay_grav = 0;
     state.az_grav = 0;
@@ -250,7 +244,7 @@ void output_impact(FILE *impact_file, impact_data *impact_data, int num_runs){
     
 }
 
-state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng *rng){
+state fly(runparams *run_params, state *initial_state, vehicle *vehicle){
     /*
     Function that simulates the flight of a vehicle, updating the state of the vehicle at each time step
     
@@ -262,8 +256,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             pointer to the initial state of the vehicle
         vehicle: vehicle *
             pointer to the vehicle struct
-        rng: gsl_rng *
-            pointer to the random number generator
 
     OUTPUTS:
     ----------
@@ -274,11 +266,11 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     // Initialize the variables and structures
     int max_steps = 10000000;
 
-    grav true_grav = init_grav(run_params, rng);
-    grav est_grav = init_grav(run_params, rng);
+    grav true_grav = init_grav(run_params);
+    grav est_grav = init_grav(run_params);
     est_grav.perturb_flag = 0;
 
-    atm_model exp_atm_model = init_exp_atm(run_params, rng);
+    atm_model exp_atm_model = init_exp_atm(run_params);
     
     char *atmprofilepath = "input/atmprofiles.txt";
 
@@ -288,9 +280,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     // Initialize either a randomly chosen EarthGRAM profile or the average EarthGRAM profile
     eg16_profile atm_profile;
     if (run_params->atm_model == 2) {
-        // Generate a random integer between 0 and 100
-        int atm_profile_num = (int)gsl_ran_flat(rng, 0, 100);
-        
+        int atm_profile_num = (int)ran_flat(0, 100);
         atm_profile = parse_atm("input/atmprofiles.txt", atm_profile_num);
     }
     else if (run_params->atm_model == 3) {
@@ -308,7 +298,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     int traj_output = run_params->traj_output;
     double time_step;
     // Initialize the IMU
-    imu imu = imu_init(run_params, initial_state, rng);
+    imu imu = imu_init(run_params, initial_state);
 
     // Initialize the GNSS
     gnss gnss = gnss_init(run_params);
@@ -331,10 +321,10 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
         // At the end of boost phase, sample a new atm profile for EarthGram
         // so boost and reentry don't use the same profile
         if ((run_params->atm_model == 2) && (old_true_state.t > vehicle->booster.total_burn_time) && (sampled_new_profile == 0)) {
-            int atm_profile_num = (int)gsl_ran_flat(rng, 0, 100);
+            int atm_profile_num = (int)ran_flat(0, 100);
             atm_profile = parse_atm("input/atmprofiles.txt", atm_profile_num);
             sampled_new_profile = 1;
-    }
+        }
 
         // Get the atmospheric conditions
         double old_altitude = get_altitude(old_true_state.x, old_true_state.y, old_true_state.z);
@@ -401,13 +391,13 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
 
         if (run_params->ins_nav == 1){
             // INS Measurement
-            imu_measurement(&imu, &new_true_state, &new_est_state, vehicle, rng);
-            update_imu(&imu, time_step, rng);
+            imu_measurement(&imu, &new_true_state, &new_est_state, vehicle);
+            update_imu(&imu, time_step);
         }
 
         if ((run_params->gnss_nav == 1) && (old_altitude > 100e3)){
             // GNSS Measurement
-            gnss_measurement(&gnss, &new_true_state, &new_est_state, rng);
+            gnss_measurement(&gnss, &new_true_state, &new_est_state);
         }
     
         // Perform a Runge-Kutta step
@@ -425,11 +415,10 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             state des_final_state = impact_linterp(&old_des_state, &new_des_state);
 
             // Add coriolis effect based on the latitude and the impact time error
-            double lat = gsl_ran_flat(rng, -M_PI/2, M_PI/2);
-            double lon = gsl_ran_flat(rng, -M_PI, M_PI);
+            double lat = ran_flat(-M_PI/2, M_PI/2);
+            double lon = ran_flat(-M_PI, M_PI);
             double time_error = true_final_state.t - est_final_state.t;
             double rot_speed = 464 * cos(lat);
-            // printf("Impact time error: %f\n", time_error);
             double coriolis = rot_speed * time_error;
 
             // based on the coriolis effect, update the final state x and y
@@ -507,15 +496,7 @@ void mc_run(runparams run_params){
     FILE *impact_file;
     impact_file = fopen(run_params.impact_data_path, "w");
     fprintf(impact_file, "t, x, y, z, vx, vy, vz\n");
-    
-    // Initialize the random number generator
-    const gsl_rng_type *T;
-    gsl_rng *rng;
-    gsl_rng_env_setup();
-    T = gsl_rng_default;
-    rng = gsl_rng_alloc(T);
 
-    // Run the Monte Carlo simulation
     for (int i = 0; i < num_runs; i++){
         printf("Run %d/%d\n", i+1, num_runs);
         vehicle vehicle;
@@ -538,12 +519,10 @@ void mc_run(runparams run_params){
             printf("Error: Invalid run type\n");
             exit(1);
         }
-        
 
-        state initial_true_state = init_true_state(&run_params, rng);
-        
-        impact_data.impact_states[i] = fly(&run_params, &initial_true_state, &vehicle, rng);
+        state initial_true_state = init_true_state(&run_params);
 
+        impact_data.impact_states[i] = fly(&run_params, &initial_true_state, &vehicle);
     }
 
     // Output the impact data

@@ -2,8 +2,7 @@
 #define ATMOSPHERE_H
 
 #include <math.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
+#include "../rng/rng.h"
 #include "../utils.h"
 #include "state.h"
 #include "../math/linalg.h"
@@ -130,7 +129,7 @@ void init_mean_atm_data(char* atmprofilepath){
 }
     
 
-atm_model init_exp_atm(runparams *run_params, gsl_rng *rng){
+atm_model init_exp_atm(runparams *run_params){
     /*
     Initializes the atmospheric model
 
@@ -138,8 +137,6 @@ atm_model init_exp_atm(runparams *run_params, gsl_rng *rng){
     ----------
         run_params: runparams *
             pointer to the run parameters struct
-        rng: gsl_rng *
-            pointer to the random number generator
     OUTPUT:
     ----------
         atm_model: atm_model
@@ -189,10 +186,10 @@ atm_model init_exp_atm(runparams *run_params, gsl_rng *rng){
 
         for (int i = 0; i < 4; i++){
             // Generate perturbations, which are then used by the get_atm_cond function to generate the true conditions
-            atm_model.pert_densities[i] = atm_model.std_densities[i] * gsl_ran_gaussian(rng, 1);
-            atm_model.pert_zonal_winds[i] = atm_model.std_winds[i] * gsl_ran_gaussian(rng, 1);
-            atm_model.pert_meridional_winds[i] = atm_model.std_winds[i] * gsl_ran_gaussian(rng, 1);
-            atm_model.pert_vert_winds[i] = atm_model.std_vert_winds[i] * gsl_ran_gaussian(rng, 1);
+            atm_model.pert_densities[i] = atm_model.std_densities[i] * ran_gaussian(1);
+            atm_model.pert_zonal_winds[i] = atm_model.std_winds[i] * ran_gaussian(1);
+            atm_model.pert_meridional_winds[i] = atm_model.std_winds[i] * ran_gaussian(1);
+            atm_model.pert_vert_winds[i] = atm_model.std_vert_winds[i] * ran_gaussian(1);
         }
 
     }

@@ -31,7 +31,7 @@ TEST(thrust, get_lambert_velocity_vector) {
   double tf_des = 1000.0; // seconds
   runparams rp;
   rp.grav_error = 0;
-  grav grav_model = init_grav(&rp, 0);
+  grav grav_model = init_grav(&rp);
 
   cart_vector v_lambert =
       get_lambert_velocity_vector(position, aimpoint, tf_des, &grav_model);
@@ -51,7 +51,7 @@ TEST(thrust, get_lambert_velocity_vector_altitude) {
   double tf_des = 1000.0; // seconds
   runparams rp;
   rp.grav_error = 0;
-  grav grav_model = init_grav(&rp, 0);
+  grav grav_model = init_grav(&rp);
 
   cart_vector v_lambert =
       get_lambert_velocity_vector(position, aimpoint, tf_des, &grav_model);

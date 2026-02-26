@@ -9,15 +9,8 @@ TEST(gravity, update_gravity){
     runparams run_params;
     run_params.grav_error = 0;
 
-    // Initialize the random number generator
-    const gsl_rng_type *T;
-    gsl_rng *rng;
-    gsl_rng_env_setup();
-    T = gsl_rng_default;
-    rng = gsl_rng_alloc(T);
-
     // Initialize the grav struct
-    grav = init_grav(&run_params, rng);
+    grav = init_grav(&run_params);
 
     // Initialize the state struct with the vehicle at one earth radius
     state.x = grav.earth_radius;

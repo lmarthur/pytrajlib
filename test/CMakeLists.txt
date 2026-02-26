@@ -13,17 +13,24 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Tau)
 
-find_package(GSL REQUIRED)
-link_libraries(GSL::gsl GSL::gslcblas)
-
 enable_testing()
 
 add_executable(${PROJECT_NAME}
     main_test.c
+    ../src/include/rng/mt19937-64/mt19937-64.c
 )
+
+target_include_directories(${PROJECT_NAME} PRIVATE ../src/include)
 
 target_link_libraries(
     PyTraj_test
     Tau
     m
+)
+
+# Set working directory for tests to the project root
+add_test(
+    NAME ${PROJECT_NAME}
+    COMMAND ${PROJECT_NAME}
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/.."
 )
