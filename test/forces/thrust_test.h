@@ -1,83 +1,66 @@
-#include <tau/tau.h>
 #include "../../src/include/forces/thrust.h"
+#include <tau/tau.h>
 
-TEST(thrust, update_thrust){
-    vehicle vehicle;
-    vehicle.rv = init_ballistic_rv();
-    vehicle.booster = init_mmiii_booster();
-    vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
-    vehicle.current_mass = vehicle.total_mass;
-    state state;
+TEST(thrust, get_central_angle) {
+  cart_vector position = {1.0, 0.0, 0.0};
+  cart_vector same = {1.0, 0.0, 0.0};
+  cart_vector orthogonal = {0.0, 1.0, 0.0};
+  cart_vector opposite = {-1.0, 0.0, 0.0};
 
-    state.t = 0;
-    state.theta_long = 0;
-    state.theta_lat = 0;
-    state.vx = 0;
-    state.vy = 0;
-    state.vz = 0;
+  double phi_same = get_central_angle(position, same);
+  double phi_orthogonal = get_central_angle(position, orthogonal);
+  double phi_opposite = get_central_angle(position, opposite);
 
-    update_thrust(&vehicle, &state);
+  REQUIRE_LT(fabs(phi_same - 0.0), 1e-12);
+  REQUIRE_LT(fabs(phi_orthogonal - M_PI / 2), 1e-12);
+  REQUIRE_LT(fabs(phi_opposite - M_PI), 1e-12);
 
-    // Check that the thrust acceleration components are along the x-axis
-    REQUIRE_GT(state.ax_thrust, 0);
-    REQUIRE_EQ(state.ay_thrust, 0);
-    REQUIRE_EQ(state.az_thrust, 0);
+  double earth_radius = 6371e3;
+  cart_vector position2 = {earth_radius, 0, 0.0};
+  cart_vector aimpoint = {earth_radius * cos(M_PI / 4),
+                          earth_radius * sin(M_PI / 4), 0.0};
+  double phi = get_central_angle(position2, aimpoint);
+  REQUIRE_LT(fabs(phi - M_PI_4), 1e-12);
+}
 
-    state.t = 1;
-    state.theta_long = 0;
-    state.theta_lat = 0;
-    state.vx = 0;
-    state.vy = 0;
-    state.vz = 0;
+TEST(thrust, get_lambert_velocity_vector) {
+  double earth_radius = 6371e3;
+  cart_vector position = {earth_radius, 0, 0.0};
+  cart_vector aimpoint = {earth_radius * cos(M_PI / 4),
+                          earth_radius * sin(M_PI / 4), 0.0};
+  double tf_des = 1000.0; // seconds
+  runparams rp;
+  rp.grav_error = 0;
+  grav grav_model = init_grav(&rp, 0);
 
-    update_thrust(&vehicle, &state);
+  cart_vector v_lambert =
+      get_lambert_velocity_vector(position, aimpoint, tf_des, &grav_model);
+  double expected_vx = 7549.722571 * 0.3048;
+  double expected_vy = 18391.612895 * 0.3048;
 
-    // Check that the thrust acceleration components are along the x-axis
-    REQUIRE_GT(state.ax_thrust, 0);
-    REQUIRE_EQ(state.ay_thrust, 0);
-    REQUIRE_EQ(state.az_thrust, 0);
+  REQUIRE_LT(fabs(v_lambert.x - expected_vx), 1.0);
+  REQUIRE_LT(fabs(v_lambert.y - expected_vy), 1.0);
+  REQUIRE_LT(fabs(v_lambert.z), 1e-9);
+}
 
-    // Check that the thrust acceleration components are zero after the burn time
-    state.t = vehicle.booster.total_burn_time + 1;
+TEST(thrust, get_lambert_velocity_vector_altitude) {
+  double earth_radius = 6371e3;
+  cart_vector position = {earth_radius + 100e3, 0, 0.0};
+  cart_vector aimpoint = {earth_radius * cos(M_PI / 4),
+                          earth_radius * sin(M_PI / 4), 0.0};
+  double tf_des = 1000.0; // seconds
+  runparams rp;
+  rp.grav_error = 0;
+  grav grav_model = init_grav(&rp, 0);
 
-    update_thrust(&vehicle, &state);
+  cart_vector v_lambert =
+      get_lambert_velocity_vector(position, aimpoint, tf_des, &grav_model);
+  double expected_vx = 6993.352308 * 0.3048;
+  double expected_vy = 18322.670437 * 0.3048;
+  printf("Lambert velocity at altitude x %f y %f z %f\n", v_lambert.x,
+         v_lambert.y, v_lambert.z);
 
-    REQUIRE_EQ(state.ax_thrust, 0);
-    REQUIRE_EQ(state.ay_thrust, 0);
-    REQUIRE_EQ(state.az_thrust, 0);
-
-    // Check that the thrust acceleration at time t + 1 is greater than at time t
-    double ax_thrust_0 = state.ax_thrust;
-    state.t = 2;
-    update_mass(&vehicle, state.t);
-
-    update_thrust(&vehicle, &state);
-
-    REQUIRE_GT(state.ax_thrust, ax_thrust_0);
-
-    state.t = 0;
-    state.vx = 1;
-    state.vy = 0;
-    state.vz = 0;
-    vehicle.current_mass = vehicle.total_mass;
-
-    // Perform a full booster burn
-    for (int i = 0; i <= vehicle.booster.total_burn_time + 1; i++){
-        state.t = i;
-        update_mass(&vehicle, state.t);
-        update_thrust(&vehicle, &state);
-
-        // Check that the thrust acceleration components are zero after the burn time
-        if (state.t > vehicle.booster.total_burn_time){
-            REQUIRE_EQ(state.ax_thrust, 0);
-            REQUIRE_EQ(state.ay_thrust, 0);
-            REQUIRE_EQ(state.az_thrust, 0);
-        }
-
-        // Check that the thrust acceleration components do not exceed 10^3 m/s^2
-        REQUIRE_LT(state.ax_thrust, 1e3);
-        REQUIRE_LT(state.ay_thrust, 1e3);
-        REQUIRE_LT(state.az_thrust, 1e3);
-    }
-
+  REQUIRE_LT(fabs(v_lambert.x - expected_vx), 1.0);
+  REQUIRE_LT(fabs(v_lambert.y - expected_vy), 1.0);
+  REQUIRE_LT(fabs(v_lambert.z), 1e-9);
 }

@@ -27,6 +27,9 @@ typedef struct runparams{
     int ins_nav; // flag to include INS navigation
     int rv_maneuv; // flag to include guidance during the reentry phase
     double reentry_vel; // reentry velocity in meters per second
+    int perfect_boost; // 1 perfect boost, 0 realistic
+    double t_des_final; // desired flight time (optimized by code)
+    double t_vert_boost; // Duration of vertical boost (optimized by code)
 
     int rv_type; // reentry vehicle type (0: ballistic, 1: maneuverable)
     double deflection_time; // time to make full flap deflection in seconds, used for maneuverability

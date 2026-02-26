@@ -30,6 +30,10 @@ class runparams(Structure):
         ("ins_nav", c_int),
         ("rv_maneuv", c_int),
         ("reentry_vel", c_double),
+        ("perfect_boost", c_int),
+        ("t_des_final", c_double),
+        ("t_vert_boost", c_double),
+
 
         ("rv_type", c_int), # 0 for ballistic, 1 for maneuverable
         ("deflection_time", c_double),
@@ -50,9 +54,6 @@ class runparams(Structure):
         ("step_acc_mag", c_double),
         ("step_acc_hgt", c_double),
         ("step_acc_dur", c_double),
-        ("step_acc_roll_angle", c_double),
-        ("step_acc_lat", c_double),
-        ("step_acc_lon", c_double),
     ]
 
 class cart_vector(Structure):
@@ -111,6 +112,9 @@ def read_config(run_name):
     run_params.ins_nav = c_int(int(config['FLIGHT']['ins_nav']))
     run_params.rv_maneuv = c_int(int(config['FLIGHT']['rv_maneuv']))
     run_params.reentry_vel = c_double(float(config['FLIGHT']['reentry_vel']))
+    run_params.perfect_boost = c_int(int(config['FLIGHT']['perfect_boost']))
+    run_params.t_des_final = c_double(float(config['FLIGHT']['t_des_final']))
+    run_params.t_vert_boost = c_double(float(config['FLIGHT']['t_vert_boost']))
 
     # set the vehicle parameters
     run_params.rv_type = c_int(int(config['VEHICLE']['rv_type']))
@@ -133,9 +137,6 @@ def read_config(run_name):
     run_params.step_acc_mag = c_double(float(config['ERRORPARAMS']['step_acc_mag'])) # magnitude of step acceleration
     run_params.step_acc_hgt = c_double(float(config['ERRORPARAMS']['step_acc_hgt'])) # height of step acceleration
     run_params.step_acc_dur = c_double(float(config['ERRORPARAMS']['step_acc_dur'])) # duration of step acceleration
-    run_params.step_acc_roll_angle = c_double(float(config['ERRORPARAMS']['step_acc_roll_angle']))
-    run_params.step_acc_lat = c_double(float(config['ERRORPARAMS']['step_acc_lat']))
-    run_params.step_acc_lon = c_double(float(config['ERRORPARAMS']['step_acc_lon']))
     return run_params
 
 def get_cep(impact_data, run_params):

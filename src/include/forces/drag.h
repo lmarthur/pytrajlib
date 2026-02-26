@@ -54,12 +54,8 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
     */    
 
     cart_vector drag;
-    // Calculate the drag acceleration components for a booster
-    if (state->t < vehicle->booster.total_burn_time){
-        drag = get_drag_acceleration_generic(state->t, *state, atm_cond, vehicle, vehicle->booster.c_d_0, vehicle->booster.area);
-    }
     // Calculate drag acceleration for realistic maneuvering vehicle
-    else if (run_params->rv_maneuv == 1){
+    if (run_params->rv_maneuv == 1){
         cart_vector lift;
         lift.x = state->ax_lift;
         lift.y = state->ay_lift;
@@ -70,7 +66,7 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
         double c_d = vehicle->rv.c_d_0 + fabs(vehicle->rv.c_d_alpha * aoa);
         drag = get_drag_acceleration_generic(state->t, *state, atm_cond, vehicle, c_d, vehicle->rv.rv_area);
     }
-    // Calculate the drag acceleration components for a ballistic or perfectly maneuvering reentry vehicle
+    // Calculate the drag acceleration components for boost phase & reentry of ballistic or perfectly maneuvering reentry vehicle
     else{
         cart_vector winds_cart = get_cart_wind(state, atm_cond);
         double wind_mag = norm(winds_cart);
@@ -86,7 +82,14 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond, st
 
         // Drag coefficient varies with angle of attack
         double c_d = vehicle->rv.c_d_0 + fabs(vehicle->rv.c_d_alpha * aoa);
-        drag = get_drag_acceleration_generic(state->t, *state, atm_cond, vehicle, c_d, vehicle->rv.rv_area);
+
+        if (state->t < vehicle->booster.total_burn_time){
+            drag = get_drag_acceleration_generic(state->t, *state, atm_cond, vehicle, c_d, vehicle->booster.area);
+        }
+        else {
+            drag = get_drag_acceleration_generic(state->t, *state, atm_cond, vehicle, c_d, vehicle->rv.rv_area);
+        }
+
     }
     state->ax_drag = drag.x;
     state->ay_drag = drag.y;

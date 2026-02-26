@@ -51,23 +51,26 @@ def traj_plot(run_path):
     est_ax_total = traj_data[:,28]
     est_ay_total = traj_data[:,29]
     est_az_total = traj_data[:,30]
-    true_ax_lift = traj_data[:,31]
-    true_ay_lift = traj_data[:,32]
-    true_az_lift = traj_data[:,33]
-    est_ax_lift = traj_data[:,34]
-    est_ay_lift = traj_data[:,35]
-    est_az_lift = traj_data[:,36]
-    roll = traj_data[:,37]
+    est_ax_drag = traj_data[:,31]
+    est_ay_drag = traj_data[:,32]
+    est_az_drag = traj_data[:,33]
+    true_ax_lift = traj_data[:,34]
+    true_ay_lift = traj_data[:,35]
+    true_az_lift = traj_data[:,36]
+    est_ax_lift = traj_data[:,37]
+    est_ay_lift = traj_data[:,38]
+    est_az_lift = traj_data[:,39]
+    roll = traj_data[:,40]
 
 
 
     true_altitude = np.sqrt(np.square(true_x) + np.square(true_y) + np.square(true_z)) - 6371e3
     est_altitude = np.sqrt(np.square(est_x) + np.square(est_y) + np.square(est_z)) - 6371e3
-    true_thrust_mag = true_ax_thrust + true_ay_thrust + true_az_thrust
+    true_thrust_mag = np.sqrt(true_ax_thrust**2 + true_ay_thrust**2 + true_az_thrust**2)
 
     # position vs. time
     plt.figure(figsize=(10,10))
-    #plt.plot(true_t, true_x, label="x")
+    plt.plot(true_t, true_x, label="x")
     plt.plot(true_t, true_y, label="y")
     plt.plot(true_t, true_z, label="z")
     #plt.plot(true_t, est_x, label="x_est")
@@ -150,50 +153,111 @@ def traj_plot(run_path):
     plt.savefig(run_path + "altitude_error.pdf")
     plt.close()
 
-    # velocity vs. time
+    boost_mask = true_t <= 188
+    midcourse_mask = (true_t > 188) & (true_altitude >= 1e5)
+    reentry_mask = (true_t > 188) & (true_altitude < 1e5)
+
+    # velocity vs. time (boost)
     plt.figure(figsize=(10,10))
-    #plt.plot(true_t, true_vx, label="vx")
-    plt.plot(true_t, true_vy, label="vy")
-    plt.plot(true_t, true_vz, label="vz")
+    plt.plot(true_t[boost_mask], true_vx[boost_mask], label="vx")
+    plt.plot(true_t[boost_mask], true_vy[boost_mask], label="vy")
+    plt.plot(true_t[boost_mask], true_vz[boost_mask], label="vz")
     plt.xlabel("Time (s)")
     plt.ylabel("Velocity (m/s)")
-    plt.title("Velocity")
+    plt.title("Velocity (Boost)")
     plt.legend()
     plt.grid()
-    plt.savefig(run_path + "velocity.pdf")
+    plt.savefig(run_path + "velocity_boost.pdf")
     plt.close()
 
-    # velocity error
+    # velocity vs. time (midcourse)
     plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_vx - est_vx, label="vx")
-    plt.plot(true_t, true_vy - est_vy, label="vy")
-    plt.plot(true_t, true_vz - est_vz, label="vz")
+    plt.plot(true_t[midcourse_mask], true_vx[midcourse_mask], label="vx")
+    plt.plot(true_t[midcourse_mask], true_vy[midcourse_mask], label="vy")
+    plt.plot(true_t[midcourse_mask], true_vz[midcourse_mask], label="vz")
     plt.xlabel("Time (s)")
-    plt.ylabel("Velocity Error (m/s)")
-    plt.title("Velocity Error")
+    plt.ylabel("Velocity (m/s)")
+    plt.title("Velocity (Midcourse)")
     plt.legend()
     plt.grid()
-    plt.savefig(run_path + "velocity_error.pdf")
+    plt.savefig(run_path + "velocity_midcourse.pdf")
+    plt.close()
+
+    # velocity vs. time (reentry)
+    plt.figure(figsize=(10,10))
+    plt.plot(true_t[reentry_mask], true_vx[reentry_mask], label="vx")
+    plt.plot(true_t[reentry_mask], true_vy[reentry_mask], label="vy")
+    plt.plot(true_t[reentry_mask], true_vz[reentry_mask], label="vz")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Velocity (m/s)")
+    plt.title("Velocity (Reentry)")
+    plt.legend()
+    plt.grid()
+    plt.savefig(run_path + "velocity_reentry.pdf")
+    plt.close()
+
+    # velocity error (boost)
+    plt.figure(figsize=(10,10))
+    plt.plot(true_t[boost_mask], (true_vx - est_vx)[boost_mask], label="vx")
+    plt.plot(true_t[boost_mask], (true_vy - est_vy)[boost_mask], label="vy")
+    plt.plot(true_t[boost_mask], (true_vz - est_vz)[boost_mask], label="vz")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Velocity Error (m/s)")
+    plt.title("Velocity Error (Boost)")
+    plt.legend()
+    plt.grid()
+    plt.savefig(run_path + "velocity_error_boost.pdf")
+    plt.close()
+
+    # velocity error (midcourse)
+    plt.figure(figsize=(10,10))
+    plt.plot(true_t[midcourse_mask], (true_vx - est_vx)[midcourse_mask], label="vx")
+    plt.plot(true_t[midcourse_mask], (true_vy - est_vy)[midcourse_mask], label="vy")
+    plt.plot(true_t[midcourse_mask], (true_vz - est_vz)[midcourse_mask], label="vz")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Velocity Error (m/s)")
+    plt.title("Velocity Error (Midcourse)")
+    plt.legend()
+    plt.grid()
+    plt.savefig(run_path + "velocity_error_midcourse.pdf")
+    plt.close()
+
+    # velocity error (reentry)
+    plt.figure(figsize=(10,10))
+    plt.plot(true_t[reentry_mask], (true_vx - est_vx)[reentry_mask], label="vx")
+    plt.plot(true_t[reentry_mask], (true_vy - est_vy)[reentry_mask], label="vy")
+    plt.plot(true_t[reentry_mask], (true_vz - est_vz)[reentry_mask], label="vz")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Velocity Error (m/s)")
+    plt.title("Velocity Error (Reentry)")
+    plt.legend()
+    plt.grid()
+    plt.savefig(run_path + "velocity_error_reentry.pdf")
     plt.close()
 
     # thrust vs. time
+    thrust_mask = true_t <= 200
     plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_thrust_mag)
+    plt.plot(true_t[thrust_mask], true_ax_thrust[thrust_mask], label="ax")
+    plt.plot(true_t[thrust_mask], true_ay_thrust[thrust_mask], label="ay")
+    plt.plot(true_t[thrust_mask], true_az_thrust[thrust_mask], label="az")
+    plt.plot(true_t[thrust_mask], true_thrust_mag[thrust_mask], label="mag")
     plt.xlabel("Time (s)")
     plt.ylabel("Thrust Acceleration (m/s^2)")
     plt.title("Thrust")
+    plt.legend()
     plt.grid()
-    plt.savefig(run_path + "thrust.pdf")
+    plt.savefig(run_path + "thrust.png")
     plt.close()
 
     # mass vs. time
     plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_mass)
+    plt.plot(true_t[thrust_mask], true_mass[thrust_mask])
     plt.xlabel("Time (s)")
     plt.ylabel("Mass (kg)")
     plt.title("Mass")
     plt.grid()
-    plt.savefig(run_path + "mass.pdf")
+    plt.savefig(run_path + "mass.png")
     plt.close()
 
     # acceleration vs. time
@@ -233,6 +297,97 @@ def traj_plot(run_path):
     plt.legend()
     plt.grid()
     plt.savefig(run_path + "drag_acceleration.pdf")
+    plt.close()
+
+    # estimated drag acceleration
+    plt.figure(figsize=(10,10))
+    plt.plot(true_t, est_ax_drag, label="ax")
+    plt.plot(true_t, est_ay_drag, label="ay")
+    plt.plot(true_t, est_az_drag, label="az")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Estimated Drag Acceleration (m/s^2)")
+    plt.title("Estimated Drag Acceleration")
+    plt.legend()
+    plt.grid()
+    plt.savefig(run_path + "drag_acceleration_est.pdf")
+    plt.close()
+
+    # drag acceleration (boost)
+    plt.figure(figsize=(10,10))
+    plt.plot(true_t[boost_mask], true_ax_drag[boost_mask], label="ax")
+    plt.plot(true_t[boost_mask], true_ay_drag[boost_mask], label="ay")
+    plt.plot(true_t[boost_mask], true_az_drag[boost_mask], label="az")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Drag Acceleration (m/s^2)")
+    plt.title("Drag Acceleration (Boost)")
+    plt.legend()
+    plt.grid()
+    plt.savefig(run_path + "drag_acceleration_boost.pdf")
+    plt.close()
+
+    # estimated drag acceleration (boost)
+    plt.figure(figsize=(10,10))
+    plt.plot(true_t[boost_mask], est_ax_drag[boost_mask], label="ax")
+    plt.plot(true_t[boost_mask], est_ay_drag[boost_mask], label="ay")
+    plt.plot(true_t[boost_mask], est_az_drag[boost_mask], label="az")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Estimated Drag Acceleration (m/s^2)")
+    plt.title("Estimated Drag Acceleration (Boost)")
+    plt.legend()
+    plt.grid()
+    plt.savefig(run_path + "drag_acceleration_est_boost.pdf")
+    plt.close()
+
+    # drag acceleration (midcourse)
+    plt.figure(figsize=(10,10))
+    plt.plot(true_t[midcourse_mask], true_ax_drag[midcourse_mask], label="ax")
+    plt.plot(true_t[midcourse_mask], true_ay_drag[midcourse_mask], label="ay")
+    plt.plot(true_t[midcourse_mask], true_az_drag[midcourse_mask], label="az")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Drag Acceleration (m/s^2)")
+    plt.title("Drag Acceleration (Midcourse)")
+    plt.legend()
+    plt.grid()
+    plt.savefig(run_path + "drag_acceleration_midcourse.pdf")
+    plt.close()
+
+    # estimated drag acceleration (midcourse)
+    plt.figure(figsize=(10,10))
+    plt.plot(true_t[midcourse_mask], est_ax_drag[midcourse_mask], label="ax")
+    plt.plot(true_t[midcourse_mask], est_ay_drag[midcourse_mask], label="ay")
+    plt.plot(true_t[midcourse_mask], est_az_drag[midcourse_mask], label="az")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Estimated Drag Acceleration (m/s^2)")
+    plt.title("Estimated Drag Acceleration (Midcourse)")
+    plt.legend()
+    plt.grid()
+    plt.savefig(run_path + "drag_acceleration_est_midcourse.pdf")
+    plt.close()
+
+    # drag acceleration (reentry)
+    plt.figure(figsize=(10,10))
+    plt.plot(true_t[reentry_mask], true_ax_drag[reentry_mask], label="ax")
+    plt.plot(true_t[reentry_mask], true_ay_drag[reentry_mask], label="ay")
+    plt.plot(true_t[reentry_mask], true_az_drag[reentry_mask], label="az")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Drag Acceleration (m/s^2)")
+    plt.title("Drag Acceleration (Reentry)")
+    plt.legend()
+    plt.grid()
+    plt.savefig(run_path + "drag_acceleration_reentry.pdf")
+    plt.close()
+
+    # estimated drag acceleration (reentry)
+    plt.figure(figsize=(10,10))
+    plt.plot(true_t[reentry_mask], est_ax_drag[reentry_mask], label="ax")
+    plt.plot(true_t[reentry_mask], est_ay_drag[reentry_mask], label="ay")
+    plt.plot(true_t[reentry_mask], est_az_drag[reentry_mask], label="az")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Estimated Drag Acceleration (m/s^2)")
+    plt.title("Estimated Drag Acceleration (Reentry)")
+    plt.legend()
+    plt.grid()
+    plt.savefig(run_path + "drag_acceleration_est_reentry.pdf")
     plt.close()
 
 

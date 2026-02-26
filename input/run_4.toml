@@ -7,9 +7,9 @@ num_runs = 1000
 time_step_main = 1.0
 time_step_reentry = 0.01
 traj_output = 0
-# Note that the aimpoint coords are currently superseded by the thrust angle
-x_aim = 0
-y_aim = 0
+# 100 longitude (11e3 km range)
+x_aim = -1106312.539916013
+y_aim = 6274210.194440777
 z_aim = 0
 theta_long = 1.04719755
 theta_lat = 0.0
@@ -27,6 +27,10 @@ ins_nav = 1
 rv_maneuv = 1
 # Reentry velocity (m/s) for reentry only simulation (run_type = 1)
 reentry_vel = 7500
+# If 0, indicates realistic boost, 1 perfect
+perfect_boost = 1
+t_des_final = 2000
+t_vert_boost = 10
 
 [VEHICLE]
 rv_type = 1

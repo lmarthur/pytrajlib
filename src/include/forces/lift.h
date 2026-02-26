@@ -279,7 +279,10 @@ int get_a_lift_avail_jerk(double t, state *true_state, state *est_state,
                           cart_vector *d_a_lift_avail_dt_est) {
   // Determine if vehicle is in reentry phase
   double altitude = get_altitude(est_state->x, est_state->y, est_state->z);
-  int is_reentry = (t > vehicle->booster.total_burn_time) && (altitude < 1e5);
+  cart_vector velocity = {est_state->vx, est_state->vy, est_state->vz};
+  cart_vector a_grav = {est_state->ax_grav, est_state->ay_grav, est_state->az_grav};
+  double angle_v_grav = acos(dot(velocity, a_grav) / (norm(velocity) * norm(a_grav)));
+  int is_reentry = (angle_v_grav > 0) && (angle_v_grav < M_PI_2) && (altitude < 1e5);
 
   if (!is_reentry) {
     return 0;

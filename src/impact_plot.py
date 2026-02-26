@@ -18,11 +18,13 @@ def impact_plot(run_path, run_params):
 
     print("Reading impact data...")
     impact_data = np.loadtxt(run_path + "impact_data.txt", delimiter = ",", skiprows=1)
+    impact_data = np.atleast_2d(np.array(impact_data))
 
     # get longitude and latitude of aimpoint
     aimpoint_lon = np.arctan2(run_params.y_aim, run_params.x_aim)
     aimpoint_lat = np.arctan2(run_params.z_aim, np.sqrt(run_params.x_aim**2 + run_params.y_aim**2))
-
+    print(f"{aimpoint_lat=}, {aimpoint_lon=}")
+    print()
     # Calculate the range to the aimpoint over the surface of the Earth
     # This is the great circle distance between the aimpoint and the origin
     range_to_aimpoint = np.arccos(np.sin(aimpoint_lat)*np.sin(0) + np.cos(aimpoint_lat)*np.cos(0)*np.cos(aimpoint_lon))
@@ -34,10 +36,15 @@ def impact_plot(run_path, run_params):
     impact_y = impact_data[:,2]
     impact_z = impact_data[:,3]
 
+    print(f"Impact location: {impact_x[0]}, {impact_y[0]}, {impact_z[0]} t={impact_t[0]}")
+
     # get vector relative to aimpoint
     impact_x = impact_x - run_params.x_aim
     impact_y = impact_y - run_params.y_aim
     impact_z = impact_z - run_params.z_aim
+
+    print(f"mag miss distance: {np.sqrt(impact_x[0]**2 + impact_y[0]**2 + impact_z[0]**2)}")
+
 
     # convert impact data to local tangent plane coordinates
     impact_x_local = -np.sin(aimpoint_lon)*impact_x + np.cos(aimpoint_lon)*impact_y
