@@ -1,11 +1,12 @@
 #ifndef THRUST_H
 #define THRUST_H
 
-#include "../grav.h"
-#include "../models/atmosphere.h"
-#include "../utils.h"
-#include "../vehicle.h"
 #include <math.h>
+
+#include "../models/atmosphere.h"
+#include "../models/grav.h"
+#include "../models/vehicle.h"
+#include "../utils.h"
 
 int get_current_stage(state *state, vehicle *vehicle) {
   // Get the current stage

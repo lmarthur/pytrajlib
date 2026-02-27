@@ -1,6 +1,7 @@
-# This script contains a function to estimate the torque on a reentry vehicle and the corresponding force on a control surface. 
+# This script contains a function to estimate the torque on a reentry vehicle and the corresponding force on a control surface.
 
 import numpy as np
+
 
 def rv_torque(C_M_alpha, alpha, velocity, altitude, char_length=2.75, char_area=0.24):
     """
@@ -14,7 +15,7 @@ def rv_torque(C_M_alpha, alpha, velocity, altitude, char_length=2.75, char_area=
         Angle of attack in radians.
     velocity : float
         Velocity of the reentry vehicle in m/s.
-    altitude : float    
+    altitude : float
         Altitude of the reentry vehicle in meters.
     char_length : float, optional
         Characteristic length of the vehicle (default is 2.75 meters).
@@ -23,12 +24,15 @@ def rv_torque(C_M_alpha, alpha, velocity, altitude, char_length=2.75, char_area=
     """
 
     # Calculate the dynamic pressure (q)
-    density = 1.225 * np.exp(-altitude / 8000)  # Simplified atmospheric density model (kg/m^3)
+    density = 1.225 * np.exp(
+        -altitude / 8000
+    )  # Simplified atmospheric density model (kg/m^3)
     q = 0.5 * density * velocity**2  # Dynamic pressure
 
     torque = C_M_alpha * q * char_area * char_length * alpha
 
     return torque
+
 
 print(rv_torque(-0.15, np.radians(5), 7500, 1000))
 print(rv_torque(-0.15, np.radians(5), 7500, 10000))

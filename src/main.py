@@ -1,9 +1,12 @@
-import sys
 import os
-from scipy.optimize import minimize, differential_evolution
+import sys
 from ctypes import *
-from traj_plot import *
+
+from scipy.optimize import differential_evolution, minimize
+
 from impact_plot import *
+from traj_plot import *
+
 # Specify the input file name (without the extension)
 config_file = "run_0"
 
@@ -19,10 +22,12 @@ if not os.path.isdir(f"./output/{config_file}"):
     os.makedirs(f"./output/{config_file}")
 
 # Import the necessary functions from the Python library
-sys.path.append('.')
+sys.path.append(".")
 from src.pylib import *
+
 so_file = "./build/libPyTraj.so"
 pytraj = CDLL(so_file)
+
 
 def get_miss_distance(params):
     # thrust_lon, t_vert_boost = params
@@ -36,15 +41,22 @@ def get_miss_distance(params):
     # Copy the input file to the output directory
     os.system(f"cp {config_path} ./output/{config_file}")
 
-    impact_data = np.loadtxt("./output/" + config_file + "/" + "impact_data.txt", delimiter = ",", skiprows=1)
+    impact_data = np.loadtxt(
+        "./output/" + config_file + "/" + "impact_data.txt", delimiter=",", skiprows=1
+    )
 
     # get longitude and latitude of aimpoint
     aimpoint_lon = np.arctan2(run_params.y_aim, run_params.x_aim)
-    aimpoint_lat = np.arctan2(run_params.z_aim, np.sqrt(run_params.x_aim**2 + run_params.y_aim**2))
+    aimpoint_lat = np.arctan2(
+        run_params.z_aim, np.sqrt(run_params.x_aim**2 + run_params.y_aim**2)
+    )
 
     # Calculate the range to the aimpoint over the surface of the Earth
     # This is the great circle distance between the aimpoint and the origin
-    range_to_aimpoint = np.arccos(np.sin(aimpoint_lat)*np.sin(0) + np.cos(aimpoint_lat)*np.cos(0)*np.cos(aimpoint_lon))
+    range_to_aimpoint = np.arccos(
+        np.sin(aimpoint_lat) * np.sin(0)
+        + np.cos(aimpoint_lat) * np.cos(0) * np.cos(aimpoint_lon)
+    )
     range_to_aimpoint = range_to_aimpoint * 6371e3
     # print('Range to aimpoint: ', range_to_aimpoint)
 
@@ -60,8 +72,18 @@ def get_miss_distance(params):
 
     # get the miss distances
     dist = np.sqrt(impact_x**2 + impact_y**2 + impact_z**2)
-    print('miss dist: ', dist, 't', run_params.t_des_final, "thrust lon", thrust_lon, "t_vert_boost", t_vert_boost)
+    print(
+        "miss dist: ",
+        dist,
+        "t",
+        run_params.t_des_final,
+        "thrust lon",
+        thrust_lon,
+        "t_vert_boost",
+        t_vert_boost,
+    )
     return dist
+
 
 # Code block to run the Monte Carlo simulation
 if __name__ == "__main__":
@@ -71,18 +93,23 @@ if __name__ == "__main__":
     print("Configuration file read.")
 
     aimpoint_lon = np.arctan2(run_params.y_aim, run_params.x_aim)
-    aimpoint_lat = np.arctan2(run_params.z_aim, np.sqrt(run_params.x_aim**2 + run_params.y_aim**2))
+    aimpoint_lat = np.arctan2(
+        run_params.z_aim, np.sqrt(run_params.x_aim**2 + run_params.y_aim**2)
+    )
     print(f"{aimpoint_lat=}, {aimpoint_lon=}")
     print()
     # Calculate the range to the aimpoint over the surface of the Earth
     # This is the great circle distance between the aimpoint and the origin
-    range_to_aimpoint = np.arccos(np.sin(aimpoint_lat)*np.sin(0) + np.cos(aimpoint_lat)*np.cos(0)*np.cos(aimpoint_lon))
+    range_to_aimpoint = np.arccos(
+        np.sin(aimpoint_lat) * np.sin(0)
+        + np.cos(aimpoint_lat) * np.cos(0) * np.cos(aimpoint_lon)
+    )
     range_to_aimpoint = range_to_aimpoint * 6371e3
-    print('Range to aimpoint: ', range_to_aimpoint)
+    print("Range to aimpoint: ", range_to_aimpoint)
 
     RDESKM = range_to_aimpoint / 1000
-    tf_des = 252.+.223*RDESKM-(5.44E-6)*RDESKM*RDESKM
-    print('Initial guess for t_des_final: ', tf_des)
+    tf_des = 252.0 + 0.223 * RDESKM - (5.44e-6) * RDESKM * RDESKM
+    print("Initial guess for t_des_final: ", tf_des)
     # tf_des = 4000
     thrust_lon = 1.04719755
     t_vert_boost = 10
@@ -115,20 +142,28 @@ if __name__ == "__main__":
     run_params.rv_maneuv = 0
     run_params.traj_output = 0
     run_params.num_runs = 1
-        
-    result = minimize(get_miss_distance, x0=(tf_des, thrust_lon, t_vert_boost), method="Nelder-Mead", bounds=[(300, 5000), (0, np.pi), (0.1, 100)])
+
+    result = minimize(
+        get_miss_distance,
+        x0=(tf_des, thrust_lon, t_vert_boost),
+        method="Nelder-Mead",
+        bounds=[(300, 5000), (0, np.pi), (0.1, 100)],
+    )
     print(result)
 
     impact_data_pointer = pytraj.mc_run(run_params)
 
-    impact_data = np.loadtxt("./output/" + config_file + "/" + "impact_data.txt", delimiter = ",", skiprows=1)
+    impact_data = np.loadtxt(
+        "./output/" + config_file + "/" + "impact_data.txt", delimiter=",", skiprows=1
+    )
     impact_data = np.atleast_2d(np.array(impact_data))
-    impact_t = impact_data[:,0]
-    impact_x = impact_data[:,1]
-    impact_y = impact_data[:,2]
-    impact_z = impact_data[:,3]
-    print(f"Aimpoint location: {impact_x[0]}, {impact_y[0]}, {impact_z[0]} t={impact_t[0]}")
-
+    impact_t = impact_data[:, 0]
+    impact_x = impact_data[:, 1]
+    impact_y = impact_data[:, 2]
+    impact_z = impact_data[:, 3]
+    print(
+        f"Aimpoint location: {impact_x[0]}, {impact_y[0]}, {impact_z[0]} t={impact_t[0]}"
+    )
 
     # # Restore original parameters after optimization
     run_params.num_runs = orig_num_runs
@@ -148,7 +183,7 @@ if __name__ == "__main__":
 
     # Copy the input file to the output directory
     os.system(f"cp {config_path} ./output/{config_file}")
-    
+
     # Plot the trajectory
     if run_params.traj_output:
         print("Plotting trajectory...")

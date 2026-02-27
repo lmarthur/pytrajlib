@@ -1,6 +1,6 @@
-#include <tau/tau.h>
 #include "../src/include/math/linalg.h"
 #include <math.h>
+#include <tau/tau.h>
 
 TEST(linalg, dot_product_orthogonal) {
   // Test dot product of orthogonal vectors
@@ -139,28 +139,25 @@ TEST(linalg, cross_general) {
 }
 
 TEST(linalg, rotate) {
-    // Test Rodrigues' rotation
+  // Test Rodrigues' rotation
 
-    // Rotation around orthogonal vectors
-    cart_vector a = {1.0, 0.0, 0.0};
-    cart_vector b = {0.0, 1.0, 0};
-    cart_vector c = rotate(a, b, M_PI_2);
-    REQUIRE_LT(fabs(c.x), 1e-10);
-    REQUIRE_LT(fabs(c.y), 1e-10);
-    REQUIRE_EQ(c.z, -1);
-
+  // Rotation around orthogonal vectors
+  cart_vector a = {1.0, 0.0, 0.0};
+  cart_vector b = {0.0, 1.0, 0};
+  cart_vector c = rotate(a, b, M_PI_2);
+  REQUIRE_LT(fabs(c.x), 1e-10);
+  REQUIRE_LT(fabs(c.y), 1e-10);
+  REQUIRE_EQ(c.z, -1);
 }
 
 TEST(linalg, rotate_non_orthogonal) {
-    // Test Rodrigues' rotation
+  // Test Rodrigues' rotation
 
-    // Rotation around non orthogonal vectors
-    cart_vector a = {1.0, 1.0, 0.0};
-    cart_vector b = {0.0, 1.0, 0};
-    cart_vector c = rotate(a, b, M_PI);
-    REQUIRE_EQ(c.x, -1);
-    REQUIRE_EQ(c.y, 1);
-    REQUIRE_LT(c.z, 1e-10);
+  // Rotation around non orthogonal vectors
+  cart_vector a = {1.0, 1.0, 0.0};
+  cart_vector b = {0.0, 1.0, 0};
+  cart_vector c = rotate(a, b, M_PI);
+  REQUIRE_EQ(c.x, -1);
+  REQUIRE_EQ(c.y, 1);
+  REQUIRE_LT(c.z, 1e-10);
 }
-
-

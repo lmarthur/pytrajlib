@@ -1,36 +1,36 @@
-import sys
 import os
-
+import sys
 from ctypes import *
+
 import pandas as pd
 
-sys.path.append('.')
-from src.pylib import *
-
-import scienceplots
+sys.path.append(".")
 import matplotlib.pyplot as plt
-
+import scienceplots
 import shap
 
+from src.pylib import *
 
 
 def shap_helper(features_df, run_params, config_file):
     results = []
-    
+
     for idx, row in features_df.iterrows():
-        run_params.initial_pos_error = c_double(row['initial_pos_error'])
-        run_params.initial_vel_error = c_double(row['initial_vel_error'])
-        run_params.initial_angle_error = c_double(row['initial_angle_error'])
-        run_params.acc_scale_stability = c_double(row['acc_scale_stability'])
-        run_params.gyro_bias_stability = c_double(row['gyro_bias_stability'])
-        run_params.gyro_noise = c_double(row['gyro_noise'])
-        run_params.gnss_noise = c_double(row['gnss_noise'])
-        
+        run_params.initial_pos_error = c_double(row["initial_pos_error"])
+        run_params.initial_vel_error = c_double(row["initial_vel_error"])
+        run_params.initial_angle_error = c_double(row["initial_angle_error"])
+        run_params.acc_scale_stability = c_double(row["acc_scale_stability"])
+        run_params.gyro_bias_stability = c_double(row["gyro_bias_stability"])
+        run_params.gyro_noise = c_double(row["gyro_noise"])
+        run_params.gnss_noise = c_double(row["gnss_noise"])
+
         impact_data_pointer = pytraj.mc_run(run_params)
-        impact_data = np.loadtxt("./output/" + config_file + "/impact_data.txt", delimiter=",", skiprows=1)
+        impact_data = np.loadtxt(
+            "./output/" + config_file + "/impact_data.txt", delimiter=",", skiprows=1
+        )
         cep = get_cep(impact_data, run_params)
         results.append(cep)
-    
+
     print(f"{features_df=}")
     print(f"SHAP helper results: {results}")
     return np.array(results)
@@ -45,25 +45,27 @@ def make_plot(config_file):
     aimpoint = update_aimpoint(run_params, config_path)
     print(f"Aimpoint: ({aimpoint.x}, {aimpoint.y}, {aimpoint.z})")
 
-
-    X = pd.DataFrame({
-        "initial_pos_error": [run_params.initial_pos_error],
-        "initial_vel_error": [run_params.initial_vel_error],
-        "initial_angle_error": [run_params.initial_angle_error],
-        "acc_scale_stability": [run_params.acc_scale_stability],
-        "gyro_bias_stability": [run_params.gyro_bias_stability],
-        "gyro_noise": [run_params.gyro_noise],
-        "gnss_noise": [run_params.gnss_noise],
-    })
+    X = pd.DataFrame(
+        {
+            "initial_pos_error": [run_params.initial_pos_error],
+            "initial_vel_error": [run_params.initial_vel_error],
+            "initial_angle_error": [run_params.initial_angle_error],
+            "acc_scale_stability": [run_params.acc_scale_stability],
+            "gyro_bias_stability": [run_params.gyro_bias_stability],
+            "gyro_noise": [run_params.gyro_noise],
+            "gnss_noise": [run_params.gnss_noise],
+        }
+    )
     print(f"{X=}")
     # Set shap mask to X, but to zeros
     masker = X * 0
 
-
     explainer = shap.ExactExplainer(
-        model=lambda features_df: shap_helper(features_df=features_df, run_params=run_params, config_file=config_file),
+        model=lambda features_df: shap_helper(
+            features_df=features_df, run_params=run_params, config_file=config_file
+        ),
         masker=masker,
-        )
+    )
     explanation = explainer(X)
     shap_values = explanation.values
 
@@ -81,6 +83,7 @@ def make_plot(config_file):
     plt.tight_layout()
     plt.savefig(f"./output/{config_file}/shap_bar.png", dpi=300)
     plt.close()
+
 
 if __name__ == "__main__":
     config_file = "run_3"

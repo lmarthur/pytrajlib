@@ -1,5 +1,7 @@
-import pandas as pd
 import os
+
+import pandas as pd
+
 
 def save_mean_atm_profile(atm_profile_path):
     """
@@ -20,7 +22,7 @@ def save_mean_atm_profile(atm_profile_path):
     if os.path.isfile(mean_atm_path):
         print(f"Mean EarthGram file exists")
         return
-    
+
     print(f"Creating mean EarthGram file")
 
     mean_atm = atm.groupby(1)[[2, 3, 4, 5]].apply(
@@ -29,6 +31,7 @@ def save_mean_atm_profile(atm_profile_path):
 
     mean_atm.to_csv(mean_atm_path, header=None, sep=" ")
     return mean_atm_path
+
 
 if __name__ == "__main__":
     save_mean_atm_profile("input/atmprofiles.txt")

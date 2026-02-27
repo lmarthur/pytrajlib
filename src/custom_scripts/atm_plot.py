@@ -80,7 +80,11 @@ plt.close()
 # Plot mean atmosphere
 plt.plot(mean_wind, altitude, label="Mean Windspeed")
 plt.fill_betweenx(
-    altitude, mean_wind - std_wind, mean_wind + std_wind, alpha=0.2, label="1 Standard Deviation"
+    altitude,
+    mean_wind - std_wind,
+    mean_wind + std_wind,
+    alpha=0.2,
+    label="1 Standard Deviation",
 )
 plt.xlabel("Windspeed (m/s)")
 plt.ylabel("Altitude (km)")

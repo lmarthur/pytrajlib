@@ -138,11 +138,13 @@ TEST(lift, update_roll) {
   REQUIRE_EQ(true_state.roll, 5 * M_PI / 4);
   REQUIRE_EQ(est_state.roll, 5 * M_PI / 4);
 
-  // If pitch > 0 and yaw < 0 with equal magnitudes, then the roll will be -π/4 or 7π/4
+  // If pitch > 0 and yaw < 0 with equal magnitudes, then the roll will be -π/4
+  // or 7π/4
   cart_vector d_a_lift_equal_neg2;
   d_a_lift_equal_neg2.x = 0;
   d_a_lift_equal_neg2.y = 10; // positive pitch acceleration
-  d_a_lift_equal_neg2.z = 10;  // negative yaw acceleration (positive z gives negative yaw)
+  d_a_lift_equal_neg2.z =
+      10; // negative yaw acceleration (positive z gives negative yaw)
 
   true_state.roll = 0;
   est_state.roll = 0;

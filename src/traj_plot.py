@@ -1,81 +1,84 @@
-# This script contains code to generate plots of the vehicle's trajectory and control surfaces. 
+# This script contains code to generate plots of the vehicle's trajectory and control surfaces.
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 params = {
-    'axes.labelsize': 18,
-    'font.size': 18,
-    'font.family': 'serif',
-    'legend.fontsize': 18,
-    'xtick.labelsize': 18,
-    'ytick.labelsize': 18,
+    "axes.labelsize": 18,
+    "font.size": 18,
+    "font.family": "serif",
+    "legend.fontsize": 18,
+    "xtick.labelsize": 18,
+    "ytick.labelsize": 18,
 }
 plt.rcParams.update(params)
+
 
 def traj_plot(run_path):
     """
     Function to plot the trajectory of the vehicle.
     """
     # load the trajectory data from the .txt file, skipping the first row
-    traj_data = np.loadtxt(run_path + "trajectory.txt", delimiter = ",", skiprows=1)
+    traj_data = np.loadtxt(run_path + "trajectory.txt", delimiter=",", skiprows=1)
 
-    true_t = traj_data[:,0]
-    true_mass = traj_data[:,1]
-    true_x = traj_data[:,2]
-    true_y = traj_data[:,3]
-    true_z = traj_data[:,4]
-    true_vx = traj_data[:,5]
-    true_vy = traj_data[:,6]
-    true_vz = traj_data[:,7]
-    true_ax_grav = traj_data[:,8]
-    true_ay_grav = traj_data[:,9]
-    true_az_grav = traj_data[:,10]
-    true_ax_drag = traj_data[:,11]
-    true_ay_drag = traj_data[:,12]
-    true_az_drag = traj_data[:,13]
-    a_command = traj_data[:,14]
-    a_exec = traj_data[:,15]
-    true_ax_thrust = traj_data[:,16]
-    true_ay_thrust = traj_data[:,17]
-    true_az_thrust = traj_data[:,18]
-    true_ax_total = traj_data[:,19]
-    true_ay_total = traj_data[:,20]
-    true_az_total = traj_data[:,21]
-    est_x = traj_data[:,22]
-    est_y = traj_data[:,23]
-    est_z = traj_data[:,24]
-    est_vx = traj_data[:,25]
-    est_vy = traj_data[:,26]
-    est_vz = traj_data[:,27]
-    est_ax_total = traj_data[:,28]
-    est_ay_total = traj_data[:,29]
-    est_az_total = traj_data[:,30]
-    est_ax_drag = traj_data[:,31]
-    est_ay_drag = traj_data[:,32]
-    est_az_drag = traj_data[:,33]
-    true_ax_lift = traj_data[:,34]
-    true_ay_lift = traj_data[:,35]
-    true_az_lift = traj_data[:,36]
-    est_ax_lift = traj_data[:,37]
-    est_ay_lift = traj_data[:,38]
-    est_az_lift = traj_data[:,39]
-    roll = traj_data[:,40]
+    true_t = traj_data[:, 0]
+    true_mass = traj_data[:, 1]
+    true_x = traj_data[:, 2]
+    true_y = traj_data[:, 3]
+    true_z = traj_data[:, 4]
+    true_vx = traj_data[:, 5]
+    true_vy = traj_data[:, 6]
+    true_vz = traj_data[:, 7]
+    true_ax_grav = traj_data[:, 8]
+    true_ay_grav = traj_data[:, 9]
+    true_az_grav = traj_data[:, 10]
+    true_ax_drag = traj_data[:, 11]
+    true_ay_drag = traj_data[:, 12]
+    true_az_drag = traj_data[:, 13]
+    a_command = traj_data[:, 14]
+    a_exec = traj_data[:, 15]
+    true_ax_thrust = traj_data[:, 16]
+    true_ay_thrust = traj_data[:, 17]
+    true_az_thrust = traj_data[:, 18]
+    true_ax_total = traj_data[:, 19]
+    true_ay_total = traj_data[:, 20]
+    true_az_total = traj_data[:, 21]
+    est_x = traj_data[:, 22]
+    est_y = traj_data[:, 23]
+    est_z = traj_data[:, 24]
+    est_vx = traj_data[:, 25]
+    est_vy = traj_data[:, 26]
+    est_vz = traj_data[:, 27]
+    est_ax_total = traj_data[:, 28]
+    est_ay_total = traj_data[:, 29]
+    est_az_total = traj_data[:, 30]
+    est_ax_drag = traj_data[:, 31]
+    est_ay_drag = traj_data[:, 32]
+    est_az_drag = traj_data[:, 33]
+    true_ax_lift = traj_data[:, 34]
+    true_ay_lift = traj_data[:, 35]
+    true_az_lift = traj_data[:, 36]
+    est_ax_lift = traj_data[:, 37]
+    est_ay_lift = traj_data[:, 38]
+    est_az_lift = traj_data[:, 39]
+    roll = traj_data[:, 40]
 
-
-
-    true_altitude = np.sqrt(np.square(true_x) + np.square(true_y) + np.square(true_z)) - 6371e3
-    est_altitude = np.sqrt(np.square(est_x) + np.square(est_y) + np.square(est_z)) - 6371e3
+    true_altitude = (
+        np.sqrt(np.square(true_x) + np.square(true_y) + np.square(true_z)) - 6371e3
+    )
+    est_altitude = (
+        np.sqrt(np.square(est_x) + np.square(est_y) + np.square(est_z)) - 6371e3
+    )
     true_thrust_mag = np.sqrt(true_ax_thrust**2 + true_ay_thrust**2 + true_az_thrust**2)
 
     # position vs. time
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t, true_x, label="x")
     plt.plot(true_t, true_y, label="y")
     plt.plot(true_t, true_z, label="z")
-    #plt.plot(true_t, est_x, label="x_est")
-    #plt.plot(true_t, est_y, label="y_est")
-    #plt.plot(true_t, est_z, label="z_est")
+    # plt.plot(true_t, est_x, label="x_est")
+    # plt.plot(true_t, est_y, label="y_est")
+    # plt.plot(true_t, est_z, label="z_est")
     plt.xlabel("Time (s)")
     plt.ylabel("Position (m)")
     plt.title("Position")
@@ -85,7 +88,7 @@ def traj_plot(run_path):
     plt.close()
 
     # position error
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t, true_x - est_x, label="x")
     plt.plot(true_t, true_y - est_y, label="y")
     plt.plot(true_t, true_z - est_z, label="z")
@@ -99,23 +102,25 @@ def traj_plot(run_path):
 
     # orbit plot
     earth_radius = 6371e3
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
 
     # add shaded region for Earth's atmosphere
-    earth_atmosphere = plt.Circle((0, 0), earth_radius + 200e3, color='lightblue', label="Atmosphere")
+    earth_atmosphere = plt.Circle(
+        (0, 0), earth_radius + 200e3, color="lightblue", label="Atmosphere"
+    )
     plt.gca().add_artist(earth_atmosphere)
 
     # plot the Earth
-    earth = plt.Circle((0, 0), earth_radius, color='blue', label="Earth")
+    earth = plt.Circle((0, 0), earth_radius, color="blue", label="Earth")
     plt.gca().add_artist(earth)
     # set range for x and y axes to 2*earth_radius
-    plt.xlim(-1.2*earth_radius, 1.5*earth_radius)
-    plt.ylim(-1.2*earth_radius, 1.5*earth_radius)
+    plt.xlim(-1.2 * earth_radius, 1.5 * earth_radius)
+    plt.ylim(-1.2 * earth_radius, 1.5 * earth_radius)
 
     # plot the vehicle's trajectory in the x-y plane
-    plt.plot(true_x, true_y, 'r', label="True Trajectory")
+    plt.plot(true_x, true_y, "r", label="True Trajectory")
     # turn off the axis labels
-    plt.axis('off')
+    plt.axis("off")
 
     # plt.xlabel("x (m)")
     # plt.ylabel("y (m)")
@@ -124,15 +129,22 @@ def traj_plot(run_path):
     plt.close()
 
     # altitude vs. time
-    plt.figure(figsize=(10,10))
-    plt.plot(true_t, true_altitude/1000)
+    plt.figure(figsize=(10, 10))
+    plt.plot(true_t, true_altitude / 1000)
     plt.xlabel("Time (s)")
     plt.ylabel("Altitude (km)")
     # remove top and right spines
-    plt.gca().spines['top'].set_visible(False)
-    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines["top"].set_visible(False)
+    plt.gca().spines["right"].set_visible(False)
     # shade under the curve from 0 to 160 seconds
-    plt.fill_between(true_t, true_altitude/1000, 0, where=(true_t < 188), color='lightblue', alpha=0.5)
+    plt.fill_between(
+        true_t,
+        true_altitude / 1000,
+        0,
+        where=(true_t < 188),
+        color="lightblue",
+        alpha=0.5,
+    )
     # add "guided" label to shaded region with arrow
     # plt.annotate('Boost (INS)', xy=(188, 40), xytext=(500, 50), arrowprops=dict(facecolor='black', arrowstyle='->'))
     # add "ballistic phase"
@@ -144,7 +156,7 @@ def traj_plot(run_path):
     plt.close()
 
     # altitude error
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t, true_altitude - est_altitude)
     plt.xlabel("Time (s)")
     plt.ylabel("Altitude Error (m)")
@@ -158,7 +170,7 @@ def traj_plot(run_path):
     reentry_mask = (true_t > 188) & (true_altitude < 1e5)
 
     # velocity vs. time (boost)
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[boost_mask], true_vx[boost_mask], label="vx")
     plt.plot(true_t[boost_mask], true_vy[boost_mask], label="vy")
     plt.plot(true_t[boost_mask], true_vz[boost_mask], label="vz")
@@ -171,7 +183,7 @@ def traj_plot(run_path):
     plt.close()
 
     # velocity vs. time (midcourse)
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[midcourse_mask], true_vx[midcourse_mask], label="vx")
     plt.plot(true_t[midcourse_mask], true_vy[midcourse_mask], label="vy")
     plt.plot(true_t[midcourse_mask], true_vz[midcourse_mask], label="vz")
@@ -184,7 +196,7 @@ def traj_plot(run_path):
     plt.close()
 
     # velocity vs. time (reentry)
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[reentry_mask], true_vx[reentry_mask], label="vx")
     plt.plot(true_t[reentry_mask], true_vy[reentry_mask], label="vy")
     plt.plot(true_t[reentry_mask], true_vz[reentry_mask], label="vz")
@@ -197,7 +209,7 @@ def traj_plot(run_path):
     plt.close()
 
     # velocity error (boost)
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[boost_mask], (true_vx - est_vx)[boost_mask], label="vx")
     plt.plot(true_t[boost_mask], (true_vy - est_vy)[boost_mask], label="vy")
     plt.plot(true_t[boost_mask], (true_vz - est_vz)[boost_mask], label="vz")
@@ -210,7 +222,7 @@ def traj_plot(run_path):
     plt.close()
 
     # velocity error (midcourse)
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[midcourse_mask], (true_vx - est_vx)[midcourse_mask], label="vx")
     plt.plot(true_t[midcourse_mask], (true_vy - est_vy)[midcourse_mask], label="vy")
     plt.plot(true_t[midcourse_mask], (true_vz - est_vz)[midcourse_mask], label="vz")
@@ -223,7 +235,7 @@ def traj_plot(run_path):
     plt.close()
 
     # velocity error (reentry)
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[reentry_mask], (true_vx - est_vx)[reentry_mask], label="vx")
     plt.plot(true_t[reentry_mask], (true_vy - est_vy)[reentry_mask], label="vy")
     plt.plot(true_t[reentry_mask], (true_vz - est_vz)[reentry_mask], label="vz")
@@ -237,7 +249,7 @@ def traj_plot(run_path):
 
     # thrust vs. time
     thrust_mask = true_t <= 200
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[thrust_mask], true_ax_thrust[thrust_mask], label="ax")
     plt.plot(true_t[thrust_mask], true_ay_thrust[thrust_mask], label="ay")
     plt.plot(true_t[thrust_mask], true_az_thrust[thrust_mask], label="az")
@@ -251,7 +263,7 @@ def traj_plot(run_path):
     plt.close()
 
     # mass vs. time
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[thrust_mask], true_mass[thrust_mask])
     plt.xlabel("Time (s)")
     plt.ylabel("Mass (kg)")
@@ -261,7 +273,7 @@ def traj_plot(run_path):
     plt.close()
 
     # acceleration vs. time
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t, true_ax_total, label="ax")
     plt.plot(true_t, true_ay_total, label="ay")
     plt.plot(true_t, true_az_total, label="az")
@@ -274,7 +286,7 @@ def traj_plot(run_path):
     plt.close()
 
     # acceleration error
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t, true_ax_total - est_ax_total, label="ax")
     plt.plot(true_t, true_ay_total - est_ay_total, label="ay")
     plt.plot(true_t, true_az_total - est_az_total, label="az")
@@ -287,7 +299,7 @@ def traj_plot(run_path):
     plt.close()
 
     # drag acceleration
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t, true_ax_drag, label="ax")
     plt.plot(true_t, true_ay_drag, label="ay")
     plt.plot(true_t, true_az_drag, label="az")
@@ -300,7 +312,7 @@ def traj_plot(run_path):
     plt.close()
 
     # estimated drag acceleration
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t, est_ax_drag, label="ax")
     plt.plot(true_t, est_ay_drag, label="ay")
     plt.plot(true_t, est_az_drag, label="az")
@@ -313,7 +325,7 @@ def traj_plot(run_path):
     plt.close()
 
     # drag acceleration (boost)
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[boost_mask], true_ax_drag[boost_mask], label="ax")
     plt.plot(true_t[boost_mask], true_ay_drag[boost_mask], label="ay")
     plt.plot(true_t[boost_mask], true_az_drag[boost_mask], label="az")
@@ -326,7 +338,7 @@ def traj_plot(run_path):
     plt.close()
 
     # estimated drag acceleration (boost)
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[boost_mask], est_ax_drag[boost_mask], label="ax")
     plt.plot(true_t[boost_mask], est_ay_drag[boost_mask], label="ay")
     plt.plot(true_t[boost_mask], est_az_drag[boost_mask], label="az")
@@ -339,7 +351,7 @@ def traj_plot(run_path):
     plt.close()
 
     # drag acceleration (midcourse)
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[midcourse_mask], true_ax_drag[midcourse_mask], label="ax")
     plt.plot(true_t[midcourse_mask], true_ay_drag[midcourse_mask], label="ay")
     plt.plot(true_t[midcourse_mask], true_az_drag[midcourse_mask], label="az")
@@ -352,7 +364,7 @@ def traj_plot(run_path):
     plt.close()
 
     # estimated drag acceleration (midcourse)
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[midcourse_mask], est_ax_drag[midcourse_mask], label="ax")
     plt.plot(true_t[midcourse_mask], est_ay_drag[midcourse_mask], label="ay")
     plt.plot(true_t[midcourse_mask], est_az_drag[midcourse_mask], label="az")
@@ -365,7 +377,7 @@ def traj_plot(run_path):
     plt.close()
 
     # drag acceleration (reentry)
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[reentry_mask], true_ax_drag[reentry_mask], label="ax")
     plt.plot(true_t[reentry_mask], true_ay_drag[reentry_mask], label="ay")
     plt.plot(true_t[reentry_mask], true_az_drag[reentry_mask], label="az")
@@ -378,7 +390,7 @@ def traj_plot(run_path):
     plt.close()
 
     # estimated drag acceleration (reentry)
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(true_t[reentry_mask], est_ax_drag[reentry_mask], label="ax")
     plt.plot(true_t[reentry_mask], est_ay_drag[reentry_mask], label="ay")
     plt.plot(true_t[reentry_mask], est_az_drag[reentry_mask], label="az")
@@ -390,12 +402,23 @@ def traj_plot(run_path):
     plt.savefig(run_path + "drag_acceleration_est_reentry.pdf")
     plt.close()
 
-
     # lift acceleration
-    plt.figure(figsize=(10,10))
-    plt.plot(true_t[(true_altitude < 1e5) & (true_t > 200)], true_ax_lift[(true_altitude < 1e5) & (true_t > 200)], label="ax")
-    plt.plot(true_t[(true_altitude < 1e5) & (true_t > 200)], true_ay_lift[(true_altitude < 1e5) & (true_t > 200)], label="ay")
-    plt.plot(true_t[(true_altitude < 1e5) & (true_t > 200)], true_az_lift[(true_altitude < 1e5) & (true_t > 200)], label="az")
+    plt.figure(figsize=(10, 10))
+    plt.plot(
+        true_t[(true_altitude < 1e5) & (true_t > 200)],
+        true_ax_lift[(true_altitude < 1e5) & (true_t > 200)],
+        label="ax",
+    )
+    plt.plot(
+        true_t[(true_altitude < 1e5) & (true_t > 200)],
+        true_ay_lift[(true_altitude < 1e5) & (true_t > 200)],
+        label="ay",
+    )
+    plt.plot(
+        true_t[(true_altitude < 1e5) & (true_t > 200)],
+        true_az_lift[(true_altitude < 1e5) & (true_t > 200)],
+        label="az",
+    )
     plt.xlabel("Time (s)")
     plt.ylabel("Lift Acceleration (m/s^2)")
     plt.title("Lift Acceleration")
@@ -405,9 +428,9 @@ def traj_plot(run_path):
     plt.close()
 
     # plot y and z position vs. altitude
-    plt.figure(figsize=(10,10))
-    plt.plot(500000-true_altitude, true_y, label="y")
-    plt.plot(500000-true_altitude, true_z, label="z")
+    plt.figure(figsize=(10, 10))
+    plt.plot(500000 - true_altitude, true_y, label="y")
+    plt.plot(500000 - true_altitude, true_z, label="z")
     plt.xlabel("Altitude")
     plt.ylabel("Position (m)")
     # no x axis ticks
@@ -419,8 +442,11 @@ def traj_plot(run_path):
     plt.close()
 
     # roll angle vs. time
-    plt.figure(figsize=(10,10))
-    plt.plot(true_t[(true_altitude < 1e5) & (true_t > 200)], roll[(true_altitude < 1e5) & (true_t > 200)])
+    plt.figure(figsize=(10, 10))
+    plt.plot(
+        true_t[(true_altitude < 1e5) & (true_t > 200)],
+        roll[(true_altitude < 1e5) & (true_t > 200)],
+    )
     plt.xlabel("Time (s)")
     plt.ylabel("Roll Angle (rad)")
     plt.title("Roll Angle")
@@ -429,7 +455,7 @@ def traj_plot(run_path):
     plt.close()
 
     # roll angle vs. altitude
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10, 10))
     plt.plot(roll[true_altitude < 1e5], true_altitude[true_altitude < 1e5])
     plt.ylabel("Altitude (m)")
     plt.xlabel("Roll Angle (rad)")
@@ -437,4 +463,3 @@ def traj_plot(run_path):
     plt.grid()
     plt.savefig(run_path + "roll_vs_altitude.pdf")
     plt.close()
-
