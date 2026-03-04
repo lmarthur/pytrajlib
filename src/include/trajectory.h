@@ -130,8 +130,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
 
   state old_est_state = init_est_state(run_params);
   state new_est_state = init_est_state(run_params);
-  state old_des_state = init_est_state(run_params);
-  state new_des_state = init_est_state(run_params);
 
   int traj_output = run_params->traj_output;
   double time_step;
@@ -234,14 +232,11 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
     // Update the gravity acceleration components
     update_gravity(&true_grav, &new_true_state);
     update_gravity(&est_grav, &new_est_state);
-    update_gravity(&true_grav, &new_des_state);
 
     // Update the drag acceleration components
     update_drag(run_params, vehicle, &true_atm_cond, &new_true_state,
                 &step_timer);
     update_drag(run_params, vehicle, &est_atm_cond, &new_est_state,
-                &step_timer);
-    update_drag(run_params, vehicle, &est_atm_cond, &new_des_state,
                 &step_timer);
 
     // If maneuverable RV, use proportional navigation during reentry
@@ -259,9 +254,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
     new_est_state.a_total =
         add(add(new_est_state.a_grav, new_est_state.a_drag),
             add(new_est_state.a_lift, new_est_state.a_thrust));
-    new_des_state.a_total =
-        add(add(new_des_state.a_grav, new_des_state.a_drag),
-            add(new_des_state.a_lift, new_des_state.a_thrust));
 
     if (run_params->ins_nav == 1) {
       // INS Measurement
@@ -277,7 +269,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
     // Perform a Runge-Kutta step
     euler_maruyama_step(&new_true_state, time_step);
     euler_maruyama_step(&new_est_state, time_step);
-    euler_maruyama_step(&new_des_state, time_step);
     // Update the mass of the vehicle
     update_mass(vehicle, new_true_state.t);
 
@@ -286,7 +277,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
     if (new_altitude < 0) {
       state true_final_state = impact_linterp(&old_true_state, &new_true_state);
       state est_final_state = impact_linterp(&old_est_state, &new_est_state);
-      state des_final_state = impact_linterp(&old_des_state, &new_des_state);
 
       // Add coriolis effect based on the latitude and the impact time error
       double lat = ran_flat(-M_PI / 2, M_PI / 2);
@@ -373,7 +363,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
     // Update the old state
     old_true_state = new_true_state;
     old_est_state = new_est_state;
-    old_des_state = new_des_state;
   }
 
   printf("Warning: Maximum number of steps reached with no impact\n");
