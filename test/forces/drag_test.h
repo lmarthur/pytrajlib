@@ -24,60 +24,58 @@ TEST(drag, update_drag) {
   atm_cond = get_exp_atm_cond(0, &atm_model);
 
   state.t = 1;
-  state.x = grav.earth_radius;
-  state.y = 0;
-  state.z = 0;
-  state.vx = 0;
-  state.vy = 0;
-  state.vz = 0;
+  state.position.x = grav.earth_radius;
+  state.position.y = 0;
+  state.position.z = 0;
+  state.velocity = zeros();
 
   update_drag(&run_params, &vehicle, &atm_cond, &state, &step_timer);
 
   // Check that the drag acceleration components are zero
-  REQUIRE_LT(state.ax_drag, 1e-6);
-  REQUIRE_LT(state.ay_drag, 1e-6);
-  REQUIRE_LT(state.az_drag, 1e-6);
+  REQUIRE_LT(state.a_drag.x, 1e-6);
+  REQUIRE_LT(state.a_drag.y, 1e-6);
+  REQUIRE_LT(state.a_drag.z, 1e-6);
 
   // Check that for wind and velocity in the same direction, drag is zero
   atm_cond.vertical_wind = 1;
   atm_cond.zonal_wind = 1;
   atm_cond.meridional_wind = 1;
-  state.vx = 1;
-  state.vy = 1;
-  state.vz = 1;
+  state.velocity.x = 1;
+  state.velocity.y = 1;
+  state.velocity.z = 1;
 
   update_drag(&run_params, &vehicle, &atm_cond, &state, &step_timer);
 
-  REQUIRE_LT(state.ax_drag, 1e-6);
-  REQUIRE_LT(state.ay_drag, 1e-6);
-  REQUIRE_LT(state.az_drag, 1e-6);
+  REQUIRE_LT(state.a_drag.x, 1e-6);
+  REQUIRE_LT(state.a_drag.y, 1e-6);
+  REQUIRE_LT(state.a_drag.z, 1e-6);
 
   // Check that for wind and velocity in opposite directions, drag is non-zero
   atm_cond.vertical_wind = -1;
   atm_cond.zonal_wind = -1;
   atm_cond.meridional_wind = -1;
-  state.vx = 1;
-  state.vy = 1;
-  state.vz = 1;
+  state.velocity.x = 1;
+  state.velocity.y = 1;
+  state.velocity.z = 1;
 
   update_drag(&run_params, &vehicle, &atm_cond, &state, &step_timer);
 
-  REQUIRE_NE(state.ax_drag, 0);
-  REQUIRE_NE(state.ay_drag, 0);
-  REQUIRE_NE(state.az_drag, 0);
+  REQUIRE_NE(state.a_drag.x, 0);
+  REQUIRE_NE(state.a_drag.y, 0);
+  REQUIRE_NE(state.a_drag.z, 0);
 
   // Check that for no wind, drag is only in the opposite direction of velocity
   atm_cond.vertical_wind = 0;
   atm_cond.zonal_wind = 0;
   atm_cond.meridional_wind = 0;
 
-  state.vx = 100;
-  state.vy = 0;
-  state.vz = 0;
+  state.velocity.x = 100;
+  state.velocity.y = 0;
+  state.velocity.z = 0;
 
   update_drag(&run_params, &vehicle, &atm_cond, &state, &step_timer);
 
-  REQUIRE_LT(state.ax_drag, 0);
-  REQUIRE_EQ(state.ay_drag, 0);
-  REQUIRE_EQ(state.az_drag, 0);
+  REQUIRE_LT(state.a_drag.x, 0);
+  REQUIRE_EQ(state.a_drag.y, 0);
+  REQUIRE_EQ(state.a_drag.z, 0);
 }

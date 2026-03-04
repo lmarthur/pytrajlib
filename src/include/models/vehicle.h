@@ -63,15 +63,12 @@ typedef struct vehicle {
 } vehicle;
 
 // Define a function to initialize a ballistic rv
+/**
+ * Initializes a ballistic reentry vehicle.
+ *
+ * @return Ballistic reentry vehicle parameters.
+ */
 rv init_ballistic_rv() {
-  /*
-  Initializes a ballistic reentry vehicle
-
-  OUTPUTS:
-  ----------
-      rv: rv
-          reentry vehicle struct
-  */
 
   rv rv;
   // Define parameters for a ballistic reentry vehicle
@@ -95,15 +92,12 @@ rv init_ballistic_rv() {
 }
 
 // Define a function to initialize a maneuverable rv
+/**
+ * Initializes a maneuverable reentry vehicle.
+ *
+ * @return Maneuverable reentry vehicle parameters.
+ */
 rv init_swerve_rv() {
-  /*
-  Initializes a maneuverable reentry vehicle
-
-  OUTPUTS:
-  ----------
-      rv: rv
-          reentry vehicle struct
-  */
 
   rv rv;
   // Define parameters for a maneuverable reentry vehicle
@@ -127,15 +121,12 @@ rv init_swerve_rv() {
 }
 
 // Define a function to initialize a MMIII booster
+/**
+ * Initializes a MMIII booster.
+ *
+ * @return MMIII booster parameters.
+ */
 booster init_mmiii_booster() {
-  /*
-  Initializes a MMIII booster
-
-  OUTPUTS:
-  ----------
-      booster: booster
-          booster struct
-  */
 
   booster booster;
   // Define parameters for a MMIII booster
@@ -181,15 +172,12 @@ booster init_mmiii_booster() {
 
 // Define a function to initialize a mmiii vehicle carrying a ballistic reentry
 // vehicle
+/**
+ * Initializes a MMIII vehicle carrying a ballistic reentry vehicle.
+ *
+ * @return Vehicle parameters.
+ */
 vehicle init_mmiii_ballistic() {
-  /*
-  Initializes a MMIII vehicle carrying a ballistic reentry vehicle
-
-  OUTPUTS:
-  ----------
-      vehicle: vehicle
-          vehicle struct
-  */
   vehicle vehicle;
   // Define parameters for a MMIII vehicle carrying a ballistic reentry vehicle
   vehicle.booster = init_mmiii_booster();
@@ -202,15 +190,12 @@ vehicle init_mmiii_ballistic() {
 
 // Define a function to initialize a mmiii vehicle carrying a maneuverable
 // reentry vehicle
+/**
+ * Initializes a MMIII vehicle carrying a maneuverable reentry vehicle.
+ *
+ * @return Vehicle parameters.
+ */
 vehicle init_mmiii_swerve() {
-  /*
-  Initializes a MMIII vehicle carrying a maneuverable reentry vehicle
-
-  OUTPUTS:
-  ----------
-      vehicle: vehicle
-          vehicle struct
-  */
 
   vehicle vehicle;
   // Define parameters for a MMIII vehicle carrying a maneuverable reentry
@@ -224,15 +209,12 @@ vehicle init_mmiii_swerve() {
 }
 
 // Define a function to initialize a mock booster
+/**
+ * Initializes a mock booster.
+ *
+ * @return Mock booster parameters.
+ */
 booster init_mock_booster() {
-  /*
-  Initializes a mock booster
-
-  OUTPUTS:
-  ----------
-      booster: booster
-          booster struct
-  */
 
   booster booster;
   // Define parameters for a MMIII booster
@@ -277,15 +259,12 @@ booster init_mock_booster() {
 }
 
 // Define a function to initialize a mock reentry vehicle
+/**
+ * Initializes a mock reentry vehicle.
+ *
+ * @return Mock reentry vehicle parameters.
+ */
 rv init_mock_rv() {
-  /*
-  Initializes a mock reentry vehicle
-
-  OUTPUTS:
-  ----------
-      rv: rv
-          reentry vehicle struct
-  */
 
   rv rv;
   // Define parameters for a ballistic reentry vehicle
@@ -309,15 +288,12 @@ rv init_mock_rv() {
 }
 
 // Define a function to initialize a mock vehicle
+/**
+ * Initializes a mock vehicle.
+ *
+ * @return Mock vehicle parameters.
+ */
 vehicle init_mock_vehicle() {
-  /*
-  Initializes a mock vehicle
-
-  OUTPUTS:
-  ----------
-      vehicle: vehicle
-          vehicle struct
-  */
 
   vehicle vehicle;
   vehicle.booster = init_mock_booster();
@@ -327,15 +303,12 @@ vehicle init_mock_vehicle() {
   return vehicle;
 }
 
+/**
+ * Initializes a reentry-only vehicle configuration.
+ *
+ * @return Reentry-only vehicle parameters.
+ */
 vehicle init_reentry_only() {
-  /*
-  Initializes a vehicle for reentry only
-
-  OUTPUTS:
-  ----------
-      vehicle: vehicle
-          vehicle struct
-  */
 
   vehicle vehicle;
   vehicle.booster = init_mock_booster();
@@ -346,17 +319,13 @@ vehicle init_reentry_only() {
   return vehicle;
 }
 
+/**
+ * Updates vehicle mass based on stage burn timing.
+ *
+ * @param vehicle Pointer to vehicle struct.
+ * @param t Current simulation time in seconds.
+ */
 void update_mass(vehicle *vehicle, double t) {
-  /*
-  Updates the mass of the vehicle based on the current stage and burn time
-
-  INPUTS:
-  ----------
-      vehicle: vehicle *
-          pointer to the vehicle struct
-      t: double
-          current time in seconds
-  */
 
   // If after burnout, set the mass to the reentry vehicle mass
 

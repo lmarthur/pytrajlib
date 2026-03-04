@@ -4,14 +4,17 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "constants.h"
+#include "math/linalg.h"
 #include "models/vehicle.h"
 
 typedef struct runparams {
   char *run_name;           // name of the run
   int run_type;             // 0 for full trajectory, 1 for reentry only
   char *output_path;        // path to the output directory
-  char *impact_data_path;   // path to the impact data file
   char *trajectory_path;    // path to the trajectory data file
+  char *atm_path;           // path to "atmprofiles.txt"
+  char *mean_atm_path;      // path to "mean_atm.txt"
   int num_runs;             // number of Monte Carlo runs
   double time_step_main;    // time step in seconds during boost and outside the
                             // atmosphere
@@ -60,38 +63,24 @@ typedef struct runparams {
 
 } runparams;
 
-double get_altitude(double x, double y, double z) {
-  /*
-  Calculates the altitude of a point above the Earth's surface
+/**
+ * Calculates the altitude of a point above Earth's surface.
+ *
+ * @param position Cartesian position vector.
+ * @return Altitude above Earth's mean radius in meters.
+ */
+double get_altitude(cartvec position) {
 
-  INPUTS:
-  ----------
-      x: double
-          x-coordinate of the point
-      y: double
-          y-coordinate of the point
-      z: double
-          z-coordinate of the point
-  OUTPUTS:
-  ----------
-      altitude: double
-          altitude of the point above the Earth's surface
-  */
-
-  return sqrt(x * x + y * y + z * z) - 6371e3;
+  return norm(position) - EARTH_RADIUS_M;
 }
 
+/**
+ * Converts Cartesian coordinates to spherical coordinates.
+ *
+ * @param cart_coords Pointer to Cartesian coordinates `[x, y, z]`.
+ * @param spher_coords Output spherical coordinates `[r, long, lat]`.
+ */
 void cartcoords_to_sphercoords(double *cart_coords, double *spher_coords) {
-  /*
-  Converts Cartesian coordinates to spherical coordinates
-
-  INPUTS:
-  ----------
-      cart_coords: double *
-          pointer to Cartesian coordinates [x, y, z]
-      spher_coords: double *
-          pointer to spherical coordinates [r, long, lat]
-  */
 
   // Calculate the radial coordinate
   spher_coords[0] =
@@ -107,17 +96,13 @@ void cartcoords_to_sphercoords(double *cart_coords, double *spher_coords) {
                                  cart_coords[1] * cart_coords[1]));
 }
 
+/**
+ * Converts spherical coordinates to Cartesian coordinates.
+ *
+ * @param spher_coords Pointer to spherical coordinates `[r, long, lat]`.
+ * @param cart_coords Output Cartesian coordinates `[x, y, z]`.
+ */
 void sphercoords_to_cartcoords(double *spher_coords, double *cart_coords) {
-  /*
-  Converts spherical coordinates to Cartesian coordinates
-
-  INPUTS:
-  ----------
-      spher_coords: double *
-          pointer to spherical coordinates [r, long, lat]
-      cart_coords: double *
-          pointer to Cartesian coordinates [x, y, z]
-  */
 
   // Calculate the x-coordinate
   cart_coords[0] =
@@ -131,21 +116,16 @@ void sphercoords_to_cartcoords(double *spher_coords, double *cart_coords) {
   cart_coords[2] = spher_coords[0] * sin(spher_coords[2]);
 }
 
+/**
+ * Converts a spherical vector to Cartesian components at given spherical
+ * coordinates.
+ *
+ * @param sphervec Pointer to spherical vector components.
+ * @param cartvec Output Cartesian vector components.
+ * @param spher_coords Pointer to spherical coordinates `[r, long, lat]`.
+ */
 void sphervec_to_cartvec(double *sphervec, double *cartvec,
                          double *spher_coords) {
-  /*
-  Converts a spherical vector to a Cartesian vector at a given set of spherical
-  coordinates
-
-  INPUTS:
-  ----------
-      sphervec: double *
-          pointer to spherical vector [r, long, lat]
-      cartvec: double *
-          pointer to Cartesian vector [x, y, z]
-      spher_coords: double *
-          pointer to spherical coordinates [r, long, lat]
-  */
   cartvec[0] = -sphervec[1] * sin(spher_coords[1]) -
                sphervec[2] * sin(spher_coords[2]) * cos(spher_coords[1]) +
                sphervec[0] * cos(spher_coords[1]) * cos(spher_coords[2]);
@@ -159,19 +139,15 @@ void sphervec_to_cartvec(double *sphervec, double *cartvec,
       sphervec[2] * cos(spher_coords[2]) + sphervec[0] * sin(spher_coords[2]);
 }
 
+/**
+ * Prints run parameters to the console.
+ *
+ * @param run_params Pointer to run parameters struct.
+ */
 void print_config(runparams *run_params) {
-  /*
-  Prints the run parameters to the console at runtime
-
-  INPUTS:
-  ----------
-      run_params: runparams *
-          pointer to the run parameters struct
-  */
   printf("Run name: %s\n", run_params->run_name);
   printf("Run type: %d\n", run_params->run_type);
   printf("Output path: %s\n", run_params->output_path);
-  printf("Impact data path: %s\n", run_params->impact_data_path);
   printf("Trajectory path: %s\n", run_params->trajectory_path);
   printf("Number of Monte Carlo runs: %d\n", run_params->num_runs);
   printf("Time step: %f\n", run_params->time_step_main);
@@ -210,25 +186,16 @@ void print_config(runparams *run_params) {
          run_params->step_acc_dur);
 }
 
+/**
+ * Performs linear interpolation on tabulated data.
+ *
+ * @param x Query value.
+ * @param xs Monotonic x-value array.
+ * @param ys Corresponding y-value array.
+ * @param n Number of data points.
+ * @return Interpolated y-value.
+ */
 double linterp(double x, double xs[], double ys[], int n) {
-  /*
-  Linear interpolation function
-
-  INPUTS:
-  ----------
-      x: double
-          value to interpolate
-      xs: double *
-          pointer to the x-values
-      ys: double *
-          pointer to the y-values
-      n: int
-          number of data points
-  OUTPUTS:
-  ----------
-      y: double
-          interpolated value
-  */
 
   // Initialize the output value
   double y = 0;
@@ -250,21 +217,14 @@ double linterp(double x, double xs[], double ys[], int n) {
   return y;
 }
 
+/**
+ * Returns the minimum of two values.
+ *
+ * @param a First value.
+ * @param b Second value.
+ * @return Smaller of `a` and `b`.
+ */
 double min(double a, double b) {
-  /*
-  Returns the minimum of two values
-
-  INPUTS:
-  ----------
-      a: double
-          first value
-      b: double
-          second value
-  OUTPUTS:
-  ----------
-      min: double
-          minimum value
-  */
 
   if (a < b) {
     return a;
@@ -273,19 +233,13 @@ double min(double a, double b) {
   }
 }
 
+/**
+ * Returns the sign of a value.
+ *
+ * @param x Input value.
+ * @return `1` if positive, `-1` if negative, otherwise `0`.
+ */
 double sign(double x) {
-  /*
-  Returns the sign of a value
-
-  INPUTS:
-  ----------
-      x: double
-          value to get the sign of
-  OUTPUTS:
-  ----------
-      sign: double
-          sign of the value
-  */
 
   if (x > 0) {
     return 1;

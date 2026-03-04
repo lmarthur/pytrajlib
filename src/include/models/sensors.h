@@ -1,9 +1,9 @@
 #ifndef SENSORS_H
 #define SENSORS_H
 
-#include "models/state.h"
-#include "rng/rng.h"
-#include "utils.h"
+#include "../rng/rng.h"
+#include "../utils.h"
+#include "state.h"
 
 // Define an inertial measurement unit struct
 typedef struct imu {
@@ -28,22 +28,14 @@ typedef struct imu {
 
 } imu;
 
+/**
+ * Initialize IMU parameters and initial gyro error states.
+ *
+ * @param run_params Pointer to run configuration parameters
+ * @param initial_state Pointer to initial vehicle state
+ * @return Initialized IMU model
+ */
 imu imu_init(runparams *run_params, state *initial_state) {
-  /*
-  Initializes an accelerometer struct
-
-  INPUTS:
-  ----------
-      run_params: runparams *
-          pointer to the run parameters struct
-      initial_state: state *
-          pointer to the initial state of the vehicle
-
-  OUTPUTS:
-  ----------
-      imu: imu
-          pointer to the inertial measurement unit struct
-  */
 
   imu imu;
   imu.acc_scale_stability = run_params->acc_scale_stability;
@@ -63,58 +55,47 @@ imu imu_init(runparams *run_params, state *initial_state) {
   return imu;
 }
 
+/**
+ * Apply IMU attitude and acceleration measurement model to update
+ * estimated state.
+ *
+ * @param imu Pointer to IMU model/state
+ * @param true_state Pointer to true vehicle state
+ * @param est_state Pointer to estimated vehicle state to update
+ * @param vehicle Pointer to vehicle model
+ */
 void imu_measurement(imu *imu, state *true_state, state *est_state,
                      vehicle *vehicle) {
-  /*
-  Simulates an accelerometer measurement
-
-  INPUTS:
-  ----------
-      imu: imu *
-          pointer to the inertial measurement unit struct
-      true_state: state *
-          pointer to the true state of the vehicle
-      est_state: state *
-          pointer to the estimated state of the vehicle
-      vehicle: vehicle *
-          pointer to the vehicle struct
-  */
 
   // Gyroscope measurements
   est_state->theta_long = true_state->theta_long + imu->gyro_error_long -
                           true_state->initial_theta_long_pert;
   est_state->theta_lat = true_state->theta_lat + imu->gyro_error_lat -
                          true_state->initial_theta_lat_pert;
-  double a_measurable_x = true_state->ax_total - true_state->ax_grav;
-  double a_measurable_y = true_state->ay_total - true_state->ay_grav;
-  double a_measurable_z = true_state->az_total - true_state->az_grav;
+  cartvec a_measurable = subtract(true_state->a_total, true_state->a_grav);
 
   // Accelerometer measurements
-  est_state->ax_total = a_measurable_x * (1 + imu->acc_scale_x) +
-                        a_measurable_y * imu->gyro_error_long -
-                        a_measurable_z * imu->gyro_error_lat +
-                        est_state->ax_grav;
-  est_state->ay_total =
-      a_measurable_y * (1 + imu->acc_scale_y) -
-      a_measurable_x * imu->gyro_error_long +
-      a_measurable_z * imu->gyro_error_long * imu->gyro_error_lat +
-      est_state->ay_grav;
-  est_state->az_total = a_measurable_z * (1 + imu->acc_scale_z) +
-                        a_measurable_x * imu->gyro_error_lat +
-                        est_state->az_grav;
+  est_state->a_total.x = a_measurable.x * (1 + imu->acc_scale_x) +
+                         a_measurable.y * imu->gyro_error_long -
+                         a_measurable.z * imu->gyro_error_lat +
+                         est_state->a_grav.x;
+  est_state->a_total.y =
+      a_measurable.y * (1 + imu->acc_scale_y) -
+      a_measurable.x * imu->gyro_error_long +
+      a_measurable.z * imu->gyro_error_long * imu->gyro_error_lat +
+      est_state->a_grav.y;
+  est_state->a_total.z = a_measurable.z * (1 + imu->acc_scale_z) +
+                         a_measurable.x * imu->gyro_error_lat +
+                         est_state->a_grav.z;
 }
 
+/**
+ * Propagate IMU gyro error state with bias and random walk.
+ *
+ * @param imu Pointer to IMU model/state
+ * @param time_step Simulation time step in seconds
+ */
 void update_imu(imu *imu, double time_step) {
-  /*
-  Updates the accelerometer parameters
-
-  INPUTS:
-  ----------
-      imu: imu *
-          pointer to the accelerometer struct
-      time_step: double
-          time step for the simulation
-  */
 
   // Update the gyro error by recursively adding noise and bias drift
   imu->gyro_error_long = imu->gyro_error_long +
@@ -131,20 +112,13 @@ typedef struct gnss {
 
 } gnss;
 
+/**
+ * Initialize GNSS measurement model.
+ *
+ * @param run_params Pointer to run configuration parameters
+ * @return Initialized GNSS model
+ */
 gnss gnss_init(runparams *run_params) {
-  /*
-  Initializes a gnss struct
-
-  INPUTS:
-  ----------
-      run_params: runparams *
-          pointer to the run parameters struct
-
-  OUTPUTS:
-  ----------
-      gnss: gnss
-          pointer to the gnss struct
-  */
 
   gnss gnss;
   gnss.noise = run_params->gnss_noise;
@@ -152,47 +126,31 @@ gnss gnss_init(runparams *run_params) {
   return gnss;
 }
 
+/**
+ * Apply GNSS position measurement model to update estimated state position.
+ *
+ * @param gnss Pointer to GNSS model
+ * @param true_state Pointer to true vehicle state
+ * @param est_state Pointer to estimated state to update
+ */
 void gnss_measurement(gnss *gnss, state *true_state, state *est_state) {
-  /*
-  Simulates a gnss measurement
-
-  INPUTS:
-  ----------
-      gnss: gnss *
-          pointer to the gnss struct
-      true_state: state *
-          pointer to the true state of the vehicle
-      est_state: state *
-          pointer to the estimated state of the vehicle
-
-  OUTPUTS:
-  ----------
-      meas_state: state
-          pointer to the measured state of the vehicle
-  */
 
   // Position measurements
-  est_state->x = true_state->x + gnss->noise * ran_gaussian(1);
-  est_state->y = true_state->y + gnss->noise * ran_gaussian(1);
-  est_state->z = true_state->z + gnss->noise * ran_gaussian(1);
+  est_state->position.x =
+      true_state->position.x + gnss->noise * ran_gaussian(1);
+  est_state->position.y =
+      true_state->position.y + gnss->noise * ran_gaussian(1);
+  est_state->position.z =
+      true_state->position.z + gnss->noise * ran_gaussian(1);
 }
 
+/**
+ * Set estimated state equal to true state (ideal measurement).
+ *
+ * @param true_state Pointer to true vehicle state
+ * @param est_state Pointer to estimated vehicle state
+ */
 void perfect_measurement(state *true_state, state *est_state) {
-  /*
-  Simulates a perfect measurement
-
-  INPUTS:
-  ----------
-      true_state: state *
-          pointer to the true state of the vehicle
-      est_state: state *
-          pointer to the estimated state of the vehicle
-
-  OUTPUTS:
-  ----------
-      meas_state: state
-          pointer to the measured state of the vehicle
-  */
 
   est_state = true_state;
 }

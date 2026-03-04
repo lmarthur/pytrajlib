@@ -1,0 +1,3 @@
+recursive-include src/include *.h *.c
+include src/pytrajlib/*.so
+include src/pytrajlib/*.pyd

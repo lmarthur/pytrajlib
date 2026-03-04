@@ -1,4 +1,4 @@
-#include "../src/include/physics.h"
+#include "../src/include/integrator.h"
 #include <tau/tau.h>
 
 TEST(physics, update_mass) {
@@ -55,94 +55,80 @@ TEST(physics, update_mass) {
   }
 }
 
-TEST(physics, rk4step) {
+TEST(physics, euler_maruyama_step) {
   state state;
-  state.x = 0;
-  state.y = 0;
-  state.z = 0;
-  state.vx = 0;
-  state.vy = 0;
-  state.vz = 0;
-  state.ax_total = 0;
-  state.ay_total = 0;
-  state.az_total = 0;
+  state.position = zeros();
+  state.velocity = zeros();
+  state.a_total = zeros();
 
   double time_step = 1;
 
-  rk4step(&state, time_step);
+  euler_maruyama_step(&state, time_step);
 
   // Check that the new position is zero
-  REQUIRE_EQ(state.x, 0);
-  REQUIRE_EQ(state.y, 0);
-  REQUIRE_EQ(state.z, 0);
+  REQUIRE_EQ(state.position.x, 0);
+  REQUIRE_EQ(state.position.y, 0);
+  REQUIRE_EQ(state.position.z, 0);
 
   // Check that the new velocity is zero
-  REQUIRE_EQ(state.vx, 0);
-  REQUIRE_EQ(state.vy, 0);
-  REQUIRE_EQ(state.vz, 0);
+  REQUIRE_EQ(state.velocity.x, 0);
+  REQUIRE_EQ(state.velocity.y, 0);
+  REQUIRE_EQ(state.velocity.z, 0);
 
   // Check that the new acceleration is zero
-  REQUIRE_EQ(state.ax_total, 0);
-  REQUIRE_EQ(state.ay_total, 0);
-  REQUIRE_EQ(state.az_total, 0);
+  REQUIRE_EQ(state.a_total.x, 0);
+  REQUIRE_EQ(state.a_total.y, 0);
+  REQUIRE_EQ(state.a_total.z, 0);
 
   // Check that the new position is the time step times the velocity
-  state.x = 0;
-  state.y = 0;
-  state.z = 0;
-  state.vx = 1;
-  state.vy = 1;
-  state.vz = 1;
+  state.position = zeros();
+  state.velocity.x = 1;
+  state.velocity.y = 1;
+  state.velocity.z = 1;
 
-  rk4step(&state, time_step);
+  euler_maruyama_step(&state, time_step);
 
-  REQUIRE_EQ(state.x, time_step);
-  REQUIRE_EQ(state.y, time_step);
-  REQUIRE_EQ(state.z, time_step);
+  REQUIRE_EQ(state.position.x, time_step);
+  REQUIRE_EQ(state.position.y, time_step);
+  REQUIRE_EQ(state.position.z, time_step);
 
   // Check that the new velocity is the time step times the acceleration
-  state.vx = 0;
-  state.vy = 0;
-  state.vz = 0;
-  state.ax_total = 1;
-  state.ay_total = 1;
-  state.az_total = 1;
+  state.velocity = zeros();
+  state.a_total.x = 1;
+  state.a_total.y = 1;
+  state.a_total.z = 1;
 
-  rk4step(&state, time_step);
+  euler_maruyama_step(&state, time_step);
 
-  REQUIRE_EQ(state.vx, time_step);
-  REQUIRE_EQ(state.vy, time_step);
-  REQUIRE_EQ(state.vz, time_step);
+  REQUIRE_EQ(state.velocity.x, time_step);
+  REQUIRE_EQ(state.velocity.y, time_step);
+  REQUIRE_EQ(state.velocity.z, time_step);
 
   // Check that the new position is the time step times the velocity plus 0.5
   // times the acceleration
-  state.x = 0;
-  state.y = 0;
-  state.z = 0;
-  state.vx = 1;
-  state.vy = 1;
-  state.vz = 1;
-  state.ax_total = 1;
-  state.ay_total = 1;
-  state.az_total = 1;
+  state.position = zeros();
+  state.velocity.x = 1;
+  state.velocity.y = 1;
+  state.velocity.z = 1;
+  state.a_total.x = 1;
+  state.a_total.y = 1;
+  state.a_total.z = 1;
 
-  rk4step(&state, time_step);
+  euler_maruyama_step(&state, time_step);
 
-  REQUIRE_EQ(state.x, time_step + 0.5);
-  REQUIRE_EQ(state.y, time_step + 0.5);
-  REQUIRE_EQ(state.z, time_step + 0.5);
+  REQUIRE_EQ(state.position.x, time_step + 0.5);
+  REQUIRE_EQ(state.position.y, time_step + 0.5);
+  REQUIRE_EQ(state.position.z, time_step + 0.5);
 
   // Check that the new velocity is the time step times the acceleration
-  state.vx = 0;
-  state.vy = 0;
-  state.vz = 0;
-  state.ax_total = 2;
-  state.ay_total = 2;
-  state.az_total = 2;
+  state.velocity = zeros();
+  state.a_total.x = 2;
+  state.a_total.y = 2;
+  state.a_total.z = 2;
 
-  rk4step(&state, time_step);
+  euler_maruyama_step(&state, time_step);
 
-  REQUIRE_EQ(state.vx, time_step + 1);
-  REQUIRE_EQ(state.vy, time_step + 1);
-  REQUIRE_EQ(state.vz, time_step + 1);
+  REQUIRE_EQ(state.velocity.x, time_step + 1);
+  REQUIRE_EQ(state.velocity.y, time_step + 1);
+  REQUIRE_EQ(state.velocity.z, time_step + 1);
 }

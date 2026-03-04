@@ -28,6 +28,8 @@ from src.pylib import *
 so_file = "./build/libPyTraj.so"
 pytraj = CDLL(so_file)
 
+EARTH_RADIUS_M = 6371e3
+
 
 def get_miss_distance(params):
     # thrust_lon, t_vert_boost = params
@@ -57,7 +59,7 @@ def get_miss_distance(params):
         np.sin(aimpoint_lat) * np.sin(0)
         + np.cos(aimpoint_lat) * np.cos(0) * np.cos(aimpoint_lon)
     )
-    range_to_aimpoint = range_to_aimpoint * 6371e3
+    range_to_aimpoint = range_to_aimpoint * EARTH_RADIUS_M
     # print('Range to aimpoint: ', range_to_aimpoint)
 
     impact_t = impact_data[0]
@@ -104,7 +106,7 @@ if __name__ == "__main__":
         np.sin(aimpoint_lat) * np.sin(0)
         + np.cos(aimpoint_lat) * np.cos(0) * np.cos(aimpoint_lon)
     )
-    range_to_aimpoint = range_to_aimpoint * 6371e3
+    range_to_aimpoint = range_to_aimpoint * EARTH_RADIUS_M
     print("Range to aimpoint: ", range_to_aimpoint)
 
     RDESKM = range_to_aimpoint / 1000

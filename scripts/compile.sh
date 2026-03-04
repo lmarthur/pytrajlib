@@ -3,10 +3,8 @@
 # Compile the program
 echo "Compiling the program..."
 
-# mamba activate pytraj_env
-
-rm ./test/build/PyTraj_test
-rm ./build/libPyTraj.so
+rm -f ./test/build/PyTraj_test
+rm -f ./src/pytrajlib/*.so
 
 # Compile with CMake
 cmake -S ./test -B test/build -Wno-dev
@@ -18,8 +16,6 @@ echo "Running the library tests..."
 
 # Compile the shared library
 echo "Compiling the shared library..."
-gcc -shared -fPIC -o ./build/libPyTraj.so ./src/main.c ./src/include/rng/mt19937-64/mt19937-64.c -lm
-
-uv run src/mean_atm.py
+uv run src/pytrajlib/build.py
 
 echo "Done."

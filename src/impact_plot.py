@@ -7,8 +7,9 @@ import scipy.stats as stats
 
 sys.path.append(".")
 import numpy as np
-
 from src.pylib import *
+
+EARTH_RADIUS_M = 6371e3
 
 # TODO: Add a calculation of the range to the aimpoint
 
@@ -36,7 +37,7 @@ def impact_plot(run_path, run_params):
         np.sin(aimpoint_lat) * np.sin(0)
         + np.cos(aimpoint_lat) * np.cos(0) * np.cos(aimpoint_lon)
     )
-    range_to_aimpoint = range_to_aimpoint * 6371e3
+    range_to_aimpoint = range_to_aimpoint * EARTH_RADIUS_M
     print("Range to aimpoint: ", range_to_aimpoint)
 
     impact_t = impact_data[:, 0]

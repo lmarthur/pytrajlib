@@ -10,6 +10,8 @@ from src.pylib import *
 so_file = "./build/libPyTraj.so"
 pytraj = CDLL(so_file)
 
+EARTH_RADIUS_M = 6371e3
+
 # Specify the input file name (without the extension)
 config_file = "test"
 
@@ -28,7 +30,7 @@ def test_read_config():
     assert run_params.time_step_main == 1.0
     assert run_params.time_step_reentry == 0.01
     assert run_params.traj_output == 0
-    assert run_params.x_aim == 6371e3
+    assert run_params.x_aim == EARTH_RADIUS_M
     assert run_params.y_aim == 0
     assert run_params.z_aim == 0
     assert run_params.theta_long == 0.785398163397

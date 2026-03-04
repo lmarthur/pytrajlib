@@ -1,4 +1,4 @@
-#include "../src/include/vehicle.h"
+#include "../src/include/models/vehicle.h"
 #include <tau/tau.h>
 
 TEST(vehicle, init_ballistic_rv) {

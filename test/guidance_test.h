@@ -9,24 +9,24 @@ TEST(guidance, prop_nav) {
   run_params.y_aim = 0;
   run_params.z_aim = 0;
 
-  estimated_state.x = 10;
-  estimated_state.y = 0;
-  estimated_state.z = 0;
-  estimated_state.vx = -1;
-  estimated_state.vy = 0;
-  estimated_state.vz = 0;
+  estimated_state.position.x = 10;
+  estimated_state.position.y = 0;
+  estimated_state.position.z = 0;
+  estimated_state.velocity.x = -1;
+  estimated_state.velocity.y = 0;
+  estimated_state.velocity.z = 0;
 
-  cart_vector a_command = prop_nav(&estimated_state, &run_params);
+  cartvec a_command = prop_nav(&estimated_state, &run_params);
   REQUIRE_EQ(a_command.x, 0);
   REQUIRE_EQ(a_command.y, 0);
   REQUIRE_EQ(a_command.z, 0);
 
-  estimated_state.x = 10;
-  estimated_state.y = 0;
-  estimated_state.z = 0;
-  estimated_state.vx = -1;
-  estimated_state.vy = 1;
-  estimated_state.vz = 0;
+  estimated_state.position.x = 10;
+  estimated_state.position.y = 0;
+  estimated_state.position.z = 0;
+  estimated_state.velocity.x = -1;
+  estimated_state.velocity.y = 1;
+  estimated_state.velocity.z = 0;
 
   a_command = prop_nav(&estimated_state, &run_params);
   REQUIRE_LT(a_command.x, 0);

@@ -9,30 +9,30 @@ TEST(trajectory, impact_linterp) {
   state state_0;
   state state_1;
   state_0.t = 0;
-  state_0.x = grav.earth_radius + 1;
-  state_0.y = 0;
-  state_0.z = 0;
-  state_0.vx = -2;
-  state_0.vy = 0;
-  state_0.vz = 0;
+  state_0.position.x = grav.earth_radius + 1;
+  state_0.position.y = 0;
+  state_0.position.z = 0;
+  state_0.velocity.x = -2;
+  state_0.velocity.y = 0;
+  state_0.velocity.z = 0;
 
   state_1.t = 1;
-  state_1.x = grav.earth_radius - 1;
-  state_1.y = 0;
-  state_1.z = 0;
-  state_1.vx = 0;
-  state_1.vy = 0;
-  state_1.vz = 0;
+  state_1.position.x = grav.earth_radius - 1;
+  state_1.position.y = 0;
+  state_1.position.z = 0;
+  state_1.velocity.x = 0;
+  state_1.velocity.y = 0;
+  state_1.velocity.z = 0;
 
   state impact_state = impact_linterp(&state_0, &state_1);
 
   REQUIRE_EQ(impact_state.t, 0.5);
-  REQUIRE_EQ(impact_state.x, grav.earth_radius);
-  REQUIRE_EQ(impact_state.y, 0);
-  REQUIRE_EQ(impact_state.z, 0);
-  REQUIRE_EQ(impact_state.vx, -1);
-  REQUIRE_EQ(impact_state.vy, 0);
-  REQUIRE_EQ(impact_state.vz, 0);
+  REQUIRE_EQ(impact_state.position.x, grav.earth_radius);
+  REQUIRE_EQ(impact_state.position.y, 0);
+  REQUIRE_EQ(impact_state.position.z, 0);
+  REQUIRE_EQ(impact_state.velocity.x, -1);
+  REQUIRE_EQ(impact_state.velocity.y, 0);
+  REQUIRE_EQ(impact_state.velocity.z, 0);
 }
 
 TEST(trajectory, fly) {
@@ -46,7 +46,7 @@ TEST(trajectory, fly) {
   run_params.traj_output = 0;
   run_params.time_step_main = 1;
   run_params.time_step_reentry = 1;
-  run_params.x_aim = 6371e3;
+  run_params.x_aim = EARTH_RADIUS_M;
   run_params.y_aim = 0;
   run_params.z_aim = 0;
   run_params.theta_long = 0;
@@ -72,21 +72,21 @@ TEST(trajectory, fly) {
   // Mock vehicle with no thrust dropped from 10m above the surface
   state initial_state = init_true_state(&run_params);
   initial_state.theta_long = 0;
-  initial_state.x += 10;
+  initial_state.position.x += 10;
 
   state final_state = fly(&run_params, &initial_state, &vehicle);
 
   REQUIRE_LT(fabs(final_state.t - 1), 1);
-  REQUIRE_EQ(final_state.ax_thrust, 0);
-  REQUIRE_EQ(final_state.ay_thrust, 0);
-  REQUIRE_EQ(final_state.az_thrust, 0);
+  REQUIRE_EQ(final_state.a_thrust.x, 0);
+  REQUIRE_EQ(final_state.a_thrust.y, 0);
+  REQUIRE_EQ(final_state.a_thrust.z, 0);
 
   // Mock vehicle with no thrust launched from the surface
   initial_state = init_true_state(&run_params);
   initial_state.theta_long = 0;
-  initial_state.vx = 10;
-  initial_state.vy = 10;
-  initial_state.vz = 10;
+  initial_state.velocity.x = 10;
+  initial_state.velocity.y = 10;
+  initial_state.velocity.z = 10;
   final_state = fly(&run_params, &initial_state, &vehicle);
 
   REQUIRE_LT(fabs(final_state.t - 2), 1);

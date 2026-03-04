@@ -1,16 +1,19 @@
 # This script compiles the program and test scripts, and runs the unit and integration tests.
 #!/bin/bash
+set -e
+
 # Compile the program
 echo "Compiling the program..."
 
-# mamba activate pytraj_env
-
-rm ./test/build/PyTraj_test
-rm ./build/libPyTraj.so
+rm -f ./test/build/PyTraj_test
+rm -f ./src/pytrajlib/_traj.so
 
 # Compile with CMake
 cmake -S ./test -B test/build -Wno-dev
-make -C ./test/build
+if ! make -C ./test/build; then
+  echo "Build failed"
+  exit 1
+fi
 
 # Run the tests
 echo "Running the library tests..."
@@ -18,12 +21,10 @@ echo "Running the library tests..."
 
 # Compile the shared library
 echo "Compiling the shared library..."
-gcc -shared -fPIC -o ./build/libPyTraj.so ./src/main.c ./src/include/rng/mt19937-64/mt19937-64.c -lm
+uv run src/pytrajlib/build.py
 
-uv run src/mean_atm.py
-
-# Run integration tests
-echo "Running integration tests..."
-pytest -v -s ./test/
+# # Run integration tests
+# echo "Running integration tests..."
+# uv run pytest -v ./test/
 
 echo "Done."

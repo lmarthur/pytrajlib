@@ -1,16 +1,36 @@
 [project]
 name = "pytrajlib"
-version = "0.1.0"
-description = "Monte Carlo ICBM trajectory simulations"
+version = "1.0.0-alpha.6"
+description = "Simulate the flight of a ballistic or maneuverable missile"
 readme = "README.md"
+authors = [
+    { name = "L.M. Arthur" },
+    { name = "A.M. Decker" }
+]
 requires-python = ">=3.13"
 dependencies = [
     "matplotlib>=3.10.8",
-    "tqdm>=4.67.1",
-    "shap>=0.49.1",
+    "numpy>=2.2.6",
+    "pandas>=2.3.3",
+    "scipy>=1.15.3",
+    "tqdm>=4.67.3",
+    "cffi>=2.0.0",
 ]
 
 [dependency-groups]
 dev = [
+    "ruff>=0.15.4",
+    "setuptools>=82.0.0",
     "pre-commit>=4.5.1",
+
 ]
+
+[project.scripts]
+pytrajlib = "pytrajlib:cli"
+
+[build-system]
+requires = ["setuptools", "cffi"]
+build-backend = "setuptools.build_meta"
+
+[tool.cibuildwheel]
+before-all = "uname -a"

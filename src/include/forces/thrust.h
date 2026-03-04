@@ -76,7 +76,7 @@ double remaining_delta_v(state *state, vehicle *vehicle) {
 /**
  * Get the central angle in radians between current position and aimpoint
  */
-double get_central_angle(cart_vector position, cart_vector aimpoint) {
+double get_central_angle(cartvec position, cartvec aimpoint) {
   double phi =
       acos(dot(position, aimpoint) / (norm(position) * norm(aimpoint)));
   return phi;
@@ -191,15 +191,14 @@ double get_flight_angle(double r0, double rf, double phi, double t_f_des,
 /**
  * See Zarchan (2016) Listing 28.2
  */
-cart_vector get_lambert_velocity_vector(cart_vector position,
-                                        cart_vector aimpoint, double tf_des,
-                                        grav *grav_model) {
+cartvec get_lambert_velocity_vector(cartvec position, cartvec aimpoint,
+                                    double tf_des, grav *grav_model) {
   double r0 = norm(position);
   double rf = norm(aimpoint);
   double phi = get_central_angle(position, aimpoint);
   double gamma = get_flight_angle(r0, rf, phi, tf_des, grav_model);
   double v = get_lambert_velocity(r0, rf, phi, gamma, grav_model);
-  cart_vector lambert_velocity;
+  cartvec lambert_velocity;
 
   double mag_pos = norm(position);
   double c2 = mag_pos * sin(M_PI_2 - gamma) / norm(cross(position, aimpoint));
@@ -216,7 +215,7 @@ cart_vector get_lambert_velocity_vector(cart_vector position,
  *
  * See Zarchan (2016) Ch 13
  */
-double thrust_offset(state *state, vehicle *vehicle, cart_vector v_to_gain) {
+double thrust_offset(state *state, vehicle *vehicle, cartvec v_to_gain) {
   double dv = remaining_delta_v(state, vehicle);
   double vtg = norm(v_to_gain);
   double theta = 0;
@@ -236,33 +235,31 @@ double get_a_thrust_magnitude(state *state, vehicle *vehicle) {
   return a_thrust_mag;
 }
 
-cart_vector get_thrust_vector(state *state, vehicle *vehicle,
-                              runparams *run_params, grav *grav_model) {
-  cart_vector position = {state->x, state->y, state->z};
-  cart_vector aimpoint = {run_params->x_aim, run_params->y_aim,
-                          run_params->z_aim};
-  cart_vector current_velocity = {state->vx, state->vy, state->vz};
+cartvec get_thrust_vector(state *state, vehicle *vehicle, runparams *run_params,
+                          grav *grav_model) {
+  cartvec aimpoint = {run_params->x_aim, run_params->y_aim, run_params->z_aim};
 
-  cart_vector lambert_velocity = get_lambert_velocity_vector(
-      position, aimpoint, run_params->t_des_final - state->t, grav_model);
-  cart_vector v_to_gain = subtract(lambert_velocity, current_velocity);
+  cartvec lambert_velocity = get_lambert_velocity_vector(
+      state->position, aimpoint, run_params->t_des_final - state->t,
+      grav_model);
+  cartvec v_to_gain = subtract(lambert_velocity, state->velocity);
   // unit vector in direction of v to gain
-  cart_vector v_to_gain_hat = sdivide(v_to_gain, norm(v_to_gain));
+  cartvec v_to_gain_hat = sdivide(v_to_gain, norm(v_to_gain));
 
   // GEM implemented by directing thrust at an angle theta from v_to_gain in the
   // transfer plane
   double theta = thrust_offset(state, vehicle, v_to_gain);
 
   // Vector orthogonal to position and aimpoint that should be rotated around
-  cart_vector u = cross(position, aimpoint);
-  cart_vector uhat = sdivide(u, norm(u));
+  cartvec u = cross(state->position, aimpoint);
+  cartvec uhat = sdivide(u, norm(u));
 
   // Unit vector in direction of thrust
-  cart_vector thrust_hat = rotate(v_to_gain_hat, uhat, -theta);
+  cartvec thrust_hat = rotate(v_to_gain_hat, uhat, -theta);
 
   double a_thrust_mag = get_a_thrust_magnitude(state, vehicle);
 
-  cart_vector thrust = smultiply(thrust_hat, a_thrust_mag);
+  cartvec thrust = smultiply(thrust_hat, a_thrust_mag);
   return thrust;
 }
 
@@ -273,35 +270,30 @@ cart_vector get_thrust_vector(state *state, vehicle *vehicle,
 void update_thrust(state *state, vehicle *vehicle, runparams *run_params,
                    grav *grav_model) {
   if (state->t > vehicle->booster.total_burn_time) {
-    state->ax_thrust = 0;
-    state->ay_thrust = 0;
-    state->az_thrust = 0;
+    state->a_thrust = zeros();
     return;
   }
 
   double a_thrust_mag = get_a_thrust_magnitude(state, vehicle);
   // Vertical thrust for the beginning of the flight
   if (state->t < run_params->t_vert_boost) {
-    state->ax_thrust = a_thrust_mag;
-    state->ay_thrust = 0;
-    state->az_thrust = 0;
+    state->a_thrust.x = a_thrust_mag;
+    state->a_thrust.y = 0;
+    state->a_thrust.z = 0;
     return;
   }
 
-  if (get_altitude(state->x, state->y, state->z) < 100e3) {
-    state->ax_thrust =
+  if (get_altitude(state->position) < 100e3) {
+    state->a_thrust.x =
         a_thrust_mag * cos(state->theta_long) * cos(state->theta_lat);
-    state->ay_thrust =
+    state->a_thrust.y =
         a_thrust_mag * sin(state->theta_long) * cos(state->theta_lat);
-    state->az_thrust = a_thrust_mag * sin(state->theta_lat);
+    state->a_thrust.z = a_thrust_mag * sin(state->theta_lat);
 
     return;
   }
 
-  cart_vector a_thrust =
-      get_thrust_vector(state, vehicle, run_params, grav_model);
-  state->ax_thrust = a_thrust.x;
-  state->ay_thrust = a_thrust.y;
-  state->az_thrust = a_thrust.z;
+  cartvec a_thrust = get_thrust_vector(state, vehicle, run_params, grav_model);
+  state->a_thrust = a_thrust;
 }
 #endif

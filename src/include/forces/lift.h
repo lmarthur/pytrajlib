@@ -21,14 +21,7 @@
  */
 double rv_time_constant(state *current_state, atm_cond *atm_cond,
                         vehicle *vehicle) {
-
-  // Get the current velocity
-  cart_vector v;
-  v.x = current_state->vx;
-  v.y = current_state->vy;
-  v.z = current_state->vz;
-
-  double velocity = norm(v);
+  double velocity = norm(current_state->velocity);
 
   // Calculate the time constant
   double time_constant =
@@ -55,34 +48,24 @@ double rv_time_constant(state *current_state, atm_cond *atm_cond,
  * @param run_params the run parameters struct
  * @return commanded acceleration in the inertial-frame Cartesian basis (m/s^2)
  */
-cart_vector prop_nav(state *estimated_state, runparams *run_params) {
-  cart_vector aimpoint = {run_params->x_aim, run_params->y_aim,
-                          run_params->z_aim};
-  cart_vector position;
-  position.x = estimated_state->x;
-  position.y = estimated_state->y;
-  position.z = estimated_state->z;
-
-  cart_vector velocity;
-  velocity.x = estimated_state->vx;
-  velocity.y = estimated_state->vy;
-  velocity.z = estimated_state->vz;
+cartvec prop_nav(state *estimated_state, runparams *run_params) {
+  cartvec aimpoint = {run_params->x_aim, run_params->y_aim, run_params->z_aim};
   // Calculate the relative position vector to the target
-  cart_vector r_target = subtract(aimpoint, position);
+  cartvec r_target = subtract(aimpoint, estimated_state->position);
 
   // Calculate the relative velocity vector to the (stationary) target
-  cart_vector v_rel = smultiply(velocity, -1.0);
+  cartvec v_rel = smultiply(estimated_state->velocity, -1.0);
 
   // Get the rotation vector by taking the cross product of the relative
   // position and velocity vectors and dividing by |r|^2
   double r_dot_r = dot(r_target, r_target);
-  cart_vector cross_product = cross(r_target, v_rel);
-  cart_vector rot = sdivide(cross_product, r_dot_r);
+  cartvec cross_product = cross(r_target, v_rel);
+  cartvec rot = sdivide(cross_product, r_dot_r);
 
   // Calculate the acceleration command by taking the cross product of the
   // relative velocity and the rotation vector, scaled by the navigation gain
-  cart_vector cross_v_rot = cross(v_rel, rot);
-  cart_vector a_command = smultiply(cross_v_rot, run_params->nav_gain);
+  cartvec cross_v_rot = cross(v_rel, rot);
+  cartvec a_command = smultiply(cross_v_rot, run_params->nav_gain);
 
   return a_command;
 }
@@ -130,24 +113,16 @@ double get_acc_resolution(runparams *run_params, vehicle *vehicle) {
  * 3. $|e_2| > 0$
  * @return 1 if successfully defined basis, 0 if unsuccessful
  */
-int compute_lift_basis(state *current_state, atm_cond *atm_cond,
-                       cart_vector *e_1, cart_vector *e_2, cart_vector *e_3) {
+int compute_lift_basis(state *current_state, atm_cond *atm_cond, cartvec *e_1,
+                       cartvec *e_2, cartvec *e_3) {
 
-  cart_vector velocity;
-  velocity.x = current_state->vx;
-  velocity.y = current_state->vy;
-  velocity.z = current_state->vz;
+  cartvec velocity = current_state->velocity;
+  cartvec a_lift = current_state->a_lift;
 
-  cart_vector a_lift;
-  a_lift.x = current_state->ax_lift;
-  a_lift.y = current_state->ay_lift;
-  a_lift.z = current_state->az_lift;
-
-  cart_vector wind_vec = get_cart_wind(current_state, atm_cond);
-  cart_vector v_rel = subtract(velocity, wind_vec);
+  cartvec wind_vec = get_cart_wind(current_state, atm_cond);
+  cartvec v_rel = subtract(velocity, wind_vec);
   double v_rel_mag = norm(v_rel);
-  double altitude =
-      get_altitude(current_state->x, current_state->y, current_state->z);
+  double altitude = get_altitude(current_state->position);
   double initial_lift_mag = norm(a_lift);
 
   // Special case for zero relative velocity or high altitude that simply
@@ -161,13 +136,13 @@ int compute_lift_basis(state *current_state, atm_cond *atm_cond,
   // e_1 is the unit vector in direction of relative velocity
   // e_2 is the lift vector.
   // e_3 = e_1 x e_2
-  cart_vector e1 = sdivide(v_rel, v_rel_mag);
-  cart_vector e2;
-  cart_vector e3;
+  cartvec e1 = sdivide(v_rel, v_rel_mag);
+  cartvec e2;
+  cartvec e3;
   // If the initial lift magnitude is zero, define e_2 based on a cross
   // product between e_1 and global z-axis
   if (initial_lift_mag < 1e-6) {
-    cart_vector global_z_axis;
+    cartvec global_z_axis;
     global_z_axis.x = 0;
     global_z_axis.y = 0;
     global_z_axis.z = 1;
@@ -225,8 +200,7 @@ double get_jerk_max(runparams *run_params, vehicle *vehicle) {
  * @param max_val maximum value for clipping
  * @return projected and clipped vector
  */
-cart_vector project_and_clip(cart_vector e2, cart_vector e3, cart_vector arr,
-                             double max_val) {
+cartvec project_and_clip(cartvec e2, cartvec e3, cartvec arr, double max_val) {
   // Project onto e2 and e3
   double arr_e2 = dot(arr, e2);
   double arr_e3 = dot(arr, e3);
@@ -236,7 +210,7 @@ cart_vector project_and_clip(cart_vector e2, cart_vector e3, cart_vector arr,
   arr_e3 = clip(arr_e3, -max_val, max_val);
 
   // Project back to Cartesian basis
-  cart_vector result = add(smultiply(e2, arr_e2), smultiply(e3, arr_e3));
+  cartvec result = add(smultiply(e2, arr_e2), smultiply(e3, arr_e3));
   return result;
 }
 
@@ -275,15 +249,13 @@ cart_vector project_and_clip(cart_vector e2, cart_vector e3, cart_vector arr,
 int get_a_lift_avail_jerk(double t, state *true_state, state *est_state,
                           runparams *run_params, vehicle *vehicle,
                           atm_cond *est_atm_cond,
-                          cart_vector *d_a_lift_avail_dt_true,
-                          cart_vector *d_a_lift_avail_dt_est) {
+                          cartvec *d_a_lift_avail_dt_true,
+                          cartvec *d_a_lift_avail_dt_est) {
   // Determine if vehicle is in reentry phase
-  double altitude = get_altitude(est_state->x, est_state->y, est_state->z);
-  cart_vector velocity = {est_state->vx, est_state->vy, est_state->vz};
-  cart_vector a_grav = {est_state->ax_grav, est_state->ay_grav,
-                        est_state->az_grav};
+  double altitude = get_altitude(est_state->position);
   double angle_v_grav =
-      acos(dot(velocity, a_grav) / (norm(velocity) * norm(a_grav)));
+      acos(dot(est_state->velocity, est_state->a_grav) /
+           (norm(est_state->velocity) * norm(est_state->a_grav)));
   int is_reentry =
       (angle_v_grav > 0) && (angle_v_grav < M_PI_2) && (altitude < 1e5);
 
@@ -297,10 +269,10 @@ int get_a_lift_avail_jerk(double t, state *true_state, state *est_state,
 
   // Commanded acceleration is based on the aimpoint and the estimated state's
   // position and velocity
-  cart_vector a_command = prop_nav(est_state, run_params);
+  cartvec a_command = prop_nav(est_state, run_params);
 
   // Get the lift basis vectors for the estimated state
-  cart_vector est_e1, est_e2, est_e3;
+  cartvec est_e1, est_e2, est_e3;
   int valid_basis =
       compute_lift_basis(est_state, est_atm_cond, &est_e1, &est_e2, &est_e3);
   if (!valid_basis) {
@@ -310,16 +282,12 @@ int get_a_lift_avail_jerk(double t, state *true_state, state *est_state,
   // Project the commanded acceleration onto the estimated lift basis vectors
   // e_2 and e_3 because all lift acceleration must be generated orthogonal to
   // the relative velocity
-  cart_vector a_target;
+  cartvec a_target;
   a_target = project_and_clip(est_e2, est_e3, a_command, max_a_exec);
   // Change available lift at a fixed rate unless the difference between
   // current and target is small. For small differences, let the difference
   // reduce exponentially to keep the derivative continuous.
-  cart_vector est_a_lift_avail;
-  est_a_lift_avail.x = est_state->ax_lift_avail;
-  est_a_lift_avail.y = est_state->ay_lift_avail;
-  est_a_lift_avail.z = est_state->az_lift_avail;
-  cart_vector a_avail_err = subtract(a_target, est_a_lift_avail);
+  cartvec a_avail_err = subtract(a_target, est_state->a_lift_avail);
 
   // Apply proportional gain and clip to jerk limits
   *d_a_lift_avail_dt_est = smultiply(a_avail_err, run_params->flap_gain);
@@ -345,12 +313,11 @@ int get_a_lift_avail_jerk(double t, state *true_state, state *est_state,
  * The lift acceleration approaches the available lift acceleration
  * exponentially based on the time constant: a(t) = a_avail * (1 - e^(-t/tau))
  */
-cart_vector get_a_lift_jerk_single_state(double t, state *current_state,
-                                         runparams *run_params,
-                                         vehicle *vehicle, atm_cond *atm_cond) {
+cartvec get_a_lift_jerk_single_state(double t, state *current_state,
+                                     runparams *run_params, vehicle *vehicle,
+                                     atm_cond *atm_cond) {
   // Determine if vehicle is in reentry phase
-  double altitude =
-      get_altitude(current_state->x, current_state->y, current_state->z);
+  double altitude = get_altitude(current_state->position);
   int is_reentry = (t > vehicle->booster.total_burn_time) && (altitude < 1e5);
 
   if (!is_reentry) {
@@ -365,18 +332,15 @@ cart_vector get_a_lift_jerk_single_state(double t, state *current_state,
 
   // Quantize available lift to the resolution of the actuator
   double acc_resolution = get_acc_resolution(run_params, vehicle);
-  cart_vector a_lift_avail;
-  a_lift_avail.x = current_state->ax_lift_avail;
-  a_lift_avail.y = current_state->ay_lift_avail;
-  a_lift_avail.z = current_state->az_lift_avail;
+  cartvec a_lift_avail = current_state->a_lift_avail;
 
-  cart_vector ar = sdivide(a_lift_avail, acc_resolution);
+  cartvec ar = sdivide(a_lift_avail, acc_resolution);
   a_lift_avail.x = round(ar.x) * acc_resolution;
   a_lift_avail.y = round(ar.y) * acc_resolution;
   a_lift_avail.z = round(ar.z) * acc_resolution;
 
   // Get the lift basis vectors
-  cart_vector e1, e2, e3;
+  cartvec e1, e2, e3;
   int valid_basis = compute_lift_basis(current_state, atm_cond, &e1, &e2, &e3);
 
   if (!valid_basis) {
@@ -386,17 +350,12 @@ cart_vector get_a_lift_jerk_single_state(double t, state *current_state,
   // The lift available to be generated by the current flap positions depends
   // on the attitude of the vehicle, so the available lift should be
   // projected onto the lift basis and clipped to the maximum achievable lift
-  cart_vector a_lift_avail_projected =
+  cartvec a_lift_avail_projected =
       project_and_clip(e2, e3, a_lift_avail, max_a_exec);
 
   // Calculate the jerk
-  cart_vector a_lift;
-  a_lift.x = current_state->ax_lift;
-  a_lift.y = current_state->ay_lift;
-  a_lift.z = current_state->az_lift;
-
-  cart_vector d_a_lift_dt =
-      sdivide(subtract(a_lift_avail_projected, a_lift), time_constant);
+  cartvec d_a_lift_dt = sdivide(
+      subtract(a_lift_avail_projected, current_state->a_lift), time_constant);
 
   return d_a_lift_dt;
 }
@@ -417,8 +376,7 @@ cart_vector get_a_lift_jerk_single_state(double t, state *current_state,
 void get_a_lift_jerk(double t, state *true_state, state *est_state,
                      runparams *run_params, vehicle *vehicle,
                      atm_cond *est_atm_cond, atm_cond *true_atm_cond,
-                     cart_vector *d_a_lift_dt_true,
-                     cart_vector *d_a_lift_dt_est) {
+                     cartvec *d_a_lift_dt_true, cartvec *d_a_lift_dt_est) {
 
   *d_a_lift_dt_true = get_a_lift_jerk_single_state(t, true_state, run_params,
                                                    vehicle, true_atm_cond);
@@ -426,11 +384,11 @@ void get_a_lift_jerk(double t, state *true_state, state *est_state,
                                                   vehicle, est_atm_cond);
 }
 
-void update_roll(state *true_state, state *est_state, cart_vector true_d_a_lift,
-                 cart_vector est_d_a_lift, atm_cond *true_atm_cond,
+void update_roll(state *true_state, state *est_state, cartvec true_d_a_lift,
+                 cartvec est_d_a_lift, atm_cond *true_atm_cond,
                  atm_cond *est_atm_cond) {
   // Update roll based on the change in pitch and yaw accelerations
-  cart_vector e1, e2, e3;
+  cartvec e1, e2, e3;
   compute_lift_basis(true_state, true_atm_cond, &e1, &e2, &e3);
   double true_pitch_acceleration = dot(true_d_a_lift, e2);
   double true_yaw_acceleration = dot(true_d_a_lift, e3);
@@ -447,11 +405,11 @@ void update_roll(state *true_state, state *est_state, cart_vector true_d_a_lift,
 void update_lift(state *true_state, state *est_state, runparams *run_params,
                  atm_cond *true_atm_cond, atm_cond *est_atm_cond,
                  vehicle *vehicle, double time_step) {
-  cart_vector true_d_a_lift_dt;
-  cart_vector est_d_a_lift_dt;
+  cartvec true_d_a_lift_dt;
+  cartvec est_d_a_lift_dt;
 
-  cart_vector true_d_a_lift_avail_dt;
-  cart_vector est_d_a_lift_avail_dt;
+  cartvec true_d_a_lift_avail_dt;
+  cartvec est_d_a_lift_avail_dt;
 
   get_a_lift_jerk(true_state->t, true_state, est_state, run_params, vehicle,
                   true_atm_cond, est_atm_cond, &true_d_a_lift_dt,
@@ -466,24 +424,18 @@ void update_lift(state *true_state, state *est_state, runparams *run_params,
   }
 
   // Update true state
-  cart_vector true_d_a_lift = smultiply(true_d_a_lift_dt, time_step);
-  true_state->ax_lift += true_d_a_lift.x;
-  true_state->ay_lift += true_d_a_lift.y;
-  true_state->az_lift += true_d_a_lift.z;
+  cartvec true_d_a_lift = smultiply(true_d_a_lift_dt, time_step);
+  true_state->a_lift = add(true_state->a_lift, true_d_a_lift);
 
-  true_state->ax_lift_avail += true_d_a_lift_avail_dt.x * time_step;
-  true_state->ay_lift_avail += true_d_a_lift_avail_dt.y * time_step;
-  true_state->az_lift_avail += true_d_a_lift_avail_dt.z * time_step;
+  true_state->a_lift_avail = add(true_state->a_lift_avail,
+                                 smultiply(true_d_a_lift_avail_dt, time_step));
 
   // Update estimated state
-  cart_vector est_d_a_lift = smultiply(est_d_a_lift_dt, time_step);
-  est_state->ax_lift += est_d_a_lift.x;
-  est_state->ay_lift += est_d_a_lift.y;
-  est_state->az_lift += est_d_a_lift.z;
+  cartvec est_d_a_lift = smultiply(est_d_a_lift_dt, time_step);
+  est_state->a_lift = add(est_state->a_lift, est_d_a_lift);
 
-  est_state->ax_lift_avail += est_d_a_lift_avail_dt.x * time_step;
-  est_state->ay_lift_avail += est_d_a_lift_avail_dt.y * time_step;
-  est_state->az_lift_avail += est_d_a_lift_avail_dt.z * time_step;
+  est_state->a_lift_avail =
+      add(est_state->a_lift_avail, smultiply(est_d_a_lift_avail_dt, time_step));
 
   update_roll(true_state, est_state, true_d_a_lift, est_d_a_lift, true_atm_cond,
               est_atm_cond);

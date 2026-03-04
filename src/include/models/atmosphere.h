@@ -59,19 +59,12 @@ double mean_atm_data[ATM_PROFILE_LEN][5];
 int atm_data_is_filled = 0;
 int mean_atm_data_is_filled = 0;
 
+/**
+ * Initializes atmospheric profile data so the file is read only once.
+ *
+ * @param atmprofilepath Path to the atmospheric profile file.
+ */
 void init_atm_data(char *atmprofilepath) {
-  /*
-  Initializes the atmospheric profile data so we only read the file once.
-
-  INPUTS:
-  ----------
-      atmprofilepath: char *
-          path to the atmospheric profile file
-  OUTPUTS:
-  ----------
-      atm_profile: eg16_profile
-          atmospheric profile struct
-  */
 
   if (atm_data_is_filled == 1) {
     return;
@@ -80,7 +73,7 @@ void init_atm_data(char *atmprofilepath) {
   // Open the atmospheric profile file
   FILE *fp = fopen(atmprofilepath, "r");
   if (fp == NULL) {
-    printf("Error opening atmospheric profile file\n");
+    printf("Error opening atmospheric profile file %s\n", atmprofilepath);
     return;
   }
 
@@ -94,19 +87,12 @@ void init_atm_data(char *atmprofilepath) {
   fclose(fp);
 }
 
+/**
+ * Initializes mean atmospheric profile data so the file is read only once.
+ *
+ * @param atmprofilepath Path to the mean atmospheric profile file.
+ */
 void init_mean_atm_data(char *atmprofilepath) {
-  /*
-  Initializes the mean atmospheric profile data so we only read the file once.
-
-  INPUTS:
-  ----------
-      atmprofilepath: char *
-          path to the mean atmospheric profile file
-  OUTPUTS:
-  ----------
-      atm_profile: eg16_profile
-          atmospheric profile struct
-  */
 
   if (mean_atm_data_is_filled == 1) {
     return;
@@ -129,19 +115,13 @@ void init_mean_atm_data(char *atmprofilepath) {
   fclose(fp);
 }
 
+/**
+ * Initializes the exponential atmosphere model and optional perturbations.
+ *
+ * @param run_params Pointer to simulation run parameters.
+ * @return Initialized atmosphere model.
+ */
 atm_model init_exp_atm(runparams *run_params) {
-  /*
-  Initializes the atmospheric model
-
-  INPUTS:
-  ----------
-      run_params: runparams *
-          pointer to the run parameters struct
-  OUTPUT:
-  ----------
-      atm_model: atm_model
-          atmospheric model
-  */
 
   atm_model atm_model;
 
@@ -198,22 +178,15 @@ atm_model init_exp_atm(runparams *run_params) {
   return atm_model;
 }
 
+/**
+ * Calculates atmospheric conditions at a given altitude using an exponential
+ * model.
+ *
+ * @param altitude Altitude in meters.
+ * @param atm_model Pointer to atmospheric model.
+ * @return Local atmospheric conditions.
+ */
 atm_cond get_exp_atm_cond(double altitude, atm_model *atm_model) {
-  /*
-  Calculates the atmospheric conditions at a given altitude using an exponential
-  model
-
-  INPUTS:
-  ----------
-      altitude: double
-          altitude in meters
-      atm_model: atm_model *
-          pointer to the atmospheric model
-  OUTPUT:
-  ----------
-      atm_conditions: atm_cond
-          local atmospheric conditions
-  */
 
   atm_cond atm_conditions;
   if (altitude < 0) {
@@ -229,22 +202,14 @@ atm_cond get_exp_atm_cond(double altitude, atm_model *atm_model) {
   return atm_conditions;
 }
 
+/**
+ * Calculates atmospheric conditions using the perturbed exponential model.
+ *
+ * @param altitude Altitude in meters.
+ * @param atm_model Pointer to atmospheric model.
+ * @return Local atmospheric conditions.
+ */
 atm_cond get_pert_atm_cond(double altitude, atm_model *atm_model) {
-  /*
-  Calculates the atmospheric conditions at a given altitude using a model based
-  on EarthGRAM 2016 results
-
-  INPUTS:
-  ----------
-      altitude: double
-          altitude in meters
-      atm_model: atm_model *
-          pointer to the atmospheric model
-  OUTPUT:
-  ----------
-      atm_conditions: atm_cond
-          local atmospheric conditions
-  */
 
   atm_cond atm_conditions;
   if (altitude < 0) {
@@ -299,22 +264,15 @@ atm_cond get_pert_atm_cond(double altitude, atm_model *atm_model) {
   return atm_conditions;
 }
 
+/**
+ * Calculates atmospheric conditions at a given altitude using an EarthGRAM
+ * 2016 profile.
+ *
+ * @param altitude Altitude in meters.
+ * @param atm_profile Pointer to EarthGRAM 2016 profile.
+ * @return Local atmospheric conditions.
+ */
 atm_cond get_eg_atm_cond(double altitude, eg16_profile *atm_profile) {
-  /*
-  Calculates the atmospheric conditions at a given altitude using an EarthGRAM
-  2016 profile
-
-  INPUTS:
-  ----------
-      altitude: double
-          altitude in meters
-      atm_profile: eg16_profile *
-          pointer to the EarthGRAM 2016 profile
-  OUTPUT:
-  ----------
-      atm_conditions: atm_cond
-          local atmospheric conditions
-  */
 
   atm_cond atm_conditions;
   altitude = altitude / 1000;
@@ -349,24 +307,18 @@ atm_cond get_eg_atm_cond(double altitude, eg16_profile *atm_profile) {
   return atm_conditions;
 }
 
+/**
+ * Calculates atmospheric conditions at a given altitude for the configured
+ * atmosphere model.
+ *
+ * @param altitude Altitude in meters.
+ * @param exp_atm_model Pointer to exponential atmosphere model.
+ * @param run_params Pointer to run parameters.
+ * @param atm_profile Pointer to EarthGRAM profile.
+ * @return Local atmospheric conditions.
+ */
 atm_cond get_atm_cond(double altitude, atm_model *exp_atm_model,
                       runparams *run_params, eg16_profile *atm_profile) {
-  /*
-  Calculates the atmospheric conditions at a given altitude
-
-  INPUTS:
-  ----------
-      altitude: double
-          altitude in meters
-      atm_model: atm_model *
-          pointer to the exponential atmospheric model
-      run_params: runparams *
-          pointer to the run parameters struct
-  OUTPUT:
-  ----------
-      atm_conditions: atm_cond
-          local atmospheric conditions
-  */
 
   atm_cond atm_conditions;
 
@@ -384,24 +336,14 @@ atm_cond get_atm_cond(double altitude, atm_model *exp_atm_model,
   return atm_conditions;
 }
 
+/**
+ * Parses atmospheric profile data and selects the requested profile.
+ *
+ * @param atmprofilepath Path to atmospheric profile data file.
+ * @param profilenum Profile index to use; `-1` selects the mean profile.
+ * @return Atmospheric profile data.
+ */
 eg16_profile parse_atm(char *atmprofilepath, int profilenum) {
-  /*
-  Parses the atmospheric profile data and updates the 2d atm_data array by
-  selecting only the requested profile
-
-  INPUTS:
-  ----------
-      atmprofilepath: char *
-          path to the atmospheric profile file
-      profilenum: int
-          index number of the atmospheric profile to use. -1 signifies the mean
-          atmospheric profile
-  OUTPUTS:
-  ----------
-      atm_profile: eg16_profile
-          atmospheric profile struct
-
-  */
   // Initialize the atmospheric profile struct
   eg16_profile atm_profile;
   atm_profile.profile_num = profilenum;
@@ -437,19 +379,24 @@ eg16_profile parse_atm(char *atmprofilepath, int profilenum) {
 }
 
 /**
- * Helper function to get wind at current location in standard cartesian basis
+ * Gets wind at the current location in standard Cartesian coordinates.
+ *
+ * @param state Pointer to current vehicle state.
+ * @param atm_cond Pointer to local atmospheric conditions.
+ * @return Wind vector in Cartesian coordinates.
  */
-cart_vector get_cart_wind(state *state, atm_cond *atm_cond) {
+cartvec get_cart_wind(state *state, atm_cond *atm_cond) {
   double cart_wind[3];
   double spher_wind[3] = {atm_cond->vertical_wind, atm_cond->zonal_wind,
                           atm_cond->meridional_wind};
   double spher_coords[3];
-  double cart_coords[3] = {state->x, state->y, state->z};
+  double cart_coords[3] = {state->position.x, state->position.y,
+                           state->position.z};
   cartcoords_to_sphercoords(cart_coords, spher_coords);
 
   sphervec_to_cartvec(spher_wind, cart_wind, spher_coords);
 
-  cart_vector cartvec_wind;
+  cartvec cartvec_wind;
   cartvec_wind.x = cart_wind[0];
   cartvec_wind.y = cart_wind[1];
   cartvec_wind.z = cart_wind[2];

@@ -3,6 +3,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+EARTH_RADIUS_M = 6371e3
+
 params = {
     "axes.labelsize": 18,
     "font.size": 18,
@@ -29,47 +31,32 @@ def traj_plot(run_path):
     true_vx = traj_data[:, 5]
     true_vy = traj_data[:, 6]
     true_vz = traj_data[:, 7]
-    true_ax_grav = traj_data[:, 8]
-    true_ay_grav = traj_data[:, 9]
-    true_az_grav = traj_data[:, 10]
-    true_ax_drag = traj_data[:, 11]
-    true_ay_drag = traj_data[:, 12]
-    true_az_drag = traj_data[:, 13]
-    a_command = traj_data[:, 14]
-    a_exec = traj_data[:, 15]
-    true_ax_thrust = traj_data[:, 16]
-    true_ay_thrust = traj_data[:, 17]
-    true_az_thrust = traj_data[:, 18]
-    true_ax_total = traj_data[:, 19]
-    true_ay_total = traj_data[:, 20]
-    true_az_total = traj_data[:, 21]
-    est_x = traj_data[:, 22]
-    est_y = traj_data[:, 23]
-    est_z = traj_data[:, 24]
-    est_vx = traj_data[:, 25]
-    est_vy = traj_data[:, 26]
-    est_vz = traj_data[:, 27]
-    est_ax_total = traj_data[:, 28]
-    est_ay_total = traj_data[:, 29]
-    est_az_total = traj_data[:, 30]
-    est_ax_drag = traj_data[:, 31]
-    est_ay_drag = traj_data[:, 32]
-    est_az_drag = traj_data[:, 33]
-    true_ax_lift = traj_data[:, 34]
-    true_ay_lift = traj_data[:, 35]
-    true_az_lift = traj_data[:, 36]
-    est_ax_lift = traj_data[:, 37]
-    est_ay_lift = traj_data[:, 38]
-    est_az_lift = traj_data[:, 39]
-    roll = traj_data[:, 40]
+    true_ax_total = traj_data[:, 8]
+    true_ay_total = traj_data[:, 9]
+    true_az_total = traj_data[:, 10]
+    est_x = traj_data[:, 11]
+    est_y = traj_data[:, 12]
+    est_z = traj_data[:, 13]
+    est_vx = traj_data[:, 14]
+    est_vy = traj_data[:, 15]
+    est_vz = traj_data[:, 16]
+    est_ax_total = traj_data[:, 17]
+    est_ay_total = traj_data[:, 18]
+    est_az_total = traj_data[:, 19]
+    true_ax_lift = traj_data[:, 20]
+    true_ay_lift = traj_data[:, 21]
+    true_az_lift = traj_data[:, 22]
+    est_ax_lift = traj_data[:, 23]
+    est_ay_lift = traj_data[:, 24]
+    est_az_lift = traj_data[:, 25]
 
     true_altitude = (
-        np.sqrt(np.square(true_x) + np.square(true_y) + np.square(true_z)) - 6371e3
+        np.sqrt(np.square(true_x) + np.square(true_y) + np.square(true_z))
+        - EARTH_RADIUS_M
     )
     est_altitude = (
-        np.sqrt(np.square(est_x) + np.square(est_y) + np.square(est_z)) - 6371e3
+        np.sqrt(np.square(est_x) + np.square(est_y) + np.square(est_z)) - EARTH_RADIUS_M
     )
-    true_thrust_mag = np.sqrt(true_ax_thrust**2 + true_ay_thrust**2 + true_az_thrust**2)
 
     # position vs. time
     plt.figure(figsize=(10, 10))
@@ -101,7 +88,7 @@ def traj_plot(run_path):
     plt.close()
 
     # orbit plot
-    earth_radius = 6371e3
+    earth_radius = EARTH_RADIUS_M
     plt.figure(figsize=(10, 10))
 
     # add shaded region for Earth's atmosphere
@@ -247,22 +234,8 @@ def traj_plot(run_path):
     plt.savefig(run_path + "velocity_error_reentry.pdf")
     plt.close()
 
-    # thrust vs. time
-    thrust_mask = true_t <= 200
-    plt.figure(figsize=(10, 10))
-    plt.plot(true_t[thrust_mask], true_ax_thrust[thrust_mask], label="ax")
-    plt.plot(true_t[thrust_mask], true_ay_thrust[thrust_mask], label="ay")
-    plt.plot(true_t[thrust_mask], true_az_thrust[thrust_mask], label="az")
-    plt.plot(true_t[thrust_mask], true_thrust_mag[thrust_mask], label="mag")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Thrust Acceleration (m/s^2)")
-    plt.title("Thrust")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "thrust.png")
-    plt.close()
-
     # mass vs. time
+    thrust_mask = true_t <= 200
     plt.figure(figsize=(10, 10))
     plt.plot(true_t[thrust_mask], true_mass[thrust_mask])
     plt.xlabel("Time (s)")
@@ -296,110 +269,6 @@ def traj_plot(run_path):
     plt.legend()
     plt.grid()
     plt.savefig(run_path + "acceleration_error.pdf")
-    plt.close()
-
-    # drag acceleration
-    plt.figure(figsize=(10, 10))
-    plt.plot(true_t, true_ax_drag, label="ax")
-    plt.plot(true_t, true_ay_drag, label="ay")
-    plt.plot(true_t, true_az_drag, label="az")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Drag Acceleration (m/s^2)")
-    plt.title("Drag Acceleration")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "drag_acceleration.pdf")
-    plt.close()
-
-    # estimated drag acceleration
-    plt.figure(figsize=(10, 10))
-    plt.plot(true_t, est_ax_drag, label="ax")
-    plt.plot(true_t, est_ay_drag, label="ay")
-    plt.plot(true_t, est_az_drag, label="az")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Estimated Drag Acceleration (m/s^2)")
-    plt.title("Estimated Drag Acceleration")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "drag_acceleration_est.pdf")
-    plt.close()
-
-    # drag acceleration (boost)
-    plt.figure(figsize=(10, 10))
-    plt.plot(true_t[boost_mask], true_ax_drag[boost_mask], label="ax")
-    plt.plot(true_t[boost_mask], true_ay_drag[boost_mask], label="ay")
-    plt.plot(true_t[boost_mask], true_az_drag[boost_mask], label="az")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Drag Acceleration (m/s^2)")
-    plt.title("Drag Acceleration (Boost)")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "drag_acceleration_boost.pdf")
-    plt.close()
-
-    # estimated drag acceleration (boost)
-    plt.figure(figsize=(10, 10))
-    plt.plot(true_t[boost_mask], est_ax_drag[boost_mask], label="ax")
-    plt.plot(true_t[boost_mask], est_ay_drag[boost_mask], label="ay")
-    plt.plot(true_t[boost_mask], est_az_drag[boost_mask], label="az")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Estimated Drag Acceleration (m/s^2)")
-    plt.title("Estimated Drag Acceleration (Boost)")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "drag_acceleration_est_boost.pdf")
-    plt.close()
-
-    # drag acceleration (midcourse)
-    plt.figure(figsize=(10, 10))
-    plt.plot(true_t[midcourse_mask], true_ax_drag[midcourse_mask], label="ax")
-    plt.plot(true_t[midcourse_mask], true_ay_drag[midcourse_mask], label="ay")
-    plt.plot(true_t[midcourse_mask], true_az_drag[midcourse_mask], label="az")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Drag Acceleration (m/s^2)")
-    plt.title("Drag Acceleration (Midcourse)")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "drag_acceleration_midcourse.pdf")
-    plt.close()
-
-    # estimated drag acceleration (midcourse)
-    plt.figure(figsize=(10, 10))
-    plt.plot(true_t[midcourse_mask], est_ax_drag[midcourse_mask], label="ax")
-    plt.plot(true_t[midcourse_mask], est_ay_drag[midcourse_mask], label="ay")
-    plt.plot(true_t[midcourse_mask], est_az_drag[midcourse_mask], label="az")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Estimated Drag Acceleration (m/s^2)")
-    plt.title("Estimated Drag Acceleration (Midcourse)")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "drag_acceleration_est_midcourse.pdf")
-    plt.close()
-
-    # drag acceleration (reentry)
-    plt.figure(figsize=(10, 10))
-    plt.plot(true_t[reentry_mask], true_ax_drag[reentry_mask], label="ax")
-    plt.plot(true_t[reentry_mask], true_ay_drag[reentry_mask], label="ay")
-    plt.plot(true_t[reentry_mask], true_az_drag[reentry_mask], label="az")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Drag Acceleration (m/s^2)")
-    plt.title("Drag Acceleration (Reentry)")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "drag_acceleration_reentry.pdf")
-    plt.close()
-
-    # estimated drag acceleration (reentry)
-    plt.figure(figsize=(10, 10))
-    plt.plot(true_t[reentry_mask], est_ax_drag[reentry_mask], label="ax")
-    plt.plot(true_t[reentry_mask], est_ay_drag[reentry_mask], label="ay")
-    plt.plot(true_t[reentry_mask], est_az_drag[reentry_mask], label="az")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Estimated Drag Acceleration (m/s^2)")
-    plt.title("Estimated Drag Acceleration (Reentry)")
-    plt.legend()
-    plt.grid()
-    plt.savefig(run_path + "drag_acceleration_est_reentry.pdf")
     plt.close()
 
     # lift acceleration
@@ -439,27 +308,4 @@ def traj_plot(run_path):
     plt.legend()
     plt.grid()
     plt.savefig(run_path + "position_vs_altitude.pdf")
-    plt.close()
-
-    # roll angle vs. time
-    plt.figure(figsize=(10, 10))
-    plt.plot(
-        true_t[(true_altitude < 1e5) & (true_t > 200)],
-        roll[(true_altitude < 1e5) & (true_t > 200)],
-    )
-    plt.xlabel("Time (s)")
-    plt.ylabel("Roll Angle (rad)")
-    plt.title("Roll Angle")
-    plt.grid()
-    plt.savefig(run_path + "roll.pdf")
-    plt.close()
-
-    # roll angle vs. altitude
-    plt.figure(figsize=(10, 10))
-    plt.plot(roll[true_altitude < 1e5], true_altitude[true_altitude < 1e5])
-    plt.ylabel("Altitude (m)")
-    plt.xlabel("Roll Angle (rad)")
-    plt.title("Roll Angle vs. Altitude")
-    plt.grid()
-    plt.savefig(run_path + "roll_vs_altitude.pdf")
     plt.close()

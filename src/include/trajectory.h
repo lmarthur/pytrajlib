@@ -27,286 +27,90 @@ typedef struct impact_data {
 
 } impact_data;
 
-state init_true_state(runparams *run_params) {
-  /*
-  Initializes a true state struct at the launch site with zero velocity and
-  acceleration
-
-  INPUTS:
-  ----------
-      run_params: runparams *
-          pointer to the run parameters struct
-  OUTPUTS:
-  ----------
-      state: state
-          initial state of the vehicle
-  */
-
-  state state;
-  // branch for initializing full trajectory run
-  if (run_params->run_type == 0) {
-    state.t = 0;
-    state.x = 6371e3 + run_params->initial_x_error * ran_gaussian(1);
-    state.y = run_params->initial_pos_error * ran_gaussian(1);
-    state.z = run_params->initial_pos_error * ran_gaussian(1);
-
-    state.vx = run_params->initial_vel_error * ran_gaussian(1);
-    state.vy = run_params->initial_vel_error * ran_gaussian(1);
-    state.vz = run_params->initial_vel_error * ran_gaussian(1);
-  }
-  // branch for initializing reentry only run
-  if (run_params->run_type == 1) {
-    state.t = 0;
-    state.x = 6371e3 + 500e3 + run_params->initial_x_error * ran_gaussian(1);
-    state.y = run_params->initial_pos_error * ran_gaussian(1);
-    state.z = run_params->initial_pos_error * ran_gaussian(1);
-
-    state.vx = -run_params->reentry_vel +
-               run_params->initial_vel_error * ran_gaussian(1);
-    state.vy = run_params->initial_vel_error * ran_gaussian(1);
-    state.vz = run_params->initial_vel_error * ran_gaussian(1);
-  }
-
-  double initial_rot_pert = run_params->initial_angle_error * ran_gaussian(1);
-
-  state.initial_theta_lat_pert =
-      run_params->initial_angle_error * ran_gaussian(1) +
-      run_params->theta_long * initial_rot_pert -
-      fabs(run_params->theta_lat * initial_rot_pert);
-  state.initial_theta_long_pert =
-      run_params->initial_angle_error * ran_gaussian(1) -
-      run_params->theta_lat * initial_rot_pert -
-      fabs(run_params->theta_long * initial_rot_pert);
-  state.theta_long = run_params->theta_long + state.initial_theta_long_pert;
-  state.theta_lat = run_params->theta_lat + state.initial_theta_lat_pert;
-
-  state.ax_grav = 0;
-  state.ay_grav = 0;
-  state.az_grav = 0;
-  state.ax_drag = 0;
-  state.ay_drag = 0;
-  state.az_drag = 0;
-  state.ax_lift = 0;
-  state.ay_lift = 0;
-  state.az_lift = 0;
-  state.ax_thrust = 0;
-  state.ay_thrust = 0;
-  state.az_thrust = 0;
-  state.ax_total = 0;
-  state.ay_total = 0;
-  state.az_total = 0;
-
-  state.ax_lift_avail = 0;
-  state.ay_lift_avail = 0;
-  state.az_lift_avail = 0;
-
-  state.roll = 0;
-
-  return state;
-}
-
-state init_est_state(runparams *run_params) {
-  /*
-  Initializes an estimated state struct at the launch site with zero velocity
-  and acceleration
-
-  INPUTS:
-  ----------
-      run_params: runparams *
-          pointer to the run parameters struct
-  OUTPUTS:
-  ----------
-      state: state
-          initial state of the vehicle
-  */
-
-  state state;
-  if (run_params->run_type == 0) {
-    // printf("Initializing full trajectory run\n");
-    state.t = 0;
-    state.x = 6371e3;
-    state.y = 0;
-    state.z = 0;
-
-    state.vx = 0;
-    state.vy = 0;
-    state.vz = 0;
-  }
-  // branch for initializing reentry only run
-  if (run_params->run_type == 1) {
-    // printf("Initializing reentry only run\n");
-    state.t = 0;
-    state.x = 6371e3 + 1000e3;
-    state.y = 0;
-    state.z = 0;
-
-    state.vx = -run_params->reentry_vel;
-    state.vy = 0;
-    state.vz = 0;
-  }
-
-  state.theta_long = run_params->theta_long;
-  state.theta_lat = run_params->theta_lat;
-  state.initial_theta_lat_pert = 0;
-  state.initial_theta_long_pert = 0;
-
-  state.ax_grav = 0;
-  state.ay_grav = 0;
-  state.az_grav = 0;
-  state.ax_drag = 0;
-  state.ay_drag = 0;
-  state.az_drag = 0;
-  state.ax_lift = 0;
-  state.ay_lift = 0;
-  state.az_lift = 0;
-  state.ax_thrust = 0;
-  state.ay_thrust = 0;
-  state.az_thrust = 0;
-  state.ax_total = 0;
-  state.ay_total = 0;
-  state.az_total = 0;
-
-  state.ax_lift_avail = 0;
-  state.ay_lift_avail = 0;
-  state.az_lift_avail = 0;
-
-  state.roll = 0;
-
-  return state;
-}
-
+/**
+ * Interpolate between two states to estimate impact crossing at altitude 0.
+ *
+ * @param state_0 Pointer to pre-impact state
+ * @param state_1 Pointer to post-impact state
+ * @return Interpolated impact state
+ */
 state impact_linterp(state *state_0, state *state_1) {
-  /*
-  Performs a spatial linear interpolation between two states to find the impact
-  point, velocity, and time
-
-  INPUTS:
-  ----------
-      state_0: state *
-          pointer to initial state of the vehicle
-      state_1: state *
-          pointer to final state of the vehicle
-  OUTPUTS:
-  ----------
-      impact_state: state
-          state of the vehicle at impact
-  */
 
   // Calculate the interpolation factor
-  double altitude_0 = sqrt(state_0->x * state_0->x + state_0->y * state_0->y +
-                           state_0->z * state_0->z) -
-                      6371e3;
-  double altitude_1 = sqrt(state_1->x * state_1->x + state_1->y * state_1->y +
-                           state_1->z * state_1->z) -
-                      6371e3;
+  double altitude_0 = norm(state_0->position) - EARTH_RADIUS_M;
+  double altitude_1 = norm(state_1->position) - EARTH_RADIUS_M;
   double interp_factor = altitude_0 / (altitude_0 - altitude_1);
 
   // Perform the interpolation
   state impact_state = *state_0;
   impact_state.t = state_0->t + interp_factor * (state_1->t - state_0->t);
-  impact_state.x = state_0->x + interp_factor * (state_1->x - state_0->x);
-  impact_state.y = state_0->y + interp_factor * (state_1->y - state_0->y);
-  impact_state.z = state_0->z + interp_factor * (state_1->z - state_0->z);
-  impact_state.vx = state_0->vx + interp_factor * (state_1->vx - state_0->vx);
-  impact_state.vy = state_0->vy + interp_factor * (state_1->vy - state_0->vy);
-  impact_state.vz = state_0->vz + interp_factor * (state_1->vz - state_0->vz);
-  impact_state.ax_grav =
-      state_0->ax_grav + interp_factor * (state_1->ax_grav - state_0->ax_grav);
-  impact_state.ay_grav =
-      state_0->ay_grav + interp_factor * (state_1->ay_grav - state_0->ay_grav);
-  impact_state.az_grav =
-      state_0->az_grav + interp_factor * (state_1->az_grav - state_0->az_grav);
-  impact_state.ax_drag =
-      state_0->ax_drag + interp_factor * (state_1->ax_drag - state_0->ax_drag);
-  impact_state.ay_drag =
-      state_0->ay_drag + interp_factor * (state_1->ay_drag - state_0->ay_drag);
-  impact_state.az_drag =
-      state_0->az_drag + interp_factor * (state_1->az_drag - state_0->az_drag);
-  impact_state.ax_lift =
-      state_0->ax_lift + interp_factor * (state_1->ax_lift - state_0->ax_lift);
-  impact_state.ay_lift =
-      state_0->ay_lift + interp_factor * (state_1->ay_lift - state_0->ay_lift);
-  impact_state.az_lift =
-      state_0->az_lift + interp_factor * (state_1->az_lift - state_0->az_lift);
-  impact_state.ax_thrust =
-      state_0->ax_thrust +
-      interp_factor * (state_1->ax_thrust - state_0->ax_thrust);
-  impact_state.ay_thrust =
-      state_0->ay_thrust +
-      interp_factor * (state_1->ay_thrust - state_0->ay_thrust);
-  impact_state.az_thrust =
-      state_0->az_thrust +
-      interp_factor * (state_1->az_thrust - state_0->az_thrust);
-  impact_state.ax_total =
-      state_0->ax_total +
-      interp_factor * (state_1->ax_total - state_0->ax_total);
-  impact_state.ay_total =
-      state_0->ay_total +
-      interp_factor * (state_1->ay_total - state_0->ay_total);
-  impact_state.az_total =
-      state_0->az_total +
-      interp_factor * (state_1->az_total - state_0->az_total);
+  impact_state.position = add(
+      state_0->position,
+      smultiply(subtract(state_1->position, state_0->position), interp_factor));
+  impact_state.velocity = add(
+      state_0->velocity,
+      smultiply(subtract(state_1->velocity, state_0->velocity), interp_factor));
+  impact_state.a_grav =
+      add(state_0->a_grav,
+          smultiply(subtract(state_1->a_grav, state_0->a_grav), interp_factor));
+  impact_state.a_drag =
+      add(state_0->a_drag,
+          smultiply(subtract(state_1->a_drag, state_0->a_drag), interp_factor));
+  impact_state.a_lift =
+      add(state_0->a_lift,
+          smultiply(subtract(state_1->a_lift, state_0->a_lift), interp_factor));
+  impact_state.a_thrust = add(
+      state_0->a_thrust,
+      smultiply(subtract(state_1->a_thrust, state_0->a_thrust), interp_factor));
+  impact_state.a_total = add(
+      state_0->a_total,
+      smultiply(subtract(state_1->a_total, state_0->a_total), interp_factor));
 
   return impact_state;
 }
 
+/**
+ * Write impact state data for all Monte Carlo runs to a file stream.
+ *
+ * @param impact_file Output file stream
+ * @param impact_data Pointer to impact data container
+ * @param num_runs Number of Monte Carlo runs to write
+ */
 void output_impact(FILE *impact_file, impact_data *impact_data, int num_runs) {
-  /*
-  Function that outputs the impact data struct to the impact file
-
-  INPUTS:
-  ----------
-      impact_file: * FILE
-          Pointer to the impact file stream
-      impact_data: * impact_data
-          Pointer to the impact data struct
-      num_runs: int
-          Number of Monte Carlo runs
-  */
 
   // Iterate through the number of runs and output the impact data
   for (int i = 0; i < num_runs; i++) {
     fprintf(impact_file, "%f, %f, %f, %f, %f, %f, %f\n",
-            impact_data->impact_states[i].t, impact_data->impact_states[i].x,
-            impact_data->impact_states[i].y, impact_data->impact_states[i].z,
-            impact_data->impact_states[i].vx, impact_data->impact_states[i].vy,
-            impact_data->impact_states[i].vz);
+            impact_data->impact_states[i].t,
+            impact_data->impact_states[i].position.x,
+            impact_data->impact_states[i].position.y,
+            impact_data->impact_states[i].position.z,
+            impact_data->impact_states[i].velocity.x,
+            impact_data->impact_states[i].velocity.y,
+            impact_data->impact_states[i].velocity.z);
   }
 
   // Close the impact file
   fclose(impact_file);
 }
 
+/**
+ * Simulate a single trajectory until impact and return final impact state.
+ *
+ * @param run_params Pointer to run configuration parameters
+ * @param initial_state Pointer to initial true state
+ * @param vehicle Pointer to vehicle model/state
+ * @return Final impact state
+ */
 state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
-  /*
-  Function that simulates the flight of a vehicle, updating the state of the
-  vehicle at each time step
-
-  INPUTS:
-  ----------
-      run_params: runparams *
-          pointer to the run parameters struct
-      initial_state: state *
-          pointer to the initial state of the vehicle
-      vehicle: vehicle *
-          pointer to the vehicle struct
-
-  OUTPUTS:
-  ----------
-      final_state: state
-          final state of the vehicle (impact point)
-  */
 
   // Initialize the variables and structures
   int max_steps = 10000000;
 
   grav true_grav = init_grav(run_params);
   grav est_grav = init_grav(run_params);
-  est_grav.perturb_flag = 0;
 
   atm_model exp_atm_model = init_exp_atm(run_params);
-
-  char *atmprofilepath = "input/atmprofiles.txt";
 
   double a_command_total = 0;
   double a_lift_total = 0;
@@ -316,9 +120,9 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
   eg16_profile atm_profile;
   if (run_params->atm_model == 2) {
     int atm_profile_num = (int)ran_flat(0, 100);
-    atm_profile = parse_atm("input/atmprofiles.txt", atm_profile_num);
+    atm_profile = parse_atm(run_params->atm_path, atm_profile_num);
   } else if (run_params->atm_model == 3) {
-    atm_profile = parse_atm("input/mean_atm.txt", -1);
+    atm_profile = parse_atm(run_params->mean_atm_path, -1);
   }
 
   state old_true_state = *initial_state;
@@ -355,20 +159,25 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
         "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
         "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
         "%g, %g, %g, %g, %g, %g, %g\n",
-        old_true_state.t, vehicle->current_mass, old_true_state.x,
-        old_true_state.y, old_true_state.z, old_true_state.vx,
-        old_true_state.vy, old_true_state.vz, old_true_state.ax_grav,
-        old_true_state.ay_grav, old_true_state.az_grav, old_true_state.ax_drag,
-        old_true_state.ay_drag, old_true_state.az_drag, a_command_total,
-        a_lift_total, old_true_state.ax_thrust, old_true_state.ay_thrust,
-        old_true_state.az_thrust, old_true_state.ax_total,
-        old_true_state.ay_total, old_true_state.az_total, old_est_state.x,
-        old_est_state.y, old_est_state.z, old_est_state.vx, old_est_state.vy,
-        old_est_state.vz, old_est_state.ax_total, old_est_state.ay_total,
-        old_est_state.az_total, old_est_state.ax_drag, old_est_state.ay_drag,
-        old_est_state.az_drag, old_true_state.ax_lift, old_true_state.ay_lift,
-        old_true_state.az_lift, old_est_state.ax_lift, old_est_state.ay_lift,
-        old_est_state.az_lift, old_true_state.roll);
+        old_true_state.t, vehicle->current_mass, old_true_state.position.x,
+        old_true_state.position.y, old_true_state.position.z,
+        old_true_state.velocity.x, old_true_state.velocity.y,
+        old_true_state.velocity.z, old_true_state.a_grav.x,
+        old_true_state.a_grav.y, old_true_state.a_grav.z,
+        old_true_state.a_drag.x, old_true_state.a_drag.y,
+        old_true_state.a_drag.z, a_command_total, a_lift_total,
+        old_true_state.a_thrust.x, old_true_state.a_thrust.y,
+        old_true_state.a_thrust.z, old_true_state.a_total.x,
+        old_true_state.a_total.y, old_true_state.a_total.z,
+        old_est_state.position.x, old_est_state.position.y,
+        old_est_state.position.z, old_est_state.velocity.x,
+        old_est_state.velocity.y, old_est_state.velocity.z,
+        old_est_state.a_total.x, old_est_state.a_total.y,
+        old_est_state.a_total.z, old_est_state.a_drag.x, old_est_state.a_drag.y,
+        old_est_state.a_drag.z, old_true_state.a_lift.x,
+        old_true_state.a_lift.y, old_true_state.a_lift.z,
+        old_est_state.a_lift.x, old_est_state.a_lift.y, old_est_state.a_lift.z,
+        old_true_state.roll);
   }
 
   // Variables for step function anomaly (only used for run_type = 1)
@@ -389,8 +198,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
     }
 
     // Get the atmospheric conditions
-    double old_altitude =
-        get_altitude(old_true_state.x, old_true_state.y, old_true_state.z);
+    double old_altitude = get_altitude(old_true_state.position);
 
     atm_cond true_atm_cond =
         get_atm_cond(old_altitude, &exp_atm_model, run_params, &atm_profile);
@@ -400,12 +208,9 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
     // if during boost or outside atmosphere, dt = main time step, else dt =
     // reentry time step go a bit above 100km to 2e5 to ensure accuracy at very
     // close to 100km
-    cart_vector velocity = {old_true_state.vx, old_true_state.vy,
-                            old_true_state.vz};
-    cart_vector a_grav = {old_true_state.ax_grav, old_true_state.ay_grav,
-                          old_true_state.az_grav};
     double angle_v_grav =
-        acos(dot(velocity, a_grav) / (norm(velocity) * norm(a_grav)));
+        acos(dot(old_true_state.velocity, old_true_state.a_grav) /
+             (norm(old_true_state.velocity) * norm(old_true_state.a_grav)));
 
     if (((angle_v_grav > 0) && ((angle_v_grav < M_PI_2)) &&
          (old_altitude < 1.2e5)) ||
@@ -418,15 +223,13 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
     // Update the thrust of the vehicle
     if (run_params->perfect_boost) {
       update_thrust(&new_true_state, vehicle, run_params, &true_grav);
-      new_est_state.ax_thrust = new_true_state.ax_thrust;
-      new_est_state.ay_thrust = new_true_state.ay_thrust;
-      new_est_state.az_thrust = new_true_state.az_thrust;
-
+      new_est_state.a_thrust = new_true_state.a_thrust;
     } else {
       update_thrust(&new_est_state, vehicle, run_params, &est_grav);
-      new_true_state.ax_thrust = new_est_state.ax_thrust;
-      new_true_state.ay_thrust = new_est_state.ay_thrust;
-      new_true_state.az_thrust = new_est_state.az_thrust;
+      new_true_state.a_thrust = new_est_state.a_thrust;
+    }
+    if (isnan(new_true_state.a_thrust.x)) {
+      return new_true_state;
     }
     // Update the gravity acceleration components
     update_gravity(&true_grav, &new_true_state);
@@ -446,30 +249,19 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
         (angle_v_grav < M_PI_2) && (old_altitude < 1e5)) {
       update_lift(&new_true_state, &new_est_state, run_params, &true_atm_cond,
                   &est_atm_cond, vehicle, time_step);
-      a_lift_total = sqrt(new_true_state.ax_lift * new_true_state.ax_lift +
-                          new_true_state.ay_lift * new_true_state.ay_lift +
-                          new_true_state.az_lift * new_true_state.az_lift);
+      a_lift_total = norm(new_true_state.a_lift);
     }
 
     // Calculate the total acceleration components
-    new_true_state.ax_total = new_true_state.ax_grav + new_true_state.ax_drag +
-                              new_true_state.ax_lift + new_true_state.ax_thrust;
-    new_true_state.ay_total = new_true_state.ay_grav + new_true_state.ay_drag +
-                              new_true_state.ay_lift + new_true_state.ay_thrust;
-    new_true_state.az_total = new_true_state.az_grav + new_true_state.az_drag +
-                              new_true_state.az_lift + new_true_state.az_thrust;
-    new_est_state.ax_total = new_est_state.ax_grav + new_est_state.ax_drag +
-                             new_est_state.ax_lift + new_est_state.ax_thrust;
-    new_est_state.ay_total = new_est_state.ay_grav + new_est_state.ay_drag +
-                             new_est_state.ay_lift + new_est_state.ay_thrust;
-    new_est_state.az_total = new_est_state.az_grav + new_est_state.az_drag +
-                             new_est_state.az_lift + new_est_state.az_thrust;
-    new_des_state.ax_total = new_des_state.ax_grav + new_des_state.ax_drag +
-                             new_des_state.ax_lift + new_des_state.ax_thrust;
-    new_des_state.ay_total = new_des_state.ay_grav + new_des_state.ay_drag +
-                             new_des_state.ay_lift + new_des_state.ay_thrust;
-    new_des_state.az_total = new_des_state.az_grav + new_des_state.az_drag +
-                             new_des_state.az_lift + new_des_state.az_thrust;
+    new_true_state.a_total =
+        add(add(new_true_state.a_grav, new_true_state.a_drag),
+            add(new_true_state.a_lift, new_true_state.a_thrust));
+    new_est_state.a_total =
+        add(add(new_est_state.a_grav, new_est_state.a_drag),
+            add(new_est_state.a_lift, new_est_state.a_thrust));
+    new_des_state.a_total =
+        add(add(new_des_state.a_grav, new_des_state.a_drag),
+            add(new_des_state.a_lift, new_des_state.a_thrust));
 
     if (run_params->ins_nav == 1) {
       // INS Measurement
@@ -483,15 +275,14 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
     }
 
     // Perform a Runge-Kutta step
-    rk4step(&new_true_state, time_step);
-    rk4step(&new_est_state, time_step);
-    rk4step(&new_des_state, time_step);
+    euler_maruyama_step(&new_true_state, time_step);
+    euler_maruyama_step(&new_est_state, time_step);
+    euler_maruyama_step(&new_des_state, time_step);
     // Update the mass of the vehicle
     update_mass(vehicle, new_true_state.t);
 
     // Check if the vehicle has impacted the Earth
-    double new_altitude =
-        get_altitude(new_true_state.x, new_true_state.y, new_true_state.z);
+    double new_altitude = get_altitude(new_true_state.position);
     if (new_altitude < 0) {
       state true_final_state = impact_linterp(&old_true_state, &new_true_state);
       state est_final_state = impact_linterp(&old_est_state, &new_est_state);
@@ -508,14 +299,16 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
       // This might seem like a bug, but I promise it's just clever
       // This replicates flying in a random direction, not just along the
       // equator
-      true_final_state.x = true_final_state.x - coriolis * sin(lon) * cos(lat);
-      true_final_state.y = true_final_state.y + coriolis * cos(lon) * cos(lat);
-      true_final_state.z = true_final_state.z + coriolis * sin(lat);
+      true_final_state.position.x =
+          true_final_state.position.x - coriolis * sin(lon) * cos(lat);
+      true_final_state.position.y =
+          true_final_state.position.y + coriolis * cos(lon) * cos(lat);
+      true_final_state.position.z =
+          true_final_state.position.z + coriolis * sin(lat);
       if (run_params->rv_maneuv == 2) {
         // If perfect rv maneuver, update the final position
-        true_final_state.x = true_final_state.x - est_final_state.x;
-        true_final_state.y = true_final_state.y - est_final_state.y;
-        true_final_state.z = true_final_state.z - est_final_state.z;
+        true_final_state.position =
+            subtract(true_final_state.position, est_final_state.position);
       }
       if (traj_output == 1) {
         // Write the final state to the trajectory file
@@ -523,24 +316,26 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
                 "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
                 "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
                 "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n",
-                true_final_state.t, vehicle->current_mass, true_final_state.x,
-                true_final_state.y, true_final_state.z, true_final_state.vx,
-                true_final_state.vy, true_final_state.vz,
-                true_final_state.ax_grav, true_final_state.ay_grav,
-                true_final_state.az_grav, true_final_state.ax_drag,
-                true_final_state.ay_drag, true_final_state.az_drag,
-                a_command_total, a_lift_total, true_final_state.ax_thrust,
-                true_final_state.ay_thrust, true_final_state.az_thrust,
-                true_final_state.ax_total, true_final_state.ay_total,
-                true_final_state.az_total, est_final_state.x, est_final_state.y,
-                est_final_state.z, est_final_state.vx, est_final_state.vy,
-                est_final_state.vz, est_final_state.ax_total,
-                est_final_state.ay_total, est_final_state.az_total,
-                est_final_state.ax_drag, est_final_state.ay_drag,
-                est_final_state.az_drag, old_true_state.ax_lift,
-                old_true_state.ay_lift, old_true_state.az_lift,
-                old_est_state.ax_lift, old_est_state.ay_lift,
-                old_est_state.az_lift, true_final_state.roll);
+                true_final_state.t, vehicle->current_mass,
+                true_final_state.position.x, true_final_state.position.y,
+                true_final_state.position.z, true_final_state.velocity.x,
+                true_final_state.velocity.y, true_final_state.velocity.z,
+                true_final_state.a_grav.x, true_final_state.a_grav.y,
+                true_final_state.a_grav.z, true_final_state.a_drag.x,
+                true_final_state.a_drag.y, true_final_state.a_drag.z,
+                a_command_total, a_lift_total, true_final_state.a_thrust.x,
+                true_final_state.a_thrust.y, true_final_state.a_thrust.z,
+                true_final_state.a_total.x, true_final_state.a_total.y,
+                true_final_state.a_total.z, est_final_state.position.x,
+                est_final_state.position.y, est_final_state.position.z,
+                est_final_state.velocity.x, est_final_state.velocity.y,
+                est_final_state.velocity.z, est_final_state.a_total.x,
+                est_final_state.a_total.y, est_final_state.a_total.z,
+                est_final_state.a_drag.x, est_final_state.a_drag.y,
+                est_final_state.a_drag.z, old_true_state.a_lift.x,
+                old_true_state.a_lift.y, old_true_state.a_lift.z,
+                old_est_state.a_lift.x, old_est_state.a_lift.y,
+                old_est_state.a_lift.z, true_final_state.roll);
         fclose(traj_file);
       }
 
@@ -554,21 +349,25 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
           "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
           "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
           "%g, %g, %g, %g, %g, %g, %g\n",
-          new_true_state.t, vehicle->current_mass, new_true_state.x,
-          new_true_state.y, new_true_state.z, new_true_state.vx,
-          new_true_state.vy, new_true_state.vz, new_true_state.ax_grav,
-          new_true_state.ay_grav, new_true_state.az_grav,
-          new_true_state.ax_drag, new_true_state.ay_drag,
-          new_true_state.az_drag, a_command_total, a_lift_total,
-          new_true_state.ax_thrust, new_true_state.ay_thrust,
-          new_true_state.az_thrust, new_true_state.ax_total,
-          new_true_state.ay_total, new_true_state.az_total, new_est_state.x,
-          new_est_state.y, new_est_state.z, new_est_state.vx, new_est_state.vy,
-          new_est_state.vz, new_est_state.ax_total, new_est_state.ay_total,
-          new_est_state.az_total, new_est_state.ax_drag, new_est_state.ay_drag,
-          new_est_state.az_drag, old_true_state.ax_lift, old_true_state.ay_lift,
-          old_true_state.az_lift, old_est_state.ax_lift, old_est_state.ay_lift,
-          old_est_state.az_lift, new_true_state.roll);
+          new_true_state.t, vehicle->current_mass, new_true_state.position.x,
+          new_true_state.position.y, new_true_state.position.z,
+          new_true_state.velocity.x, new_true_state.velocity.y,
+          new_true_state.velocity.z, new_true_state.a_grav.x,
+          new_true_state.a_grav.y, new_true_state.a_grav.z,
+          new_true_state.a_drag.x, new_true_state.a_drag.y,
+          new_true_state.a_drag.z, a_command_total, a_lift_total,
+          new_true_state.a_thrust.x, new_true_state.a_thrust.y,
+          new_true_state.a_thrust.z, new_true_state.a_total.x,
+          new_true_state.a_total.y, new_true_state.a_total.z,
+          new_est_state.position.x, new_est_state.position.y,
+          new_est_state.position.z, new_est_state.velocity.x,
+          new_est_state.velocity.y, new_est_state.velocity.z,
+          new_est_state.a_total.x, new_est_state.a_total.y,
+          new_est_state.a_total.z, new_est_state.a_drag.x,
+          new_est_state.a_drag.y, new_est_state.a_drag.z,
+          old_true_state.a_lift.x, old_true_state.a_lift.y,
+          old_true_state.a_lift.z, old_est_state.a_lift.x,
+          old_est_state.a_lift.y, old_est_state.a_lift.z, new_true_state.roll);
     }
 
     // Update the old state
@@ -578,24 +377,23 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
   }
 
   printf("Warning: Maximum number of steps reached with no impact\n");
-
   // Close the trajectory file
   if (traj_output == 1) {
     fclose(traj_file);
   }
 
+  // Only save full trajectory on the first run.
+  run_params->traj_output = 0;
   return new_true_state;
 }
 
-void mc_run(runparams run_params) {
-  /*
-  Function that runs a Monte Carlo simulation of the vehicle flight
-
-  INPUTS:
-  ----------
-      run_params: runparams
-          run parameters struct
-  */
+/**
+ * Run a Monte Carlo trajectory simulation.
+ *
+ * @param run_params Run configuration parameters
+ * @return Impact states for all runs
+ */
+impact_data mc_run(runparams run_params) {
 
   // Print the run parameters to the console
   // print_config(&run_params);
@@ -619,12 +417,10 @@ void mc_run(runparams run_params) {
   // aimpoint.z);
 
   // Create a .txt file to store the impact data
-  FILE *impact_file;
-  impact_file = fopen(run_params.impact_data_path, "w");
-  fprintf(impact_file, "t, x, y, z, vx, vy, vz\n");
+  // impact_file = fopen(run_params.impact_data_path, "w");
+  // fprintf(impact_file, "t, x, y, z, vx, vy, vz\n");
 
   for (int i = 0; i < num_runs; i++) {
-    printf("Run %d/%d\n", i + 1, num_runs);
     vehicle vehicle;
     if (run_params.run_type == 0) {
       if (run_params.rv_type == 0) {
@@ -646,10 +442,21 @@ void mc_run(runparams run_params) {
 
     impact_data.impact_states[i] =
         fly(&run_params, &initial_true_state, &vehicle);
+
+#ifdef FROM_PYTHON
+    int five_percent = (int)(num_runs / 20);
+    five_percent = (int)clip(five_percent, 1, 100);
+    if ((i + 1) % five_percent == 0) {
+      update_loading_bar(i + 1, num_runs);
+    }
+    if (i == num_runs - 1) {
+      update_loading_bar(num_runs, num_runs);
+    }
+#endif
   }
 
   // Output the impact data
-  output_impact(impact_file, &impact_data, num_runs);
+  return impact_data;
 }
 
 #endif

@@ -1,4 +1,5 @@
-#include "../src/include/sensors.h"
+#include "../src/include/models/sensors.h"
+#include "../src/include/trajectory.h"
 #include <tau/tau.h>
 
 TEST(sensors, imu_init) {
@@ -7,7 +8,7 @@ TEST(sensors, imu_init) {
   run_params.traj_output = 0;
   run_params.time_step_main = 1;
   run_params.time_step_reentry = 1;
-  run_params.x_aim = 6371e3;
+  run_params.x_aim = EARTH_RADIUS_M;
   run_params.y_aim = 0;
   run_params.z_aim = 0;
   run_params.theta_long = 0;
@@ -50,7 +51,7 @@ TEST(sensors, imu_meas) {
   run_params.traj_output = 0;
   run_params.time_step_main = 1;
   run_params.time_step_reentry = 1;
-  run_params.x_aim = 6371e3;
+  run_params.x_aim = EARTH_RADIUS_M;
   run_params.y_aim = 0;
   run_params.z_aim = 0;
   run_params.theta_long = 0;
@@ -75,9 +76,9 @@ TEST(sensors, imu_meas) {
   // Initialize the state
   state true_state = init_true_state(&run_params);
   state est_state = init_est_state(&run_params);
-  true_state.ax_total = 10;
-  true_state.ay_total = 10;
-  true_state.az_total = 10;
+  true_state.a_total.x = 10;
+  true_state.a_total.y = 10;
+  true_state.a_total.z = 10;
   // Initialize the imu
   imu imu = imu_init(&run_params, &true_state);
 
@@ -86,28 +87,26 @@ TEST(sensors, imu_meas) {
 
   // Check that for zero scale stability, the accelerometer errors are zero
   imu_measurement(&imu, &true_state, &est_state, &vehicle);
-  REQUIRE_EQ(fabs(est_state.ax_total - true_state.ax_total), 0);
-  REQUIRE_EQ(fabs(est_state.ay_total - true_state.ay_total), 0);
-  REQUIRE_EQ(fabs(est_state.az_total - true_state.az_total), 0);
+  REQUIRE_EQ(fabs(est_state.a_total.x - true_state.a_total.x), 0);
+  REQUIRE_EQ(fabs(est_state.a_total.y - true_state.a_total.y), 0);
+  REQUIRE_EQ(fabs(est_state.a_total.z - true_state.a_total.z), 0);
 
   // Check that for zero acceleration the accelerometer errors are zero
-  true_state.ax_total = 0;
-  true_state.ay_total = 0;
-  true_state.az_total = 0;
+  true_state.a_total = zeros();
   imu_measurement(&imu, &true_state, &est_state, &vehicle);
-  REQUIRE_EQ(est_state.ax_total, 0);
-  REQUIRE_EQ(est_state.ay_total, 0);
-  REQUIRE_EQ(est_state.az_total, 0);
+  REQUIRE_EQ(est_state.a_total.x, 0);
+  REQUIRE_EQ(est_state.a_total.y, 0);
+  REQUIRE_EQ(est_state.a_total.z, 0);
 
   // Check that for non-zero acceleration and non-zero scale stability the
   // accelerometer errors are non-zero
-  true_state.ax_total = 10;
-  true_state.ay_total = 10;
-  true_state.az_total = 10;
+  true_state.a_total.x = 10;
+  true_state.a_total.y = 10;
+  true_state.a_total.z = 10;
   run_params.acc_scale_stability = 1e-3;
   imu = imu_init(&run_params, &true_state);
   imu_measurement(&imu, &true_state, &est_state, &vehicle);
-  REQUIRE_NE(est_state.ax_total, true_state.ax_total);
+  REQUIRE_NE(est_state.a_total.x, true_state.a_total.x);
 }
 
 TEST(sensors, imu_update) {
@@ -200,21 +199,21 @@ TEST(sensors, gnss_meas) {
   state est_state = init_est_state(&run_params);
   // Initialize the true state
   state true_state = init_true_state(&run_params);
-  true_state.x = 10;
-  true_state.y = 10;
-  true_state.z = 10;
+  true_state.position.x = 10;
+  true_state.position.y = 10;
+  true_state.position.z = 10;
 
   // Check that for zero gnss noise the gnss errors are zero
   gnss_measurement(&gnss, &true_state, &est_state);
-  REQUIRE_EQ(fabs(est_state.x - true_state.x), 0);
-  REQUIRE_EQ(fabs(est_state.y - true_state.y), 0);
-  REQUIRE_EQ(fabs(est_state.z - true_state.z), 0);
+  REQUIRE_EQ(fabs(est_state.position.x - true_state.position.x), 0);
+  REQUIRE_EQ(fabs(est_state.position.y - true_state.position.y), 0);
+  REQUIRE_EQ(fabs(est_state.position.z - true_state.position.z), 0);
 
   // Check that for non-zero gnss noise the gnss errors are non-zero
   run_params.gnss_noise = 1e-3;
   gnss = gnss_init(&run_params);
   gnss_measurement(&gnss, &true_state, &est_state);
-  REQUIRE_NE(est_state.x, true_state.x);
-  REQUIRE_NE(est_state.y, true_state.y);
-  REQUIRE_NE(est_state.z, true_state.z);
+  REQUIRE_NE(est_state.position.x, true_state.position.x);
+  REQUIRE_NE(est_state.position.y, true_state.position.y);
+  REQUIRE_NE(est_state.position.z, true_state.position.z);
 }
