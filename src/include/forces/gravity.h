@@ -14,7 +14,7 @@
  * @param grav Pointer to gravity model parameters
  * @param state Pointer to state updated with gravity acceleration
  */
-void update_gravity(grav *grav, state *state) {
+cartvec update_gravity(grav *grav, state *state) {
   double r;
 
   r = norm(state->position);
@@ -22,7 +22,7 @@ void update_gravity(grav *grav, state *state) {
   double ar_grav = grav->grav_g0 *
                    pow((grav->earth_radius + grav->geoid_height_error), 2) /
                    pow(r, 2);
-  state->a_grav = smultiply(state->position, ar_grav / r);
+  return smultiply(state->position, ar_grav / r);
 }
 
 #endif

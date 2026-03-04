@@ -205,11 +205,6 @@ def plot_trajectory(
         trajectory_df["est_ay_total"].values,
         trajectory_df["est_az_total"].values,
     )
-    ax_grav, ay_grav, az_grav = (
-        trajectory_df["ax_grav"].values,
-        trajectory_df["ay_grav"].values,
-        trajectory_df["az_grav"].values,
-    )
     ax_drag, ay_drag, az_drag = (
         trajectory_df["ax_drag"].values,
         trajectory_df["ay_drag"].values,
@@ -226,9 +221,6 @@ def plot_trajectory(
         trajectory_df["az_thrust"].values,
     )
 
-    est_ax_grav = _get_series_or_default(trajectory_df, "est_ax_grav")
-    est_ay_grav = _get_series_or_default(trajectory_df, "est_ay_grav")
-    est_az_grav = _get_series_or_default(trajectory_df, "est_az_grav")
     est_ax_drag = _get_series_or_default(trajectory_df, "est_ax_drag")
     est_ay_drag = _get_series_or_default(trajectory_df, "est_ay_drag")
     est_az_drag = _get_series_or_default(trajectory_df, "est_az_drag")
@@ -295,21 +287,6 @@ def plot_trajectory(
             boost_mask,
             midcourse_mask,
             reentry_mask,
-            save_path,
-        ),
-        "gravity_true_est": lambda: _plot_force_true_est(
-            t,
-            ax_grav,
-            ay_grav,
-            az_grav,
-            est_ax_grav,
-            est_ay_grav,
-            est_az_grav,
-            boost_mask,
-            midcourse_mask,
-            reentry_mask,
-            "Gravity",
-            "gravity_true_est.png",
             save_path,
         ),
         "drag_true_est": lambda: _plot_force_true_est(

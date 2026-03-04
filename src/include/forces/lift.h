@@ -254,8 +254,8 @@ int get_a_lift_avail_jerk(double t, state *true_state, state *est_state,
   // Determine if vehicle is in reentry phase
   double altitude = get_altitude(est_state->position);
   double angle_v_grav =
-      acos(dot(est_state->velocity, est_state->a_grav) /
-           (norm(est_state->velocity) * norm(est_state->a_grav)));
+      acos(dot(est_state->velocity, smultiply(est_state->position, -1)) /
+           (norm(est_state->velocity) * norm(est_state->position)));
   int is_reentry =
       (angle_v_grav > 0) && (angle_v_grav < M_PI_2) && (altitude < 1e5);
 

@@ -70,7 +70,6 @@ ffibuilder.cdef(
         double t;
         cartvec position;
         cartvec velocity;
-        cartvec a_grav;
         cartvec a_drag;
         cartvec a_lift;
         cartvec a_lift_avail;

@@ -64,29 +64,29 @@ imu imu_init(runparams *run_params, state *initial_state) {
  * @param est_state Pointer to estimated vehicle state to update
  * @param vehicle Pointer to vehicle model
  */
-void imu_measurement(imu *imu, state *true_state, state *est_state,
-                     vehicle *vehicle) {
+cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
+                        vehicle *vehicle, cartvec a_grav_true,
+                        cartvec a_grav_est) {
 
   // Gyroscope measurements
   est_state->theta_long = true_state->theta_long + imu->gyro_error_long -
                           true_state->initial_theta_long_pert;
   est_state->theta_lat = true_state->theta_lat + imu->gyro_error_lat -
                          true_state->initial_theta_lat_pert;
-  cartvec a_measurable = subtract(true_state->a_total, true_state->a_grav);
+  cartvec a_measurable = subtract(true_state->a_total, a_grav_true);
 
   // Accelerometer measurements
-  est_state->a_total.x = a_measurable.x * (1 + imu->acc_scale_x) +
-                         a_measurable.y * imu->gyro_error_long -
-                         a_measurable.z * imu->gyro_error_lat +
-                         est_state->a_grav.x;
-  est_state->a_total.y =
-      a_measurable.y * (1 + imu->acc_scale_y) -
-      a_measurable.x * imu->gyro_error_long +
-      a_measurable.z * imu->gyro_error_long * imu->gyro_error_lat +
-      est_state->a_grav.y;
-  est_state->a_total.z = a_measurable.z * (1 + imu->acc_scale_z) +
-                         a_measurable.x * imu->gyro_error_lat +
-                         est_state->a_grav.z;
+  cartvec a_total_est;
+  a_total_est.x = a_measurable.x * (1 + imu->acc_scale_x) +
+                  a_measurable.y * imu->gyro_error_long -
+                  a_measurable.z * imu->gyro_error_lat;
+  a_total_est.y = a_measurable.y * (1 + imu->acc_scale_y) -
+                  a_measurable.x * imu->gyro_error_long +
+                  a_measurable.z * imu->gyro_error_long * imu->gyro_error_lat;
+  a_total_est.z = a_measurable.z * (1 + imu->acc_scale_z) +
+                  a_measurable.x * imu->gyro_error_lat;
+  a_total_est = add(a_total_est, a_grav_est);
+  return a_total_est;
 }
 
 /**

@@ -8,12 +8,11 @@
 // Define a struct to store the state of a vehicle in 3D space
 typedef struct state {
   // State parameters
-  double t;         // time in seconds since launch
-  cartvec position; // position in meters
-  cartvec velocity; // velocity in meters per second
-  cartvec a_grav;   // acceleration due to gravity in meters per second squared
-  cartvec a_drag;   // acceleration due to drag in meters per second squared
-  cartvec a_lift;   // acceleration due to lift in meters per second squared
+  double t;             // time in seconds since launch
+  cartvec position;     // position in meters
+  cartvec velocity;     // velocity in meters per second
+  cartvec a_drag;       // acceleration due to drag in meters per second squared
+  cartvec a_lift;       // acceleration due to lift in meters per second squared
   cartvec a_lift_avail; // "available" lift. Encodes flap positions
   cartvec a_thrust; // acceleration due to thrust in meters per second squared
   cartvec a_total;  // total acceleration in meters per second squared
@@ -81,7 +80,6 @@ state init_true_state(runparams *run_params) {
   state.theta_long = run_params->theta_long + state.initial_theta_long_pert;
   state.theta_lat = run_params->theta_lat + state.initial_theta_lat_pert;
 
-  state.a_grav = zeros();
   state.a_drag = zeros();
   state.a_lift = zeros();
   state.a_thrust = zeros();
@@ -130,7 +128,6 @@ state init_est_state(runparams *run_params) {
   state.initial_theta_lat_pert = 0;
   state.initial_theta_long_pert = 0;
 
-  state.a_grav = zeros();
   state.a_drag = zeros();
   state.a_lift = zeros();
   state.a_thrust = zeros();
