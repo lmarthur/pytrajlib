@@ -1,6 +1,7 @@
 #ifndef LIFT_H
 #define LIFT_H
 
+#include "../body_frame.h"
 #include "../math/linalg.h"
 #include "../models/atmosphere.h"
 #include "../models/state.h"
@@ -91,87 +92,6 @@ double get_acc_resolution(runparams *run_params, vehicle *vehicle) {
   double acc_resolution = max_a_exec * actuator_resolution / deflection_max;
 
   return acc_resolution;
-}
-
-/**
- * Define a local coordinate system where
- *
- * - $\vec e_1$ points in the direction of relative velocity
- *
- * - $\vec e_2$ points in the direction of lift acceleration (or the global
- * z-axis if lift is zero)
- *
- * - $\vec e_3$ is orthogonal to both ($\vec e_3 = \vec e_1 \times \vec e_2$)
- *
- *
- * The basis is only successfully defined if
- *
- * 1. the relative velocity is not zero AND
- *
- * 2. inside the atmosphere (below 100km) AND
- *
- * 3. $|e_2| > 0$
- * @return 1 if successfully defined basis, 0 if unsuccessful
- */
-int compute_lift_basis(state *current_state, atm_cond *atm_cond, cartvec *e_1,
-                       cartvec *e_2, cartvec *e_3) {
-
-  cartvec velocity = current_state->velocity;
-  cartvec a_lift = current_state->a_lift;
-
-  cartvec wind_vec = get_cart_wind(current_state, atm_cond);
-  cartvec v_rel = subtract(velocity, wind_vec);
-  double v_rel_mag = norm(v_rel);
-  double altitude = get_altitude(current_state->position);
-  double initial_lift_mag = norm(a_lift);
-
-  // Special case for zero relative velocity or high altitude that simply
-  // returns the state with zero lift and drag
-  if (v_rel_mag < 1e-6 || altitude > 1e5) {
-    // If the relative velocity is zero, we cannot define a local coordinate
-    // system
-    return 0;
-  }
-
-  // e_1 is the unit vector in direction of relative velocity
-  // e_2 is the lift vector.
-  // e_3 = e_1 x e_2
-  cartvec e1 = sdivide(v_rel, v_rel_mag);
-  cartvec e2;
-  cartvec e3;
-  // If the initial lift magnitude is zero, define e_2 based on a cross
-  // product between e_1 and global z-axis
-  if (initial_lift_mag < 1e-6) {
-    cartvec global_z_axis;
-    global_z_axis.x = 0;
-    global_z_axis.y = 0;
-    global_z_axis.z = 1;
-
-    e2 = cross(e1, global_z_axis);
-
-    // Normalize e_2 to make it a unit vector
-
-    double e_2_mag = norm(e2);
-    // If e_2 magnitude is still zero, we cannot define a local coordinate
-    // system
-    if (e_2_mag < 1e-6) {
-      return 0;
-    }
-    // normalize e_2
-    e2 = sdivide(e2, e_2_mag);
-
-  } else {
-    // set e_2 to the unit vector in the direction of the lift acceleration
-    // vector
-    e2 = sdivide(a_lift, initial_lift_mag);
-  }
-
-  e3 = cross(e1, e2);
-
-  *e_1 = e1;
-  *e_2 = e2;
-  *e_3 = e3;
-  return 1;
 }
 
 /**
@@ -274,7 +194,7 @@ int get_a_lift_avail_jerk(double t, state *true_state, state *est_state,
   // Get the lift basis vectors for the estimated state
   cartvec est_e1, est_e2, est_e3;
   int valid_basis =
-      compute_lift_basis(est_state, est_atm_cond, &est_e1, &est_e2, &est_e3);
+      get_body_frame(est_state, est_atm_cond, &est_e1, &est_e2, &est_e3);
   if (!valid_basis) {
     return 0;
   }
@@ -341,7 +261,7 @@ cartvec get_a_lift_jerk_single_state(double t, state *current_state,
 
   // Get the lift basis vectors
   cartvec e1, e2, e3;
-  int valid_basis = compute_lift_basis(current_state, atm_cond, &e1, &e2, &e3);
+  int valid_basis = get_body_frame(current_state, atm_cond, &e1, &e2, &e3);
 
   if (!valid_basis) {
     return zeros();
@@ -389,13 +309,13 @@ void update_roll(state *true_state, state *est_state, cartvec true_d_a_lift,
                  atm_cond *est_atm_cond) {
   // Update roll based on the change in pitch and yaw accelerations
   cartvec e1, e2, e3;
-  compute_lift_basis(true_state, true_atm_cond, &e1, &e2, &e3);
+  get_body_frame(true_state, true_atm_cond, &e1, &e2, &e3);
   double true_pitch_acceleration = dot(true_d_a_lift, e2);
   double true_yaw_acceleration = dot(true_d_a_lift, e3);
   true_state->roll += atan2(true_yaw_acceleration, true_pitch_acceleration);
   true_state->roll = fmod(true_state->roll + 2 * M_PI, 2 * M_PI);
 
-  compute_lift_basis(est_state, est_atm_cond, &e1, &e2, &e3);
+  get_body_frame(est_state, est_atm_cond, &e1, &e2, &e3);
   double est_pitch_acceleration = dot(est_d_a_lift, e2);
   double est_yaw_acceleration = dot(est_d_a_lift, e3);
   est_state->roll += atan2(est_yaw_acceleration, est_pitch_acceleration);

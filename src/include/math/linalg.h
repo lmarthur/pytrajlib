@@ -178,4 +178,23 @@ cartvec rotate(cartvec v, cartvec k, double angle) {
   return v_rot;
 }
 
+/**
+ * Project vector v onto vector u
+ */
+cartvec project(cartvec v, cartvec u) {
+  return smultiply(u, dot(v, u) / dot(u, u));
+}
+
+/**
+ * Create an orthonormal basis e0, e1 from linearly independent vectors
+ * v0, v1 where e1 = v0 / norm(v0)
+ */
+void gram_schmidt_orthonorm(cartvec v0, cartvec v1, cartvec *e0, cartvec *e1) {
+  cartvec u0 = v0;
+  cartvec u1 = subtract(v1, project(v1, u0));
+
+  *e0 = sdivide(u0, norm(u0));
+  *e1 = sdivide(u1, norm(u1));
+}
+
 #endif
