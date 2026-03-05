@@ -13,7 +13,6 @@ typedef struct state {
   cartvec velocity;     // velocity in meters per second
   cartvec a_lift;       // acceleration due to lift in meters per second squared
   cartvec a_lift_avail; // "available" lift. Encodes flap positions
-  cartvec a_total;      // total acceleration in meters per second squared
   double initial_theta_long_pert; // initial perturbation in the longitudinal
                                   // thrust angle in radians
   double initial_theta_lat_pert;  // initial perturbation in the latitudinal
@@ -77,7 +76,6 @@ state init_true_state(runparams *run_params) {
   state.theta_lat = run_params->theta_lat + state.initial_theta_lat_pert;
 
   state.a_lift = zeros();
-  state.a_total = zeros();
 
   state.a_lift_avail = zeros();
 
@@ -124,7 +122,6 @@ state init_est_state(runparams *run_params, state true_state) {
   state.initial_theta_long_pert = 0;
 
   state.a_lift = zeros();
-  state.a_total = zeros();
 
   state.a_lift_avail = zeros();
 

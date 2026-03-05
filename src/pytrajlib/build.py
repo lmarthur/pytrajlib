@@ -77,7 +77,6 @@ ffibuilder.cdef(
         cartvec velocity;
         cartvec a_lift;
         cartvec a_lift_avail;
-        cartvec a_total;
         double initial_theta_long_pert;
         double initial_theta_lat_pert;
         double theta_long;

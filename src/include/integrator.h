@@ -17,13 +17,12 @@
  * @param state Pointer to state to be updated in place
  * @param time_step Integration time step in seconds
  */
-void euler_maruyama_step(state *state, double time_step) {
+void euler_maruyama_step(state *state, cartvec a_total, double time_step) {
   state->t = state->t + time_step;
-  state->position =
-      add(state->position,
-          add(smultiply(state->velocity, time_step),
-              smultiply(state->a_total, 0.5 * time_step * time_step)));
-  state->velocity = add(state->velocity, smultiply(state->a_total, time_step));
+  state->position = add(state->position,
+                        add(smultiply(state->velocity, time_step),
+                            smultiply(a_total, 0.5 * time_step * time_step)));
+  state->velocity = add(state->velocity, smultiply(a_total, time_step));
 }
 
 #endif
