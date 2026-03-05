@@ -166,7 +166,7 @@ cartvec project_and_clip(cartvec e2, cartvec e3, cartvec arr, double max_val) {
  * acceleration (m/s^3)
  * @return 0 if invalid, 1 if valid
  */
-int get_a_lift_avail_jerk(double t, state *true_state, state *est_state,
+int get_a_lift_avail_jerk(state *true_state, state *est_state,
                           runparams *run_params, vehicle *vehicle,
                           atm_cond *est_atm_cond,
                           cartvec *d_a_lift_avail_dt_true,
@@ -228,17 +228,25 @@ int get_a_lift_avail_jerk(double t, state *true_state, state *est_state,
 }
 
 /**
- * Get time derivative of the lift acceleration for a single state.
+ * Get time derivative of the lift acceleration for both true and estimated
+ * states.
  *
  * The lift acceleration approaches the available lift acceleration
- * exponentially based on the time constant: a(t) = a_avail * (1 - e^(-t/tau))
+ * exponentially based on the time constant:
+ * $$
+ * a(t) = a_\text{avail} (1 - e^{-t/\tau})
+ * $$
+ *
+ * The lift jerk is zero if it is not during the reentry phase or when the
+ * lift basis cannot be calculated.
  */
-cartvec get_a_lift_jerk_single_state(double t, state *current_state,
-                                     runparams *run_params, vehicle *vehicle,
-                                     atm_cond *atm_cond) {
+cartvec get_a_lift_jerk(state *current_state, runparams *run_params,
+                        vehicle *vehicle, atm_cond *atm_cond) {
+
   // Determine if vehicle is in reentry phase
   double altitude = get_altitude(current_state->position);
-  int is_reentry = (t > vehicle->booster.total_burn_time) && (altitude < 1e5);
+  int is_reentry =
+      (current_state->t > vehicle->booster.total_burn_time) && (altitude < 1e5);
 
   if (!is_reentry) {
     return zeros();
@@ -278,87 +286,6 @@ cartvec get_a_lift_jerk_single_state(double t, state *current_state,
       subtract(a_lift_avail_projected, current_state->a_lift), time_constant);
 
   return d_a_lift_dt;
-}
-
-/**
- * Get time derivative of the lift acceleration for both true and estimated
- * states.
- *
- * The lift acceleration approaches the available lift acceleration
- * exponentially based on the time constant:
- * $$
- * a(t) = a_\text{avail} (1 - e^{-t/\tau})
- * $$
- *
- * The lift jerk is zero if it is not during the reentry phase or when the
- * lift basis cannot be calculated.
- */
-void get_a_lift_jerk(double t, state *true_state, state *est_state,
-                     runparams *run_params, vehicle *vehicle,
-                     atm_cond *est_atm_cond, atm_cond *true_atm_cond,
-                     cartvec *d_a_lift_dt_true, cartvec *d_a_lift_dt_est) {
-
-  *d_a_lift_dt_true = get_a_lift_jerk_single_state(t, true_state, run_params,
-                                                   vehicle, true_atm_cond);
-  *d_a_lift_dt_est = get_a_lift_jerk_single_state(t, est_state, run_params,
-                                                  vehicle, est_atm_cond);
-}
-
-void update_roll(state *true_state, state *est_state, cartvec true_d_a_lift,
-                 cartvec est_d_a_lift, atm_cond *true_atm_cond,
-                 atm_cond *est_atm_cond) {
-  // Update roll based on the change in pitch and yaw accelerations
-  cartvec e1, e2, e3;
-  get_body_frame(true_state, true_atm_cond, &e1, &e2, &e3);
-  double true_pitch_acceleration = dot(true_d_a_lift, e2);
-  double true_yaw_acceleration = dot(true_d_a_lift, e3);
-  true_state->roll += atan2(true_yaw_acceleration, true_pitch_acceleration);
-  true_state->roll = fmod(true_state->roll + 2 * M_PI, 2 * M_PI);
-
-  get_body_frame(est_state, est_atm_cond, &e1, &e2, &e3);
-  double est_pitch_acceleration = dot(est_d_a_lift, e2);
-  double est_yaw_acceleration = dot(est_d_a_lift, e3);
-  est_state->roll += atan2(est_yaw_acceleration, est_pitch_acceleration);
-  est_state->roll = fmod(est_state->roll + 2 * M_PI, 2 * M_PI);
-}
-
-void update_lift(state *true_state, state *est_state, runparams *run_params,
-                 atm_cond *true_atm_cond, atm_cond *est_atm_cond,
-                 vehicle *vehicle, double time_step) {
-  cartvec true_d_a_lift_dt;
-  cartvec est_d_a_lift_dt;
-
-  cartvec true_d_a_lift_avail_dt;
-  cartvec est_d_a_lift_avail_dt;
-
-  get_a_lift_jerk(true_state->t, true_state, est_state, run_params, vehicle,
-                  true_atm_cond, est_atm_cond, &true_d_a_lift_dt,
-                  &est_d_a_lift_dt);
-
-  int valid = get_a_lift_avail_jerk(
-      true_state->t, true_state, est_state, run_params, vehicle, est_atm_cond,
-      &true_d_a_lift_avail_dt, &est_d_a_lift_avail_dt);
-  if (!valid) {
-    true_d_a_lift_avail_dt = zeros();
-    est_d_a_lift_avail_dt = zeros();
-  }
-
-  // Update true state
-  cartvec true_d_a_lift = smultiply(true_d_a_lift_dt, time_step);
-  true_state->a_lift = add(true_state->a_lift, true_d_a_lift);
-
-  true_state->a_lift_avail = add(true_state->a_lift_avail,
-                                 smultiply(true_d_a_lift_avail_dt, time_step));
-
-  // Update estimated state
-  cartvec est_d_a_lift = smultiply(est_d_a_lift_dt, time_step);
-  est_state->a_lift = add(est_state->a_lift, est_d_a_lift);
-
-  est_state->a_lift_avail =
-      add(est_state->a_lift_avail, smultiply(est_d_a_lift_avail_dt, time_step));
-
-  update_roll(true_state, est_state, true_d_a_lift, est_d_a_lift, true_atm_cond,
-              est_atm_cond);
 }
 
 #endif

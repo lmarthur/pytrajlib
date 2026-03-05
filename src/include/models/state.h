@@ -23,9 +23,6 @@ typedef struct state {
                      // the x-z plane in radians
   double theta_lat;  // thrust angle in the latitudinal direction measured from
                      // the x-y plane in radians
-  double roll; // change in roll angle in radians from the initial orientation
-               // at the start of reentry. A positive yaw angle and pitch
-               // corresponds to a positive roll.
   anglevec gyro_error;
 
 } state;
@@ -86,8 +83,6 @@ state init_true_state(runparams *run_params) {
 
   state.a_lift_avail = zeros();
 
-  state.roll = 0;
-
   state.gyro_error.lat = 0;
   state.gyro_error.lon = 0;
 
@@ -135,8 +130,6 @@ state init_est_state(runparams *run_params, state true_state) {
   state.a_total = zeros();
 
   state.a_lift_avail = zeros();
-
-  state.roll = 0;
 
   state.gyro_error.lat = true_state.initial_theta_lat_pert;
   state.gyro_error.lon = true_state.initial_theta_long_pert;

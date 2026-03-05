@@ -83,7 +83,6 @@ ffibuilder.cdef(
         double initial_theta_lat_pert;
         double theta_long;
         double theta_lat;
-        double roll;
         anglevec gyro_error;
     } state;
 
