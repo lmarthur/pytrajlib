@@ -98,23 +98,14 @@ cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
 }
 
 /**
- * Propagate IMU gyro error state with bias and random walk.
- *
- * @param imu Pointer to IMU model/state
- * @param time_step Simulation time step in seconds
+ * Get drift component of gyro error (scales with dt)
  */
-void update_imu(state *est_state, imu *imu, double time_step) {
+anglevec get_gyro_drift(imu *imu) { return imu->gyro_bias; }
 
-  // Update the gyro error by recursively adding noise and bias drift
-  est_state->gyro_error.lon =
-      est_state->gyro_error.lon +
-      imu->gyro_noise * ran_gaussian(1) * sqrt(time_step) +
-      imu->gyro_bias.lon * time_step;
-  est_state->gyro_error.lat =
-      est_state->gyro_error.lat +
-      imu->gyro_noise * ran_gaussian(1) * sqrt(time_step) +
-      imu->gyro_bias.lat * time_step;
-}
+/**
+ * Get stochastic diffusion component of gyro error (scales with sqrt(dt))
+ */
+double get_gyro_diffusion(imu *imu) { return imu->gyro_noise; }
 
 // define a gnss measurement unit struct
 typedef struct gnss {

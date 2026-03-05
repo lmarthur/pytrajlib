@@ -255,7 +255,16 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
       cartvec a_total_est = imu_measurement(
           &imu, &new_true_state, &new_est_state, a_grav_true, a_grav_est);
       new_est_state.a_total = a_total_est;
-      update_imu(&new_est_state, &imu, time_step);
+
+      anglevec gyro_drift = get_gyro_drift(&imu);
+      double gyro_diffusion = get_gyro_diffusion(&imu);
+
+      anglevec drift_update = smultiply_angle(gyro_drift, time_step);
+      anglevec dW = smultiply_angle(gaussian_anglevec(), sqrt(time_step));
+      anglevec diffusion_update = smultiply_angle(dW, gyro_diffusion);
+      new_est_state.gyro_error =
+          add_anglevec(add_anglevec(new_est_state.gyro_error, drift_update),
+                       diffusion_update);
     }
 
     if ((run_params->gnss_nav == 1) && (old_altitude > 100e3)) {
