@@ -50,9 +50,6 @@ state impact_linterp(state *state_0, state *state_1) {
   impact_state.velocity = add(
       state_0->velocity,
       smultiply(subtract(state_1->velocity, state_0->velocity), interp_factor));
-  impact_state.a_drag =
-      add(state_0->a_drag,
-          smultiply(subtract(state_1->a_drag, state_0->a_drag), interp_factor));
   impact_state.a_lift =
       add(state_0->a_lift,
           smultiply(subtract(state_1->a_lift, state_0->a_lift), interp_factor));
@@ -143,31 +140,29 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
     fprintf(
         traj_file,
         "t, current_mass, x, y, z, vx, vy, vz, "
-        "ax_drag, ay_drag, az_drag, a_command, a_lift, ax_thrust, ay_thrust, "
+        "a_command, a_lift, ax_thrust, ay_thrust, "
         "az_thrust, ax_total, ay_total, az_total, est_x, est_y, est_z, est_vx, "
         "est_vy, est_vz, est_ax_total, est_ay_total, est_az_total, "
-        "est_ax_drag, est_ay_drag, est_az_drag, true_a_lift_x, true_a_lift_y, "
+        "true_a_lift_x, true_a_lift_y, "
         "true_a_lift_z, est_a_lift_x, est_a_lift_y, est_a_lift_z, roll \n");
     // Write the initial state to the trajectory file
     fprintf(
         traj_file,
         "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-        "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-        "%g, %g, %g, %g\n",
+        "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g"
+        "\n",
         old_true_state.t, vehicle->current_mass, old_true_state.position.x,
         old_true_state.position.y, old_true_state.position.z,
         old_true_state.velocity.x, old_true_state.velocity.y,
-        old_true_state.velocity.z, old_true_state.a_drag.x,
-        old_true_state.a_drag.y, old_true_state.a_drag.z, a_command_total,
-        a_lift_total, old_true_state.a_thrust.x, old_true_state.a_thrust.y,
+        old_true_state.velocity.z, a_command_total, a_lift_total,
+        old_true_state.a_thrust.x, old_true_state.a_thrust.y,
         old_true_state.a_thrust.z, old_true_state.a_total.x,
         old_true_state.a_total.y, old_true_state.a_total.z,
         old_est_state.position.x, old_est_state.position.y,
         old_est_state.position.z, old_est_state.velocity.x,
         old_est_state.velocity.y, old_est_state.velocity.z,
         old_est_state.a_total.x, old_est_state.a_total.y,
-        old_est_state.a_total.z, old_est_state.a_drag.x, old_est_state.a_drag.y,
-        old_est_state.a_drag.z, old_true_state.a_lift.x,
+        old_est_state.a_total.z, old_true_state.a_lift.x,
         old_true_state.a_lift.y, old_true_state.a_lift.z,
         old_est_state.a_lift.x, old_est_state.a_lift.y, old_est_state.a_lift.z,
         old_true_state.roll);
@@ -224,15 +219,15 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
     if (isnan(new_true_state.a_thrust.x)) {
       return new_true_state;
     }
-    // Update the gravity acceleration components
+    // Get the gravity acceleration
     cartvec a_grav_true = update_gravity(&true_grav, &new_true_state);
     cartvec a_grav_est = update_gravity(&est_grav, &new_est_state);
 
-    // Update the drag acceleration components
-    update_drag(run_params, vehicle, &true_atm_cond, &new_true_state,
-                &step_timer);
-    update_drag(run_params, vehicle, &est_atm_cond, &new_est_state,
-                &step_timer);
+    // Get the drag acceleration
+    cartvec a_drag_true = get_drag_acceleration(
+        run_params, vehicle, &true_atm_cond, &new_true_state, &step_timer);
+    cartvec a_drag_est = get_drag_acceleration(
+        run_params, vehicle, &est_atm_cond, &new_est_state, &step_timer);
 
     // If maneuverable RV, use proportional navigation during reentry
     if (run_params->rv_maneuv == 1 && (angle_v_grav > 0) &&
@@ -244,10 +239,10 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
 
     // Calculate the total acceleration components
     new_true_state.a_total =
-        add(add(a_grav_true, new_true_state.a_drag),
+        add(add(a_grav_true, a_drag_true),
             add(new_true_state.a_lift, new_true_state.a_thrust));
     new_est_state.a_total =
-        add(add(a_grav_est, new_est_state.a_drag),
+        add(add(a_grav_est, a_drag_est),
             add(new_est_state.a_lift, new_est_state.a_thrust));
 
     if (run_params->ins_nav == 1) {
@@ -311,22 +306,19 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
         fprintf(traj_file,
                 "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
                 "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-                "%g, %g, %g, %g, %g, %g, %g, %g\n",
+                "%g, %g\n",
                 true_final_state.t, vehicle->current_mass,
                 true_final_state.position.x, true_final_state.position.y,
                 true_final_state.position.z, true_final_state.velocity.x,
                 true_final_state.velocity.y, true_final_state.velocity.z,
-                true_final_state.a_drag.x, true_final_state.a_drag.y,
-                true_final_state.a_drag.z, a_command_total, a_lift_total,
-                true_final_state.a_thrust.x, true_final_state.a_thrust.y,
-                true_final_state.a_thrust.z, true_final_state.a_total.x,
-                true_final_state.a_total.y, true_final_state.a_total.z,
-                est_final_state.position.x, est_final_state.position.y,
-                est_final_state.position.z, est_final_state.velocity.x,
-                est_final_state.velocity.y, est_final_state.velocity.z,
-                est_final_state.a_total.x, est_final_state.a_total.y,
-                est_final_state.a_total.z, est_final_state.a_drag.x,
-                est_final_state.a_drag.y, est_final_state.a_drag.z,
+                a_command_total, a_lift_total, true_final_state.a_thrust.x,
+                true_final_state.a_thrust.y, true_final_state.a_thrust.z,
+                true_final_state.a_total.x, true_final_state.a_total.y,
+                true_final_state.a_total.z, est_final_state.position.x,
+                est_final_state.position.y, est_final_state.position.z,
+                est_final_state.velocity.x, est_final_state.velocity.y,
+                est_final_state.velocity.z, est_final_state.a_total.x,
+                est_final_state.a_total.y, est_final_state.a_total.z,
                 old_true_state.a_lift.x, old_true_state.a_lift.y,
                 old_true_state.a_lift.z, old_est_state.a_lift.x,
                 old_est_state.a_lift.y, old_est_state.a_lift.z,
@@ -342,25 +334,22 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
       fprintf(
           traj_file,
           "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-          "%g, %g, %g, %g\n",
+          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, \n",
           new_true_state.t, vehicle->current_mass, new_true_state.position.x,
           new_true_state.position.y, new_true_state.position.z,
           new_true_state.velocity.x, new_true_state.velocity.y,
-          new_true_state.velocity.z, new_true_state.a_drag.x,
-          new_true_state.a_drag.y, new_true_state.a_drag.z, a_command_total,
-          a_lift_total, new_true_state.a_thrust.x, new_true_state.a_thrust.y,
+          new_true_state.velocity.z, a_command_total, a_lift_total,
+          new_true_state.a_thrust.x, new_true_state.a_thrust.y,
           new_true_state.a_thrust.z, new_true_state.a_total.x,
           new_true_state.a_total.y, new_true_state.a_total.z,
           new_est_state.position.x, new_est_state.position.y,
           new_est_state.position.z, new_est_state.velocity.x,
           new_est_state.velocity.y, new_est_state.velocity.z,
           new_est_state.a_total.x, new_est_state.a_total.y,
-          new_est_state.a_total.z, new_est_state.a_drag.x,
-          new_est_state.a_drag.y, new_est_state.a_drag.z,
-          old_true_state.a_lift.x, old_true_state.a_lift.y,
-          old_true_state.a_lift.z, old_est_state.a_lift.x,
-          old_est_state.a_lift.y, old_est_state.a_lift.z, new_true_state.roll);
+          new_est_state.a_total.z, old_true_state.a_lift.x,
+          old_true_state.a_lift.y, old_true_state.a_lift.z,
+          old_est_state.a_lift.x, old_est_state.a_lift.y,
+          old_est_state.a_lift.z, new_true_state.roll);
     }
 
     // Update the old state

@@ -1,6 +1,6 @@
 #include <tau/tau.h>
 
-TEST(drag, update_drag) {
+TEST(drag, get_drag_acceleration) {
   vehicle vehicle;
   vehicle.rv = init_ballistic_rv();
   vehicle.booster = init_mmiii_booster();
@@ -29,7 +29,7 @@ TEST(drag, update_drag) {
   state.position.z = 0;
   state.velocity = zeros();
 
-  update_drag(&run_params, &vehicle, &atm_cond, &state, &step_timer);
+  get_drag_acceleration(&run_params, &vehicle, &atm_cond, &state, &step_timer);
 
   // Check that the drag acceleration components are zero
   REQUIRE_LT(state.a_drag.x, 1e-6);
@@ -44,7 +44,7 @@ TEST(drag, update_drag) {
   state.velocity.y = 1;
   state.velocity.z = 1;
 
-  update_drag(&run_params, &vehicle, &atm_cond, &state, &step_timer);
+  get_drag_acceleration(&run_params, &vehicle, &atm_cond, &state, &step_timer);
 
   REQUIRE_LT(state.a_drag.x, 1e-6);
   REQUIRE_LT(state.a_drag.y, 1e-6);
@@ -58,7 +58,7 @@ TEST(drag, update_drag) {
   state.velocity.y = 1;
   state.velocity.z = 1;
 
-  update_drag(&run_params, &vehicle, &atm_cond, &state, &step_timer);
+  get_drag_acceleration(&run_params, &vehicle, &atm_cond, &state, &step_timer);
 
   REQUIRE_NE(state.a_drag.x, 0);
   REQUIRE_NE(state.a_drag.y, 0);
@@ -73,7 +73,7 @@ TEST(drag, update_drag) {
   state.velocity.y = 0;
   state.velocity.z = 0;
 
-  update_drag(&run_params, &vehicle, &atm_cond, &state, &step_timer);
+  get_drag_acceleration(&run_params, &vehicle, &atm_cond, &state, &step_timer);
 
   REQUIRE_LT(state.a_drag.x, 0);
   REQUIRE_EQ(state.a_drag.y, 0);

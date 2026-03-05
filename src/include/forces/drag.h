@@ -42,8 +42,9 @@ cartvec get_drag_acceleration_generic(double t, state current_state,
  * @param state Pointer to state updated with drag acceleration
  * @param step_timer Pointer to step-anomaly timer
  */
-void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond,
-                 state *state, double *step_timer) {
+cartvec get_drag_acceleration(runparams *run_params, vehicle *vehicle,
+                              atm_cond *atm_cond, state *state,
+                              double *step_timer) {
 
   cartvec drag;
   // Calculate drag acceleration for realistic maneuvering vehicle
@@ -76,9 +77,7 @@ void update_drag(runparams *run_params, vehicle *vehicle, atm_cond *atm_cond,
                                            c_d, vehicle->rv.rv_area);
     }
   }
-  state->a_drag = drag;
-
-  return;
+  return drag;
 }
 
 #endif
