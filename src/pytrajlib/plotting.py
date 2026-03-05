@@ -210,18 +210,10 @@ def plot_trajectory(
         trajectory_df["true_a_lift_y"].values,
         trajectory_df["true_a_lift_z"].values,
     )
-    ax_thrust, ay_thrust, az_thrust = (
-        trajectory_df["ax_thrust"].values,
-        trajectory_df["ay_thrust"].values,
-        trajectory_df["az_thrust"].values,
-    )
 
     est_ax_lift = _get_series_or_default(trajectory_df, "est_a_lift_x")
     est_ay_lift = _get_series_or_default(trajectory_df, "est_a_lift_y")
     est_az_lift = _get_series_or_default(trajectory_df, "est_a_lift_z")
-    est_ax_thrust = _get_series_or_default(trajectory_df, "est_ax_thrust")
-    est_ay_thrust = _get_series_or_default(trajectory_df, "est_ay_thrust")
-    est_az_thrust = _get_series_or_default(trajectory_df, "est_az_thrust")
 
     # Calculate altitude
     altitude = np.sqrt(x**2 + y**2 + z**2) - 6.371e6
@@ -294,21 +286,6 @@ def plot_trajectory(
             reentry_mask,
             "Lift",
             "lift_true_est.png",
-            save_path,
-        ),
-        "thrust_true_est": lambda: _plot_force_true_est(
-            t,
-            ax_thrust,
-            ay_thrust,
-            az_thrust,
-            est_ax_thrust,
-            est_ay_thrust,
-            est_az_thrust,
-            boost_mask,
-            midcourse_mask,
-            reentry_mask,
-            "Thrust",
-            "thrust_true_est.png",
             save_path,
         ),
         "orbit": lambda: _plot_orbit(x, y, est_x, est_y, save_path),

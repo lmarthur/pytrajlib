@@ -264,36 +264,33 @@ cartvec get_thrust_vector(state *state, vehicle *vehicle, runparams *run_params,
 }
 
 /**
- * Update thrust acceleration components using Lambert Guidance outside the
- * atmosphere
+ * Get thrust acceleration using Lambert Guidance outside the atmosphere
  */
-void update_thrust(state *state, vehicle *vehicle, runparams *run_params,
-                   grav *grav_model) {
+cartvec get_thrust_acceleration(state *state, vehicle *vehicle,
+                                runparams *run_params, grav *grav_model) {
+  cartvec a_thrust;
   if (state->t > vehicle->booster.total_burn_time) {
-    state->a_thrust = zeros();
-    return;
+    return zeros();
   }
 
   double a_thrust_mag = get_a_thrust_magnitude(state, vehicle);
   // Vertical thrust for the beginning of the flight
   if (state->t < run_params->t_vert_boost) {
-    state->a_thrust.x = a_thrust_mag;
-    state->a_thrust.y = 0;
-    state->a_thrust.z = 0;
-    return;
+    a_thrust.x = a_thrust_mag;
+    a_thrust.y = 0;
+    a_thrust.z = 0;
+    return a_thrust;
   }
 
   if (get_altitude(state->position) < 100e3) {
-    state->a_thrust.x =
-        a_thrust_mag * cos(state->theta_long) * cos(state->theta_lat);
-    state->a_thrust.y =
-        a_thrust_mag * sin(state->theta_long) * cos(state->theta_lat);
-    state->a_thrust.z = a_thrust_mag * sin(state->theta_lat);
+    a_thrust.x = a_thrust_mag * cos(state->theta_long) * cos(state->theta_lat);
+    a_thrust.y = a_thrust_mag * sin(state->theta_long) * cos(state->theta_lat);
+    a_thrust.z = a_thrust_mag * sin(state->theta_lat);
 
-    return;
+    return a_thrust;
   }
 
-  cartvec a_thrust = get_thrust_vector(state, vehicle, run_params, grav_model);
-  state->a_thrust = a_thrust;
+  a_thrust = get_thrust_vector(state, vehicle, run_params, grav_model);
+  return a_thrust;
 }
 #endif
