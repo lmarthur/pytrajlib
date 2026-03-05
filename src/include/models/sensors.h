@@ -1,6 +1,7 @@
 #ifndef SENSORS_H
 #define SENSORS_H
 
+#include "../body_frame.h"
 #include "../rng/rng.h"
 #include "../utils.h"
 #include "state.h"
@@ -8,23 +9,13 @@
 // Define an inertial measurement unit struct
 typedef struct imu {
   // Accelerometer parameters
-  double acc_scale_stability; // Scale stability (ppm)
-
-  double acc_scale_x; // Scale factor for x-axis (ppm)
-  double acc_scale_y; // Scale factor for y-axis (ppm)
-  double acc_scale_z; // Scale factor for z-axis (ppm)
+  cartvec acc_scale; // Scale factor (ppm)
 
   // Gyroscope parameters
   double gyro_bias_stability; // Gyro bias (rad/s)
   double gyro_noise;          // Gyro noise/random walk (rad/s/sqrt(s))
 
-  double gyro_bias_lat;  // Gyro bias in the latitude direction (rad/s)
-  double gyro_bias_long; // Gyro bias in the longitude direction (rad/s)
-
-  double gyro_error_lat; // Gyro error in the latitude direction (rad/s, defined
-                         // recursively)
-  double gyro_error_long; // Gyro error in the longitude direction (rad/s,
-                          // defined recursively)
+  anglevec gyro_bias; // Gyro bias (rad/s)
 
 } imu;
 
@@ -38,19 +29,14 @@ typedef struct imu {
 imu imu_init(runparams *run_params, state *initial_state) {
 
   imu imu;
-  imu.acc_scale_stability = run_params->acc_scale_stability;
-  imu.acc_scale_x = imu.acc_scale_stability * ran_gaussian(1); // ppm
-  imu.acc_scale_y = imu.acc_scale_stability * ran_gaussian(1); // ppm
-  imu.acc_scale_z = imu.acc_scale_stability * ran_gaussian(1); // ppm
+  imu.acc_scale =
+      smultiply(gaussian_cartvec(), run_params->acc_scale_stability); // ppm
 
   imu.gyro_bias_stability = run_params->gyro_bias_stability;
   imu.gyro_noise = run_params->gyro_noise;
 
-  imu.gyro_bias_lat = imu.gyro_bias_stability * ran_gaussian(1);  // rad/s
-  imu.gyro_bias_long = imu.gyro_bias_stability * ran_gaussian(1); // rad/s
-
-  imu.gyro_error_lat = initial_state->initial_theta_lat_pert;
-  imu.gyro_error_long = initial_state->initial_theta_long_pert;
+  imu.gyro_bias.lat = imu.gyro_bias_stability * ran_gaussian(1); // rad/s
+  imu.gyro_bias.lon = imu.gyro_bias_stability * ran_gaussian(1); // rad/s
 
   return imu;
 }
@@ -62,30 +48,52 @@ imu imu_init(runparams *run_params, state *initial_state) {
  * @param imu Pointer to IMU model/state
  * @param true_state Pointer to true vehicle state
  * @param est_state Pointer to estimated vehicle state to update
- * @param vehicle Pointer to vehicle model
  */
 cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
-                        vehicle *vehicle, cartvec a_grav_true,
-                        cartvec a_grav_est) {
+                        cartvec a_grav_true, cartvec a_grav_est) {
 
   // Gyroscope measurements
-  est_state->theta_long = true_state->theta_long + imu->gyro_error_long -
+  est_state->theta_long = true_state->theta_long + est_state->gyro_error.lon -
                           true_state->initial_theta_long_pert;
-  est_state->theta_lat = true_state->theta_lat + imu->gyro_error_lat -
+  est_state->theta_lat = true_state->theta_lat + est_state->gyro_error.lat -
                          true_state->initial_theta_lat_pert;
   cartvec a_measurable = subtract(true_state->a_total, a_grav_true);
 
-  // Accelerometer measurements
-  cartvec a_total_est;
-  a_total_est.x = a_measurable.x * (1 + imu->acc_scale_x) +
-                  a_measurable.y * imu->gyro_error_long -
-                  a_measurable.z * imu->gyro_error_lat;
-  a_total_est.y = a_measurable.y * (1 + imu->acc_scale_y) -
-                  a_measurable.x * imu->gyro_error_long +
-                  a_measurable.z * imu->gyro_error_long * imu->gyro_error_lat;
-  a_total_est.z = a_measurable.z * (1 + imu->acc_scale_z) +
-                  a_measurable.x * imu->gyro_error_lat;
-  a_total_est = add(a_total_est, a_grav_est);
+  // Get body-centric basis vectors
+  cartvec e1;
+  cartvec e2;
+  cartvec e3;
+  int valid = get_body_frame(true_state, NULL, &e1, &e2, &e3);
+  if (!valid) {
+    printf("Invalid body frame\n");
+  }
+
+  // Change to body-centric basis
+  cartvec a_measurable_body_frame = {
+      dot(a_measurable, e1),
+      dot(a_measurable, e2),
+      dot(a_measurable, e3),
+  };
+
+  // Small angle rotation matrix around y (pitch/lat) and z (yaw/lon)
+  double cross_coupling[3][3] = {
+      {1 + imu->acc_scale.x, est_state->gyro_error.lon,
+       -est_state->gyro_error.lat},
+      {-est_state->gyro_error.lon, 1 + imu->acc_scale.y, 0},
+      {est_state->gyro_error.lat, 0, 1 + imu->acc_scale.z},
+  };
+
+  // Get measured acceleration in the body-centric basis
+  cartvec a_measured_body_frame =
+      matvec_multiply(cross_coupling, a_measurable_body_frame);
+
+  // Change back to global basis
+  double B[3][3] = {{e1.x, e2.x, e3.x}, {e1.y, e2.y, e3.y}, {e1.z, e2.z, e3.z}};
+  cartvec a_measured = matvec_multiply(B, a_measured_body_frame);
+
+  // Total acceleration is measured + estimated gravity
+  cartvec a_total_est = add(a_measured, a_grav_est);
+
   return a_total_est;
 }
 
@@ -95,15 +103,17 @@ cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
  * @param imu Pointer to IMU model/state
  * @param time_step Simulation time step in seconds
  */
-void update_imu(imu *imu, double time_step) {
+void update_imu(state *est_state, imu *imu, double time_step) {
 
   // Update the gyro error by recursively adding noise and bias drift
-  imu->gyro_error_long = imu->gyro_error_long +
-                         imu->gyro_noise * ran_gaussian(1) * sqrt(time_step) +
-                         imu->gyro_bias_long * time_step;
-  imu->gyro_error_lat = imu->gyro_error_lat +
-                        imu->gyro_noise * ran_gaussian(1) * sqrt(time_step) +
-                        imu->gyro_bias_lat * time_step;
+  est_state->gyro_error.lon =
+      est_state->gyro_error.lon +
+      imu->gyro_noise * ran_gaussian(1) * sqrt(time_step) +
+      imu->gyro_bias.lon * time_step;
+  est_state->gyro_error.lat =
+      est_state->gyro_error.lat +
+      imu->gyro_noise * ran_gaussian(1) * sqrt(time_step) +
+      imu->gyro_bias.lat * time_step;
 }
 
 // define a gnss measurement unit struct

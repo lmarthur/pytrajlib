@@ -27,6 +27,7 @@ typedef struct state {
   double roll; // change in roll angle in radians from the initial orientation
                // at the start of reentry. A positive yaw angle and pitch
                // corresponds to a positive roll.
+  anglevec gyro_error;
 
 } state;
 /**
@@ -89,6 +90,9 @@ state init_true_state(runparams *run_params) {
 
   state.roll = 0;
 
+  state.gyro_error.lat = 0;
+  state.gyro_error.lon = 0;
+
   return state;
 }
 
@@ -98,7 +102,7 @@ state init_true_state(runparams *run_params) {
  * @param run_params Pointer to run configuration parameters
  * @return Initialized estimated state
  */
-state init_est_state(runparams *run_params) {
+state init_est_state(runparams *run_params, state true_state) {
 
   state state;
   if (run_params->run_type == 0) {
@@ -136,6 +140,9 @@ state init_est_state(runparams *run_params) {
   state.a_lift_avail = zeros();
 
   state.roll = 0;
+
+  state.gyro_error.lat = true_state.initial_theta_lat_pert;
+  state.gyro_error.lon = true_state.initial_theta_long_pert;
 
   return state;
 }

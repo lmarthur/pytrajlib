@@ -66,6 +66,11 @@ ffibuilder.cdef(
         double z;
     } cartvec;
 
+    typedef struct anglevec {
+        double lat;
+        double lon;
+    } anglevec;
+
     typedef struct state {
         double t;
         cartvec position;
@@ -80,6 +85,7 @@ ffibuilder.cdef(
         double theta_long;
         double theta_lat;
         double roll;
+        anglevec gyro_error;
     } state;
 
     typedef struct impact_data {

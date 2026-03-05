@@ -125,8 +125,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
   state old_true_state = *initial_state;
   state new_true_state = *initial_state;
 
-  state old_est_state = init_est_state(run_params);
-  state new_est_state = init_est_state(run_params);
+  state old_est_state = init_est_state(run_params, old_true_state);
+  state new_est_state = init_est_state(run_params, old_true_state);
 
   int traj_output = run_params->traj_output;
   double time_step;
@@ -252,11 +252,10 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
 
     if (run_params->ins_nav == 1) {
       // INS Measurement
-      cartvec a_total_est =
-          imu_measurement(&imu, &new_true_state, &new_est_state, vehicle,
-                          a_grav_true, a_grav_est);
+      cartvec a_total_est = imu_measurement(
+          &imu, &new_true_state, &new_est_state, a_grav_true, a_grav_est);
       new_est_state.a_total = a_total_est;
-      update_imu(&imu, time_step);
+      update_imu(&new_est_state, &imu, time_step);
     }
 
     if ((run_params->gnss_nav == 1) && (old_altitude > 100e3)) {
