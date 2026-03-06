@@ -1,5 +1,5 @@
-#ifndef BODY_FRAME.H
-#define BODY_FRAME .H
+#ifndef BODY_FRAME_H
+#define BODY_FRAME_H
 
 #include "math/linalg.h"
 #include "models/atmosphere.h"
@@ -36,7 +36,6 @@ int get_body_frame(state *current_state, atm_cond *atm_cond, cartvec *e_1,
     v_rel = velocity;
   }
   double v_rel_mag = norm(v_rel);
-  double altitude = get_altitude(current_state->position);
   double initial_lift_mag = norm(a_lift);
 
   // If the relative velocity is zero, we cannot define a local coordinate

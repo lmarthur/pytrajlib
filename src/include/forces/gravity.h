@@ -14,7 +14,7 @@
  * @param grav Pointer to gravity model parameters
  * @param state Pointer to state updated with gravity acceleration
  */
-cartvec update_gravity(grav *grav, state *state) {
+cartvec get_gravity_acc(grav *grav, state *state) {
   double r;
 
   r = norm(state->position);

@@ -1,7 +1,7 @@
 #include "../../src/include/forces/gravity.h"
 #include <tau/tau.h>
 
-TEST(gravity, update_gravity) {
+TEST(gravity, get_gravity_acc) {
   // Define a grav struct
   grav grav;
   // Define a state struct
@@ -18,7 +18,7 @@ TEST(gravity, update_gravity) {
   state.position.z = 0;
 
   // Update the gravity acceleration components
-  update_gravity(&grav, &state);
+  get_gravity_acc(&grav, &state);
 
   // Check that the gravitational acceleration components are correct
   REQUIRE_LT(state.a_grav.x + 9.81, 0.01);
@@ -31,7 +31,7 @@ TEST(gravity, update_gravity) {
   state.position.z = 0;
 
   // Update the gravity acceleration components
-  update_gravity(&grav, &state);
+  get_gravity_acc(&grav, &state);
 
   // Check that the gravitational acceleration components are correct
   double r = norm(state.position);
@@ -48,7 +48,7 @@ TEST(gravity, update_gravity) {
   state.position.z = 1000;
 
   // Update the gravity acceleration components
-  update_gravity(&grav, &state);
+  get_gravity_acc(&grav, &state);
 
   // Check that the gravitational acceleration components are correct
   r = norm(state.position);

@@ -193,9 +193,13 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
     }
 
     // Perform an integration step
-    euler_maruyama_step(run_params, &imu, vehicle, &gnss, &true_grav, &est_grav,
-                        &true_atm_cond, &est_atm_cond, &new_true_state,
-                        &new_est_state, time_step);
+    int success = euler_maruyama_step(
+        run_params, &imu, vehicle, &gnss, &true_grav, &est_grav, &true_atm_cond,
+        &est_atm_cond, &new_true_state, &new_est_state, time_step);
+    if (!success) {
+      return new_true_state;
+    }
+    // printf("Time is %f seconds\n", new_true_state.t);
     // Update the mass of the vehicle
     update_mass(vehicle, new_true_state.t);
 

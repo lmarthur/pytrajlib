@@ -266,8 +266,8 @@ cartvec get_thrust_vector(state *state, vehicle *vehicle, runparams *run_params,
 /**
  * Get thrust acceleration using Lambert Guidance outside the atmosphere
  */
-cartvec get_thrust_acceleration(state *state, vehicle *vehicle,
-                                runparams *run_params, grav *grav_model) {
+cartvec get_thrust_acc(state *state, vehicle *vehicle, runparams *run_params,
+                       grav *grav_model) {
   cartvec a_thrust;
   if (state->t > vehicle->booster.total_burn_time) {
     return zeros();

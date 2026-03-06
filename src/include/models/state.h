@@ -131,4 +131,50 @@ state init_est_state(runparams *run_params, state true_state) {
   return state;
 }
 
+/**
+ * Add two states together component-wise
+ */
+state add_state(state a, state b) {
+  state result;
+
+  result.t = a.t + b.t;
+  result.position = add(a.position, b.position);
+  result.velocity = add(a.velocity, b.velocity);
+  result.a_lift = add(a.a_lift, b.a_lift);
+  result.a_lift_avail = add(a.a_lift_avail, b.a_lift_avail);
+  result.initial_theta_long_pert =
+      a.initial_theta_long_pert + b.initial_theta_long_pert;
+  result.initial_theta_lat_pert =
+      a.initial_theta_lat_pert + b.initial_theta_lat_pert;
+  result.theta_long = a.theta_long + b.theta_long;
+  result.theta_lat = a.theta_lat + b.theta_lat;
+
+  result.gyro_error.lat = a.gyro_error.lat + b.gyro_error.lat;
+  result.gyro_error.lon = a.gyro_error.lon + b.gyro_error.lon;
+
+  return result;
+}
+
+/**
+ * Multiply each element of the state by a scalar double
+ */
+state smultiply_state(state a, double s) {
+  state result;
+
+  result.t = a.t * s;
+  result.position = smultiply(a.position, s);
+  result.velocity = smultiply(a.velocity, s);
+  result.a_lift = smultiply(a.a_lift, s);
+  result.a_lift_avail = smultiply(a.a_lift_avail, s);
+  result.initial_theta_long_pert = a.initial_theta_long_pert * s;
+  result.initial_theta_lat_pert = a.initial_theta_lat_pert * s;
+  result.theta_long = a.theta_long * s;
+  result.theta_lat = a.theta_lat * s;
+
+  result.gyro_error.lat = a.gyro_error.lat * s;
+  result.gyro_error.lon = a.gyro_error.lon * s;
+
+  return result;
+}
+
 #endif

@@ -134,6 +134,34 @@ cartvec project_and_clip(cartvec e2, cartvec e3, cartvec arr, double max_val) {
   return result;
 }
 
+// int is_reentry(state *state) {
+//   double altitude = get_altitude(state->position);
+//   double angle_v_grav =
+//       acos(dot(state->velocity, smultiply(state->position, -1)) /
+//            (norm(state->velocity) * norm(state->position)));
+//   return (angle_v_grav > 0) && (angle_v_grav < M_PI_2) && (altitude < 1e5);
+
+// }
+
+int is_reentry(state *state) {
+  // Check for small t to account for initial velocity error that might make the
+  // vehicle appear to be below altitude 0 after a single step
+  if (state->t < 10)
+    return 0;
+  double v_mag = norm(state->velocity);
+  if (v_mag < 1e-6)
+    return 0;
+  double altitude = get_altitude(state->position);
+  if (altitude >= 1e5)
+    return 0;
+  double cos_angle = dot(state->velocity, smultiply(state->position, -1)) /
+                     (v_mag * norm(state->position));
+  cos_angle =
+      clip(cos_angle, -1.0, 1.0); // guard against floating-point overshoot
+  double angle_v_grav = acos(cos_angle);
+  return (angle_v_grav > 0) && (angle_v_grav < M_PI_2);
+}
+
 /**
  * Get the time derivative of the available lift acceleration.
  *
@@ -166,21 +194,12 @@ cartvec project_and_clip(cartvec e2, cartvec e3, cartvec arr, double max_val) {
  * acceleration (m/s^3)
  * @return 0 if invalid, 1 if valid
  */
-int get_a_lift_avail_jerk(state *true_state, state *est_state,
-                          runparams *run_params, vehicle *vehicle,
-                          atm_cond *est_atm_cond,
-                          cartvec *d_a_lift_avail_dt_true,
-                          cartvec *d_a_lift_avail_dt_est) {
+cartvec get_a_lift_avail_jerk(state *true_state, state *est_state,
+                              runparams *run_params, vehicle *vehicle,
+                              atm_cond *est_atm_cond) {
   // Determine if vehicle is in reentry phase
-  double altitude = get_altitude(est_state->position);
-  double angle_v_grav =
-      acos(dot(est_state->velocity, smultiply(est_state->position, -1)) /
-           (norm(est_state->velocity) * norm(est_state->position)));
-  int is_reentry =
-      (angle_v_grav > 0) && (angle_v_grav < M_PI_2) && (altitude < 1e5);
-
-  if (!is_reentry) {
-    return 0;
+  if (!is_reentry(est_state)) {
+    return zeros();
   }
 
   // Calculate maximum parameters
@@ -196,7 +215,7 @@ int get_a_lift_avail_jerk(state *true_state, state *est_state,
   int valid_basis =
       get_body_frame(est_state, est_atm_cond, &est_e1, &est_e2, &est_e3);
   if (!valid_basis) {
-    return 0;
+    return zeros();
   }
 
   // Project the commanded acceleration onto the estimated lift basis vectors
@@ -210,21 +229,12 @@ int get_a_lift_avail_jerk(state *true_state, state *est_state,
   cartvec a_avail_err = subtract(a_target, est_state->a_lift_avail);
 
   // Apply proportional gain and clip to jerk limits
-  *d_a_lift_avail_dt_est = smultiply(a_avail_err, run_params->flap_gain);
-  d_a_lift_avail_dt_est->x =
-      clip(d_a_lift_avail_dt_est->x, -jerk_max, jerk_max);
-  d_a_lift_avail_dt_est->y =
-      clip(d_a_lift_avail_dt_est->y, -jerk_max, jerk_max);
-  d_a_lift_avail_dt_est->z =
-      clip(d_a_lift_avail_dt_est->z, -jerk_max, jerk_max);
+  cartvec d_a_lift_avail_dt = smultiply(a_avail_err, run_params->flap_gain);
+  d_a_lift_avail_dt.x = clip(d_a_lift_avail_dt.x, -jerk_max, jerk_max);
+  d_a_lift_avail_dt.y = clip(d_a_lift_avail_dt.y, -jerk_max, jerk_max);
+  d_a_lift_avail_dt.z = clip(d_a_lift_avail_dt.z, -jerk_max, jerk_max);
 
-  // True and estimated available lift are the same because the available lift
-  // encodes the flap positions (no noise in flap position)
-  d_a_lift_avail_dt_true->x = d_a_lift_avail_dt_est->x;
-  d_a_lift_avail_dt_true->y = d_a_lift_avail_dt_est->y;
-  d_a_lift_avail_dt_true->z = d_a_lift_avail_dt_est->z;
-
-  return 1;
+  return d_a_lift_avail_dt;
 }
 
 /**
@@ -244,11 +254,7 @@ cartvec get_a_lift_jerk(state *current_state, runparams *run_params,
                         vehicle *vehicle, atm_cond *atm_cond) {
 
   // Determine if vehicle is in reentry phase
-  double altitude = get_altitude(current_state->position);
-  int is_reentry =
-      (current_state->t > vehicle->booster.total_burn_time) && (altitude < 1e5);
-
-  if (!is_reentry) {
+  if (!is_reentry(current_state)) {
     return zeros();
   }
 
