@@ -192,100 +192,10 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
       time_step = run_params->time_step_main;
     }
 
-    cartvec a_thrust_true;
-    cartvec a_thrust_est;
-    // Update the thrust of the vehicle
-    if (run_params->perfect_boost) {
-      a_thrust_true = get_thrust_acceleration(&new_true_state, vehicle,
-                                              run_params, &true_grav);
-      a_thrust_est = a_thrust_true;
-    } else {
-      a_thrust_est = get_thrust_acceleration(&new_est_state, vehicle,
-                                             run_params, &est_grav);
-      a_thrust_true = a_thrust_est;
-    }
-    // If Lambert Guidance fails, quickly exit
-    if (isnan(a_thrust_true.x)) {
-      return new_true_state;
-    }
-    // Get the gravity acceleration
-    cartvec a_grav_true = update_gravity(&true_grav, &new_true_state);
-    cartvec a_grav_est = update_gravity(&est_grav, &new_est_state);
-
-    // Get the drag acceleration
-    cartvec a_drag_true = get_drag_acceleration(
-        run_params, vehicle, &true_atm_cond, &new_true_state, &step_timer);
-    cartvec a_drag_est = get_drag_acceleration(
-        run_params, vehicle, &est_atm_cond, &new_est_state, &step_timer);
-
-    // If maneuverable RV, use proportional navigation during reentry
-    if (run_params->rv_maneuv == 1 && (angle_v_grav > 0) &&
-        (angle_v_grav < M_PI_2) && (old_altitude < 1e5)) {
-
-      // Get lift jerk
-      cartvec true_d_a_lift_dt =
-          get_a_lift_jerk(&new_true_state, run_params, vehicle, &true_atm_cond);
-      cartvec est_d_a_lift_dt =
-          get_a_lift_jerk(&new_est_state, run_params, vehicle, &est_atm_cond);
-
-      // Update lift
-      cartvec true_d_a_lift = smultiply(true_d_a_lift_dt, time_step);
-      cartvec est_d_a_lift = smultiply(est_d_a_lift_dt, time_step);
-      new_true_state.a_lift = add(new_true_state.a_lift, true_d_a_lift);
-      new_est_state.a_lift = add(new_est_state.a_lift, est_d_a_lift);
-
-      // Get available lift jerk
-      cartvec true_d_a_lift_avail_dt;
-      cartvec est_d_a_lift_avail_dt;
-
-      int valid = get_a_lift_avail_jerk(
-          &new_true_state, &new_est_state, run_params, vehicle, &est_atm_cond,
-          &true_d_a_lift_avail_dt, &est_d_a_lift_avail_dt);
-      if (!valid) {
-        true_d_a_lift_avail_dt = zeros();
-        est_d_a_lift_avail_dt = zeros();
-      }
-
-      // Update available lift
-      new_true_state.a_lift_avail =
-          add(new_true_state.a_lift_avail,
-              smultiply(true_d_a_lift_avail_dt, time_step));
-
-      new_est_state.a_lift_avail =
-          add(new_est_state.a_lift_avail,
-              smultiply(est_d_a_lift_avail_dt, time_step));
-    }
-
-    // Calculate the total acceleration components
-    cartvec a_total_true = add(add(a_grav_true, a_drag_true),
-                               add(new_true_state.a_lift, a_thrust_true));
-    cartvec a_total_est = add(add(a_grav_est, a_drag_est),
-                              add(new_est_state.a_lift, a_thrust_est));
-
-    if (run_params->ins_nav == 1) {
-      // INS Measurement
-      a_total_est = imu_measurement(&imu, &new_true_state, &new_est_state,
-                                    a_total_true, a_grav_true, a_grav_est);
-
-      anglevec gyro_drift = get_gyro_drift(&imu);
-      double gyro_diffusion = get_gyro_diffusion(&imu);
-
-      anglevec drift_update = smultiply_angle(gyro_drift, time_step);
-      anglevec dW = smultiply_angle(gaussian_anglevec(), sqrt(time_step));
-      anglevec diffusion_update = smultiply_angle(dW, gyro_diffusion);
-      new_est_state.gyro_error =
-          add_anglevec(add_anglevec(new_est_state.gyro_error, drift_update),
-                       diffusion_update);
-    }
-
-    if ((run_params->gnss_nav == 1) && (old_altitude > 100e3)) {
-      // GNSS Measurement
-      gnss_measurement(&gnss, &new_true_state, &new_est_state);
-    }
-
-    // Perform a Runge-Kutta step
-    euler_maruyama_step(&new_true_state, a_total_true, time_step);
-    euler_maruyama_step(&new_est_state, a_total_est, time_step);
+    // Perform an integration step
+    euler_maruyama_step(run_params, &imu, vehicle, &gnss, &true_grav, &est_grav,
+                        &true_atm_cond, &est_atm_cond, &new_true_state,
+                        &new_est_state, time_step);
     // Update the mass of the vehicle
     update_mass(vehicle, new_true_state.t);
 
