@@ -6,7 +6,7 @@ TEST(sensors, imu_init) {
   // Initialize the run parameters
   runparams run_params;
   run_params.traj_output = 0;
-  run_params.time_step_main = 1;
+  run_params.time_step_midcourse = 1;
   run_params.time_step_reentry = 1;
   run_params.x_aim = EARTH_RADIUS_M;
   run_params.y_aim = 0;
@@ -49,7 +49,7 @@ TEST(sensors, imu_meas) {
   // // Initialize the run parameters
   runparams run_params;
   run_params.traj_output = 0;
-  run_params.time_step_main = 1;
+  run_params.time_step_midcourse = 1;
   run_params.time_step_reentry = 1;
   run_params.x_aim = EARTH_RADIUS_M;
   run_params.y_aim = 0;

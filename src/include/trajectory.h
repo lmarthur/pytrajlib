@@ -182,22 +182,22 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
 
     atm_cond true_atm_cond =
         get_atm_cond(old_altitude, &exp_atm_model, run_params, &atm_profile);
-    // printf("true_atm_cond: %f, %f, %f\n", true_atm_cond.density,
-    // true_atm_cond.meridional_wind, true_atm_cond.zonal_wind);
     atm_cond est_atm_cond = get_exp_atm_cond(old_altitude, &exp_atm_model);
     // if during boost or outside atmosphere, dt = main time step, else dt =
     // reentry time step go a bit above 100km to 2e5 to ensure accuracy at very
     // close to 100km
-    double angle_v_grav = acos(
-        dot(old_true_state.velocity, smultiply(old_true_state.position, -1)) /
-        (norm(old_true_state.velocity) * norm(old_true_state.position)));
-
-    if (((angle_v_grav > 0) && ((angle_v_grav < M_PI_2)) &&
-         (old_altitude < 1.2e5)) ||
-        (old_true_t <= vehicle->booster.total_burn_time)) {
-      time_step = run_params->time_step_reentry;
+    if (old_true_t <= vehicle->booster.total_burn_time) {
+      time_step = run_params->time_step_boost;
     } else {
-      time_step = run_params->time_step_main;
+      double angle_v_grav = acos(
+          dot(old_true_state.velocity, smultiply(old_true_state.position, -1)) /
+          (norm(old_true_state.velocity) * norm(old_true_state.position)));
+
+      if (fabs(angle_v_grav < M_PI_2) && (old_altitude < 1.2e5)) {
+        time_step = run_params->time_step_reentry;
+      } else {
+        time_step = run_params->time_step_midcourse;
+      }
     }
 
     // Perform an integration step
@@ -221,7 +221,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     if (!success) {
       return new_true_state;
     }
-    // printf("Time is %f seconds\n", new_true_t);
 
     // Check if the vehicle has impacted the Earth
     double new_altitude = get_altitude(new_true_state.position);

@@ -20,7 +20,8 @@ ffibuilder.cdef(
         char *atm_path;
         char *mean_atm_path;
         int num_runs;
-        double time_step_main;
+        double time_step_boost;
+        double time_step_midcourse;
         double time_step_reentry;
         int traj_output;
         double x_aim;
