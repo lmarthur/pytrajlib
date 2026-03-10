@@ -5,7 +5,6 @@ TEST(drag, get_drag_acc) {
   vehicle.rv = init_ballistic_rv();
   vehicle.booster = init_mmiii_booster();
   vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
-  vehicle.current_mass = vehicle.total_mass;
   atm_cond atm_cond;
   state state;
   runparams run_params;

@@ -21,7 +21,6 @@ TEST(maneuverability, rv_time_constant) {
   vehicle.rv = init_swerve_rv();
   vehicle.booster = init_mmiii_booster();
   vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
-  vehicle.current_mass = vehicle.total_mass;
 
   // Initialize the atmospheric conditions
   atm_cond atm_cond;

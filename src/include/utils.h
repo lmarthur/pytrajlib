@@ -25,8 +25,11 @@ typedef struct runparams {
   double z_aim;             // target z-coordinate in meters
   double theta_long; // thrust angle in the longitudinal direction in radians
   double theta_lat;  // thrust angle in the latitudinal direction in radians
+  int integrator; // flag for which numerical integration method to use (0 for
+                  // modified Euler-Maruyama, 1 for SRA3)
 
   int grav_error;      // flag to include gravitational perturbations
+  int include_drag;    // flag to include aerodynamic drag force
   int atm_model;       // flag to select the atmospheric model
   int gnss_nav;        // flag to include GNSS navigation
   int ins_nav;         // flag to include INS navigation
@@ -160,6 +163,7 @@ void print_config(runparams *run_params) {
   printf("Latitudinal thrust angle: %f\n", run_params->theta_lat);
 
   printf("Gravitational perturbations: %d\n", run_params->grav_error);
+  printf("Include drag: %d\n", run_params->include_drag);
   printf("Atmospheric model: %d\n", run_params->atm_model);
   printf("GNSS navigation: %d\n", run_params->gnss_nav);
   printf("INS navigation: %d\n", run_params->ins_nav);

@@ -63,5 +63,5 @@ TEST(vehicle, init_mock_vehicle) {
   REQUIRE_EQ(vehicle.booster.num_stages, 3);
   REQUIRE_EQ(vehicle.booster.total_burn_time, 0);
   REQUIRE_NE(vehicle.total_mass, 0);
-  REQUIRE_EQ(vehicle.total_mass, vehicle.current_mass);
+  REQUIRE_EQ(vehicle.total_mass, get_vehicle_mass(&vehicle, 0));
 }

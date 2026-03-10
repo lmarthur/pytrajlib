@@ -119,7 +119,7 @@ def impact_data_to_df(impact_data, num_runs):
     rows = []
     for i in range(num_runs):
         row_data = dict(
-            t=impact_data.impact_states[i].t,
+            t=impact_data.impact_times[i],
             x=impact_data.impact_states[i].position.x,
             y=impact_data.impact_states[i].position.y,
             z=impact_data.impact_states[i].position.z,
@@ -233,6 +233,7 @@ def run(config=None, plot=False, plot_path=None, **kwargs):
     config_dict["atm_path"] = atm_path
     config_dict["mean_atm_path"] = mean_atm_path
     config_dict["trajectory_path"] = _TEMP_DIR + "/trajectory.txt"
+    config_dict.setdefault("include_drag", 1)
 
     # config_dict['t_des_final'] = tf_des
 
@@ -248,7 +249,6 @@ def run(config=None, plot=False, plot_path=None, **kwargs):
     impact_df = impact_data_to_df(traj.mc_run(rp[0]), config_dict["num_runs"])
     aimpoint = (config_dict["x_aim"], config_dict["y_aim"], config_dict["z_aim"])
     miss_distance = get_miss_distance(impact_df=impact_df, aimpoint=aimpoint)
-    print(f"CEP={np.quantile(miss_distance, 0.5)}")
     # Load trajectory data if plotting
     if plot:
         trajectory_df = pd.read_csv(
@@ -263,6 +263,7 @@ def run(config=None, plot=False, plot_path=None, **kwargs):
         plot_trajectory(trajectory_df, save_path=save_path)
 
     print(impact_df)
+    print(f"CEP={np.quantile(miss_distance, 0.5)}")
     print("Done!")
     _keep_alive.clear()
 

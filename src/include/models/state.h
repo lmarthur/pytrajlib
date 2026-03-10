@@ -8,7 +8,6 @@
 // Define a struct to store the state of a vehicle in 3D space
 typedef struct state {
   // State parameters
-  double t;             // time in seconds since launch
   cartvec position;     // position in meters
   cartvec velocity;     // velocity in meters per second
   cartvec a_lift;       // acceleration due to lift in meters per second squared
@@ -39,7 +38,6 @@ state init_true_state(runparams *run_params) {
     cartvec position_noise = gaussian_cartvec();
     cartvec velocity_noise = gaussian_cartvec();
 
-    state.t = 0;
     state.position.x =
         EARTH_RADIUS_M + run_params->initial_x_error * position_noise.x;
     state.position.y = run_params->initial_pos_error * position_noise.y;
@@ -52,7 +50,6 @@ state init_true_state(runparams *run_params) {
     cartvec position_noise = gaussian_cartvec();
     cartvec velocity_noise = gaussian_cartvec();
 
-    state.t = 0;
     state.position.x =
         EARTH_RADIUS_M + 500e3 + run_params->initial_x_error * position_noise.x;
     state.position.y = run_params->initial_pos_error * position_noise.y;
@@ -96,7 +93,6 @@ state init_est_state(runparams *run_params, state true_state) {
   state state;
   if (run_params->run_type == 0) {
     // printf("Initializing full trajectory run\n");
-    state.t = 0;
     state.position.x = EARTH_RADIUS_M;
     state.position.y = 0;
     state.position.z = 0;
@@ -106,7 +102,6 @@ state init_est_state(runparams *run_params, state true_state) {
   // branch for initializing reentry only run
   if (run_params->run_type == 1) {
     // printf("Initializing reentry only run\n");
-    state.t = 0;
     state.position.x = EARTH_RADIUS_M + 1000e3;
     state.position.y = 0;
     state.position.z = 0;
@@ -137,7 +132,6 @@ state init_est_state(runparams *run_params, state true_state) {
 state add_state(state a, state b) {
   state result;
 
-  result.t = a.t + b.t;
   result.position = add(a.position, b.position);
   result.velocity = add(a.velocity, b.velocity);
   result.a_lift = add(a.a_lift, b.a_lift);
@@ -161,7 +155,6 @@ state add_state(state a, state b) {
 state smultiply_state(state a, double s) {
   state result;
 
-  result.t = a.t * s;
   result.position = smultiply(a.position, s);
   result.velocity = smultiply(a.velocity, s);
   result.a_lift = smultiply(a.a_lift, s);

@@ -26,7 +26,7 @@ cartvec get_drag_acceleration_generic(double t, state current_state,
   }
 
   double a_drag_mag = 0.5 * atm_cond->density * v_rel_mag * v_rel_mag * area *
-                      c_d / vehicle->current_mass;
+                      c_d / get_vehicle_mass(vehicle, t);
 
   cartvec drag = smultiply(v_rel, -a_drag_mag / v_rel_mag);
 
@@ -42,7 +42,7 @@ cartvec get_drag_acceleration_generic(double t, state current_state,
  * @param state Pointer to state updated with drag acceleration
  */
 cartvec get_drag_acc(runparams *run_params, vehicle *vehicle,
-                     atm_cond *atm_cond, state *state) {
+                     atm_cond *atm_cond, state *state, double t) {
 
   cartvec drag;
   // Calculate drag acceleration for realistic maneuvering vehicle
@@ -51,8 +51,8 @@ cartvec get_drag_acc(runparams *run_params, vehicle *vehicle,
     double max_a_exec = get_max_a_exec(run_params, vehicle);
     double aoa = lift_magnitude * (AOA_MAX / max_a_exec * M_PI / 180);
     double c_d = vehicle->rv.c_d_0 + fabs(vehicle->rv.c_d_alpha * aoa);
-    drag = get_drag_acceleration_generic(state->t, *state, atm_cond, vehicle,
-                                         c_d, vehicle->rv.rv_area);
+    drag = get_drag_acceleration_generic(t, *state, atm_cond, vehicle, c_d,
+                                         vehicle->rv.rv_area);
   }
   // Calculate the drag acceleration components for boost phase & reentry of
   // ballistic or perfectly maneuvering reentry vehicle
@@ -67,12 +67,12 @@ cartvec get_drag_acc(runparams *run_params, vehicle *vehicle,
     // Drag coefficient varies with angle of attack
     double c_d = vehicle->rv.c_d_0 + fabs(vehicle->rv.c_d_alpha * aoa);
 
-    if (state->t < vehicle->booster.total_burn_time) {
-      drag = get_drag_acceleration_generic(state->t, *state, atm_cond, vehicle,
-                                           c_d, vehicle->booster.area);
+    if (t < vehicle->booster.total_burn_time) {
+      drag = get_drag_acceleration_generic(t, *state, atm_cond, vehicle, c_d,
+                                           vehicle->booster.area);
     } else {
-      drag = get_drag_acceleration_generic(state->t, *state, atm_cond, vehicle,
-                                           c_d, vehicle->rv.rv_area);
+      drag = get_drag_acceleration_generic(t, *state, atm_cond, vehicle, c_d,
+                                           vehicle->rv.rv_area);
     }
   }
   return drag;

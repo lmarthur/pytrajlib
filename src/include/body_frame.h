@@ -40,8 +40,16 @@ int get_body_frame(state *current_state, atm_cond *atm_cond, cartvec *e_1,
 
   // If the relative velocity is zero, we cannot define a local coordinate
   // system
+
   if (v_rel_mag < 1e-6) {
-    return 0;
+    // The velocity at start is zero, but we know the orientation
+    if (get_altitude(current_state->position) < 1e-6) {
+      v_rel.x = 1;
+      v_rel.y = 0;
+      v_rel.z = 0;
+    } else {
+      return 0;
+    }
   }
 
   // e_1 is the unit vector in direction of relative velocity

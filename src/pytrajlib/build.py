@@ -28,8 +28,10 @@ ffibuilder.cdef(
         double z_aim;
         double theta_long;
         double theta_lat;
+        int integrator;
 
         int grav_error;
+        int include_drag;
         int atm_model;
         int gnss_nav;
         int ins_nav;
@@ -72,7 +74,6 @@ ffibuilder.cdef(
     } anglevec;
 
     typedef struct state {
-        double t;
         cartvec position;
         cartvec velocity;
         cartvec a_lift;
@@ -86,6 +87,7 @@ ffibuilder.cdef(
 
     typedef struct impact_data {
         state impact_states[1000];
+        double impact_times[1000];
     } impact_data;
 
     impact_data mc_run(runparams run_params);

@@ -66,7 +66,7 @@ cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
   cartvec e3;
   int valid = get_body_frame(true_state, NULL, &e1, &e2, &e3);
   if (!valid) {
-    printf("Invalid body frame\n");
+    printf("Warning: Invalid body frame\n");
   }
 
   // Change to body-centric basis

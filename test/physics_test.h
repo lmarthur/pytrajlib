@@ -13,7 +13,6 @@ TEST(physics, update_mass) {
   double time_step = 1;
 
   vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
-  vehicle.current_mass = vehicle.total_mass;
   state.t = 0;
 
   // Loop through the burn time of the booster
@@ -23,18 +22,18 @@ TEST(physics, update_mass) {
     update_mass(&vehicle, state.t);
 
     // Check that mass is always positive
-    REQUIRE_GT(vehicle.current_mass, 0);
+    REQUIRE_GT(get_vehicle_mass(&vehicle, state.t), 0);
 
     // First time step
     if (state.t == time_step) {
-      REQUIRE_EQ(vehicle.current_mass,
+      REQUIRE_EQ(get_vehicle_mass(&vehicle, state.t),
                  vehicle.total_mass -
                      time_step * vehicle.booster.fuel_burn_rate[0]);
     }
 
     // First stage separation
     if (state.t == vehicle.booster.burn_time[0] + time_step) {
-      REQUIRE_EQ(vehicle.current_mass,
+      REQUIRE_EQ(get_vehicle_mass(&vehicle, state.t),
                  vehicle.total_mass - vehicle.booster.wet_mass[0] -
                      time_step * vehicle.booster.fuel_burn_rate[1]);
     }
@@ -42,7 +41,7 @@ TEST(physics, update_mass) {
     // Second stage separation
     if (state.t == vehicle.booster.burn_time[0] + vehicle.booster.burn_time[1] +
                        time_step) {
-      REQUIRE_EQ(vehicle.current_mass,
+      REQUIRE_EQ(get_vehicle_mass(&vehicle, state.t),
                  vehicle.total_mass - vehicle.booster.wet_mass[0] -
                      vehicle.booster.wet_mass[1] -
                      time_step * vehicle.booster.fuel_burn_rate[2]);
@@ -50,7 +49,7 @@ TEST(physics, update_mass) {
 
     // After separation
     if (state.t == vehicle.booster.total_burn_time + time_step) {
-      REQUIRE_EQ(vehicle.current_mass, vehicle.rv.rv_mass);
+      REQUIRE_EQ(get_vehicle_mass(&vehicle, state.t), vehicle.rv.rv_mass);
     }
   }
 }

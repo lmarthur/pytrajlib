@@ -8,14 +8,13 @@
 #include "../models/vehicle.h"
 #include "../utils.h"
 
-int get_current_stage(state *state, vehicle *vehicle) {
+int get_current_stage(double t, vehicle *vehicle) {
   // Get the current stage
   int stage = 0;
-  if (state->t > vehicle->booster.burn_time[0]) {
+  if (t > vehicle->booster.burn_time[0]) {
     stage = 1;
   }
-  if (state->t >
-      vehicle->booster.burn_time[0] + vehicle->booster.burn_time[1]) {
+  if (t > vehicle->booster.burn_time[0] + vehicle->booster.burn_time[1]) {
     stage = 2;
   }
   return stage;
@@ -24,25 +23,24 @@ int get_current_stage(state *state, vehicle *vehicle) {
 /**
  * Calculate remaining delta-v by summing the delta-v of each stage
  */
-double remaining_delta_v(state *state, vehicle *vehicle) {
+double remaining_delta_v(state *state, vehicle *vehicle, double t) {
   double burn_time_in_stage;
   // Burn time in third stage
-  if (state->t >
-      vehicle->booster.burn_time[0] + vehicle->booster.burn_time[1]) {
-    burn_time_in_stage = state->t - (vehicle->booster.burn_time[0] +
-                                     vehicle->booster.burn_time[1]);
+  if (t > vehicle->booster.burn_time[0] + vehicle->booster.burn_time[1]) {
+    burn_time_in_stage =
+        t - (vehicle->booster.burn_time[0] + vehicle->booster.burn_time[1]);
   }
   // Burn time in second stage
-  else if (state->t > vehicle->booster.burn_time[0]) {
-    burn_time_in_stage = state->t - vehicle->booster.burn_time[0];
+  else if (t > vehicle->booster.burn_time[0]) {
+    burn_time_in_stage = t - vehicle->booster.burn_time[0];
   }
   // Burn time in first stage
   else {
-    burn_time_in_stage = state->t;
+    burn_time_in_stage = t;
   }
 
-  int current_stage = get_current_stage(state, vehicle);
-  double mass_start_of_stage = vehicle->current_mass;
+  int current_stage = get_current_stage(t, vehicle);
+  double mass_start_of_stage = get_vehicle_mass(vehicle, t);
   double burned_mass =
       vehicle->booster.fuel_burn_rate[current_stage] * burn_time_in_stage;
   double remaining_fuel_mass =
@@ -215,8 +213,9 @@ cartvec get_lambert_velocity_vector(cartvec position, cartvec aimpoint,
  *
  * See Zarchan (2016) Ch 13
  */
-double thrust_offset(state *state, vehicle *vehicle, cartvec v_to_gain) {
-  double dv = remaining_delta_v(state, vehicle);
+double thrust_offset(state *state, vehicle *vehicle, cartvec v_to_gain,
+                     double t) {
+  double dv = remaining_delta_v(state, vehicle, t);
   double vtg = norm(v_to_gain);
   double theta = 0;
   if (dv > vtg) {
@@ -225,30 +224,29 @@ double thrust_offset(state *state, vehicle *vehicle, cartvec v_to_gain) {
   return theta;
 }
 
-double get_a_thrust_magnitude(state *state, vehicle *vehicle) {
-  int stage = get_current_stage(state, vehicle);
+double get_a_thrust_magnitude(state *state, vehicle *vehicle, double t) {
+  int stage = get_current_stage(t, vehicle);
 
   // Calculate the thrust acceleration components
   double a_thrust_mag = vehicle->booster.isp0[stage] *
                         vehicle->booster.fuel_burn_rate[stage] /
-                        vehicle->current_mass;
+                        get_vehicle_mass(vehicle, t);
   return a_thrust_mag;
 }
 
 cartvec get_thrust_vector(state *state, vehicle *vehicle, runparams *run_params,
-                          grav *grav_model) {
+                          grav *grav_model, double t) {
   cartvec aimpoint = {run_params->x_aim, run_params->y_aim, run_params->z_aim};
 
   cartvec lambert_velocity = get_lambert_velocity_vector(
-      state->position, aimpoint, run_params->t_des_final - state->t,
-      grav_model);
+      state->position, aimpoint, run_params->t_des_final - t, grav_model);
   cartvec v_to_gain = subtract(lambert_velocity, state->velocity);
   // unit vector in direction of v to gain
   cartvec v_to_gain_hat = sdivide(v_to_gain, norm(v_to_gain));
 
   // GEM implemented by directing thrust at an angle theta from v_to_gain in the
   // transfer plane
-  double theta = thrust_offset(state, vehicle, v_to_gain);
+  double theta = thrust_offset(state, vehicle, v_to_gain, t);
 
   // Vector orthogonal to position and aimpoint that should be rotated around
   cartvec u = cross(state->position, aimpoint);
@@ -257,7 +255,7 @@ cartvec get_thrust_vector(state *state, vehicle *vehicle, runparams *run_params,
   // Unit vector in direction of thrust
   cartvec thrust_hat = rotate(v_to_gain_hat, uhat, -theta);
 
-  double a_thrust_mag = get_a_thrust_magnitude(state, vehicle);
+  double a_thrust_mag = get_a_thrust_magnitude(state, vehicle, t);
 
   cartvec thrust = smultiply(thrust_hat, a_thrust_mag);
   return thrust;
@@ -267,15 +265,15 @@ cartvec get_thrust_vector(state *state, vehicle *vehicle, runparams *run_params,
  * Get thrust acceleration using Lambert Guidance outside the atmosphere
  */
 cartvec get_thrust_acc(state *state, vehicle *vehicle, runparams *run_params,
-                       grav *grav_model) {
+                       grav *grav_model, double t) {
   cartvec a_thrust;
-  if (state->t > vehicle->booster.total_burn_time) {
+  if (t > vehicle->booster.total_burn_time) {
     return zeros();
   }
 
-  double a_thrust_mag = get_a_thrust_magnitude(state, vehicle);
+  double a_thrust_mag = get_a_thrust_magnitude(state, vehicle, t);
   // Vertical thrust for the beginning of the flight
-  if (state->t < run_params->t_vert_boost) {
+  if (t < run_params->t_vert_boost) {
     a_thrust.x = a_thrust_mag;
     a_thrust.y = 0;
     a_thrust.z = 0;
@@ -290,7 +288,7 @@ cartvec get_thrust_acc(state *state, vehicle *vehicle, runparams *run_params,
     return a_thrust;
   }
 
-  a_thrust = get_thrust_vector(state, vehicle, run_params, grav_model);
+  a_thrust = get_thrust_vector(state, vehicle, run_params, grav_model, t);
   return a_thrust;
 }
 #endif

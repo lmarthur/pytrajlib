@@ -24,6 +24,7 @@
 typedef struct impact_data {
   // Impact data
   state impact_states[MAX_RUNS];
+  double impact_times[MAX_RUNS];
 
 } impact_data;
 
@@ -34,7 +35,8 @@ typedef struct impact_data {
  * @param state_1 Pointer to post-impact state
  * @return Interpolated impact state
  */
-state impact_linterp(state *state_0, state *state_1) {
+state impact_linterp(state *state_0, state *state_1, double t0, double t1,
+                     double *impact_t) {
 
   // Calculate the interpolation factor
   double altitude_0 = norm(state_0->position) - EARTH_RADIUS_M;
@@ -43,7 +45,7 @@ state impact_linterp(state *state_0, state *state_1) {
 
   // Perform the interpolation
   state impact_state = *state_0;
-  impact_state.t = state_0->t + interp_factor * (state_1->t - state_0->t);
+  *impact_t = t0 + interp_factor * (t1 - t0);
   impact_state.position = add(
       state_0->position,
       smultiply(subtract(state_1->position, state_0->position), interp_factor));
@@ -69,7 +71,7 @@ void output_impact(FILE *impact_file, impact_data *impact_data, int num_runs) {
   // Iterate through the number of runs and output the impact data
   for (int i = 0; i < num_runs; i++) {
     fprintf(impact_file, "%f, %f, %f, %f, %f, %f, %f\n",
-            impact_data->impact_states[i].t,
+            impact_data->impact_times[i],
             impact_data->impact_states[i].position.x,
             impact_data->impact_states[i].position.y,
             impact_data->impact_states[i].position.z,
@@ -90,7 +92,8 @@ void output_impact(FILE *impact_file, impact_data *impact_data, int num_runs) {
  * @param vehicle Pointer to vehicle model/state
  * @return Final impact state
  */
-state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
+state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
+          double *impact_time) {
 
   // Initialize the variables and structures
   int max_steps = 10000000;
@@ -112,9 +115,13 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
 
   state old_true_state = *initial_state;
   state new_true_state = *initial_state;
+  double old_true_t = 0;
+  double new_true_t = 0;
 
   state old_est_state = init_est_state(run_params, old_true_state);
   state new_est_state = init_est_state(run_params, old_true_state);
+  double old_est_t = 0;
+  double new_est_t = 0;
 
   int traj_output = run_params->traj_output;
   double time_step;
@@ -141,15 +148,16 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
         "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
         "%g, %g, %g, %g, %g, %g"
         "\n",
-        old_true_state.t, vehicle->current_mass, old_true_state.position.x,
-        old_true_state.position.y, old_true_state.position.z,
-        old_true_state.velocity.x, old_true_state.velocity.y,
-        old_true_state.velocity.z, old_est_state.position.x,
-        old_est_state.position.y, old_est_state.position.z,
-        old_est_state.velocity.x, old_est_state.velocity.y,
-        old_est_state.velocity.z, old_true_state.a_lift.x,
-        old_true_state.a_lift.y, old_true_state.a_lift.z,
-        old_est_state.a_lift.x, old_est_state.a_lift.y, old_est_state.a_lift.z);
+        old_true_t, get_vehicle_mass(vehicle, old_true_t),
+        old_true_state.position.x, old_true_state.position.y,
+        old_true_state.position.z, old_true_state.velocity.x,
+        old_true_state.velocity.y, old_true_state.velocity.z,
+        old_est_state.position.x, old_est_state.position.y,
+        old_est_state.position.z, old_est_state.velocity.x,
+        old_est_state.velocity.y, old_est_state.velocity.z,
+        old_true_state.a_lift.x, old_true_state.a_lift.y,
+        old_true_state.a_lift.z, old_est_state.a_lift.x, old_est_state.a_lift.y,
+        old_est_state.a_lift.z);
   }
 
   // Variables for step function anomaly (only used for run_type = 1)
@@ -162,7 +170,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
     // At the end of boost phase, sample a new atm profile for EarthGram
     // so boost and reentry don't use the same profile
     if ((run_params->atm_model == 2) &&
-        (old_true_state.t > vehicle->booster.total_burn_time) &&
+        (old_true_t > vehicle->booster.total_burn_time) &&
         (sampled_new_profile == 0)) {
       int atm_profile_num = (int)ran_flat(0, 100);
       atm_profile = parse_atm("input/atmprofiles.txt", atm_profile_num);
@@ -186,33 +194,50 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
 
     if (((angle_v_grav > 0) && ((angle_v_grav < M_PI_2)) &&
          (old_altitude < 1.2e5)) ||
-        (old_true_state.t <= vehicle->booster.total_burn_time)) {
+        (old_true_t <= vehicle->booster.total_burn_time)) {
       time_step = run_params->time_step_reentry;
     } else {
       time_step = run_params->time_step_main;
     }
 
     // Perform an integration step
-    int success = euler_maruyama_step(
-        run_params, &imu, vehicle, &gnss, &true_grav, &est_grav, &true_atm_cond,
-        &est_atm_cond, &new_true_state, &new_est_state, time_step);
+    // GNSS Measurement
+    if ((run_params->gnss_nav == 1) &&
+        (get_altitude(new_true_state.position) > 100e3)) {
+      gnss_measurement(&gnss, &new_true_state, &new_est_state);
+    }
+    int success;
+    if (run_params->integrator == 0) {
+      success = euler_maruyama_step(run_params, &imu, vehicle, &true_grav,
+                                    &est_grav, &true_atm_cond, &est_atm_cond,
+                                    &new_true_state, &new_est_state,
+                                    &new_true_t, &new_est_t, time_step);
+    } else {
+      success = sra3_step(run_params, &imu, vehicle, &true_grav, &est_grav,
+                          &true_atm_cond, &est_atm_cond, &new_true_state,
+                          &new_est_state, &new_true_t, &new_est_t, time_step);
+    }
+
     if (!success) {
       return new_true_state;
     }
-    // printf("Time is %f seconds\n", new_true_state.t);
-    // Update the mass of the vehicle
-    update_mass(vehicle, new_true_state.t);
+    // printf("Time is %f seconds\n", new_true_t);
 
     // Check if the vehicle has impacted the Earth
     double new_altitude = get_altitude(new_true_state.position);
     if (new_altitude < 0) {
-      state true_final_state = impact_linterp(&old_true_state, &new_true_state);
-      state est_final_state = impact_linterp(&old_est_state, &new_est_state);
+      double true_final_t;
+      double est_final_t;
+      state true_final_state =
+          impact_linterp(&old_true_state, &new_true_state, old_true_t,
+                         new_true_t, &true_final_t);
+      state est_final_state = impact_linterp(
+          &old_est_state, &new_est_state, old_est_t, new_est_t, &est_final_t);
 
       // Add coriolis effect based on the latitude and the impact time error
       double lat = ran_flat(-M_PI / 2, M_PI / 2);
       double lon = ran_flat(-M_PI, M_PI);
-      double time_error = true_final_state.t - est_final_state.t;
+      double time_error = true_final_t - est_final_t;
       double rot_speed = 464 * cos(lat);
       double coriolis = rot_speed * time_error;
 
@@ -237,7 +262,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
                 "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
                 "%g, %g, %g, %g, %g"
                 "\n",
-                true_final_state.t, vehicle->current_mass,
+                true_final_t, get_vehicle_mass(vehicle, true_final_t),
                 true_final_state.position.x, true_final_state.position.y,
                 true_final_state.position.z, true_final_state.velocity.x,
                 true_final_state.velocity.y, true_final_state.velocity.z,
@@ -250,6 +275,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
         fclose(traj_file);
       }
 
+      *impact_time = true_final_t;
+
       return true_final_state;
     }
 
@@ -259,21 +286,23 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
           traj_file,
           "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
           "%g, %g, %g\n",
-          new_true_state.t, vehicle->current_mass, new_true_state.position.x,
-          new_true_state.position.y, new_true_state.position.z,
-          new_true_state.velocity.x, new_true_state.velocity.y,
-          new_true_state.velocity.z, new_est_state.position.x,
-          new_est_state.position.y, new_est_state.position.z,
-          new_est_state.velocity.x, new_est_state.velocity.y,
-          new_est_state.velocity.z, old_true_state.a_lift.x,
-          old_true_state.a_lift.y, old_true_state.a_lift.z,
-          old_est_state.a_lift.x, old_est_state.a_lift.y,
-          old_est_state.a_lift.z);
+          new_true_t, get_vehicle_mass(vehicle, new_true_t),
+          new_true_state.position.x, new_true_state.position.y,
+          new_true_state.position.z, new_true_state.velocity.x,
+          new_true_state.velocity.y, new_true_state.velocity.z,
+          new_est_state.position.x, new_est_state.position.y,
+          new_est_state.position.z, new_est_state.velocity.x,
+          new_est_state.velocity.y, new_est_state.velocity.z,
+          old_true_state.a_lift.x, old_true_state.a_lift.y,
+          old_true_state.a_lift.z, old_est_state.a_lift.x,
+          old_est_state.a_lift.y, old_est_state.a_lift.z);
     }
 
     // Update the old state
     old_true_state = new_true_state;
     old_est_state = new_est_state;
+    old_true_t = new_true_t;
+    old_est_t = new_est_t;
   }
 
   printf("Warning: Maximum number of steps reached with no impact\n");
@@ -284,6 +313,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle) {
 
   // Only save full trajectory on the first run.
   run_params->traj_output = 0;
+  *impact_time = new_true_t;
   return new_true_state;
 }
 
@@ -340,8 +370,8 @@ impact_data mc_run(runparams run_params) {
 
     state initial_true_state = init_true_state(&run_params);
 
-    impact_data.impact_states[i] =
-        fly(&run_params, &initial_true_state, &vehicle);
+    impact_data.impact_states[i] = fly(&run_params, &initial_true_state,
+                                       &vehicle, &impact_data.impact_times[i]);
 
 #ifdef FROM_PYTHON
     int five_percent = (int)(num_runs / 20);

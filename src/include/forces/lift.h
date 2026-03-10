@@ -143,10 +143,10 @@ cartvec project_and_clip(cartvec e2, cartvec e3, cartvec arr, double max_val) {
 
 // }
 
-int is_reentry(state *state) {
+int is_reentry(state *state, double t) {
   // Check for small t to account for initial velocity error that might make the
   // vehicle appear to be below altitude 0 after a single step
-  if (state->t < 10)
+  if (t < 10)
     return 0;
   double v_mag = norm(state->velocity);
   if (v_mag < 1e-6)
@@ -196,9 +196,9 @@ int is_reentry(state *state) {
  */
 cartvec get_a_lift_avail_jerk(state *true_state, state *est_state,
                               runparams *run_params, vehicle *vehicle,
-                              atm_cond *est_atm_cond) {
+                              atm_cond *est_atm_cond, double est_t) {
   // Determine if vehicle is in reentry phase
-  if (!is_reentry(est_state)) {
+  if (!is_reentry(est_state, est_t)) {
     return zeros();
   }
 
@@ -251,10 +251,10 @@ cartvec get_a_lift_avail_jerk(state *true_state, state *est_state,
  * lift basis cannot be calculated.
  */
 cartvec get_a_lift_jerk(state *current_state, runparams *run_params,
-                        vehicle *vehicle, atm_cond *atm_cond) {
+                        vehicle *vehicle, atm_cond *atm_cond, double t) {
 
   // Determine if vehicle is in reentry phase
-  if (!is_reentry(current_state)) {
+  if (!is_reentry(current_state, t)) {
     return zeros();
   }
 
