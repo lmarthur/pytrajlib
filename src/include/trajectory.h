@@ -60,6 +60,60 @@ state impact_linterp(state *state_0, state *state_1, double t0, double t1,
 }
 
 /**
+ * Computes interpolated impact states and applies coriolis/aimpoint correction.
+ *
+ * @param old_true_state Pointer to pre-impact true state
+ * @param true_state Pointer to post-impact true state
+ * @param old_true_t Pre-impact true time
+ * @param true_t Post-impact true time
+ * @param old_est_state Pointer to pre-impact estimated state
+ * @param est_state Pointer to post-impact estimated state
+ * @param old_est_t Pre-impact estimated time
+ * @param est_t Post-impact estimated time
+ * @param run_params Pointer to run configuration parameters
+ * @param true_final_t Output interpolated true impact time
+ * @param est_final_state Output interpolated estimated impact state
+ * @return Corrected true impact state
+ */
+state impact_with_coriolis(state *old_true_state, state *true_state,
+                           double old_true_t, double true_t,
+                           state *old_est_state, state *est_state,
+                           double old_est_t, double est_t,
+                           runparams *run_params, double *true_final_t,
+                           state *est_final_state) {
+  double est_final_t;
+  state true_final_state = impact_linterp(old_true_state, true_state,
+                                          old_true_t, true_t, true_final_t);
+  *est_final_state =
+      impact_linterp(old_est_state, est_state, old_est_t, est_t, &est_final_t);
+
+  // Add coriolis effect based on the latitude and the impact time error
+  double lat = ran_flat(-M_PI / 2, M_PI / 2);
+  double lon = ran_flat(-M_PI, M_PI);
+  double time_error = *true_final_t - est_final_t;
+  double rot_speed = 464 * cos(lat);
+  double coriolis = rot_speed * time_error;
+
+  // based on the coriolis effect, update the final state x and y
+  // This might seem like a bug, but I promise it's just clever
+  // This replicates flying in a random direction, not just along the
+  // equator
+  true_final_state.position.x =
+      true_final_state.position.x - coriolis * sin(lon) * cos(lat);
+  true_final_state.position.y =
+      true_final_state.position.y + coriolis * cos(lon) * cos(lat);
+  true_final_state.position.z =
+      true_final_state.position.z + coriolis * sin(lat);
+  if (run_params->rv_maneuv == 2) {
+    // If perfect rv maneuver, update the final position
+    true_final_state.position =
+        subtract(true_final_state.position, est_final_state->position);
+  }
+
+  return true_final_state;
+}
+
+/**
  * Write impact state data for all Monte Carlo runs to a file stream.
  *
  * @param impact_file Output file stream
@@ -139,18 +193,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
         "true_a_lift_x, true_a_lift_y, "
         "true_a_lift_z, est_a_lift_x, est_a_lift_y, est_a_lift_z \n");
     // Write the initial state to the trajectory file
-    fprintf(
-        traj_file,
-        "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-        "%g, %g, %g, %g, %g, %g"
-        "\n",
-        true_t, get_vehicle_mass(vehicle, true_t), true_state.position.x,
-        true_state.position.y, true_state.position.z, true_state.velocity.x,
-        true_state.velocity.y, true_state.velocity.z, est_state.position.x,
-        est_state.position.y, est_state.position.z, est_state.velocity.x,
-        est_state.velocity.y, est_state.velocity.z, true_state.a_lift.x,
-        true_state.a_lift.y, true_state.a_lift.z, est_state.a_lift.x,
-        est_state.a_lift.y, est_state.a_lift.z);
+    write_trajectory_state(traj_file, true_t, get_vehicle_mass(vehicle, true_t),
+                           &true_state, &est_state);
   }
 
   // Variables for step function anomaly (only used for run_type = 1)
@@ -224,50 +268,16 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     double new_altitude = get_altitude(true_state.position);
     if (new_altitude < 0) {
       double true_final_t;
-      double est_final_t;
-      state true_final_state = impact_linterp(
-          &old_true_state, &true_state, old_true_t, true_t, &true_final_t);
-      state est_final_state = impact_linterp(&old_est_state, &est_state,
-                                             old_est_t, est_t, &est_final_t);
-
-      // Add coriolis effect based on the latitude and the impact time error
-      double lat = ran_flat(-M_PI / 2, M_PI / 2);
-      double lon = ran_flat(-M_PI, M_PI);
-      double time_error = true_final_t - est_final_t;
-      double rot_speed = 464 * cos(lat);
-      double coriolis = rot_speed * time_error;
-
-      // based on the coriolis effect, update the final state x and y
-      // This might seem like a bug, but I promise it's just clever
-      // This replicates flying in a random direction, not just along the
-      // equator
-      true_final_state.position.x =
-          true_final_state.position.x - coriolis * sin(lon) * cos(lat);
-      true_final_state.position.y =
-          true_final_state.position.y + coriolis * cos(lon) * cos(lat);
-      true_final_state.position.z =
-          true_final_state.position.z + coriolis * sin(lat);
-      if (run_params->rv_maneuv == 2) {
-        // If perfect rv maneuver, update the final position
-        true_final_state.position =
-            subtract(true_final_state.position, est_final_state.position);
-      }
+      state est_final_state;
+      state true_final_state =
+          impact_with_coriolis(&old_true_state, &true_state, old_true_t, true_t,
+                               &old_est_state, &est_state, old_est_t, est_t,
+                               run_params, &true_final_t, &est_final_state);
       if (traj_output == 1) {
         // Write the final state to the trajectory file
-        fprintf(traj_file,
-                "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-                "%g, %g, %g, %g, %g"
-                "\n",
-                true_final_t, get_vehicle_mass(vehicle, true_final_t),
-                true_final_state.position.x, true_final_state.position.y,
-                true_final_state.position.z, true_final_state.velocity.x,
-                true_final_state.velocity.y, true_final_state.velocity.z,
-                est_final_state.position.x, est_final_state.position.y,
-                est_final_state.position.z, est_final_state.velocity.x,
-                est_final_state.velocity.y, est_final_state.velocity.z,
-                true_final_state.a_lift.x, true_final_state.a_lift.y,
-                true_final_state.a_lift.z, est_final_state.a_lift.x,
-                est_final_state.a_lift.y, est_final_state.a_lift.z);
+        write_trajectory_state(traj_file, true_final_t,
+                               get_vehicle_mass(vehicle, true_final_t),
+                               &true_final_state, &est_final_state);
         fclose(traj_file);
       }
 
@@ -278,17 +288,9 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
 
     // output the trajectory data
     if (traj_output == 1) {
-      fprintf(
-          traj_file,
-          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-          "%g, %g, %g\n",
-          true_t, get_vehicle_mass(vehicle, true_t), true_state.position.x,
-          true_state.position.y, true_state.position.z, true_state.velocity.x,
-          true_state.velocity.y, true_state.velocity.z, est_state.position.x,
-          est_state.position.y, est_state.position.z, est_state.velocity.x,
-          est_state.velocity.y, est_state.velocity.z, true_state.a_lift.x,
-          true_state.a_lift.y, true_state.a_lift.z, est_state.a_lift.x,
-          est_state.a_lift.y, est_state.a_lift.z);
+      write_trajectory_state(traj_file, true_t,
+                             get_vehicle_mass(vehicle, true_t), &true_state,
+                             &est_state);
     }
   }
 
