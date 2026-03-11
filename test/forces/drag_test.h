@@ -9,16 +9,11 @@ TEST(drag, get_drag_acc) {
   state state;
   runparams run_params;
   run_params.grav_error = 0;
-  run_params.run_type = 0;
   run_params.cl_pert =
       0; // Set to zero for this test, as we are only testing drag
 
   grav grav = init_grav(&run_params);
   atm_model atm_model = init_exp_atm(&run_params);
-
-  // Step function anomaly timer (unused in this test, but required for the
-  // function signature)
-  double step_timer = 0; // Timer for the step function
 
   atm_cond = get_exp_atm_cond(0, &atm_model);
 
@@ -28,7 +23,7 @@ TEST(drag, get_drag_acc) {
   state.position.z = 0;
   state.velocity = zeros();
 
-  get_drag_acc(&run_params, &vehicle, &atm_cond, &state, &step_timer);
+  get_drag_acc(&run_params, &vehicle, &atm_cond, &state, 1.0);
 
   // Check that the drag acceleration components are zero
   REQUIRE_LT(state.a_drag.x, 1e-6);
@@ -43,7 +38,7 @@ TEST(drag, get_drag_acc) {
   state.velocity.y = 1;
   state.velocity.z = 1;
 
-  get_drag_acc(&run_params, &vehicle, &atm_cond, &state, &step_timer);
+  get_drag_acc(&run_params, &vehicle, &atm_cond, &state, 1.0);
 
   REQUIRE_LT(state.a_drag.x, 1e-6);
   REQUIRE_LT(state.a_drag.y, 1e-6);
@@ -57,7 +52,7 @@ TEST(drag, get_drag_acc) {
   state.velocity.y = 1;
   state.velocity.z = 1;
 
-  get_drag_acc(&run_params, &vehicle, &atm_cond, &state, &step_timer);
+  get_drag_acc(&run_params, &vehicle, &atm_cond, &state, 1.0);
 
   REQUIRE_NE(state.a_drag.x, 0);
   REQUIRE_NE(state.a_drag.y, 0);
@@ -72,7 +67,7 @@ TEST(drag, get_drag_acc) {
   state.velocity.y = 0;
   state.velocity.z = 0;
 
-  get_drag_acc(&run_params, &vehicle, &atm_cond, &state, &step_timer);
+  get_drag_acc(&run_params, &vehicle, &atm_cond, &state, 1.0);
 
   REQUIRE_LT(state.a_drag.x, 0);
   REQUIRE_EQ(state.a_drag.y, 0);

@@ -33,31 +33,15 @@ typedef struct state {
 state init_true_state(runparams *run_params) {
 
   state state;
-  // branch for initializing full trajectory run
-  if (run_params->run_type == 0) {
-    cartvec position_noise = gaussian_cartvec();
-    cartvec velocity_noise = gaussian_cartvec();
+  cartvec position_noise = gaussian_cartvec();
+  cartvec velocity_noise = gaussian_cartvec();
 
-    state.position.x =
-        EARTH_RADIUS_M + run_params->initial_x_error * position_noise.x;
-    state.position.y = run_params->initial_pos_error * position_noise.y;
-    state.position.z = run_params->initial_pos_error * position_noise.z;
+  state.position.x =
+      EARTH_RADIUS_M + run_params->initial_x_error * position_noise.x;
+  state.position.y = run_params->initial_pos_error * position_noise.y;
+  state.position.z = run_params->initial_pos_error * position_noise.z;
 
-    state.velocity = smultiply(velocity_noise, run_params->initial_vel_error);
-  }
-  // branch for initializing reentry only run
-  if (run_params->run_type == 1) {
-    cartvec position_noise = gaussian_cartvec();
-    cartvec velocity_noise = gaussian_cartvec();
-
-    state.position.x =
-        EARTH_RADIUS_M + 500e3 + run_params->initial_x_error * position_noise.x;
-    state.position.y = run_params->initial_pos_error * position_noise.y;
-    state.position.z = run_params->initial_pos_error * position_noise.z;
-
-    state.velocity = smultiply(velocity_noise, run_params->initial_vel_error);
-    state.velocity.x -= run_params->reentry_vel;
-  }
+  state.velocity = smultiply(velocity_noise, run_params->initial_vel_error);
 
   double initial_rot_pert = run_params->initial_angle_error * ran_gaussian(1);
 
@@ -91,25 +75,12 @@ state init_true_state(runparams *run_params) {
 state init_est_state(runparams *run_params, state true_state) {
 
   state state;
-  if (run_params->run_type == 0) {
-    // printf("Initializing full trajectory run\n");
-    state.position.x = EARTH_RADIUS_M;
-    state.position.y = 0;
-    state.position.z = 0;
+  // Initialize for full trajectory run
+  state.position.x = EARTH_RADIUS_M;
+  state.position.y = 0;
+  state.position.z = 0;
 
-    state.velocity = zeros();
-  }
-  // branch for initializing reentry only run
-  if (run_params->run_type == 1) {
-    // printf("Initializing reentry only run\n");
-    state.position.x = EARTH_RADIUS_M + 1000e3;
-    state.position.y = 0;
-    state.position.z = 0;
-
-    state.velocity.x = -run_params->reentry_vel;
-    state.velocity.y = 0;
-    state.velocity.z = 0;
-  }
+  state.velocity = zeros();
 
   state.theta_long = run_params->theta_long;
   state.theta_lat = run_params->theta_lat;

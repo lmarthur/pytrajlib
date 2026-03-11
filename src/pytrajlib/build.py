@@ -14,7 +14,6 @@ ffibuilder.cdef(
 
     typedef struct runparams {
         char *run_name;
-        int run_type;
         char *output_path;
         char *trajectory_path;
         char *atm_path;

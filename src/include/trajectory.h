@@ -60,6 +60,30 @@ state impact_linterp(state *state_0, state *state_1, double t0, double t1,
 }
 
 /**
+ * Writes a trajectory state row to an output file.
+ *
+ * @param traj_file Output trajectory file stream.
+ * @param t Simulation time in seconds.
+ * @param current_mass Vehicle mass in kilograms.
+ * @param true_state Pointer to true state.
+ * @param est_state Pointer to estimated state.
+ */
+void write_trajectory_state(FILE *traj_file, double t, double current_mass,
+                            state *true_state, state *est_state) {
+  fprintf(traj_file,
+          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
+          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n",
+          t, current_mass, true_state->position.x, true_state->position.y,
+          true_state->position.z, true_state->velocity.x,
+          true_state->velocity.y, true_state->velocity.z,
+          norm(true_state->a_lift), 0.0, 0.0, 0.0, est_state->position.x,
+          est_state->position.y, est_state->position.z, est_state->velocity.x,
+          est_state->velocity.y, est_state->velocity.z, 0.0, 0.0, 0.0,
+          true_state->a_lift.x, true_state->a_lift.y, true_state->a_lift.z,
+          est_state->a_lift.x, est_state->a_lift.y, est_state->a_lift.z);
+}
+
+/**
  * Computes interpolated impact states and applies coriolis/aimpoint correction.
  *
  * @param old_true_state Pointer to pre-impact true state
@@ -197,8 +221,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
                            &true_state, &est_state);
   }
 
-  // Variables for step function anomaly (only used for run_type = 1)
-  double step_timer = 0;       // time since step function was activated
   int sampled_new_profile = 0; // flag to indicate whether a new profile has
                                // been sampled after boost phase
 
@@ -339,19 +361,12 @@ impact_data mc_run(runparams run_params) {
 
   for (int i = 0; i < num_runs; i++) {
     vehicle vehicle;
-    if (run_params.run_type == 0) {
-      if (run_params.rv_type == 0) {
-        vehicle = init_mmiii_ballistic();
-      } else if (run_params.rv_type == 1) {
-        vehicle = init_mmiii_swerve();
-      } else {
-        printf("Error: Invalid RV type\n");
-        exit(1);
-      }
-    } else if (run_params.run_type == 1) {
-      vehicle = init_reentry_only();
+    if (run_params.rv_type == 0) {
+      vehicle = init_mmiii_ballistic();
+    } else if (run_params.rv_type == 1) {
+      vehicle = init_mmiii_swerve();
     } else {
-      printf("Error: Invalid run type\n");
+      printf("Error: Invalid RV type\n");
       exit(1);
     }
 

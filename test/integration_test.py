@@ -25,7 +25,6 @@ def test_read_config():
     """
     run_params = read_config("test")
 
-    assert run_params.run_type == 0
     assert run_params.num_runs == 2
     assert run_params.time_step_main == 1.0
     assert run_params.time_step_reentry == 0.01
@@ -741,7 +740,6 @@ def test_integration_13():
     """
 
     run_params = read_config("test")
-    run_params.run_type = 0
     run_params.num_runs = 10
     run_params.rv_maneuv = 1
     run_params.atm_error = 1
@@ -775,7 +773,6 @@ def test_integration_14():
     """
 
     run_params = read_config("test")
-    run_params.run_type = 0
     run_params.num_runs = 10
     run_params.rv_maneuv = 1
     run_params.atm_error = 1
@@ -814,7 +811,6 @@ def test_integration_15():
     """
 
     run_params = read_config("test")
-    run_params.run_type = 0
     run_params.num_runs = 10
     run_params.rv_maneuv = 1
     run_params.atm_error = 1

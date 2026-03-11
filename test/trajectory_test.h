@@ -42,7 +42,6 @@ TEST(trajectory, fly) {
   runparams run_params;
   // Set the run parameters
   run_params.run_name = "test_run";
-  run_params.run_type = 0;
   run_params.traj_output = 0;
   run_params.time_step_midcourse = 1;
   run_params.time_step_reentry = 1;

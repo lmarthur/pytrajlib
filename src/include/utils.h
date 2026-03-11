@@ -10,7 +10,6 @@
 
 typedef struct runparams {
   char *run_name;         // name of the run
-  int run_type;           // 0 for full trajectory, 1 for reentry only
   char *output_path;      // path to the output directory
   char *trajectory_path;  // path to the trajectory data file
   char *atm_path;         // path to "atmprofiles.txt"
@@ -157,7 +156,6 @@ void sphervec_to_cartvec(double *sphervec, double *cartvec,
  */
 void print_config(runparams *run_params) {
   printf("Run name: %s\n", run_params->run_name);
-  printf("Run type: %d\n", run_params->run_type);
   printf("Output path: %s\n", run_params->output_path);
   printf("Trajectory path: %s\n", run_params->trajectory_path);
   printf("Number of Monte Carlo runs: %d\n", run_params->num_runs);
@@ -199,30 +197,6 @@ void print_config(runparams *run_params) {
          run_params->step_acc_hgt);
   printf("Step acceleration perturbation duration: %f\n",
          run_params->step_acc_dur);
-}
-
-/**
- * Writes a trajectory state row to an output file.
- *
- * @param traj_file Output trajectory file stream.
- * @param t Simulation time in seconds.
- * @param current_mass Vehicle mass in kilograms.
- * @param true_state Pointer to true state.
- * @param est_state Pointer to estimated state.
- */
-void write_trajectory_state(FILE *traj_file, double t, double current_mass,
-                            state *true_state, state *est_state) {
-  fprintf(traj_file,
-          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n",
-          t, current_mass, true_state->position.x, true_state->position.y,
-          true_state->position.z, true_state->velocity.x,
-          true_state->velocity.y, true_state->velocity.z,
-          norm(true_state->a_lift), 0.0, 0.0, 0.0, est_state->position.x,
-          est_state->position.y, est_state->position.z, est_state->velocity.x,
-          est_state->velocity.y, est_state->velocity.z, 0.0, 0.0, 0.0,
-          true_state->a_lift.x, true_state->a_lift.y, true_state->a_lift.z,
-          est_state->a_lift.x, est_state->a_lift.y, est_state->a_lift.z);
 }
 
 /**
