@@ -25,6 +25,7 @@ os.makedirs(_TEMP_DIR, exist_ok=True)
 
 _keep_alive = {}
 _LOADING_BAR_DISABLED = object()
+EARTH_RADIUS_M = 6371e3
 
 
 @ffi.def_extern()
@@ -59,6 +60,17 @@ def _get_default_config():
         **config_dict["ERRORPARAMS"],
     }
     return config_dict
+
+
+def _set_aimpoint_from_range(config_dict):
+    """Set equatorial aimpoint from downrange arc length in meters."""
+    if "range" not in config_dict:
+        return
+    range_m = float(config_dict["range"])
+    aimpoint_lon = (range_m / EARTH_RADIUS_M) % (2 * np.pi)
+    config_dict["x_aim"] = EARTH_RADIUS_M * np.cos(aimpoint_lon)
+    config_dict["y_aim"] = EARTH_RADIUS_M * np.sin(aimpoint_lon)
+    config_dict["z_aim"] = 0.0
 
 
 # Sentinel to detect non-provided arguments
@@ -135,7 +147,8 @@ def optimize_trajectory(config_dict):
     """
     _keep_alive["loading_bar"] = _LOADING_BAR_DISABLED
     without_error_params = deepcopy(config_dict)
-    without_error_params["num_runs"] = 1
+    without_error_params["traj_output"] = 0
+    without_error_params["num_runs"] = without_error_params["num_runs_optimizer"]
     without_error_params["initial_pos_error"] = 0
     without_error_params["initial_vel_error"] = 0
     without_error_params["initial_angle_error"] = 0
@@ -143,9 +156,11 @@ def optimize_trajectory(config_dict):
     without_error_params["gyro_bias_stability"] = 0
     without_error_params["gyro_noise"] = 0
     without_error_params["gnss_noise"] = 0
+    without_error_params["grav_error"] = 0
 
+    without_error_params["gnss_nav"] = 0
+    without_error_params["perfect_boost"] = 1
     without_error_params["rv_maneuv"] = 0
-    without_error_params["atm_model"] = 0
 
     def obj(params):
         t_des_final, thrust_lon = params
@@ -153,8 +168,10 @@ def optimize_trajectory(config_dict):
         without_error_params["theta_long"] = thrust_lon
         rp = create_runparams_struct(without_error_params)
 
-        impact_df = impact_data_to_df(traj.mc_run(rp[0]), config_dict["num_runs"])
-        miss_dist = np.sum(
+        impact_df = impact_data_to_df(
+            traj.mc_run(rp[0]), without_error_params["num_runs"]
+        )
+        miss_dist = np.mean(
             get_miss_distance(
                 impact_df=impact_df,
                 aimpoint=(
@@ -167,7 +184,7 @@ def optimize_trajectory(config_dict):
 
         _keep_alive.clear()
         _keep_alive["loading_bar"] = _LOADING_BAR_DISABLED
-        print(f"{miss_dist=:.9f}, {t_des_final=:.9f}, {thrust_lon=:.9f}")
+        print(f"{miss_dist=:.9f} (avg), {t_des_final=:.9f}, {thrust_lon=:.9f}")
 
         return miss_dist
 
@@ -180,19 +197,19 @@ def optimize_trajectory(config_dict):
         np.sqrt(config_dict["x_aim"] ** 2 + config_dict["y_aim"] ** 2),
     )
 
-    range_to_aimpoint = np.arccos(
-        np.sin(aimpoint_lat) * np.sin(0)
-        + np.cos(aimpoint_lat) * np.cos(0) * np.cos(aimpoint_lon)
-    )
-    range_km = range_to_aimpoint * 6371
+    range_km = config_dict["range"] / 1000.0
 
-    tf_des = 252.0 + 0.223 * range_km - (5.44e-6) * range_km**2
+    # Basic guess of the desired time modified from Zarchan's (2012) Listing 33.1
+    # desired time for a 2 stage ICBM
+    # boost phase time + s/km + lofting term
+    tf_des = 188 + 0.223 * range_km - 4e-6 * range_km**2
 
     result = minimize(
         obj,
         x0=(tf_des, without_error_params["theta_long"]),
         method="Nelder-Mead",
         bounds=[(300, 5000), (0, np.pi)],
+        options=dict(maxfev=100),
     )
     print(result)
     return result.x
@@ -241,21 +258,21 @@ def run(config: str = None, plot: bool = False, plot_path: str = None, **kwargs)
     config_dict["mean_atm_path"] = mean_atm_path
     config_dict["trajectory_path"] = _TEMP_DIR + "/trajectory.txt"
     config_dict.setdefault("include_drag", 1)
-
-    # config_dict['t_des_final'] = tf_des
+    _set_aimpoint_from_range(config_dict)
 
     print("Final config:", config_dict)
     print("Running...")
 
-    # t_des_final, thrust_lon = optimize_trajectory(config_dict)
-    t_des_final, thrust_lon = 1851.429509858, 1.147028114
-
+    t_des_final, thrust_lon = optimize_trajectory(config_dict)
+    _keep_alive["loading_bar"] = None
+    print("t_des_final", t_des_final)
     config_dict["t_des_final"] = t_des_final
     config_dict["theta_long"] = thrust_lon
     rp = create_runparams_struct(config_dict)
     impact_df = impact_data_to_df(traj.mc_run(rp[0]), config_dict["num_runs"])
     aimpoint = (config_dict["x_aim"], config_dict["y_aim"], config_dict["z_aim"])
     miss_distance = get_miss_distance(impact_df=impact_df, aimpoint=aimpoint)
+    impact_df["miss_distance"] = miss_distance
     # Load trajectory data if plotting
     if plot:
         trajectory_df = pd.read_csv(

@@ -3,11 +3,15 @@ run_name = "run_4"
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 0
 num_runs = 30
+num_runs_optimizer = 100
 time_step_lambert = 0.01
 time_step_midcourse = 0.01
 time_step_atm = 0.01
 traj_output = 1
-# 100 longitude (11e3 km range)
+# 100 longitude (~11e3 km range)
+# Range is in meters
+range = 11119492.664455872
+# The aimpoint is superseded by the range
 x_aim = -1106312.539916013
 y_aim = 6274210.194440777
 z_aim = 0

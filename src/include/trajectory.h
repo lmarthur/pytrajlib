@@ -330,6 +330,10 @@ impact_data mc_run(runparams run_params) {
   }
   impact_data impact_data;
 
+#ifdef FROM_PYTHON
+  update_loading_bar(0, num_runs);
+#endif
+
   for (int i = 0; i < num_runs; i++) {
     vehicle vehicle;
     if (run_params.run_type == 0) {

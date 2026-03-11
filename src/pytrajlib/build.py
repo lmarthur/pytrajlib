@@ -20,10 +20,12 @@ ffibuilder.cdef(
         char *atm_path;
         char *mean_atm_path;
         int num_runs;
+        int num_runs_optimizer;
         double time_step_lambert;
         double time_step_midcourse;
         double time_step_atm;
         int traj_output;
+        double range;
         double x_aim;
         double y_aim;
         double z_aim;

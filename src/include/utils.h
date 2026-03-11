@@ -9,19 +9,22 @@
 #include "models/vehicle.h"
 
 typedef struct runparams {
-  char *run_name;        // name of the run
-  int run_type;          // 0 for full trajectory, 1 for reentry only
-  char *output_path;     // path to the output directory
-  char *trajectory_path; // path to the trajectory data file
-  char *atm_path;        // path to "atmprofiles.txt"
-  char *mean_atm_path;   // path to "mean_atm.txt"
-  int num_runs;          // number of Monte Carlo runs
+  char *run_name;         // name of the run
+  int run_type;           // 0 for full trajectory, 1 for reentry only
+  char *output_path;      // path to the output directory
+  char *trajectory_path;  // path to the trajectory data file
+  char *atm_path;         // path to "atmprofiles.txt"
+  char *mean_atm_path;    // path to "mean_atm.txt"
+  int num_runs;           // number of Monte Carlo runs
+  int num_runs_optimizer; // number of runs to use during trajectory
+                          // optimization
   double
       time_step_lambert; // time step in seconds during Lambert guidance phase
   double time_step_midcourse; // time step in seconds during midcourse flight
   double time_step_atm; // time step in seconds inside atmosphere (reentry and
                         // first part of boost)
   int traj_output;      // flag to output trajectory data
+  double range;         // downrange distance along equator in meters
   double x_aim;         // target x-coordinate in meters
   double y_aim;         // target y-coordinate in meters
   double z_aim;         // target z-coordinate in meters
