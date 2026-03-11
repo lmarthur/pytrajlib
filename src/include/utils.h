@@ -63,6 +63,7 @@ typedef struct runparams {
   double gyro_bias_stability; // gyro bias stability in rad/s
   double gyro_noise;          // gyro noise in rad/s/sqrt(s)
   double gnss_noise;          // GNSS error in meters
+  double gnss_freq;           // GNSS update frequency in Hz
   double cl_pert;             // Coefficient of lift perturbation
   double step_acc_mag;        // Step acceleration perturbation magnitude
   double step_acc_hgt; // Step acceleration perturbation height (altitude) in
@@ -190,6 +191,7 @@ void print_config(runparams *run_params) {
   printf("Gyro bias stability: %f\n", run_params->gyro_bias_stability);
   printf("Gyro noise: %f\n", run_params->gyro_noise);
   printf("GNSS noise: %f\n", run_params->gnss_noise);
+  printf("GNSS frequency: %f Hz\n", run_params->gnss_freq);
   printf("Coefficient of lift perturbation: %f\n", run_params->cl_pert);
   printf("Step acceleration perturbation magnitude: %f\n",
          run_params->step_acc_mag);

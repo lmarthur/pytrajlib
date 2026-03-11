@@ -110,7 +110,8 @@ double get_gyro_diffusion(imu *imu) { return imu->gyro_noise; }
 
 // define a gnss measurement unit struct
 typedef struct gnss {
-  double noise; // GNSS noise in meters
+  double noise;                  // GNSS noise in meters
+  double time_since_last_update; // time since last GNSS update in seconds
 
 } gnss;
 
@@ -124,6 +125,7 @@ gnss gnss_init(runparams *run_params) {
 
   gnss gnss;
   gnss.noise = run_params->gnss_noise;
+  gnss.time_since_last_update = 0.0;
 
   return gnss;
 }

@@ -242,9 +242,12 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     }
 
     // GNSS Measurement
+    gnss.time_since_last_update += time_step;
     if ((run_params->gnss_nav == 1) &&
-        (get_altitude(true_state.position) > 100e3)) {
+        (get_altitude(true_state.position) > 100e3) &&
+        (gnss.time_since_last_update >= 1.0 / run_params->gnss_freq)) {
       gnss_measurement(&gnss, &true_state, &est_state);
+      gnss.time_since_last_update = 0.0;
     }
 
     state old_true_state = true_state;

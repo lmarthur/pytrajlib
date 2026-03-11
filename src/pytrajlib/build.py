@@ -59,6 +59,7 @@ ffibuilder.cdef(
         double gyro_bias_stability;
         double gyro_noise;
         double gnss_noise;
+        double gnss_freq;
         double cl_pert;
         double step_acc_mag;
         double step_acc_hgt;
