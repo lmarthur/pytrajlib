@@ -9,22 +9,24 @@
 #include "models/vehicle.h"
 
 typedef struct runparams {
-  char *run_name;             // name of the run
-  int run_type;               // 0 for full trajectory, 1 for reentry only
-  char *output_path;          // path to the output directory
-  char *trajectory_path;      // path to the trajectory data file
-  char *atm_path;             // path to "atmprofiles.txt"
-  char *mean_atm_path;        // path to "mean_atm.txt"
-  int num_runs;               // number of Monte Carlo runs
-  double time_step_boost;     // time step in seconds during boost phase
+  char *run_name;        // name of the run
+  int run_type;          // 0 for full trajectory, 1 for reentry only
+  char *output_path;     // path to the output directory
+  char *trajectory_path; // path to the trajectory data file
+  char *atm_path;        // path to "atmprofiles.txt"
+  char *mean_atm_path;   // path to "mean_atm.txt"
+  int num_runs;          // number of Monte Carlo runs
+  double
+      time_step_lambert; // time step in seconds during Lambert guidance phase
   double time_step_midcourse; // time step in seconds during midcourse flight
-  double time_step_reentry;   // time step in seconds during reentry
-  int traj_output;            // flag to output trajectory data
-  double x_aim;               // target x-coordinate in meters
-  double y_aim;               // target y-coordinate in meters
-  double z_aim;               // target z-coordinate in meters
-  double theta_long; // thrust angle in the longitudinal direction in radians
-  double theta_lat;  // thrust angle in the latitudinal direction in radians
+  double time_step_atm; // time step in seconds inside atmosphere (reentry and
+                        // first part of boost)
+  int traj_output;      // flag to output trajectory data
+  double x_aim;         // target x-coordinate in meters
+  double y_aim;         // target y-coordinate in meters
+  double z_aim;         // target z-coordinate in meters
+  double theta_long;    // thrust angle in the longitudinal direction in radians
+  double theta_lat;     // thrust angle in the latitudinal direction in radians
   int integrator; // flag for which numerical integration method to use (0 for
                   // modified Euler-Maruyama, 1 for SRA3)
 
@@ -156,7 +158,9 @@ void print_config(runparams *run_params) {
   printf("Trajectory path: %s\n", run_params->trajectory_path);
   printf("Number of Monte Carlo runs: %d\n", run_params->num_runs);
   printf("Time step: %f\n", run_params->time_step_midcourse);
-  printf("Reentry time step: %f\n", run_params->time_step_reentry);
+  printf("Time step lambert: %f\n", run_params->time_step_lambert);
+  printf("Time step midcourse: %f\n", run_params->time_step_midcourse);
+  printf("Time step in atmosphere: %f\n", run_params->time_step_atm);
   printf("Trajectory output: %d\n", run_params->traj_output);
   printf("Target x-coordinate: %f\n", run_params->x_aim);
   printf("Target y-coordinate: %f\n", run_params->y_aim);

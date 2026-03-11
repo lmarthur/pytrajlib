@@ -3,9 +3,9 @@ run_name = "run_4"
 # If set to 0, full trajectory, if set to 1, reentry only
 run_type = 0
 num_runs = 30
-time_step_boost = 0.01
+time_step_lambert = 0.01
 time_step_midcourse = 0.01
-time_step_reentry = 0.01
+time_step_atm = 0.01
 traj_output = 1
 # 100 longitude (11e3 km range)
 x_aim = -1106312.539916013

@@ -220,18 +220,22 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     atm_cond true_atm_cond =
         get_atm_cond(old_altitude, &exp_atm_model, run_params, &atm_profile);
     atm_cond est_atm_cond = get_exp_atm_cond(old_altitude, &exp_atm_model);
-    // if during boost or outside atmosphere, dt = main time step, else dt =
-    // reentry time step go a bit above 100km to 2e5 to ensure accuracy at very
-    // close to 100km
+    // Use the boost timestep for Lambert Guidance, midcourse timestep for
+    // post-boost & before reentry And reentry timestep just before reentry to
+    // capture the transition accurately
     if (true_t <= vehicle->booster.total_burn_time) {
-      time_step = run_params->time_step_boost;
+      if (old_altitude < 100e3) {
+        time_step = run_params->time_step_atm;
+      } else {
+        time_step = run_params->time_step_lambert;
+      }
     } else {
       double angle_v_grav =
           acos(dot(true_state.velocity, smultiply(true_state.position, -1)) /
                (norm(true_state.velocity) * norm(true_state.position)));
 
       if (fabs(angle_v_grav < M_PI_2) && (old_altitude < 1.2e5)) {
-        time_step = run_params->time_step_reentry;
+        time_step = run_params->time_step_atm;
       } else {
         time_step = run_params->time_step_midcourse;
       }
