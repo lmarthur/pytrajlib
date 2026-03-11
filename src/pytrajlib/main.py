@@ -198,8 +198,15 @@ def optimize_trajectory(config_dict):
     return result.x
 
 
-def run(config=None, plot=False, plot_path=None, **kwargs):
-    """Load config, override with kwargs, and run the C Monte Carlo code."""
+def run(config: str = None, plot: bool = False, plot_path: str = None, **kwargs):
+    """Load config, override with kwargs, and run the C Monte Carlo code.
+
+    Args
+        config: path to config file
+        plot: whether to save plots
+        plot_path: path to save plots
+        **kwargs: all other kwargs (see default TOML)
+    """
     config_dict = {}
 
     # Load config file if provided

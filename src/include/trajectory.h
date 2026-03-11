@@ -283,6 +283,9 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
 
       *impact_time = true_final_t;
 
+      // Only save full trajectory on the first run.
+      run_params->traj_output = 0;
+
       return true_final_state;
     }
 
