@@ -57,23 +57,25 @@ cartvec get_drag_acc(runparams *run_params, vehicle *vehicle,
   // Calculate the drag acceleration components for boost phase & reentry of
   // ballistic or perfectly maneuvering reentry vehicle
   else {
-    cartvec winds_cart = get_cart_wind(state, atm_cond);
-    double wind_mag = norm(winds_cart);
-    double v_mag = norm(state->velocity);
-
-    // Angle of attack (assuming vehicle oriented along velocity vector)
-    double aoa = atan(wind_mag / v_mag);
-
-    // Drag coefficient varies with angle of attack
-    double c_d = vehicle->rv.c_d_0 + fabs(vehicle->rv.c_d_alpha * aoa);
+    double c_d;
+    double area;
 
     if (t < vehicle->booster.total_burn_time) {
-      drag = get_drag_acceleration_generic(t, *state, atm_cond, vehicle, c_d,
-                                           vehicle->booster.area);
+      // Drag coefficient varies with angle of attack
+      cartvec winds_cart = get_cart_wind(state, atm_cond);
+      double wind_mag = norm(winds_cart);
+      double v_mag = norm(state->velocity);
+
+      // Angle of attack (assuming vehicle oriented along velocity vector)
+      double aoa = atan(wind_mag / v_mag);
+      c_d = vehicle->rv.c_d_0 + fabs(vehicle->rv.c_d_alpha * aoa);
+      area = vehicle->rv.rv_area;
     } else {
-      drag = get_drag_acceleration_generic(t, *state, atm_cond, vehicle, c_d,
-                                           vehicle->rv.rv_area);
+      c_d = vehicle->booster.c_d_0;
+      area = vehicle->booster.area;
     }
+    drag =
+        get_drag_acceleration_generic(t, *state, atm_cond, vehicle, c_d, area);
   }
   return drag;
 }
