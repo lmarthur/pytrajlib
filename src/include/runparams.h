@@ -33,6 +33,7 @@ typedef struct runparams {
   int rv_maneuv;       // flag to include guidance during the reentry phase
   double reentry_vel;  // reentry velocity in meters per second
   int perfect_boost;   // 1 perfect boost, 0 realistic
+  int optimize_boost;  // 1 optimize t_des_final/theta_long, 0 use provided
   double t_des_final;  // desired flight time (optimized by code)
   double t_vert_boost; // Duration of vertical boost (optimized by code)
 

@@ -258,16 +258,21 @@ def run(config: str = None, plot: bool = False, plot_path: str = None, **kwargs)
     config_dict["mean_atm_path"] = mean_atm_path
     config_dict["trajectory_path"] = _TEMP_DIR + "/trajectory.txt"
     config_dict.setdefault("include_drag", 1)
+    config_dict.setdefault("optimize_boost", 1)
     _set_aimpoint_from_range(config_dict)
 
     print("Final config:", config_dict)
     print("Running...")
 
-    t_des_final, thrust_lon = optimize_trajectory(config_dict)
+    if config_dict["optimize_boost"]:
+        t_des_final, thrust_lon = optimize_trajectory(config_dict)
+        print(f"{t_des_final=}, {thrust_lon=}")
+        config_dict["t_des_final"] = t_des_final
+        config_dict["theta_long"] = thrust_lon
+    else:
+        print("Skipping boost optimization; using configured t_des_final/theta_long")
     _keep_alive["loading_bar"] = None
-    print("t_des_final", t_des_final)
-    config_dict["t_des_final"] = t_des_final
-    config_dict["theta_long"] = thrust_lon
+
     rp = create_runparams_struct(config_dict)
     impact_df = impact_data_to_df(traj.mc_run(rp[0]), config_dict["num_runs"])
     aimpoint = (config_dict["x_aim"], config_dict["y_aim"], config_dict["z_aim"])

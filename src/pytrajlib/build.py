@@ -40,6 +40,7 @@ ffibuilder.cdef(
         int rv_maneuv;
         double reentry_vel;
         int perfect_boost;
+        int optimize_boost;
         double t_des_final;
         double t_vert_boost;
 

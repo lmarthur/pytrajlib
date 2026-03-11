@@ -36,6 +36,8 @@ rv_maneuv = 1
 reentry_vel = 7500
 # If 0, indicates realistic boost, 1 perfect
 perfect_boost = 1
+# If 1, optimize t_des_final/theta_long. If 0, use provided values directly.
+optimize_boost = 1
 t_des_final = 2000
 t_vert_boost = 10
 
