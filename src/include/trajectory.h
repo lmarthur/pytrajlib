@@ -361,10 +361,11 @@ impact_data mc_run(runparams run_params) {
 
   for (int i = 0; i < num_runs; i++) {
     vehicle vehicle;
+
     if (run_params.rv_type == 0) {
-      vehicle = init_mmiii_ballistic();
+      vehicle = init_mmiii_ballistic(&run_params);
     } else if (run_params.rv_type == 1) {
-      vehicle = init_mmiii_swerve();
+      vehicle = init_mmiii_swerve(&run_params);
     } else {
       printf("Error: Invalid RV type\n");
       exit(1);

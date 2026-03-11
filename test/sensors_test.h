@@ -83,7 +83,7 @@ TEST(sensors, imu_meas) {
   imu imu = imu_init(&run_params, &true_state);
 
   // Initialize the vehicle
-  vehicle vehicle = init_mmiii_ballistic();
+  vehicle vehicle = init_mmiii_ballistic(NULL);
 
   // Check that for zero scale stability, the accelerometer errors are zero
   imu_measurement(&imu, &true_state, &est_state, &vehicle);
@@ -126,7 +126,7 @@ TEST(sensors, imu_update) {
   imu imu = imu_init(&run_params, &true_state);
 
   // Initialize the vehicle
-  vehicle vehicle = init_mmiii_ballistic();
+  vehicle vehicle = init_mmiii_ballistic(NULL);
 
   // Check that the gyro error is constant with zero gyro random walk and zero
   // gyro bias

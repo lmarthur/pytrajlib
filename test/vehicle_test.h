@@ -31,7 +31,7 @@ TEST(vehicle, init_mmiii_booster) {
 }
 
 TEST(vehicle, init_mmiii_ballistic) {
-  vehicle vehicle = init_mmiii_ballistic();
+  vehicle vehicle = init_mmiii_ballistic(NULL);
 
   REQUIRE_EQ(vehicle.booster.num_stages, 3);
   REQUIRE_GT(vehicle.booster.maxdiam, 0);
@@ -45,7 +45,7 @@ TEST(vehicle, init_mmiii_ballistic) {
 }
 
 TEST(vehicle, init_mmiii_swerve) {
-  vehicle vehicle = init_mmiii_swerve();
+  vehicle vehicle = init_mmiii_swerve(NULL);
 
   REQUIRE_EQ(vehicle.booster.num_stages, 3);
   REQUIRE_GT(vehicle.booster.maxdiam, 0);

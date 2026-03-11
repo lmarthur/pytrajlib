@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "runparams.h"
+
 // Define a booster struct to store booster parameters
 typedef struct booster {
   // Booster parameters
@@ -169,6 +171,34 @@ booster init_mmiii_booster() {
   return booster;
 }
 
+/**
+ * Apply optional vehicle parameter overrides.
+ *
+ * @param vehicle Pointer to vehicle to update
+ * @param run_params Run parameters containing override values.
+ */
+void apply_vehicle_overrides(vehicle *vehicle, runparams *run_params) {
+  if (run_params == NULL) {
+    return;
+  }
+
+  vehicle->rv.rv_mass = run_params->rv_mass;
+  vehicle->rv.rv_length = run_params->rv_length;
+  vehicle->rv.rv_radius = run_params->rv_radius;
+  vehicle->rv.rv_area = M_PI * run_params->rv_radius * run_params->rv_radius;
+  vehicle->rv.c_d_0 = run_params->rv_c_d_0;
+  vehicle->rv.c_d_alpha = run_params->rv_c_d_alpha;
+
+  vehicle->booster.area = run_params->booster_area;
+  vehicle->booster.maxdiam = run_params->booster_maxdiam;
+  vehicle->booster.c_d_0 = run_params->booster_c_d_0;
+  double old_bus_mass = vehicle->booster.bus_mass;
+  vehicle->booster.bus_mass = run_params->booster_bus_mass;
+  vehicle->booster.total_mass += run_params->booster_bus_mass - old_bus_mass;
+
+  vehicle->total_mass = vehicle->booster.total_mass + vehicle->rv.rv_mass;
+}
+
 // Define a function to initialize a mmiii vehicle carrying a ballistic reentry
 // vehicle
 /**
@@ -176,12 +206,13 @@ booster init_mmiii_booster() {
  *
  * @return Vehicle parameters.
  */
-vehicle init_mmiii_ballistic() {
+vehicle init_mmiii_ballistic(runparams *run_params) {
   vehicle vehicle;
   // Define parameters for a MMIII vehicle carrying a ballistic reentry vehicle
   vehicle.booster = init_mmiii_booster();
   vehicle.rv = init_ballistic_rv();
   vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
+  apply_vehicle_overrides(&vehicle, run_params);
 
   return vehicle;
 }
@@ -191,9 +222,10 @@ vehicle init_mmiii_ballistic() {
 /**
  * Initializes a MMIII vehicle carrying a maneuverable reentry vehicle.
  *
+ * @param run_params Run parameters containing optional override values.
  * @return Vehicle parameters.
  */
-vehicle init_mmiii_swerve() {
+vehicle init_mmiii_swerve(runparams *run_params) {
 
   vehicle vehicle;
   // Define parameters for a MMIII vehicle carrying a maneuverable reentry
@@ -201,6 +233,7 @@ vehicle init_mmiii_swerve() {
   vehicle.booster = init_mmiii_booster();
   vehicle.rv = init_swerve_rv();
   vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
+  apply_vehicle_overrides(&vehicle, run_params);
 
   return vehicle;
 }

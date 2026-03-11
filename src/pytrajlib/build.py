@@ -63,6 +63,17 @@ ffibuilder.cdef(
         double step_acc_mag;
         double step_acc_hgt;
         double step_acc_dur;
+
+        double rv_mass;
+        double rv_length;
+        double rv_radius;
+        double rv_c_d_0;
+        double rv_c_d_alpha;
+
+        double booster_area;
+        double booster_maxdiam;
+        double booster_c_d_0;
+        double booster_bus_mass;
     } runparams;
 
     typedef struct cartvec {

@@ -46,6 +46,16 @@ actuator_force = 100
 gearing_ratio = 1
 nav_gain = 5
 flap_gain = 100
+# Vehicle parameter defaults (SWERVE RV + MMIII booster)
+rv_mass = 450.0
+rv_length = 2.75
+rv_radius = 0.23
+rv_c_d_0 = 0.1
+rv_c_d_alpha = 0.487
+booster_area = 2.2698
+booster_maxdiam = 1.7
+booster_c_d_0 = 0.15
+booster_bus_mass = 100.0
 
 [ERRORPARAMS]
 initial_x_error = 0.0
