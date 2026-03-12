@@ -3,7 +3,7 @@
 
 TEST(maneuverability, rv_time_constant) {
   // Initialize the state
-  state true_state;
+  state true_state = {0};
   true_state.position.x = EARTH_RADIUS_M + 10;
   true_state.position.y = 0;
   true_state.position.z = 0;
@@ -11,10 +11,7 @@ TEST(maneuverability, rv_time_constant) {
   true_state.velocity.x = -1;
   true_state.velocity.y = 0;
   true_state.velocity.z = 0;
-  true_state.a_grav = zeros();
-  true_state.a_drag = zeros();
   true_state.a_lift = zeros();
-  true_state.a_thrust = zeros();
 
   // Initialize the vehicle
   vehicle vehicle;

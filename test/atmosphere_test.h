@@ -335,7 +335,7 @@ TEST(atmosphere, get_atm_cond) {
 
 TEST(atmosphere, parse_atm) {
   int profilenum = 0;
-  char *atmprofile = "input/atmprofiles.txt";
+  char *atmprofile = "src/pytrajlib/config/atmprofiles.txt";
 
   eg16_profile atm_data = parse_atm(atmprofile, profilenum);
   REQUIRE_EQ(atm_data.profile_num, 0);
@@ -365,7 +365,7 @@ TEST(atmosphere, get_eg_atm_cond) {
   // Test the get_eg_atm_cond function
 
   int profilenum = 0;
-  char *atmprofile = "input/atmprofiles.txt";
+  char *atmprofile = "src/pytrajlib/config/atmprofiles.txt";
 
   eg16_profile atm_data = parse_atm(atmprofile, profilenum);
 

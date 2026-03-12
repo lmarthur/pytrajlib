@@ -1,187 +1,100 @@
 #include "../src/include/models/sensors.h"
-#include "../src/include/trajectory.h"
 #include <tau/tau.h>
 
 TEST(sensors, imu_init) {
-  // Initialize the run parameters
-  runparams run_params;
-  run_params.traj_output = 0;
-  run_params.time_step_midcourse = 1;
-  run_params.time_step_reentry = 1;
-  run_params.x_aim = EARTH_RADIUS_M;
-  run_params.y_aim = 0;
-  run_params.z_aim = 0;
-  run_params.theta_long = 0;
-  run_params.theta_lat = 0;
-
-  run_params.grav_error = 0;
-  run_params.atm_model = 0;
-  run_params.gnss_nav = 0;
-  run_params.ins_nav = 0;
-
-  run_params.rv_type = 0;
-
-  run_params.initial_x_error = 0;
-  run_params.initial_pos_error = 1;
-  run_params.initial_vel_error = 0;
-  run_params.initial_angle_error = 0;
-  run_params.acc_scale_stability = 0;
-  run_params.gyro_bias_stability = 0;
-  run_params.gyro_noise = 0;
-  run_params.gnss_noise = 0;
-
-  // Initialize the state
+  // Verify IMU initialization copies configuration values into the sensor
+  // model and produces zero-valued random terms when the configured noise is
+  // zero.
+  runparams run_params = {0};
   state true_state = init_true_state(&run_params);
 
-  // Initialize the imu
   imu imu = imu_init(&run_params, &true_state);
 
-  // Check that the imu struct is initialized correctly
-  REQUIRE_EQ(imu.acc_scale_stability, run_params.acc_scale_stability);
+  REQUIRE_EQ(norm(imu.acc_scale), 0);
   REQUIRE_EQ(imu.gyro_bias_stability, run_params.gyro_bias_stability);
   REQUIRE_EQ(imu.gyro_noise, run_params.gyro_noise);
-  REQUIRE_EQ(imu.gyro_error_lat, 0);
-  REQUIRE_EQ(imu.gyro_error_long, 0);
+  REQUIRE_EQ(imu.gyro_bias.lat, 0);
+  REQUIRE_EQ(imu.gyro_bias.lon, 0);
 }
 
 TEST(sensors, imu_meas) {
+  // Check the accelerometer measurement model in three regimes:
+  // exact pass-through with no sensor error, zero input acceleration, and a
+  // perturbed output when accelerometer scale error is enabled.
+  runparams run_params = {0};
 
-  // // Initialize the run parameters
-  runparams run_params;
-  run_params.traj_output = 0;
-  run_params.time_step_midcourse = 1;
-  run_params.time_step_reentry = 1;
-  run_params.x_aim = EARTH_RADIUS_M;
-  run_params.y_aim = 0;
-  run_params.z_aim = 0;
-  run_params.theta_long = 0;
-  run_params.theta_lat = 0;
-
-  run_params.grav_error = 0;
-  run_params.atm_model = 0;
-  run_params.gnss_nav = 0;
-  run_params.ins_nav = 0;
-
-  run_params.rv_type = 0;
-
-  run_params.initial_x_error = 0;
-  run_params.initial_pos_error = 1;
-  run_params.initial_vel_error = 0;
-  run_params.initial_angle_error = 0;
-  run_params.acc_scale_stability = 0;
-  run_params.gyro_bias_stability = 0;
-  run_params.gyro_noise = 0;
-  run_params.gnss_noise = 0;
-
-  // Initialize the state
   state true_state = init_true_state(&run_params);
-  state est_state = init_est_state(&run_params);
-  true_state.a_total.x = 10;
-  true_state.a_total.y = 10;
-  true_state.a_total.z = 10;
-  // Initialize the imu
+  state est_state = init_est_state(&run_params, true_state);
   imu imu = imu_init(&run_params, &true_state);
 
-  // Initialize the vehicle
-  vehicle vehicle = init_mmiii_ballistic(NULL);
+  cartvec a_total_true = {10, 10, 10};
+  cartvec a_grav_true = zeros();
+  cartvec a_grav_est = zeros();
 
-  // Check that for zero scale stability, the accelerometer errors are zero
-  imu_measurement(&imu, &true_state, &est_state, &vehicle);
-  REQUIRE_EQ(fabs(est_state.a_total.x - true_state.a_total.x), 0);
-  REQUIRE_EQ(fabs(est_state.a_total.y - true_state.a_total.y), 0);
-  REQUIRE_EQ(fabs(est_state.a_total.z - true_state.a_total.z), 0);
+  cartvec a_total_est = imu_measurement(&imu, &true_state, &est_state,
+                                        a_total_true, a_grav_true, a_grav_est);
 
-  // Check that for zero acceleration the accelerometer errors are zero
-  true_state.a_total = zeros();
-  imu_measurement(&imu, &true_state, &est_state, &vehicle);
-  REQUIRE_EQ(est_state.a_total.x, 0);
-  REQUIRE_EQ(est_state.a_total.y, 0);
-  REQUIRE_EQ(est_state.a_total.z, 0);
+  REQUIRE_EQ(fabs(a_total_est.x - a_total_true.x), 0);
+  REQUIRE_EQ(fabs(a_total_est.y - a_total_true.y), 0);
+  REQUIRE_EQ(fabs(a_total_est.z - a_total_true.z), 0);
 
-  // Check that for non-zero acceleration and non-zero scale stability the
-  // accelerometer errors are non-zero
-  true_state.a_total.x = 10;
-  true_state.a_total.y = 10;
-  true_state.a_total.z = 10;
+  a_total_true = zeros();
+  a_total_est = imu_measurement(&imu, &true_state, &est_state, a_total_true,
+                                a_grav_true, a_grav_est);
+  REQUIRE_EQ(a_total_est.x, 0);
+  REQUIRE_EQ(a_total_est.y, 0);
+  REQUIRE_EQ(a_total_est.z, 0);
+
   run_params.acc_scale_stability = 1e-3;
   imu = imu_init(&run_params, &true_state);
-  imu_measurement(&imu, &true_state, &est_state, &vehicle);
-  REQUIRE_NE(est_state.a_total.x, true_state.a_total.x);
+  a_total_true.x = 10;
+  a_total_true.y = 10;
+  a_total_true.z = 10;
+  a_total_est = imu_measurement(&imu, &true_state, &est_state, a_total_true,
+                                a_grav_true, a_grav_est);
+  REQUIRE_GT(norm(subtract(a_total_est, a_total_true)), 0);
 }
 
 TEST(sensors, imu_update) {
-
-  // Initialize the run parameters
-  runparams run_params;
-  double time_step = 1;
-  run_params.acc_scale_stability = 0;
-
-  // Initialize the true state
+  // Confirm the attitude estimate is reconstructed from the stored gyro error,
+  // and that the gyro drift/diffusion accessors expose the IMU parameters used
+  // by the integrator.
+  runparams run_params = {0};
   state true_state = init_true_state(&run_params);
-  // Initialize the estimated state
-  state est_state_0 = init_est_state(&run_params);
-  state est_state_1 = init_est_state(&run_params);
-
-  // Initialize the imu
-  imu imu = imu_init(&run_params, &true_state);
-
-  // Initialize the vehicle
-  vehicle vehicle = init_mmiii_ballistic(NULL);
-
-  // Check that the gyro error is constant with zero gyro random walk and zero
-  // gyro bias
-  run_params.gyro_bias_stability = 0;
-  run_params.gyro_noise = 0;
+  state est_state = init_est_state(&run_params, true_state);
 
   true_state.theta_long = 1;
-  true_state.theta_lat = 1;
-  true_state.initial_theta_long_pert = 0;
-  true_state.initial_theta_lat_pert = 0;
+  true_state.theta_lat = -0.5;
+  est_state.gyro_error.lon = 0.1;
+  est_state.gyro_error.lat = -0.2;
 
-  imu = imu_init(&run_params, &true_state);
-  imu_measurement(&imu, &true_state, &est_state_0, &vehicle);
-  update_imu(&imu, time_step);
-  imu_measurement(&imu, &true_state, &est_state_1, &vehicle);
+  imu imu = imu_init(&run_params, &true_state);
+  cartvec a_total_est =
+      imu_measurement(&imu, &true_state, &est_state, zeros(), zeros(), zeros());
 
-  REQUIRE_EQ(est_state_0.theta_long, est_state_1.theta_long);
-  REQUIRE_EQ(est_state_0.theta_lat, est_state_1.theta_lat);
+  REQUIRE_EQ(a_total_est.x, 0);
+  REQUIRE_EQ(a_total_est.y, 0);
+  REQUIRE_EQ(a_total_est.z, 0);
+  REQUIRE_EQ(est_state.theta_long,
+             true_state.theta_long + est_state.gyro_error.lon);
+  REQUIRE_EQ(est_state.theta_lat,
+             true_state.theta_lat + est_state.gyro_error.lat);
 
-  // Check that the gyro error is increasing with non-zero gyro random walk and
-  // zero gyro bias
-  run_params.gyro_bias_stability = 0;
   run_params.gyro_noise = 1e-3;
+  run_params.gyro_bias_stability = 2e-3;
   imu = imu_init(&run_params, &true_state);
-  imu_measurement(&imu, &true_state, &est_state_0, &vehicle);
-  for (int i = 0; i < 10; i++) {
-    update_imu(&imu, time_step);
-  }
-  imu_measurement(&imu, &true_state, &est_state_1, &vehicle);
 
-  REQUIRE_LT(fabs(true_state.theta_long - est_state_0.theta_long),
-             fabs(true_state.theta_long - est_state_1.theta_long));
-  REQUIRE_LT(fabs(true_state.theta_lat - est_state_0.theta_lat),
-             fabs(true_state.theta_lat - est_state_1.theta_lat));
+  anglevec drift = get_gyro_drift(&imu);
+  double diffusion = get_gyro_diffusion(&imu);
 
-  // Check that the gyro error is increasing with zero gyro random walk and
-  // non-zero gyro bias
-  run_params.gyro_bias_stability = 1e-3;
-  run_params.gyro_noise = 0;
-  imu = imu_init(&run_params, &true_state);
-  imu_measurement(&imu, &true_state, &est_state_0, &vehicle);
-  for (int i = 0; i < 10; i++) {
-    update_imu(&imu, time_step);
-  }
-  imu_measurement(&imu, &true_state, &est_state_1, &vehicle);
-
-  REQUIRE_LT(fabs(true_state.theta_long - est_state_0.theta_long),
-             fabs(true_state.theta_long - est_state_1.theta_long));
-  REQUIRE_LT(fabs(true_state.theta_lat - est_state_0.theta_lat),
-             fabs(true_state.theta_lat - est_state_1.theta_lat));
+  REQUIRE_EQ(drift.lat, imu.gyro_bias.lat);
+  REQUIRE_EQ(drift.lon, imu.gyro_bias.lon);
+  REQUIRE_EQ(diffusion, imu.gyro_noise);
 }
 
 TEST(sensors, gnss_init) {
-  // Initialize the run parameters
-  runparams run_params;
+  // GNSS initialization should preserve the configured position noise level.
+  runparams run_params = {0};
   run_params.gnss_noise = 0;
 
   gnss gnss = gnss_init(&run_params);
@@ -189,27 +102,23 @@ TEST(sensors, gnss_init) {
 }
 
 TEST(sensors, gnss_meas) {
-  // Initialize the run parameters
-  runparams run_params;
+  // GNSS measurements should match truth when noise is disabled and deviate
+  // from truth once measurement noise is enabled.
+  runparams run_params = {0};
   run_params.gnss_noise = 0;
 
-  // Initialize the gnss
   gnss gnss = gnss_init(&run_params);
-  // Initialise the estimated state
-  state est_state = init_est_state(&run_params);
-  // Initialize the true state
   state true_state = init_true_state(&run_params);
+  state est_state = init_est_state(&run_params, true_state);
   true_state.position.x = 10;
   true_state.position.y = 10;
   true_state.position.z = 10;
 
-  // Check that for zero gnss noise the gnss errors are zero
   gnss_measurement(&gnss, &true_state, &est_state);
   REQUIRE_EQ(fabs(est_state.position.x - true_state.position.x), 0);
   REQUIRE_EQ(fabs(est_state.position.y - true_state.position.y), 0);
   REQUIRE_EQ(fabs(est_state.position.z - true_state.position.z), 0);
 
-  // Check that for non-zero gnss noise the gnss errors are non-zero
   run_params.gnss_noise = 1e-3;
   gnss = gnss_init(&run_params);
   gnss_measurement(&gnss, &true_state, &est_state);

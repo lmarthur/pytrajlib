@@ -4,6 +4,14 @@
 #include "mt19937-64/mt64.h"
 #include <math.h>
 
+static int ran_gaussian_iset = 0;
+static double ran_gaussian_gset = 0.0;
+
+void reset_ran_gaussian(void) {
+  ran_gaussian_iset = 0;
+  ran_gaussian_gset = 0.0;
+}
+
 /**
  * Returns a uniformly distributed random number in the range `[min, max)`.
  *
@@ -31,23 +39,21 @@ double ran_flat(double min, double max) {
  */
 double ran_gaussian(double stddev) {
   double ran1(long *idum);
-  static int iset = 0;
-  static double gset;
   double fac, rsq, v1, v2;
 
-  if (iset == 0) {
+  if (ran_gaussian_iset == 0) {
     do {
       v1 = 2.0 * genrand64_real1() - 1.0;
       v2 = 2.0 * genrand64_real1() - 1.0;
       rsq = v1 * v1 + v2 * v2;
     } while (rsq >= 1.0 || rsq == 0.0);
     fac = sqrt(-2.0 * log(rsq) / rsq);
-    gset = v1 * fac;
-    iset = 1;
+    ran_gaussian_gset = v1 * fac;
+    ran_gaussian_iset = 1;
     return v2 * fac * stddev;
   } else {
-    iset = 0;
-    return gset * stddev;
+    ran_gaussian_iset = 0;
+    return ran_gaussian_gset * stddev;
   }
 }
 
