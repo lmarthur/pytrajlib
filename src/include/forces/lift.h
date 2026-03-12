@@ -267,11 +267,16 @@ cartvec get_a_lift_jerk(state *current_state, runparams *run_params,
   // Quantize available lift to the resolution of the actuator
   double acc_resolution = get_acc_resolution(run_params, vehicle);
   cartvec a_lift_avail = current_state->a_lift_avail;
+  double mag_a_lift_avail = norm(a_lift_avail);
 
-  cartvec ar = sdivide(a_lift_avail, acc_resolution);
-  a_lift_avail.x = round(ar.x) * acc_resolution;
-  a_lift_avail.y = round(ar.y) * acc_resolution;
-  a_lift_avail.z = round(ar.z) * acc_resolution;
+  // Limit available lift magnitudes to quantized values
+  if (mag_a_lift_avail > 0) {
+    double quantized_mag =
+        round(mag_a_lift_avail / acc_resolution) * acc_resolution;
+    a_lift_avail = smultiply(a_lift_avail, quantized_mag / mag_a_lift_avail);
+  } else {
+    a_lift_avail = zeros();
+  }
 
   // Get the lift basis vectors
   cartvec e1, e2, e3;
