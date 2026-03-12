@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "derivatives.h"
 #include "forces/drag.h"
 #include "forces/gravity.h"
 #include "forces/lift.h"
@@ -370,13 +371,15 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     prev_est_t = est_t;
     int success;
     if (run_params->integrator == 0) {
-      success = euler_maruyama_step(
-          run_params, &imu, vehicle, &true_grav, &est_grav, &true_atm_cond,
-          &est_atm_cond, &true_state, &est_state, &true_t, &est_t, time_step);
+      success = euler_maruyama_step(run_params, &imu, vehicle, &true_grav,
+                                    &est_grav, &true_atm_cond, &est_atm_cond,
+                                    &true_state, &est_state, &true_t, &est_t,
+                                    time_step, drift, diffusion);
     } else {
-      success = sra3_step(run_params, &imu, vehicle, &true_grav, &est_grav,
-                          &true_atm_cond, &est_atm_cond, &true_state,
-                          &est_state, &true_t, &est_t, time_step);
+      success =
+          sra3_step(run_params, &imu, vehicle, &true_grav, &est_grav,
+                    &true_atm_cond, &est_atm_cond, &true_state, &est_state,
+                    &true_t, &est_t, time_step, drift, diffusion);
     }
 
     if (!success) {

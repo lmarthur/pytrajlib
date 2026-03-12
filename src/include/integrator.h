@@ -1,109 +1,12 @@
 #ifndef INTEGRATOR_H
 #define INTEGRATOR_H
 
-#include "forces/drag.h"
-#include "forces/gravity.h"
-#include "forces/lift.h"
-#include "forces/thrust.h"
-#include "models/atmosphere.h"
-#include "models/grav.h"
-#include "models/sensors.h"
-#include "models/state.h"
-#include "models/vehicle.h"
+#include "derivatives.h"
 #include "rng/rng.h"
 #include "utils.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-/**
- * Calculate deterministic drift component of the state update
- */
-int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
-          grav *est_grav, atm_cond *true_atm_cond, atm_cond *est_atm_cond,
-          state *true_state, state *est_state, double true_t, double est_t,
-          state *true_state_drift, state *est_state_drift) {
-
-  // Get thrust acceleration
-  cartvec a_thrust;
-  if (run_params->perfect_boost) {
-    a_thrust =
-        get_thrust_acc(true_state, vehicle, run_params, true_grav, true_t);
-  } else {
-    a_thrust = get_thrust_acc(est_state, vehicle, run_params, est_grav, est_t);
-  }
-  // If Lambert Guidance fails, quickly exit
-  if (isnan(a_thrust.x)) {
-    return 0;
-  }
-  // Get time derivative of available lift acceleration (same for true &
-  // estimated states)
-  cartvec d_a_lift_avail_dt = get_a_lift_avail_jerk(
-      true_state, est_state, run_params, vehicle, est_atm_cond, est_t);
-
-  state *states[2] = {true_state, est_state};
-  state *state_derivs[2] = {true_state_drift, est_state_drift};
-  grav *grav_models[2] = {true_grav, est_grav};
-  atm_cond *atm_conds[2] = {true_atm_cond, est_atm_cond};
-  cartvec a_gravs[2];
-  cartvec a_total_true;
-  double times[2] = {true_t, est_t};
-  for (int i = 0; i < 2; i++) {
-    // Calculate total acceleration
-    cartvec a_total;
-    cartvec d_a_lift_dt = zeros();
-    a_gravs[i] = get_gravity_acc(grav_models[i], states[i]);
-
-    // If using INS navigation, then the estimated state does not need to
-    // calculate every force individually
-    if (run_params->ins_nav == 1 && i == 1) {
-      // If ballistic run, turn off gyro error accumulation after boost phase
-      // to avoid slightly overestimating Coriolis error
-      if (run_params->rv_maneuv == 0 &&
-          true_t >= vehicle->booster.total_burn_time) {
-        a_total = a_total_true;
-      } else {
-        a_total = imu_measurement(imu, true_state, est_state, a_total_true,
-                                  a_gravs[0], a_gravs[1]);
-      }
-    } else {
-      cartvec a_drag;
-      if (run_params->include_drag == 1) {
-        a_drag = get_drag_acc(run_params, vehicle, atm_conds[i], states[i],
-                              times[i]);
-      } else {
-        a_drag = zeros();
-      }
-      a_total = add(add(add(a_thrust, a_drag), states[i]->a_lift), a_gravs[i]);
-
-      // If realistic maneuverable RV, use proportional navigation during
-      // reentry
-      if (run_params->rv_maneuv == 1 && is_reentry(states[i], times[i])) {
-        // Get lift jerk
-        d_a_lift_dt = get_a_lift_jerk(states[i], run_params, vehicle,
-                                      atm_conds[i], times[i]);
-      }
-    }
-    // Keep track of true total acceleration for estimated state's accelerometer
-    // measurement
-    if (run_params->ins_nav == 1 && i == 0) {
-      a_total_true = a_total;
-    }
-
-    // Set state derivatives
-    state_derivs[i]->position = states[i]->velocity;
-    state_derivs[i]->velocity = a_total;
-    state_derivs[i]->a_lift = d_a_lift_dt;
-    state_derivs[i]->a_lift_avail = d_a_lift_avail_dt;
-    state_derivs[i]->gyro_error = get_gyro_drift(imu);
-  }
-  return 1;
-}
-
-void diffusion(imu *imu, state *est_state_diffusion) {
-  est_state_diffusion->gyro_error.lat = get_gyro_diffusion(imu);
-  est_state_diffusion->gyro_error.lon = get_gyro_diffusion(imu);
-}
 
 state sra3_H(state drift_evals[3], state diffusion_evals[3], state Y, int i,
              anglevec I0, double time_step) {
@@ -136,7 +39,8 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
                         grav *true_grav, grav *est_grav,
                         atm_cond *true_atm_cond, atm_cond *est_atm_cond,
                         state *true_state, state *est_state, double *true_t,
-                        double *est_t, double time_step) {
+                        double *est_t, double time_step, drift_func drift_fn,
+                        diffusion_func diffusion_fn) {
 
   // Each of the drift/diffusion states contains the derivative (wrt to time or
   // weiner process) In other words, true_state_drift.position is velocity,
@@ -144,13 +48,13 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
   state true_state_drift = {0};
   state est_state_drift = {0};
   state est_state_diffusion = {0};
-  int success = drift(run_params, imu, vehicle, true_grav, est_grav,
-                      true_atm_cond, est_atm_cond, true_state, est_state,
-                      *true_t, *est_t, &true_state_drift, &est_state_drift);
+  int success = drift_fn(run_params, imu, vehicle, true_grav, est_grav,
+                         true_atm_cond, est_atm_cond, true_state, est_state,
+                         *true_t, *est_t, &true_state_drift, &est_state_drift);
   if (!success) {
     return 0;
   }
-  diffusion(imu, &est_state_diffusion);
+  diffusion_fn(imu, &est_state_diffusion);
 
   *true_state =
       add_state(*true_state, smultiply_state(true_state_drift, time_step));
@@ -175,10 +79,19 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
   return 1;
 }
 
+/**
+ * Advance the state using SRA3 (Stochastic Runge-Kutta for Additive Noise).
+ *
+ * References:
+ * Rößler, A. (2010). Runge–Kutta Methods for the Strong Approximation of
+ * Solutions of Stochastic Differential Equations. SIAM Journal on Numerical
+ * Analysis, 48(3), 922–952. https://doi.org/10.1137/09076636X
+ */
 int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
               grav *true_grav, grav *est_grav, atm_cond *true_atm_cond,
               atm_cond *est_atm_cond, state *true_state, state *est_state,
-              double *true_t, double *est_t, double time_step) {
+              double *true_t, double *est_t, double time_step,
+              drift_func drift_fn, diffusion_func diffusion_fn) {
 
   const int num_stages = 3;
   const double c0[3] = {0.0, 1.0, 0.5};
@@ -205,7 +118,7 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   I0.lon = 0.5 * (dW.lon + (1.0 / sqrt(3.0)) * zeta.lon);
 
   for (int i = 0; i < num_stages; i++) {
-    diffusion(imu, &est_state_diffusion_eval[i]);
+    diffusion_fn(imu, &est_state_diffusion_eval[i]);
   }
 
   for (int i = 0; i < num_stages; i++) {
@@ -217,9 +130,9 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
     state true_drift = {0};
     state est_drift = {0};
     int success =
-        drift(run_params, imu, vehicle, true_grav, est_grav, true_atm_cond,
-              est_atm_cond, &H_true, &H_est, *true_t + c0[i] * time_step,
-              *est_t + c0[i] * time_step, &true_drift, &est_drift);
+        drift_fn(run_params, imu, vehicle, true_grav, est_grav, true_atm_cond,
+                 est_atm_cond, &H_true, &H_est, *true_t + c0[i] * time_step,
+                 *est_t + c0[i] * time_step, &true_drift, &est_drift);
     if (!success) {
       return 0;
     }
