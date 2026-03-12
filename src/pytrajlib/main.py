@@ -113,15 +113,15 @@ def create_runparams_struct(config_dict):
     return run_params_struct
 
 
-def impact_data_to_df(impact_data, num_runs):
+def impact_data_to_df(impact_data, config):
     """
     Convert the impact data to a Pandas DataFrame.
 
     Args
         impact_data: impact_data
             The impact data from the Monte Carlo run.
-        num_runs: int
-            The number of runs in the Monte Carlo simulation.
+        config: dict
+            Config dict
 
     Returns
         impact_df: pd.DataFrame
@@ -129,15 +129,25 @@ def impact_data_to_df(impact_data, num_runs):
     """
     impact_df = pd.DataFrame()
     rows = []
-    for i in range(num_runs):
+    for i in range(config["num_runs"]):
         row_data = dict(
             t=impact_data.impact_times[i],
             x=impact_data.impact_states[i].position.x,
             y=impact_data.impact_states[i].position.y,
             z=impact_data.impact_states[i].position.z,
+            burnout_speed=impact_data.burnout_speed[i],
+            burnout_altitude=impact_data.burnout_altitude[i],
+            burnout_angle=impact_data.burnout_angle[i],
+            apogee=impact_data.apogee[i],
+            reentry_speed=impact_data.reentry_speed[i],
+            reentry_angle=impact_data.reentry_angle[i],
         )
         rows.append(row_data)
     impact_df = pd.DataFrame(rows)
+    impact_df["x_aim"] = config["x_aim"]
+    impact_df["y_aim"] = config["y_aim"]
+    impact_df["z_aim"] = config["z_aim"]
+    impact_df["range"] = config["range"]
     return impact_df
 
 
@@ -168,9 +178,7 @@ def optimize_trajectory(config_dict):
         without_error_params["theta_long"] = thrust_lon
         rp = create_runparams_struct(without_error_params)
 
-        impact_df = impact_data_to_df(
-            traj.mc_run(rp[0]), without_error_params["num_runs"]
-        )
+        impact_df = impact_data_to_df(traj.mc_run(rp[0]), without_error_params)
         miss_dist = np.mean(
             get_miss_distance(
                 impact_df=impact_df,
@@ -274,7 +282,7 @@ def run(config: str = None, plot: bool = False, plot_path: str = None, **kwargs)
     _keep_alive["loading_bar"] = None
 
     rp = create_runparams_struct(config_dict)
-    impact_df = impact_data_to_df(traj.mc_run(rp[0]), config_dict["num_runs"])
+    impact_df = impact_data_to_df(traj.mc_run(rp[0]), config_dict)
     aimpoint = (config_dict["x_aim"], config_dict["y_aim"], config_dict["z_aim"])
     miss_distance = get_miss_distance(impact_df=impact_df, aimpoint=aimpoint)
     impact_df["miss_distance"] = miss_distance

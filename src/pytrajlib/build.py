@@ -103,6 +103,12 @@ ffibuilder.cdef(
     typedef struct impact_data {
         state impact_states[1000];
         double impact_times[1000];
+        double burnout_speed[1000];
+        double burnout_altitude[1000];
+        double burnout_angle[1000];
+        double apogee[1000];
+        double reentry_speed[1000];
+        double reentry_angle[1000];
     } impact_data;
 
     impact_data mc_run(runparams run_params);

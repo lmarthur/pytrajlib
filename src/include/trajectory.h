@@ -25,8 +25,33 @@ typedef struct impact_data {
   // Impact data
   state impact_states[MAX_RUNS];
   double impact_times[MAX_RUNS];
-
+  double burnout_speed[MAX_RUNS];
+  double burnout_altitude[MAX_RUNS];
+  double burnout_angle[MAX_RUNS];
+  double apogee[MAX_RUNS];
+  double reentry_speed[MAX_RUNS];
+  double reentry_angle[MAX_RUNS];
 } impact_data;
+
+/**
+ * Calculate flight path angle relative to local horizon.
+ *
+ * @param position Position vector
+ * @param velocity Velocity vector
+ * @return Flight path angle in radians
+ */
+static inline double flight_path_angle(cartvec position, cartvec velocity) {
+  // Get angle between velocity and local "up" vector
+  double v_norm = norm(velocity);
+  double p_norm = norm(position);
+  if (v_norm == 0.0 || p_norm == 0.0) {
+    // Degenerate case: direction is undefined when either vector has zero
+    // magnitude
+    return 0.0;
+  }
+  double angle = M_PI / 2 - acos(dot(velocity, position) / (v_norm * p_norm));
+  return angle;
+}
 
 /**
  * Interpolate between two states to estimate impact crossing at altitude 0.
@@ -168,18 +193,30 @@ void output_impact(FILE *impact_file, impact_data *impact_data, int num_runs) {
  * @param run_params Pointer to run configuration parameters
  * @param initial_state Pointer to initial true state
  * @param vehicle Pointer to vehicle model/state
+ * @param burnout_vel_mag Output burnout speed in m/s
+ * @param burnout_alt Output burnout altitude in m
+ * @param burnout_ang Output burnout flight-path angle in radians
+ * @param apogee_alt Output maximum altitude (apogee) in m
+ * @param reentry_vel Output speed at 120 km reentry crossing in m/s
+ * @param reentry_ang Output flight-path angle at reentry crossing in radians
  * @return Final impact state
  */
 state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
-          double *impact_time) {
+          double *impact_time, double *burnout_vel_mag, double *burnout_alt,
+          double *burnout_ang, double *apogee_alt, double *reentry_vel,
+          double *reentry_ang) {
 
-  // Initialize the variables and structures
   int max_steps = 10000000;
 
+  // Initialize time step to the "inside atmosphere" time step
+  double time_step = run_params->time_step_atm;
+
+  // Init structs
   grav true_grav = init_grav(run_params);
   grav est_grav = init_grav(run_params);
-
   atm_model exp_atm_model = init_exp_atm(run_params);
+  imu imu = imu_init(run_params, initial_state);
+  gnss gnss = gnss_init(run_params);
 
   // Initialize either a randomly chosen EarthGRAM profile or the average
   // EarthGRAM profile
@@ -191,23 +228,21 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     atm_profile = parse_atm(run_params->mean_atm_path, -1);
   }
 
+  // Initalize true and estimated states
   state true_state = *initial_state;
-  double true_t = 0;
-
   state est_state = init_est_state(run_params, true_state);
+  double true_t = 0;
   double est_t = 0;
 
-  int traj_output = run_params->traj_output;
-  double time_step;
-  // Initialize the IMU
-  imu imu = imu_init(run_params, initial_state);
-
-  // Initialize the GNSS
-  gnss gnss = gnss_init(run_params);
+  // Initialize holders for prev state for impact interpolation
+  state prev_true_state = true_state;
+  state prev_est_state = est_state;
+  double prev_true_t = true_t;
+  double prev_est_t = est_t;
 
   // Create a .txt file to store the trajectory data
   FILE *traj_file;
-  if (traj_output == 1) {
+  if (run_params->traj_output == 1) {
     traj_file = fopen(run_params->trajectory_path, "w");
     fprintf(
         traj_file,
@@ -224,44 +259,100 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
   int sampled_new_profile = 0; // flag to indicate whether a new profile has
                                // been sampled after boost phase
 
+  // Initialize flight event tracking
+  double max_altitude = 0.0;
+  int exit_atmosphere_captured = 0;
+  int burnout_captured = 0;
+  int reentry_captured = 0;
+  *burnout_vel_mag = 0.0;
+  *burnout_alt = 0.0;
+  *burnout_ang = 0.0;
+  *apogee_alt = 0.0;
+  *reentry_vel = 0.0;
+  *reentry_ang = 0.0;
+
   // Begin the integration loop
   for (int i = 0; i < max_steps; i++) {
-    // At the end of boost phase, sample a new atm profile for EarthGram
-    // so boost and reentry don't use the same profile
-    if ((run_params->atm_model == 2) &&
-        (true_t > vehicle->booster.total_burn_time) &&
-        (sampled_new_profile == 0)) {
-      int atm_profile_num = (int)ran_flat(0, 100);
-      atm_profile = parse_atm("input/atmprofiles.txt", atm_profile_num);
-      sampled_new_profile = 1;
+    // Write trajectory data to file
+    if (run_params->traj_output == 1) {
+      write_trajectory_state(traj_file, true_t,
+                             get_vehicle_mass(vehicle, true_t), &true_state,
+                             &est_state);
+    }
+
+    // Track apogee
+    double altitude = get_altitude(true_state.position);
+    if (altitude > max_altitude) {
+      max_altitude = altitude;
+    }
+
+    // Check exit atmosphere event
+    if (!exit_atmosphere_captured && altitude > 100e3) {
+      exit_atmosphere_captured = 1;
+      time_step = run_params->time_step_lambert;
+    }
+
+    // Check burnout event
+    if (!burnout_captured && true_t > vehicle->booster.total_burn_time) {
+      burnout_captured = 1;
+      time_step = run_params->time_step_midcourse;
+
+      *burnout_vel_mag = norm(true_state.velocity);
+      *burnout_alt = altitude;
+      *burnout_ang =
+          flight_path_angle(true_state.position, true_state.velocity);
+
+      // At the end of boost phase, sample a new atm profile for EarthGram
+      // so boost and reentry don't use the same profile
+      if ((run_params->atm_model == 2) &&
+          (true_t > vehicle->booster.total_burn_time) &&
+          (sampled_new_profile == 0)) {
+        int atm_profile_num = (int)ran_flat(0, 100);
+        atm_profile = parse_atm("input/atmprofiles.txt", atm_profile_num);
+        sampled_new_profile = 1;
+      }
+    }
+
+    // Check reentry event. Use altitude of 120km rather than 100km so the
+    // smaller time step captures all atmospheric events below 100km
+    int descending = altitude < max_altitude;
+    if (!reentry_captured && descending && altitude < 1.2e5) {
+      reentry_captured = 1;
+      time_step = run_params->time_step_atm;
+      *reentry_vel = norm(true_state.velocity);
+      *reentry_ang =
+          flight_path_angle(true_state.position, true_state.velocity);
+    }
+
+    // Check impact event
+    if (get_altitude(true_state.position) < 0) {
+      double true_final_t;
+      state est_final_state;
+      state true_final_state = impact_with_coriolis(
+          &prev_true_state, &true_state, prev_true_t, true_t, &prev_est_state,
+          &est_state, prev_est_t, est_t, run_params, &true_final_t,
+          &est_final_state);
+      if (run_params->traj_output == 1) {
+        // Write the final state to the trajectory file
+        write_trajectory_state(traj_file, true_final_t,
+                               get_vehicle_mass(vehicle, true_final_t),
+                               &true_final_state, &est_final_state);
+        fclose(traj_file);
+      }
+
+      *impact_time = true_final_t;
+      *apogee_alt = max_altitude;
+
+      // Only save full trajectory on the first run.
+      run_params->traj_output = 0;
+
+      return true_final_state;
     }
 
     // Get the atmospheric conditions
-    double old_altitude = get_altitude(true_state.position);
-
     atm_cond true_atm_cond =
-        get_atm_cond(old_altitude, &exp_atm_model, run_params, &atm_profile);
-    atm_cond est_atm_cond = get_exp_atm_cond(old_altitude, &exp_atm_model);
-    // Use the boost timestep for Lambert Guidance, midcourse timestep for
-    // post-boost & before reentry And reentry timestep just before reentry to
-    // capture the transition accurately
-    if (true_t <= vehicle->booster.total_burn_time) {
-      if (old_altitude < 100e3) {
-        time_step = run_params->time_step_atm;
-      } else {
-        time_step = run_params->time_step_lambert;
-      }
-    } else {
-      double angle_v_grav =
-          acos(dot(true_state.velocity, smultiply(true_state.position, -1)) /
-               (norm(true_state.velocity) * norm(true_state.position)));
-
-      if (fabs(angle_v_grav < M_PI_2) && (old_altitude < 1.2e5)) {
-        time_step = run_params->time_step_atm;
-      } else {
-        time_step = run_params->time_step_midcourse;
-      }
-    }
+        get_atm_cond(altitude, &exp_atm_model, run_params, &atm_profile);
+    atm_cond est_atm_cond = get_exp_atm_cond(altitude, &exp_atm_model);
 
     // GNSS Measurement
     gnss.time_since_last_update += time_step;
@@ -272,12 +363,11 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
       gnss.time_since_last_update = 0.0;
     }
 
-    state old_true_state = true_state;
-    state old_est_state = est_state;
-    double old_true_t = true_t;
-    double old_est_t = est_t;
-
     // Perform an integration step
+    prev_true_state = true_state;
+    prev_est_state = est_state;
+    prev_true_t = true_t;
+    prev_est_t = est_t;
     int success;
     if (run_params->integrator == 0) {
       success = euler_maruyama_step(
@@ -290,50 +380,20 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     }
 
     if (!success) {
+      printf("WARNING, integrator error, returning early\n");
       return true_state;
-    }
-
-    // Check if the vehicle has impacted the Earth
-    double new_altitude = get_altitude(true_state.position);
-    if (new_altitude < 0) {
-      double true_final_t;
-      state est_final_state;
-      state true_final_state =
-          impact_with_coriolis(&old_true_state, &true_state, old_true_t, true_t,
-                               &old_est_state, &est_state, old_est_t, est_t,
-                               run_params, &true_final_t, &est_final_state);
-      if (traj_output == 1) {
-        // Write the final state to the trajectory file
-        write_trajectory_state(traj_file, true_final_t,
-                               get_vehicle_mass(vehicle, true_final_t),
-                               &true_final_state, &est_final_state);
-        fclose(traj_file);
-      }
-
-      *impact_time = true_final_t;
-
-      // Only save full trajectory on the first run.
-      run_params->traj_output = 0;
-
-      return true_final_state;
-    }
-
-    // output the trajectory data
-    if (traj_output == 1) {
-      write_trajectory_state(traj_file, true_t,
-                             get_vehicle_mass(vehicle, true_t), &true_state,
-                             &est_state);
     }
   }
 
   printf("Warning: Maximum number of steps reached with no impact\n");
   // Close the trajectory file
-  if (traj_output == 1) {
+  if (run_params->traj_output == 1) {
     fclose(traj_file);
   }
 
   // Only save full trajectory on the first run.
   run_params->traj_output = 0;
+  *apogee_alt = max_altitude;
   *impact_time = true_t;
   return true_state;
 }
@@ -373,8 +433,12 @@ impact_data mc_run(runparams run_params) {
 
     state initial_true_state = init_true_state(&run_params);
 
-    impact_data.impact_states[i] = fly(&run_params, &initial_true_state,
-                                       &vehicle, &impact_data.impact_times[i]);
+    impact_data.impact_states[i] =
+        fly(&run_params, &initial_true_state, &vehicle,
+            &impact_data.impact_times[i], &impact_data.burnout_speed[i],
+            &impact_data.burnout_altitude[i], &impact_data.burnout_angle[i],
+            &impact_data.apogee[i], &impact_data.reentry_speed[i],
+            &impact_data.reentry_angle[i]);
 
 #ifdef FROM_PYTHON
     int five_percent = (int)(num_runs / 20);
