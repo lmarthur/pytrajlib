@@ -3,7 +3,7 @@
 
 #include "derivatives.h"
 #include "rng/rng.h"
-#include "utils.h"
+#include "utils/utils.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

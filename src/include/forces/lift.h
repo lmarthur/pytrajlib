@@ -1,12 +1,12 @@
 #ifndef LIFT_H
 #define LIFT_H
 
-#include "../body_frame.h"
 #include "../math/linalg.h"
 #include "../models/atmosphere.h"
 #include "../models/state.h"
 #include "../models/vehicle.h"
-#include "../utils.h"
+#include "../utils/body_frame.h"
+#include "../utils/utils.h"
 
 /**
  * Calculate the time constant of the reentry vehicle based on the current

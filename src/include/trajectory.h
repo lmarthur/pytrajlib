@@ -16,7 +16,7 @@
 #include "models/sensors.h"
 #include "models/vehicle.h"
 #include "rng/rng.h"
-#include "utils.h"
+#include "utils/utils.h"
 
 // Define a constant upper limit for the number of Monte Carlo runs
 #define MAX_RUNS 1000

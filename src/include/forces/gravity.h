@@ -6,7 +6,7 @@
 #include "../models/grav.h"
 #include "../models/state.h"
 #include "../models/vehicle.h"
-#include "../utils.h"
+#include "../utils/utils.h"
 
 /**
  * Update gravitational acceleration for the current state position.

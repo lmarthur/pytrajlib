@@ -1,4 +1,4 @@
-#include "../src/include/utils.h"
+#include "../src/include/utils/utils.h"
 #include <tau/tau.h>
 
 TEST(utils, cartcoords_to_sphercoords) {

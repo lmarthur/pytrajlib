@@ -10,7 +10,7 @@
 #include "models/sensors.h"
 #include "models/state.h"
 #include "models/vehicle.h"
-#include "utils.h"
+#include "utils/utils.h"
 
 typedef int (*drift_func)(runparams *run_params, imu *imu, vehicle *vehicle,
                           grav *true_grav, grav *est_grav,

@@ -6,7 +6,7 @@
 #include "../models/atmosphere.h"
 #include "../models/grav.h"
 #include "../models/vehicle.h"
-#include "../utils.h"
+#include "../utils/utils.h"
 
 int get_current_stage(double t, vehicle *vehicle) {
   // Get the current stage

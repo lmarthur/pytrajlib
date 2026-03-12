@@ -2,7 +2,7 @@
 #define GRAV_H
 
 #include "../rng/rng.h"
-#include "../utils.h"
+#include "../utils/utils.h"
 
 // Note that the get_gravitational_acceleration function is in the physics.h
 // file

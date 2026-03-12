@@ -1,9 +1,9 @@
 #ifndef STATE_H
 #define STATE_H
 
-#include "../constants.h"
 #include "../math/linalg.h"
-#include "../utils.h"
+#include "../utils/constants.h"
+#include "../utils/utils.h"
 
 // Define a struct to store the state of a vehicle in 3D space
 typedef struct state {

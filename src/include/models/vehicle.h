@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "runparams.h"
+#include "../utils/runparams.h"
 
 // Define a booster struct to store booster parameters
 typedef struct booster {

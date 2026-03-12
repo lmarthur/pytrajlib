@@ -4,12 +4,12 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "../math/linalg.h"
+#include "../models/vehicle.h"
 #include "constants.h"
-#include "math/linalg.h"
-#include "models/vehicle.h"
 #include "runparams.h"
 
-#include "models/state.h"
+#include "../models/state.h"
 
 /**
  * Calculates the altitude of a point above Earth's surface.

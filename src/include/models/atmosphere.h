@@ -5,7 +5,7 @@
 
 #include "../math/linalg.h"
 #include "../rng/rng.h"
-#include "../utils.h"
+#include "../utils/utils.h"
 #include "state.h"
 
 #define ATM_PROFILE_LEN 100

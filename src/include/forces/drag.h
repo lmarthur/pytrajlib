@@ -6,7 +6,7 @@
 #include "../math/linalg.h"
 #include "../models/atmosphere.h"
 #include "../models/vehicle.h"
-#include "../utils.h"
+#include "../utils/utils.h"
 
 static const double AOA_MAX = 10; // Maximum angle of attack is 10 degrees
 
@@ -14,9 +14,9 @@ static const double AOA_MAX = 10; // Maximum angle of attack is 10 degrees
  * Get the drag acceleration based on the drag coefficient
  * and the characteristic area.
  */
-cartvec get_drag_acceleration_generic(double t, state current_state,
-                                      atm_cond *atm_cond, vehicle *vehicle,
-                                      double c_d, double area) {
+static inline cartvec
+get_drag_acceleration_generic(double t, state current_state, atm_cond *atm_cond,
+                              vehicle *vehicle, double c_d, double area) {
   cartvec wind_vec = get_cart_wind(&current_state, atm_cond);
   cartvec v_rel = subtract(current_state.velocity, wind_vec);
   double v_rel_mag = norm(v_rel);

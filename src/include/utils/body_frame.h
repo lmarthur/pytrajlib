@@ -1,9 +1,9 @@
 #ifndef BODY_FRAME_H
 #define BODY_FRAME_H
 
-#include "math/linalg.h"
-#include "models/atmosphere.h"
-#include "models/state.h"
+#include "../math/linalg.h"
+#include "../models/atmosphere.h"
+#include "../models/state.h"
 
 /**
  * Define a local coordinate system where

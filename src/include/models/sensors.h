@@ -1,9 +1,9 @@
 #ifndef SENSORS_H
 #define SENSORS_H
 
-#include "../body_frame.h"
 #include "../rng/rng.h"
-#include "../utils.h"
+#include "../utils/body_frame.h"
+#include "../utils/utils.h"
 #include "state.h"
 
 // Define an inertial measurement unit struct
