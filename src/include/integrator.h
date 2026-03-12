@@ -57,8 +57,15 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
     // If using INS navigation, then the estimated state does not need to
     // calculate every force individually
     if (run_params->ins_nav == 1 && i == 1) {
-      a_total = imu_measurement(imu, true_state, est_state, a_total_true,
-                                a_gravs[0], a_gravs[1]);
+      // If ballistic run, turn off gyro error accumulation after boost phase
+      // to avoid slightly overestimating Coriolis error
+      if (run_params->rv_maneuv == 0 &&
+          true_t >= vehicle->booster.total_burn_time) {
+        a_total = a_total_true;
+      } else {
+        a_total = imu_measurement(imu, true_state, est_state, a_total_true,
+                                  a_gravs[0], a_gravs[1]);
+      }
     } else {
       cartvec a_drag;
       if (run_params->include_drag == 1) {
