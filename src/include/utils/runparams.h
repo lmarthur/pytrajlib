@@ -29,7 +29,6 @@ typedef struct runparams {
   int include_drag;    // flag to include aerodynamic drag force
   int atm_model;       // flag to select the atmospheric model
   int gnss_nav;        // flag to include GNSS navigation
-  int ins_nav;         // flag to include INS navigation
   int rv_maneuv;       // flag to include guidance during the reentry phase
   double reentry_vel;  // reentry velocity in meters per second
   int perfect_boost;   // 1 perfect boost, 0 realistic

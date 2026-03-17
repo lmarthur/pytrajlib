@@ -200,9 +200,9 @@ int is_reentry(state *state, double t) {
  * @param est_t current estimated flight time (seconds)
  * @return Time derivative of available lift acceleration (m/s^3)
  */
-cartvec get_a_lift_avail_jerk(state *true_state, state *est_state,
-                              runparams *run_params, vehicle *vehicle,
-                              atm_cond *est_atm_cond, double est_t) {
+cartvec get_a_lift_avail_jerk(state *est_state, runparams *run_params,
+                              vehicle *vehicle, atm_cond *est_atm_cond,
+                              double est_t) {
   // Determine if vehicle is in reentry phase
   if (!is_reentry(est_state, est_t)) {
     return zeros();
@@ -216,23 +216,10 @@ cartvec get_a_lift_avail_jerk(state *true_state, state *est_state,
   // position and velocity
   cartvec a_command = prop_nav(est_state, run_params);
 
-  // Get the lift basis vectors for the estimated state
-  cartvec est_e1, est_e2, est_e3;
-  int valid_basis =
-      get_body_frame(est_state, est_atm_cond, &est_e1, &est_e2, &est_e3);
-  if (!valid_basis) {
-    return zeros();
-  }
-
-  // Project the commanded acceleration onto the estimated lift basis vectors
-  // e_2 and e_3 because all lift acceleration must be generated orthogonal to
-  // the relative velocity
-  cartvec a_target;
-  a_target = project_and_clip(est_e2, est_e3, a_command, max_a_exec);
   // Change available lift at a fixed rate unless the difference between
   // current and target is small. For small differences, let the difference
   // reduce exponentially to keep the derivative continuous.
-  cartvec a_avail_err = subtract(a_target, est_state->a_lift_avail);
+  cartvec a_avail_err = subtract(a_command, est_state->a_lift_avail);
 
   // Apply proportional gain and clip to jerk limits
   cartvec d_a_lift_avail_dt = smultiply(a_avail_err, run_params->flap_gain);
@@ -267,11 +254,11 @@ cartvec get_a_lift_avail_jerk(state *true_state, state *est_state,
  * @param t Current simulation time in seconds
  * @return Time derivative of lift acceleration (jerk) in m/s^3
  */
-cartvec get_a_lift_jerk(state *current_state, runparams *run_params,
+cartvec get_a_lift_jerk(state *true_state, runparams *run_params,
                         vehicle *vehicle, atm_cond *atm_cond, double t) {
 
   // Determine if vehicle is in reentry phase
-  if (!is_reentry(current_state, t)) {
+  if (!is_reentry(true_state, t)) {
     return zeros();
   }
 
@@ -279,11 +266,11 @@ cartvec get_a_lift_jerk(state *current_state, runparams *run_params,
   double max_a_exec = get_max_a_exec(run_params, vehicle);
 
   // Get time constant to simulate pressure build-up
-  double time_constant = rv_time_constant(current_state, atm_cond, vehicle);
+  double time_constant = rv_time_constant(true_state, atm_cond, vehicle);
 
   // Quantize available lift to the resolution of the actuator
   double acc_resolution = get_acc_resolution(run_params, vehicle);
-  cartvec a_lift_avail = current_state->a_lift_avail;
+  cartvec a_lift_avail = true_state->a_lift_avail;
   double mag_a_lift_avail = norm(a_lift_avail);
 
   // Limit available lift magnitudes to quantized values
@@ -295,9 +282,10 @@ cartvec get_a_lift_jerk(state *current_state, runparams *run_params,
     a_lift_avail = zeros();
   }
 
-  // Get the lift basis vectors
+  // Get the lift basis vectors. Don't include gyro_error because the true lift
+  // acceleration does not depend on the internal state's estimated attitude
   cartvec e1, e2, e3;
-  int valid_basis = get_body_frame(current_state, atm_cond, &e1, &e2, &e3);
+  int valid_basis = get_body_frame(true_state, atm_cond, &e1, &e2, &e3, 0);
 
   if (!valid_basis) {
     return zeros();
@@ -311,7 +299,7 @@ cartvec get_a_lift_jerk(state *current_state, runparams *run_params,
 
   // Calculate the jerk
   cartvec d_a_lift_dt = sdivide(
-      subtract(a_lift_avail_projected, current_state->a_lift), time_constant);
+      subtract(a_lift_avail_projected, true_state->a_lift), time_constant);
 
   return d_a_lift_dt;
 }

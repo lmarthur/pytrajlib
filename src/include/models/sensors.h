@@ -52,19 +52,20 @@ imu imu_init(runparams *run_params, state *initial_state) {
 cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
                         cartvec a_total_true, cartvec a_grav_true,
                         cartvec a_grav_est) {
-
   // Gyroscope measurements
   est_state->theta_long = true_state->theta_long + est_state->gyro_error.lon -
                           true_state->initial_theta_long_pert;
   est_state->theta_lat = true_state->theta_lat + est_state->gyro_error.lat -
                          true_state->initial_theta_lat_pert;
+
+  // IMU measures total acceleration minus gravity
   cartvec a_measurable = subtract(a_total_true, a_grav_true);
 
   // Get body-centric basis vectors
   cartvec e1;
   cartvec e2;
   cartvec e3;
-  int valid = get_body_frame(true_state, NULL, &e1, &e2, &e3);
+  int valid = get_body_frame(true_state, NULL, &e1, &e2, &e3, 0);
   if (!valid) {
     printf("Warning: Invalid body frame\n");
   }
@@ -76,20 +77,28 @@ cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
       dot(a_measurable, e3),
   };
 
-  // Small angle rotation matrix around y (pitch/lat) and z (yaw/lon)
-  double cross_coupling[3][3] = {
-      {1 + imu->acc_scale.x, est_state->gyro_error.lon,
-       -est_state->gyro_error.lat},
-      {-est_state->gyro_error.lon, 1 + imu->acc_scale.y, 0},
-      {est_state->gyro_error.lat, 0, 1 + imu->acc_scale.z},
+  double accelerometer_measurement[3][3] = {
+      {1 + imu->acc_scale.x, 0, 0},
+      {0, 1 + imu->acc_scale.y, 0},
+      {0, 0, 1 + imu->acc_scale.z},
   };
 
   // Get measured acceleration in the body-centric basis
   cartvec a_measured_body_frame =
-      matvec_multiply(cross_coupling, a_measurable_body_frame);
+      matvec_multiply(accelerometer_measurement, a_measurable_body_frame);
 
-  // Change back to global basis
-  double B[3][3] = {{e1.x, e2.x, e3.x}, {e1.y, e2.y, e3.y}, {e1.z, e2.z, e3.z}};
+  cartvec e1_est;
+  cartvec e2_est;
+  cartvec e3_est;
+  valid = get_body_frame(true_state, NULL, &e1_est, &e2_est, &e3_est, 1);
+  if (!valid) {
+    printf("Warning: Invalid estimated body frame\n");
+  }
+
+  // Change back to global basis using the estimated body frame
+  double B[3][3] = {{e1_est.x, e2_est.x, e3_est.x},
+                    {e1_est.y, e2_est.y, e3_est.y},
+                    {e1_est.z, e2_est.z, e3_est.z}};
   cartvec a_measured = matvec_multiply(B, a_measured_body_frame);
 
   // Total acceleration is measured + estimated gravity

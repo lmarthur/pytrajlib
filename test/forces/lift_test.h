@@ -2,12 +2,10 @@
 #include <tau/tau.h>
 
 TEST(lift, get_a_lift_avail_jerk) {
-  state true_state = {0};
-  true_state.position.x = EARTH_RADIUS_M + 50e3;
-  true_state.velocity.x = -4000;
-  true_state.velocity.y = 100;
-
-  state est_state = true_state;
+  state est_state = {0};
+  est_state.position.x = EARTH_RADIUS_M + 50e3;
+  est_state.velocity.x = -4000;
+  est_state.velocity.y = 100;
 
   runparams run_params = {0};
   run_params.deflection_time = 0.02;
@@ -29,13 +27,13 @@ TEST(lift, get_a_lift_avail_jerk) {
   atm_cond.density = 1.225;
 
   double est_t = 100.0;
-  cartvec d_a_lift_avail_dt = get_a_lift_avail_jerk(
-      &true_state, &est_state, &run_params, &vehicle, &atm_cond, est_t);
+  cartvec d_a_lift_avail_dt = get_a_lift_avail_jerk(&est_state, &run_params,
+                                                    &vehicle, &atm_cond, est_t);
 
   double jerk_max = get_jerk_max(&run_params, &vehicle);
   cartvec est_e1, est_e2, est_e3;
   int valid_basis =
-      get_body_frame(&est_state, &atm_cond, &est_e1, &est_e2, &est_e3);
+      get_body_frame(&est_state, &atm_cond, &est_e1, &est_e2, &est_e3, 0);
   REQUIRE_EQ(valid_basis, 1);
 
   REQUIRE_LE(fabs(d_a_lift_avail_dt.x), jerk_max);
@@ -44,8 +42,8 @@ TEST(lift, get_a_lift_avail_jerk) {
   REQUIRE_LT(fabs(dot(d_a_lift_avail_dt, est_e1)), 1e-10);
 
   double non_reentry_t = 0.0;
-  cartvec zero_jerk = get_a_lift_avail_jerk(
-      &true_state, &est_state, &run_params, &vehicle, &atm_cond, non_reentry_t);
+  cartvec zero_jerk = get_a_lift_avail_jerk(&est_state, &run_params, &vehicle,
+                                            &atm_cond, non_reentry_t);
   REQUIRE_EQ(zero_jerk.x, 0);
   REQUIRE_EQ(zero_jerk.y, 0);
   REQUIRE_EQ(zero_jerk.z, 0);
@@ -87,7 +85,7 @@ TEST(lift, get_a_lift_jerk) {
       get_a_lift_jerk(&current_state, &run_params, &vehicle, &atm_cond, t);
 
   cartvec e1, e2, e3;
-  int valid_basis = get_body_frame(&current_state, &atm_cond, &e1, &e2, &e3);
+  int valid_basis = get_body_frame(&current_state, &atm_cond, &e1, &e2, &e3, 0);
   REQUIRE_EQ(valid_basis, 1);
 
   REQUIRE_GT(norm(d_a_lift_dt), 0);

@@ -35,7 +35,6 @@ ffibuilder.cdef(
         int include_drag;
         int atm_model;
         int gnss_nav;
-        int ins_nav;
         int rv_maneuv;
         double reentry_vel;
         int perfect_boost;

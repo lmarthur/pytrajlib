@@ -112,7 +112,6 @@ void print_config(runparams *run_params) {
   printf("Include drag: %d\n", run_params->include_drag);
   printf("Atmospheric model: %d\n", run_params->atm_model);
   printf("GNSS navigation: %d\n", run_params->gnss_nav);
-  printf("INS navigation: %d\n", run_params->ins_nav);
   printf("Reentry phase guidance: %d\n", run_params->rv_maneuv);
   printf("Reentry velocity: %f\n", run_params->reentry_vel);
 

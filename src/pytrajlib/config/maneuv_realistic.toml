@@ -28,8 +28,6 @@ include_drag = 1
 atm_model = 2
 # Positioning updates during exoatmospheric flight (1 is on, 0 is off)
 gnss_nav = 1
-# If set to 0, indicates perfect state measurements
-ins_nav = 1
 # If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability
 rv_maneuv = 1
 # Reentry velocity (m/s)

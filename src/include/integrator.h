@@ -47,14 +47,14 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
   // true_state_drift.velocity is acceleration ...
   state true_state_drift = {0};
   state est_state_drift = {0};
-  state est_state_diffusion = {0};
+  state true_state_diffusion = {0};
   int success = drift_fn(run_params, imu, vehicle, true_grav, est_grav,
                          true_atm_cond, est_atm_cond, true_state, est_state,
                          *true_t, *est_t, &true_state_drift, &est_state_drift);
   if (!success) {
     return 0;
   }
-  diffusion_fn(imu, &est_state_diffusion);
+  diffusion_fn(imu, &true_state_diffusion);
 
   *true_state =
       add_state(*true_state, smultiply_state(true_state_drift, time_step));
@@ -70,9 +70,9 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
           smultiply(est_state_drift.velocity, 0.5 * time_step * time_step));
 
   anglevec dW = smultiply_angle(gaussian_anglevec(), sqrt(time_step));
-  est_state->gyro_error =
-      add_anglevec(est_state->gyro_error,
-                   multiply_anglevec(est_state_diffusion.gyro_error, dW));
+  true_state->gyro_error =
+      add_anglevec(true_state->gyro_error,
+                   multiply_anglevec(true_state_diffusion.gyro_error, dW));
 
   *true_t += time_step;
   *est_t += time_step;
@@ -107,9 +107,9 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   state est_state_drift_eval[3] = {0};
   state est_state_diffusion_eval[3] = {0};
 
-  state true_state_update = {0};
+  state true_state_drift_update = {0};
+  state true_state_diffusion_update = {0};
   state est_state_drift_update = {0};
-  state est_state_diffusion_update = {0};
 
   anglevec dW = smultiply_angle(gaussian_anglevec(), sqrt(time_step));
   anglevec zeta = smultiply_angle(gaussian_anglevec(), sqrt(time_step));
@@ -118,7 +118,7 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   I0.lon = 0.5 * (dW.lon + (1.0 / sqrt(3.0)) * zeta.lon);
 
   for (int i = 0; i < num_stages; i++) {
-    diffusion_fn(imu, &est_state_diffusion_eval[i]);
+    diffusion_fn(imu, &true_state_diffusion_eval[i]);
   }
 
   for (int i = 0; i < num_stages; i++) {
@@ -140,9 +140,9 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
     true_state_drift_eval[i] = true_drift;
     est_state_drift_eval[i] = est_drift;
 
-    true_state_update =
-        add_state(true_state_update, smultiply_state(true_state_drift_eval[i],
-                                                     alpha[i] * time_step));
+    true_state_drift_update = add_state(
+        true_state_drift_update,
+        smultiply_state(true_state_drift_eval[i], alpha[i] * time_step));
 
     est_state_drift_update = add_state(
         est_state_drift_update,
@@ -150,17 +150,18 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   }
 
   for (int i = 0; i < num_stages; i++) {
-    est_state_diffusion_update.gyro_error.lat +=
+    true_state_diffusion_update.gyro_error.lat +=
         (beta1[i] * dW.lat + beta2[i] * I0.lat) *
-        est_state_diffusion_eval[i].gyro_error.lat;
-    est_state_diffusion_update.gyro_error.lon +=
+        true_state_diffusion_eval[i].gyro_error.lat;
+    true_state_diffusion_update.gyro_error.lon +=
         (beta1[i] * dW.lon + beta2[i] * I0.lon) *
-        est_state_diffusion_eval[i].gyro_error.lon;
+        true_state_diffusion_eval[i].gyro_error.lon;
   }
 
-  *true_state = add_state(true_state_initial, true_state_update);
-  *est_state = add_state(add_state(est_state_initial, est_state_drift_update),
-                         est_state_diffusion_update);
+  *true_state =
+      add_state(add_state(true_state_initial, true_state_drift_update),
+                true_state_diffusion_update);
+  *est_state = add_state(est_state_initial, est_state_drift_update);
   *true_t += time_step;
   *est_t += time_step;
   return 1;

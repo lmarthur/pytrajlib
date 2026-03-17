@@ -30,84 +30,74 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
           state *true_state_drift, state *est_state_drift) {
 
   // Get thrust acceleration
-  cartvec a_thrust;
+  cartvec a_thrust_true;
   if (run_params->perfect_boost) {
-    a_thrust =
+    a_thrust_true =
         get_thrust_acc(true_state, vehicle, run_params, true_grav, true_t);
   } else {
-    a_thrust = get_thrust_acc(est_state, vehicle, run_params, est_grav, est_t);
+    a_thrust_true =
+        get_thrust_acc(est_state, vehicle, run_params, est_grav, est_t);
   }
   // If Lambert Guidance fails, quickly exit
-  if (isnan(a_thrust.x)) {
+  if (isnan(a_thrust_true.x)) {
     return 0;
   }
-  // Get time derivative of available lift acceleration (same for true &
-  // estimated states)
-  cartvec d_a_lift_avail_dt = get_a_lift_avail_jerk(
-      true_state, est_state, run_params, vehicle, est_atm_cond, est_t);
+  // Get time derivative of available lift acceleration
+  cartvec d_a_lift_avail_dt, d_a_lift_dt;
+  if (run_params->rv_maneuv == 1) {
+    d_a_lift_avail_dt = get_a_lift_avail_jerk(est_state, run_params, vehicle,
+                                              est_atm_cond, est_t);
 
-  state *states[2] = {true_state, est_state};
-  state *state_derivs[2] = {true_state_drift, est_state_drift};
-  grav *grav_models[2] = {true_grav, est_grav};
-  atm_cond *atm_conds[2] = {true_atm_cond, est_atm_cond};
-  cartvec a_gravs[2];
-  cartvec a_total_true;
-  double times[2] = {true_t, est_t};
-  for (int i = 0; i < 2; i++) {
-    // Calculate total acceleration
-    cartvec a_total;
-    cartvec d_a_lift_dt = zeros();
-    a_gravs[i] = get_gravity_acc(grav_models[i], states[i]);
+    d_a_lift_dt =
+        get_a_lift_jerk(true_state, run_params, vehicle, true_atm_cond, true_t);
+  } else {
+    d_a_lift_avail_dt = zeros();
+    d_a_lift_dt = zeros();
+  }
 
-    // If using INS navigation, then the estimated state does not need to
-    // calculate every force individually
-    if (run_params->ins_nav == 1 && i == 1) {
-      // If ballistic run, turn off gyro error accumulation after boost phase
-      // to avoid slightly overestimating Coriolis error
-      if (run_params->rv_maneuv == 0 &&
-          true_t >= vehicle->booster.total_burn_time) {
-        a_total = a_total_true;
-      } else {
-        a_total = imu_measurement(imu, true_state, est_state, a_total_true,
-                                  a_gravs[0], a_gravs[1]);
-      }
-    } else {
-      cartvec a_drag;
-      if (run_params->include_drag == 1) {
-        a_drag = get_drag_acc(run_params, vehicle, atm_conds[i], states[i],
-                              times[i]);
-      } else {
-        a_drag = zeros();
-      }
-      a_total = add(add(add(a_thrust, a_drag), states[i]->a_lift), a_gravs[i]);
+  // Calculate total acceleration
+  cartvec a_grav_true = get_gravity_acc(true_grav, true_state);
+  cartvec a_grav_est = get_gravity_acc(est_grav, est_state);
+  cartvec a_drag_true;
+  if (run_params->include_drag) {
+    a_drag_true =
+        get_drag_acc(run_params, vehicle, true_atm_cond, true_state, true_t);
+  } else {
+    a_drag_true = zeros();
+  }
 
-      // If realistic maneuverable RV, use proportional navigation during
-      // reentry
-      if (run_params->rv_maneuv == 1 && is_reentry(states[i], times[i])) {
-        // Get lift jerk
-        d_a_lift_dt = get_a_lift_jerk(states[i], run_params, vehicle,
-                                      atm_conds[i], times[i]);
-      }
-    }
-    // Keep track of true total acceleration for estimated state's accelerometer
-    // measurement
-    if (run_params->ins_nav == 1 && i == 0) {
-      a_total_true = a_total;
-    }
+  cartvec a_total_true = add(
+      add(add(a_thrust_true, a_drag_true), true_state->a_lift), a_grav_true);
+  cartvec a_total_est = imu_measurement(imu, true_state, est_state,
+                                        a_total_true, a_grav_true, a_grav_est);
 
-    // Set state derivatives
-    state_derivs[i]->position = states[i]->velocity;
-    state_derivs[i]->velocity = a_total;
-    state_derivs[i]->a_lift = d_a_lift_dt;
-    state_derivs[i]->a_lift_avail = d_a_lift_avail_dt;
-    state_derivs[i]->gyro_error = get_gyro_drift(imu);
+  // Set true state derivatives
+  true_state_drift->position = true_state->velocity;
+  true_state_drift->velocity = a_total_true;
+  true_state_drift->a_lift = d_a_lift_dt;
+  true_state_drift->a_lift_avail = d_a_lift_avail_dt;
+  true_state_drift->gyro_error = (anglevec){0};
+
+  // Set estimated state derivatives
+  est_state_drift->position = est_state->velocity;
+  est_state_drift->velocity = a_total_est;
+  est_state_drift->a_lift = zeros();
+  est_state_drift->a_lift_avail = d_a_lift_avail_dt;
+
+  // If ballistic run, turn off gyro error accumulation after boost phase
+  // to avoid slightly overestimating Coriolis error
+  if (run_params->rv_maneuv == 0 &&
+      true_t >= vehicle->booster.total_burn_time) {
+    true_state_drift->gyro_error = (anglevec){0};
+  } else {
+    true_state_drift->gyro_error = get_gyro_drift(imu);
   }
   return 1;
 }
 
-void diffusion(imu *imu, state *est_state_diffusion) {
-  est_state_diffusion->gyro_error.lat = get_gyro_diffusion(imu);
-  est_state_diffusion->gyro_error.lon = get_gyro_diffusion(imu);
+void diffusion(imu *imu, state *true_state_diffusion) {
+  true_state_diffusion->gyro_error.lat = get_gyro_diffusion(imu);
+  true_state_diffusion->gyro_error.lon = get_gyro_diffusion(imu);
 }
 
 #endif

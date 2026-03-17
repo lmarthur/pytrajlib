@@ -38,7 +38,6 @@ def test_read_config():
     assert run_params.grav_error == 0
     assert run_params.atm_error == 0
     assert run_params.gnss_nav == 0
-    assert run_params.ins_nav == 1
     assert run_params.rv_maneuv == 1
     assert run_params.reentry_vel == 7500
     assert run_params.deflection_time == 0.0

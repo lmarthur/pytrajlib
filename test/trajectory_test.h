@@ -58,7 +58,6 @@ TEST(trajectory, fly) {
   run_params.include_drag = 0;
   run_params.atm_model = 0;
   run_params.gnss_nav = 0;
-  run_params.ins_nav = 0;
   run_params.rv_maneuv = 0;
   run_params.perfect_boost = 0;
   run_params.optimize_boost = 0;
