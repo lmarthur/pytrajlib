@@ -19,6 +19,11 @@
  * $$
  * \tau = \sqrt{-\frac{2I}{C_{m_{\alpha}} A r_e \rho v^2}}
  * $$
+ *
+ * @param current_state pointer to current vehicle state
+ * @param atm_cond pointer to atmospheric conditions
+ * @param vehicle pointer to vehicle model
+ * @return time constant in seconds
  */
 double rv_time_constant(state *current_state, atm_cond *atm_cond,
                         vehicle *vehicle) {
@@ -34,17 +39,24 @@ double rv_time_constant(state *current_state, atm_cond *atm_cond,
 }
 
 /**
- * Get commanded acceleration using proportional navigation guidance law.
- *
+ * Get commanded acceleration $\vec a_n$.
  * The proportional navigation guidance law that flies the vehicle towards the
- * target is given by a_n = -N * v_r × Ω, where N is the navigation gain, v_r is
- * the relative velocity (closing velocity), and Ω is the line-of-sight rotation
- * vector: Ω = (r × v_r) / (r · r), where r is the distance between the vehicle
- * and the aimpoint.
- *
- * The target is assumed to be stationary, so v_r is the negative of the
- * estimated vehicle velocity.
- *
+ target
+ * is given by
+ * $$
+ * \vec a_n = -N \vec v_r \times \Omega,
+ * $$
+ * where $N$ is the navigation gain,
+ * $\vec v_r$ is the relative velocity between the vehicle and the aimpoint,
+ known
+ * as the closing velocity, and $\Omega$ is the line-of-sight rotation vector:
+ * $$
+ * \Omega = \frac{\vec r \times \vec v_r}{\vec r \cdot \vec{r}}
+ * $$
+ * with $\vec r$ as the displacement between the vehicle and the aimpoint.
+
+ * The target is assumed to be stationary, so $\vec v_r$ is the estimated
+ vehicle velocity.
  * @param estimated_state the vehicle's internal estimated state
  * @param run_params the run parameters struct
  * @return commanded acceleration in the inertial-frame Cartesian basis (m/s^2)
@@ -72,19 +84,19 @@ cartvec prop_nav(state *estimated_state, runparams *run_params) {
 }
 
 /**
- * Calculate the acceleration resolution based on actuator resolution.
+ * Compute lift-acceleration quantization from actuator angular resolution.
  *
  * Based on ISO 3408-3 grade 5, we assume the actuator has a ±10 degree range
  * with a 0.01 degree resolution.
  *
  * @param run_params run parameters struct
  * @param vehicle vehicle struct
- * @return acceleration resolution in m/s^2
+ * @return Lift acceleration resolution in m/s^2
  */
 double get_acc_resolution(runparams *run_params, vehicle *vehicle) {
   double max_a_exec = get_max_a_exec(run_params, vehicle);
   double deflection_max =
-      M_PI / 6; // maximum flap deflection in radians (30 degrees)
+      M_PI / 18; // maximum flap deflection in radians (10 degrees)
   double actuator_resolution =
       0.01 * M_PI / 180; // 0.01 degree resolution in radians
 
@@ -95,11 +107,11 @@ double get_acc_resolution(runparams *run_params, vehicle *vehicle) {
 }
 
 /**
- * Calculate the maximum jerk (rate of change of acceleration).
+ * Calculate the maximum jerk
  *
  * @param run_params run parameters struct
  * @param vehicle vehicle struct
- * @return maximum jerk in m/s^3
+ * @return Maximum jerk in m/s^3
  */
 double get_jerk_max(runparams *run_params, vehicle *vehicle) {
   double max_a_exec = get_max_a_exec(run_params, vehicle);
@@ -111,14 +123,17 @@ double get_jerk_max(runparams *run_params, vehicle *vehicle) {
 }
 
 /**
- * Project arr to e2 and e3 basis, clip to the max_val in that basis, then
- * project back to the Cartesian basis.
+ * Project a vector into the lift plane, clip, then reconstruct in Cartesian.
  *
- * @param e2 basis vector
- * @param e3 basis vector
- * @param array to project and clip
- * @param max_val maximum value for clipping
- * @return projected and clipped vector
+ * Given orthonormal lift-plane basis vectors $(\mathbf e_2,\mathbf e_3)$,
+ * the vector components are clipped independently to
+ * $[-\text{max\_val},\text{max\_val}]$ and mapped back.
+ *
+ * @param e2 Lift-plane basis vector
+ * @param e3 Lift-plane basis vector
+ * @param arr Vector to project and clip
+ * @param max_val Absolute clip limit in projected coordinates
+ * @return Projected and clipped vector in Cartesian coordinates
  */
 cartvec project_and_clip(cartvec e2, cartvec e3, cartvec arr, double max_val) {
   // Project onto e2 and e3
@@ -134,15 +149,16 @@ cartvec project_and_clip(cartvec e2, cartvec e3, cartvec arr, double max_val) {
   return result;
 }
 
-// int is_reentry(state *state) {
-//   double altitude = get_altitude(state->position);
-//   double angle_v_grav =
-//       acos(dot(state->velocity, smultiply(state->position, -1)) /
-//            (norm(state->velocity) * norm(state->position)));
-//   return (angle_v_grav > 0) && (angle_v_grav < M_PI_2) && (altitude < 1e5);
-
-// }
-
+/**
+ * Determine whether the vehicle is in reentry conditions.
+ *
+ * Reentry is detected when altitude is below 100 km and velocity is directed
+ * generally toward Earth center.
+ *
+ * @param state Pointer to current state
+ * @param t Current simulation time in seconds
+ * @return 1 if in reentry, else 0
+ */
 int is_reentry(state *state, double t) {
   // Check for small t to account for initial velocity error that might make the
   // vehicle appear to be below altitude 0 after a single step
@@ -165,34 +181,24 @@ int is_reentry(state *state, double t) {
 /**
  * Get the time derivative of the available lift acceleration.
  *
- * The available lift acceleration encodes the position of the control flaps.
- * The control flaps are assumed to move at an instantaneous acceleration up to
+ * The available lift acceleration encodes the position of the control surfaces.
+ * The control surfaces are assumed to instantaneously accelerate to
  * a fixed maximum angular velocity. The maximum angular velocity of the control
- * flaps is equivalent to a maximum available jerk.
+ * surfaces is equivalent to a maximum available jerk.
  *
  * To avoid oscillations, as the available acceleration approaches the commanded
  * acceleration, the jerk reduces from the maximum jerk to a jerk proportional
  * to the difference. When the difference is less than the actuator resolution,
  * the derivative is zero.
  *
- * The proportional navigation commands may produce a commanded lift
- * acceleration with a component in the direction of the velocity, but the
- * control flaps will only attempt to produce lift acceleration in the plane
- * perpendicular to the estimated relative velocity (e_2, e_3 directions).
- *
  * Only valid during reentry phase.
  *
- * @param t current flight time (seconds)
- * @param true_state pointer to the true state
- * @param estimated_state pointer to the estimated state
+ * @param est_state pointer to the estimated state
  * @param run_params pointer to the run parameters struct
  * @param vehicle pointer to the vehicle struct
  * @param est_atm_cond pointer to the estimated atmospheric conditions
- * @param d_a_lift_avail_dt_true time derivative of true available lift
- * acceleration (m/s^3)
- * @param d_a_lift_avail_dt_est time derivative of estimated available lift
- * acceleration (m/s^3)
- * @return 0 if invalid, 1 if valid
+ * @param est_t current estimated flight time (seconds)
+ * @return Time derivative of available lift acceleration (m/s^3)
  */
 cartvec get_a_lift_avail_jerk(state *true_state, state *est_state,
                               runparams *run_params, vehicle *vehicle,
@@ -238,8 +244,7 @@ cartvec get_a_lift_avail_jerk(state *true_state, state *est_state,
 }
 
 /**
- * Get time derivative of the lift acceleration for both true and estimated
- * states.
+ * Compute lift jerk from first-order lag toward available lift.
  *
  * The lift acceleration approaches the available lift acceleration
  * exponentially based on the time constant:
@@ -247,8 +252,20 @@ cartvec get_a_lift_avail_jerk(state *true_state, state *est_state,
  * a(t) = a_\text{avail} (1 - e^{-t/\tau})
  * $$
  *
- * The lift jerk is zero if it is not during the reentry phase or when the
- * lift basis cannot be calculated.
+ * The lift jerk is zero outside reentry or when a valid lift basis is
+ * unavailable.
+ *
+ * The proportional navigation commands may produce a commanded lift
+ * acceleration with a component in the direction of the velocity, but
+ * this function will only attempt to produce lift acceleration in the plane
+ * perpendicular to the relative velocity (e_2, e_3 directions).
+ *
+ * @param current_state Pointer to current state
+ * @param run_params Pointer to run configuration parameters
+ * @param vehicle Pointer to vehicle model
+ * @param atm_cond Pointer to atmospheric conditions
+ * @param t Current simulation time in seconds
+ * @return Time derivative of lift acceleration (jerk) in m/s^3
  */
 cartvec get_a_lift_jerk(state *current_state, runparams *run_params,
                         vehicle *vehicle, atm_cond *atm_cond, double t) {
