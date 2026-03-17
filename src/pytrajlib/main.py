@@ -29,7 +29,7 @@ EARTH_RADIUS_M = 6371e3
 
 
 @ffi.def_extern()
-def update_loading_bar(n, total):
+def _update_loading_bar(n, total) -> None:
     """
     Create or update the loading bar with the current progress and total.
     This is called from the C code.

@@ -9,8 +9,7 @@ include_dirs = ["src/include"]
 ffibuilder = FFI()
 ffibuilder.cdef(
     """
-    extern "Python" void update_loading_bar(int, int);
-    void loading_bar_callback(int x, int y);
+    extern "Python" void _update_loading_bar(int, int);
 
     typedef struct runparams {
         char *run_name;
@@ -120,10 +119,10 @@ module_name = "_traj" if __name__ == "__main__" else "pytrajlib._traj"
 ffibuilder.set_source(
     module_name,
     """
-static void update_loading_bar(int, int);
+static void _update_loading_bar(int, int);
 
-void loading_bar_callback(int x, int y) {
-    update_loading_bar(x, y);
+void update_loading_bar(int x, int y) {
+    _update_loading_bar(x, y);
 }
 
 #include "trajectory.h"
