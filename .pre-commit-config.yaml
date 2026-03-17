@@ -18,6 +18,13 @@ repos:
 
   - repo: local
     hooks:
+      - id: generate-c-api-docs
+        name: Generate C API docs
+        entry: uv run docs/parser.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: clang-tidy
         name: clang-tidy
         entry: clang-tidy --extra-arg=-Isrc/include

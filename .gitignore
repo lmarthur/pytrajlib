@@ -30,3 +30,5 @@ __pycache__
 *.egg-info
 
 _traj*
+
+site

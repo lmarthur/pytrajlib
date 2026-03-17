@@ -1,0 +1,17 @@
+/*
+Fix to show \vec symbol
+https://github.com/squidfunk/mkdocs-material/issues/8519
+*/
+.katex-html svg {
+  max-width: revert;
+}
+
+/* Make horizontal lines a bit higher contrast */
+hr {
+  background-color: var(--md-typeset-color);
+}
+
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Merriweather"
+}

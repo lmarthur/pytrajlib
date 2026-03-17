@@ -20,19 +20,21 @@
  * We model the gyroscope error along the pitch and yaw axes as small rotations
  * of the true body frame. A rotation around the pitch axis by a small angle
  * $\theta$ is
+ *
  * $$
- * \mathbf{R_y} = \begin{bmatrix} 1 & 0 & \theta  \\ 0 & 1 & 0 \\ -\theta & 0 &
- * 1\end{bmatrix}.
+ * \mathbf{R_y} = \begin{bmatrix} 1 & 0 & \theta  \\\ 0 & 1 & 0 \\\ -\theta & 0
+ * & 1\end{bmatrix}.
  * $$
+ *
  * A rotation around the yaw axis by a small angle $\phi$ is
  * $$
- * \mathbf{R_z} = \begin{bmatrix} 1 & -\phi & 0  \\ \phi & 1 & 0 \\ 0 & 0 &
+ * \mathbf{R_z} = \begin{bmatrix} 1 & -\phi & 0  \\\ \phi & 1 & 0 \\\ 0 & 0 &
  * 1\end{bmatrix}.
  * $$
  * So the final cross coupling matrix for small angles is
  * $$
- * \mathbf{R_y R_z} = \begin{bmatrix} 1 & -\phi & \theta  \\ \phi & 1 & 0
- * \\ -\theta & 0 & 1\end{bmatrix}.
+ * \mathbf{R_y R_z} = \begin{bmatrix} 1 & -\phi & \theta  \\\ \phi & 1 & 0
+ * \\\ -\theta & 0 & 1\end{bmatrix}.
  * $$
  *
  * @param current_state Current vehicle state containing position, velocity,
