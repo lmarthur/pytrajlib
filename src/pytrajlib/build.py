@@ -82,8 +82,8 @@ ffibuilder.cdef(
     } cartvec;
 
     typedef struct anglevec {
-        double lat;
-        double lon;
+        double pitch;
+        double yaw;
     } anglevec;
 
     typedef struct state {

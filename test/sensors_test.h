@@ -13,8 +13,8 @@ TEST(sensors, imu_init) {
   REQUIRE_EQ(norm(imu.acc_scale), 0);
   REQUIRE_EQ(imu.gyro_bias_stability, run_params.gyro_bias_stability);
   REQUIRE_EQ(imu.gyro_noise, run_params.gyro_noise);
-  REQUIRE_EQ(imu.gyro_bias.lat, 0);
-  REQUIRE_EQ(imu.gyro_bias.lon, 0);
+  REQUIRE_EQ(imu.gyro_bias.pitch, 0);
+  REQUIRE_EQ(imu.gyro_bias.yaw, 0);
 }
 
 TEST(sensors, imu_meas) {
@@ -65,8 +65,8 @@ TEST(sensors, imu_update) {
 
   true_state.theta_long = 1;
   true_state.theta_lat = -0.5;
-  est_state.gyro_error.lon = 0.1;
-  est_state.gyro_error.lat = -0.2;
+  est_state.gyro_error.yaw = 0.1;
+  est_state.gyro_error.pitch = -0.2;
 
   imu imu = imu_init(&run_params, &true_state);
   cartvec a_total_est =
@@ -76,9 +76,9 @@ TEST(sensors, imu_update) {
   REQUIRE_EQ(a_total_est.y, 0);
   REQUIRE_EQ(a_total_est.z, 0);
   REQUIRE_EQ(est_state.theta_long,
-             true_state.theta_long + est_state.gyro_error.lon);
+             true_state.theta_long + est_state.gyro_error.yaw);
   REQUIRE_EQ(est_state.theta_lat,
-             true_state.theta_lat + est_state.gyro_error.lat);
+             true_state.theta_lat + est_state.gyro_error.pitch);
 
   run_params.gyro_noise = 1e-3;
   run_params.gyro_bias_stability = 2e-3;
@@ -87,8 +87,8 @@ TEST(sensors, imu_update) {
   anglevec drift = get_gyro_drift(&imu);
   double diffusion = get_gyro_diffusion(&imu);
 
-  REQUIRE_EQ(drift.lat, imu.gyro_bias.lat);
-  REQUIRE_EQ(drift.lon, imu.gyro_bias.lon);
+  REQUIRE_EQ(drift.pitch, imu.gyro_bias.pitch);
+  REQUIRE_EQ(drift.yaw, imu.gyro_bias.yaw);
   REQUIRE_EQ(diffusion, imu.gyro_noise);
 }
 

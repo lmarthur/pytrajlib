@@ -60,8 +60,8 @@ state init_true_state(runparams *run_params) {
 
   state.a_lift_avail = zeros();
 
-  state.gyro_error.lat = 0;
-  state.gyro_error.lon = 0;
+  state.gyro_error.pitch = 0;
+  state.gyro_error.yaw = 0;
 
   return state;
 }
@@ -91,8 +91,8 @@ state init_est_state(runparams *run_params, state true_state) {
 
   state.a_lift_avail = zeros();
 
-  state.gyro_error.lat = true_state.initial_theta_lat_pert;
-  state.gyro_error.lon = true_state.initial_theta_long_pert;
+  state.gyro_error.pitch = true_state.initial_theta_lat_pert;
+  state.gyro_error.yaw = true_state.initial_theta_long_pert;
 
   return state;
 }
@@ -114,8 +114,8 @@ state add_state(state a, state b) {
   result.theta_long = a.theta_long + b.theta_long;
   result.theta_lat = a.theta_lat + b.theta_lat;
 
-  result.gyro_error.lat = a.gyro_error.lat + b.gyro_error.lat;
-  result.gyro_error.lon = a.gyro_error.lon + b.gyro_error.lon;
+  result.gyro_error.pitch = a.gyro_error.pitch + b.gyro_error.pitch;
+  result.gyro_error.yaw = a.gyro_error.yaw + b.gyro_error.yaw;
 
   return result;
 }
@@ -135,8 +135,8 @@ state smultiply_state(state a, double s) {
   result.theta_long = a.theta_long * s;
   result.theta_lat = a.theta_lat * s;
 
-  result.gyro_error.lat = a.gyro_error.lat * s;
-  result.gyro_error.lon = a.gyro_error.lon * s;
+  result.gyro_error.pitch = a.gyro_error.pitch * s;
+  result.gyro_error.yaw = a.gyro_error.yaw * s;
 
   return result;
 }

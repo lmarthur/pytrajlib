@@ -39,15 +39,16 @@
  *                      lift acceleration, and gyro error data.
  * @param atm_cond Atmospheric conditions used to compute wind-relative
  * velocity. May be NULL to use inertial velocity directly.
- * @param e_1 Output unit vector aligned with the relative velocity direction.
- * @param e_2 Output unit vector aligned with the orthogonalized lift direction.
- * @param e_3 Output unit vector completing the right-handed body frame.
+ * @param xhat Output unit vector aligned with the relative velocity direction.
+ * @param yhat Output unit vector aligned with the orthogonalized lift
+ * direction.
+ * @param zhat Output unit vector completing the right-handed body frame.
  * @param apply_gyro_error 1 to apply gyro cross-coupling error to the
  *                         basis vectors.
  * @return 1 if the basis is successfully defined, 0 otherwise.
  */
-int get_body_frame(state *true_state, atm_cond *atm_cond, cartvec *e_1,
-                   cartvec *e_2, cartvec *e_3, int apply_gyro_error) {
+int get_body_frame(state *true_state, atm_cond *atm_cond, cartvec *xhat,
+                   cartvec *yhat, cartvec *zhat, int apply_gyro_error) {
 
   cartvec velocity = true_state->velocity;
   cartvec a_lift = true_state->a_lift;
@@ -77,8 +78,8 @@ int get_body_frame(state *true_state, atm_cond *atm_cond, cartvec *e_1,
   }
 
   cartvec tmp_lift;
-  // If the initial lift magnitude is zero, define e_2 based on a cross
-  // product between e_1 and global z-axis
+  // If the initial lift magnitude is zero, define yhat based on a cross
+  // product between xhat and global z-axis
   if (initial_lift_mag < 1e-6) {
     tmp_lift.x = 0;
     tmp_lift.y = 0;
@@ -87,21 +88,21 @@ int get_body_frame(state *true_state, atm_cond *atm_cond, cartvec *e_1,
     tmp_lift = a_lift;
   }
 
-  // Create e_2 vector by moving the lift vector to be orthogonal to the
+  // Create yhat vector by moving the lift vector to be orthogonal to the
   // relative velocity
-  gram_schmidt_orthonorm(v_rel, tmp_lift, e_1, e_2);
-  *e_3 = cross(*e_1, *e_2);
+  gram_schmidt_orthonorm(v_rel, tmp_lift, xhat, yhat);
+  *zhat = cross(*xhat, *yhat);
 
   if (apply_gyro_error) {
     // Small angle rotation matrix around y (pitch) and z (yaw)
     double cross_coupling[3][3] = {
-        {1.0, -true_state->gyro_error.lon, true_state->gyro_error.lat},
-        {true_state->gyro_error.lon, 1.0, 0.0},
-        {-true_state->gyro_error.lat, 0.0, 1.0},
+        {1.0, -true_state->gyro_error.yaw, true_state->gyro_error.pitch},
+        {true_state->gyro_error.yaw, 1.0, 0.0},
+        {-true_state->gyro_error.pitch, 0.0, 1.0},
     };
-    *e_1 = matvec_multiply(cross_coupling, *e_1);
-    *e_2 = matvec_multiply(cross_coupling, *e_2);
-    *e_3 = matvec_multiply(cross_coupling, *e_3);
+    *xhat = matvec_multiply(cross_coupling, *xhat);
+    *yhat = matvec_multiply(cross_coupling, *yhat);
+    *zhat = matvec_multiply(cross_coupling, *zhat);
   }
 
   return 1;

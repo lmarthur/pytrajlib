@@ -74,8 +74,8 @@ static void physics_test_constant_diffusion(imu *imu,
                                             state *est_state_diffusion) {
   (void)imu;
   *est_state_diffusion = (state){0};
-  est_state_diffusion->gyro_error.lat = 2.0;
-  est_state_diffusion->gyro_error.lon = -3.0;
+  est_state_diffusion->gyro_error.pitch = 2.0;
+  est_state_diffusion->gyro_error.yaw = -3.0;
 }
 
 TEST(integrator, euler_maruyama_step) {
@@ -196,10 +196,10 @@ TEST(integrator, euler_maruyama_step_diffusion) {
                                     physics_test_constant_diffusion);
 
   REQUIRE_EQ(success, 1);
-  REQUIRE_EQ(true_state.gyro_error.lat, 0);
-  REQUIRE_EQ(true_state.gyro_error.lon, 0);
-  REQUIRE_EQ(est_state.gyro_error.lat, 2.0 * expected_dW.lat);
-  REQUIRE_EQ(est_state.gyro_error.lon, -3.0 * expected_dW.lon);
+  REQUIRE_EQ(true_state.gyro_error.pitch, 0);
+  REQUIRE_EQ(true_state.gyro_error.yaw, 0);
+  REQUIRE_EQ(est_state.gyro_error.pitch, 2.0 * expected_dW.pitch);
+  REQUIRE_EQ(est_state.gyro_error.yaw, -3.0 * expected_dW.yaw);
 }
 
 static double sra3_test_diffusion_input = 1.0;
@@ -223,10 +223,10 @@ static int sra3_test_drift(runparams *run_params, imu *imu, vehicle *vehicle,
   *true_state_drift = (state){0};
   *est_state_drift = (state){0};
 
-  true_state_drift->gyro_error.lat = -true_state->gyro_error.lat;
-  est_state_drift->gyro_error.lat = -est_state->gyro_error.lat;
+  true_state_drift->gyro_error.pitch = -true_state->gyro_error.pitch;
+  est_state_drift->gyro_error.pitch = -est_state->gyro_error.pitch;
 
-  sra3_test_diffusion_input = est_state->gyro_error.lat;
+  sra3_test_diffusion_input = est_state->gyro_error.pitch;
   return 1;
 }
 
@@ -234,7 +234,7 @@ static void sra3_test_diffusion(imu *imu, state *est_state_diffusion) {
   (void)imu;
 
   *est_state_diffusion = (state){0};
-  est_state_diffusion->gyro_error.lat = 0.5 * sra3_test_diffusion_input;
+  est_state_diffusion->gyro_error.pitch = 0.5 * sra3_test_diffusion_input;
 }
 
 static void sra3_test_zero_diffusion(imu *imu, state *est_state_diffusion) {
@@ -254,8 +254,8 @@ TEST(integrator, sra3_sde_stays_positive) {
   const double time_step = 1e-3;
   const int num_steps = 1000;
 
-  true_state.gyro_error.lat = 1.0;
-  est_state.gyro_error.lat = 1.0;
+  true_state.gyro_error.pitch = 1.0;
+  est_state.gyro_error.pitch = 1.0;
 
   for (int i = 0; i < num_steps; i++) {
     int success = euler_maruyama_step(
@@ -264,7 +264,7 @@ TEST(integrator, sra3_sde_stays_positive) {
     REQUIRE_EQ(success, 1);
   }
 
-  double final_value = est_state.gyro_error.lat;
+  double final_value = est_state.gyro_error.pitch;
   printf("Final sra3 test SDE value: %.12f\n", final_value);
   REQUIRE_GT(final_value, 0.0);
 }
@@ -281,8 +281,8 @@ TEST(integrator, sra3_sde_differs_from_zero_diffusion) {
   const double time_step = 1e-3;
   const int num_steps = 1000;
 
-  true_state_with_diffusion.gyro_error.lat = 1.0;
-  est_state_with_diffusion.gyro_error.lat = 1.0;
+  true_state_with_diffusion.gyro_error.pitch = 1.0;
+  est_state_with_diffusion.gyro_error.pitch = 1.0;
 
   for (int i = 0; i < num_steps; i++) {
     int success = euler_maruyama_step(
@@ -298,8 +298,8 @@ TEST(integrator, sra3_sde_differs_from_zero_diffusion) {
   double est_t_zero_diffusion = 0.0;
   sra3_test_diffusion_input = 1.0;
 
-  true_state_zero_diffusion.gyro_error.lat = 1.0;
-  est_state_zero_diffusion.gyro_error.lat = 1.0;
+  true_state_zero_diffusion.gyro_error.pitch = 1.0;
+  est_state_zero_diffusion.gyro_error.pitch = 1.0;
 
   for (int i = 0; i < num_steps; i++) {
     int success = euler_maruyama_step(
@@ -310,7 +310,7 @@ TEST(integrator, sra3_sde_differs_from_zero_diffusion) {
     REQUIRE_EQ(success, 1);
   }
 
-  REQUIRE_GT(fabs(est_state_with_diffusion.gyro_error.lat -
-                  est_state_zero_diffusion.gyro_error.lat),
+  REQUIRE_GT(fabs(est_state_with_diffusion.gyro_error.pitch -
+                  est_state_zero_diffusion.gyro_error.pitch),
              1e-12);
 }

@@ -12,8 +12,8 @@ typedef struct cartvec {
 } cartvec;
 
 typedef struct anglevec {
-  double lat;
-  double lon;
+  double pitch;
+  double yaw;
 } anglevec;
 
 cartvec zeros() {
@@ -40,8 +40,8 @@ cartvec gaussian_cartvec() {
  */
 anglevec gaussian_anglevec() {
   anglevec g;
-  g.lat = ran_gaussian(1);
-  g.lon = ran_gaussian(1);
+  g.pitch = ran_gaussian(1);
+  g.yaw = ran_gaussian(1);
   return g;
 }
 
@@ -78,8 +78,8 @@ cartvec smultiply(cartvec vec, double s) {
  */
 anglevec smultiply_angle(anglevec vec, double s) {
   anglevec result;
-  result.lat = vec.lat * s;
-  result.lon = vec.lon * s;
+  result.pitch = vec.pitch * s;
+  result.yaw = vec.yaw * s;
   return result;
 }
 
@@ -99,8 +99,8 @@ cartvec sdivide(cartvec vec, double s) {
  */
 anglevec multiply_anglevec(anglevec a, anglevec b) {
   anglevec result;
-  result.lat = a.lat * b.lat;
-  result.lon = a.lon * b.lon;
+  result.pitch = a.pitch * b.pitch;
+  result.yaw = a.yaw * b.yaw;
   return result;
 }
 
@@ -120,8 +120,8 @@ cartvec add(cartvec a, cartvec b) {
  */
 anglevec add_anglevec(anglevec a, anglevec b) {
   anglevec result;
-  result.lat = a.lat + b.lat;
-  result.lon = a.lon + b.lon;
+  result.pitch = a.pitch + b.pitch;
+  result.yaw = a.yaw + b.yaw;
   return result;
 }
 
@@ -187,7 +187,7 @@ cartvec project(cartvec v, cartvec u) {
 
 /**
  * Create an orthonormal basis e0, e1 from linearly independent vectors
- * v0, v1 where e1 = v0 / norm(v0)
+ * v0, v1 where e0 = v0 / norm(v0)
  */
 void gram_schmidt_orthonorm(cartvec v0, cartvec v1, cartvec *e0, cartvec *e1) {
   cartvec u0 = v0;

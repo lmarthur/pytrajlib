@@ -84,12 +84,13 @@ TEST(lift, get_a_lift_jerk) {
   cartvec d_a_lift_dt =
       get_a_lift_jerk(&current_state, &run_params, &vehicle, &atm_cond, t);
 
-  cartvec e1, e2, e3;
-  int valid_basis = get_body_frame(&current_state, &atm_cond, &e1, &e2, &e3, 0);
+  cartvec xhat, yhat, zhat;
+  int valid_basis =
+      get_body_frame(&current_state, &atm_cond, &xhat, &yhat, &zhat, 0);
   REQUIRE_EQ(valid_basis, 1);
 
   REQUIRE_GT(norm(d_a_lift_dt), 0);
-  REQUIRE_LT(fabs(dot(d_a_lift_dt, e1)), 1e-10);
+  REQUIRE_LT(fabs(dot(d_a_lift_dt, xhat)), 1e-10);
 
   cartvec no_reentry =
       get_a_lift_jerk(&current_state, &run_params, &vehicle, &atm_cond, 0.0);

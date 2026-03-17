@@ -35,8 +35,8 @@ imu imu_init(runparams *run_params, state *initial_state) {
   imu.gyro_bias_stability = run_params->gyro_bias_stability;
   imu.gyro_noise = run_params->gyro_noise;
 
-  imu.gyro_bias.lat = imu.gyro_bias_stability * ran_gaussian(1); // rad/s
-  imu.gyro_bias.lon = imu.gyro_bias_stability * ran_gaussian(1); // rad/s
+  imu.gyro_bias.pitch = imu.gyro_bias_stability * ran_gaussian(1); // rad/s
+  imu.gyro_bias.yaw = imu.gyro_bias_stability * ran_gaussian(1);   // rad/s
 
   return imu;
 }
@@ -53,28 +53,28 @@ cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
                         cartvec a_total_true, cartvec a_grav_true,
                         cartvec a_grav_est) {
   // Gyroscope measurements
-  est_state->theta_long = true_state->theta_long + est_state->gyro_error.lon -
+  est_state->theta_long = true_state->theta_long + est_state->gyro_error.yaw -
                           true_state->initial_theta_long_pert;
-  est_state->theta_lat = true_state->theta_lat + est_state->gyro_error.lat -
+  est_state->theta_lat = true_state->theta_lat + est_state->gyro_error.pitch -
                          true_state->initial_theta_lat_pert;
 
   // IMU measures total acceleration minus gravity
   cartvec a_measurable = subtract(a_total_true, a_grav_true);
 
   // Get body-centric basis vectors
-  cartvec e1;
-  cartvec e2;
-  cartvec e3;
-  int valid = get_body_frame(true_state, NULL, &e1, &e2, &e3, 0);
+  cartvec xhat;
+  cartvec yhat;
+  cartvec zhat;
+  int valid = get_body_frame(true_state, NULL, &xhat, &yhat, &zhat, 0);
   if (!valid) {
     printf("Warning: Invalid body frame\n");
   }
 
   // Change to body-centric basis
   cartvec a_measurable_body_frame = {
-      dot(a_measurable, e1),
-      dot(a_measurable, e2),
-      dot(a_measurable, e3),
+      dot(a_measurable, xhat),
+      dot(a_measurable, yhat),
+      dot(a_measurable, zhat),
   };
 
   double accelerometer_measurement[3][3] = {
@@ -87,18 +87,18 @@ cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
   cartvec a_measured_body_frame =
       matvec_multiply(accelerometer_measurement, a_measurable_body_frame);
 
-  cartvec e1_est;
-  cartvec e2_est;
-  cartvec e3_est;
-  valid = get_body_frame(true_state, NULL, &e1_est, &e2_est, &e3_est, 1);
+  cartvec xhat_est;
+  cartvec yhat_est;
+  cartvec zhat_est;
+  valid = get_body_frame(true_state, NULL, &xhat_est, &yhat_est, &zhat_est, 1);
   if (!valid) {
     printf("Warning: Invalid estimated body frame\n");
   }
 
   // Change back to global basis using the estimated body frame
-  double B[3][3] = {{e1_est.x, e2_est.x, e3_est.x},
-                    {e1_est.y, e2_est.y, e3_est.y},
-                    {e1_est.z, e2_est.z, e3_est.z}};
+  double B[3][3] = {{xhat_est.x, yhat_est.x, zhat_est.x},
+                    {xhat_est.y, yhat_est.y, zhat_est.y},
+                    {xhat_est.z, yhat_est.z, zhat_est.z}};
   cartvec a_measured = matvec_multiply(B, a_measured_body_frame);
 
   // Total acceleration is measured + estimated gravity

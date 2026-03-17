@@ -96,8 +96,8 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
 }
 
 void diffusion(imu *imu, state *true_state_diffusion) {
-  true_state_diffusion->gyro_error.lat = get_gyro_diffusion(imu);
-  true_state_diffusion->gyro_error.lon = get_gyro_diffusion(imu);
+  true_state_diffusion->gyro_error.pitch = get_gyro_diffusion(imu);
+  true_state_diffusion->gyro_error.yaw = get_gyro_diffusion(imu);
 }
 
 #endif

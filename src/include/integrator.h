@@ -18,10 +18,10 @@ state sra3_H(state drift_evals[3], state diffusion_evals[3], state Y, int i,
     H = add_state(H, smultiply_state(drift_evals[j], A0[i][j] * time_step));
 
     state diffusion_update = {0};
-    diffusion_update.gyro_error.lat =
-        B0[i][j] * diffusion_evals[j].gyro_error.lat * I0.lat;
-    diffusion_update.gyro_error.lon =
-        B0[i][j] * diffusion_evals[j].gyro_error.lon * I0.lon;
+    diffusion_update.gyro_error.pitch =
+        B0[i][j] * diffusion_evals[j].gyro_error.pitch * I0.pitch;
+    diffusion_update.gyro_error.yaw =
+        B0[i][j] * diffusion_evals[j].gyro_error.yaw * I0.yaw;
     H = add_state(H, diffusion_update);
   }
 
@@ -114,8 +114,8 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   anglevec dW = smultiply_angle(gaussian_anglevec(), sqrt(time_step));
   anglevec zeta = smultiply_angle(gaussian_anglevec(), sqrt(time_step));
   anglevec I0;
-  I0.lat = 0.5 * (dW.lat + (1.0 / sqrt(3.0)) * zeta.lat);
-  I0.lon = 0.5 * (dW.lon + (1.0 / sqrt(3.0)) * zeta.lon);
+  I0.pitch = 0.5 * (dW.pitch + (1.0 / sqrt(3.0)) * zeta.pitch);
+  I0.yaw = 0.5 * (dW.yaw + (1.0 / sqrt(3.0)) * zeta.yaw);
 
   for (int i = 0; i < num_stages; i++) {
     diffusion_fn(imu, &true_state_diffusion_eval[i]);
@@ -150,12 +150,12 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   }
 
   for (int i = 0; i < num_stages; i++) {
-    true_state_diffusion_update.gyro_error.lat +=
-        (beta1[i] * dW.lat + beta2[i] * I0.lat) *
-        true_state_diffusion_eval[i].gyro_error.lat;
-    true_state_diffusion_update.gyro_error.lon +=
-        (beta1[i] * dW.lon + beta2[i] * I0.lon) *
-        true_state_diffusion_eval[i].gyro_error.lon;
+    true_state_diffusion_update.gyro_error.pitch +=
+        (beta1[i] * dW.pitch + beta2[i] * I0.pitch) *
+        true_state_diffusion_eval[i].gyro_error.pitch;
+    true_state_diffusion_update.gyro_error.yaw +=
+        (beta1[i] * dW.yaw + beta2[i] * I0.yaw) *
+        true_state_diffusion_eval[i].gyro_error.yaw;
   }
 
   *true_state =

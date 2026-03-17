@@ -129,23 +129,24 @@ double get_jerk_max(runparams *run_params, vehicle *vehicle) {
  * the vector components are clipped independently to
  * $[-\text{max\_val},\text{max\_val}]$ and mapped back.
  *
- * @param e2 Lift-plane basis vector
- * @param e3 Lift-plane basis vector
+ * @param yhat Lift-plane basis vector
+ * @param zhat Lift-plane basis vector
  * @param arr Vector to project and clip
  * @param max_val Absolute clip limit in projected coordinates
  * @return Projected and clipped vector in Cartesian coordinates
  */
-cartvec project_and_clip(cartvec e2, cartvec e3, cartvec arr, double max_val) {
-  // Project onto e2 and e3
-  double arr_e2 = dot(arr, e2);
-  double arr_e3 = dot(arr, e3);
+cartvec project_and_clip(cartvec yhat, cartvec zhat, cartvec arr,
+                         double max_val) {
+  // Project onto yhat and zhat
+  double arr_yhat = dot(arr, yhat);
+  double arr_zhat = dot(arr, zhat);
 
   // Clip to max_val
-  arr_e2 = clip(arr_e2, -max_val, max_val);
-  arr_e3 = clip(arr_e3, -max_val, max_val);
+  arr_yhat = clip(arr_yhat, -max_val, max_val);
+  arr_zhat = clip(arr_zhat, -max_val, max_val);
 
   // Project back to Cartesian basis
-  cartvec result = add(smultiply(e2, arr_e2), smultiply(e3, arr_e3));
+  cartvec result = add(smultiply(yhat, arr_yhat), smultiply(zhat, arr_zhat));
   return result;
 }
 
@@ -245,7 +246,7 @@ cartvec get_a_lift_avail_jerk(state *est_state, runparams *run_params,
  * The proportional navigation commands may produce a commanded lift
  * acceleration with a component in the direction of the velocity, but
  * this function will only attempt to produce lift acceleration in the plane
- * perpendicular to the relative velocity (e_2, e_3 directions).
+ * perpendicular to the relative velocity (plane of yhat, zhat).
  *
  * @param current_state Pointer to current state
  * @param run_params Pointer to run configuration parameters
@@ -284,8 +285,9 @@ cartvec get_a_lift_jerk(state *true_state, runparams *run_params,
 
   // Get the lift basis vectors. Don't include gyro_error because the true lift
   // acceleration does not depend on the internal state's estimated attitude
-  cartvec e1, e2, e3;
-  int valid_basis = get_body_frame(true_state, atm_cond, &e1, &e2, &e3, 0);
+  cartvec xhat, yhat, zhat;
+  int valid_basis =
+      get_body_frame(true_state, atm_cond, &xhat, &yhat, &zhat, 0);
 
   if (!valid_basis) {
     return zeros();
@@ -295,7 +297,7 @@ cartvec get_a_lift_jerk(state *true_state, runparams *run_params,
   // on the attitude of the vehicle, so the available lift should be
   // projected onto the lift basis and clipped to the maximum achievable lift
   cartvec a_lift_avail_projected =
-      project_and_clip(e2, e3, a_lift_avail, max_a_exec);
+      project_and_clip(yhat, zhat, a_lift_avail, max_a_exec);
 
   // Calculate the jerk
   cartvec d_a_lift_dt = sdivide(
