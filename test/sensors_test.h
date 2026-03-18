@@ -24,7 +24,7 @@ TEST(sensors, imu_meas) {
   runparams run_params = {0};
 
   state true_state = init_true_state(&run_params);
-  state est_state = init_est_state(&run_params, true_state);
+  state est_state = init_est_state(&run_params);
   imu imu = imu_init(&run_params, &true_state);
 
   cartvec a_total_true = {10, 10, 10};
@@ -61,12 +61,12 @@ TEST(sensors, imu_update) {
   // by the integrator.
   runparams run_params = {0};
   state true_state = init_true_state(&run_params);
-  state est_state = init_est_state(&run_params, true_state);
+  state est_state = init_est_state(&run_params);
 
   true_state.theta_long = 1;
   true_state.theta_lat = -0.5;
-  est_state.gyro_error.yaw = 0.1;
-  est_state.gyro_error.pitch = -0.2;
+  true_state.gyro_error.yaw = 0.1;
+  true_state.gyro_error.pitch = -0.2;
 
   imu imu = imu_init(&run_params, &true_state);
   cartvec a_total_est =
@@ -76,9 +76,9 @@ TEST(sensors, imu_update) {
   REQUIRE_EQ(a_total_est.y, 0);
   REQUIRE_EQ(a_total_est.z, 0);
   REQUIRE_EQ(est_state.theta_long,
-             true_state.theta_long + est_state.gyro_error.yaw);
+             true_state.theta_long + true_state.gyro_error.yaw);
   REQUIRE_EQ(est_state.theta_lat,
-             true_state.theta_lat + est_state.gyro_error.pitch);
+             true_state.theta_lat + true_state.gyro_error.pitch);
 
   run_params.gyro_noise = 1e-3;
   run_params.gyro_bias_stability = 2e-3;
@@ -109,7 +109,7 @@ TEST(sensors, gnss_meas) {
 
   gnss gnss = gnss_init(&run_params);
   state true_state = init_true_state(&run_params);
-  state est_state = init_est_state(&run_params, true_state);
+  state est_state = init_est_state(&run_params);
   true_state.position.x = 10;
   true_state.position.y = 10;
   true_state.position.z = 10;

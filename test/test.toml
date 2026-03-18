@@ -1,0 +1,60 @@
+[RUN]
+run_name = "test"
+output_path = "./output"
+num_runs = 10
+num_runs_optimizer = 100
+time_step_lambert = 1e-2
+time_step_midcourse = 1
+time_step_atm = 1e-2
+traj_output = 0
+range = 10000000
+x_aim = -1106312.539916013
+y_aim = 6274210.194440777
+z_aim = 0.0
+theta_long = 0.9519165463
+theta_lat = 0.0
+integrator = 1
+
+[FLIGHT]
+grav_error = 0
+include_drag = 1
+atm_model = 0
+gnss_nav = 0
+rv_maneuv = 0
+reentry_vel = 7500
+perfect_boost = 0
+optimize_boost = 0
+t_des_final = 2753.7160616465
+t_vert_boost = 10
+
+[VEHICLE]
+rv_type = 1
+deflection_time = 0.02
+actuator_force = 100
+gearing_ratio = 1
+nav_gain = 5
+flap_gain = 100
+rv_mass = 450.0
+rv_length = 2.75
+rv_radius = 0.23
+rv_c_d_0 = 0.1
+rv_c_d_alpha = 0.487
+booster_area = 2.2698
+booster_maxdiam = 1.7
+booster_c_d_0 = 0.15
+booster_bus_mass = 100.0
+
+[ERRORPARAMS]
+initial_x_error = 0.0
+initial_pos_error = 0.0
+initial_vel_error = 0.0
+initial_angle_error = 0.0
+acc_scale_stability = 0.0
+gyro_bias_stability = 0.0
+gyro_noise = 0.0
+gnss_noise = 0.0
+gnss_freq = 1.0
+cl_pert = 0.0
+step_acc_mag = 0.0
+step_acc_hgt = 0.0
+step_acc_dur = 0.0

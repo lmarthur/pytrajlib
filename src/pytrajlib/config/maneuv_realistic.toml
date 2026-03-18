@@ -1,14 +1,14 @@
 [RUN]
 run_name = "run_4"
 num_runs = 30
-num_runs_optimizer = 100
+num_runs_optimizer = 3
 time_step_lambert = 0.01
 time_step_midcourse = 0.01
 time_step_atm = 0.01
 traj_output = 1
 # 100 longitude (~11e3 km range)
 # Range is in meters
-range = 11119492.664455872
+range = 10000000
 # The aimpoint is superseded by the range
 x_aim = -1106312.539916013
 y_aim = 6274210.194440777
@@ -33,7 +33,7 @@ rv_maneuv = 1
 # Reentry velocity (m/s)
 reentry_vel = 7500
 # If 0, indicates realistic boost, 1 perfect
-perfect_boost = 1
+perfect_boost = 0
 # If 1, optimize t_des_final/theta_long. If 0, use provided values directly.
 optimize_boost = 1
 t_des_final = 2000

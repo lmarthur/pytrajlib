@@ -231,7 +231,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
 
   // Initalize true and estimated states
   state true_state = *initial_state;
-  state est_state = init_est_state(run_params, true_state);
+  state est_state = init_est_state(run_params);
   double true_t = 0;
   double est_t = 0;
 

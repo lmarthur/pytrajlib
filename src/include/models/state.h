@@ -60,8 +60,10 @@ state init_true_state(runparams *run_params) {
 
   state.a_lift_avail = zeros();
 
-  state.gyro_error.pitch = 0;
-  state.gyro_error.yaw = 0;
+  // The true state holds the gyro error for ease of calculating the body frame
+  // which uses the gyro error to perturb the true body frame.
+  state.gyro_error.pitch = state.initial_theta_lat_pert;
+  state.gyro_error.yaw = state.initial_theta_long_pert;
 
   return state;
 }
@@ -72,7 +74,7 @@ state init_true_state(runparams *run_params) {
  * @param run_params Pointer to run configuration parameters
  * @return Initialized estimated state
  */
-state init_est_state(runparams *run_params, state true_state) {
+state init_est_state(runparams *run_params) {
 
   state state;
   // Initialize for full trajectory run
@@ -91,8 +93,8 @@ state init_est_state(runparams *run_params, state true_state) {
 
   state.a_lift_avail = zeros();
 
-  state.gyro_error.pitch = true_state.initial_theta_lat_pert;
-  state.gyro_error.yaw = true_state.initial_theta_long_pert;
+  state.gyro_error.pitch = 0;
+  state.gyro_error.yaw = 0;
 
   return state;
 }

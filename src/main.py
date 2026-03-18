@@ -33,10 +33,10 @@ EARTH_RADIUS_M = 6371e3
 
 def get_miss_distance(params):
     # thrust_lon, t_vert_boost = params
-    t_des_final, thrust_lon, t_vert_boost = params
+    t_des_final, thrust_yaw, t_vert_boost = params
     # t_des_final = params
     run_params.t_des_final = c_double(t_des_final)
-    run_params.theta_long = c_double(thrust_lon)
+    run_params.thrust_yaw = c_double(thrust_yaw)
     run_params.t_vert_boost = c_double(t_vert_boost)
     impact_data_pointer = pytraj.mc_run(run_params)
 
@@ -79,8 +79,8 @@ def get_miss_distance(params):
         dist,
         "t",
         run_params.t_des_final,
-        "thrust lon",
-        thrust_lon,
+        "thrust yaw",
+        thrust_yaw,
         "t_vert_boost",
         t_vert_boost,
     )
@@ -113,10 +113,10 @@ if __name__ == "__main__":
     tf_des = 252.0 + 0.223 * RDESKM - (5.44e-6) * RDESKM * RDESKM
     print("Initial guess for t_des_final: ", tf_des)
     # tf_des = 4000
-    thrust_lon = 1.04719755
+    thrust_yaw = 1.04719755
     t_vert_boost = 10
     run_params.t_des_final = c_double(tf_des)
-    run_params.theta_long = c_double(thrust_lon)
+    run_params.thrust_yaw = c_double(thrust_yaw)
     run_params.t_vert_boost = c_double(t_vert_boost)
 
     # Save original parameters
@@ -147,7 +147,7 @@ if __name__ == "__main__":
 
     result = minimize(
         get_miss_distance,
-        x0=(tf_des, thrust_lon, t_vert_boost),
+        x0=(tf_des, thrust_yaw, t_vert_boost),
         method="Nelder-Mead",
         bounds=[(300, 5000), (0, np.pi), (0.1, 100)],
     )

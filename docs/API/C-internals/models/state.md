@@ -26,7 +26,6 @@ Initialize the estimated vehicle state without stochastic perturbations.
 | Name | Type | Description |
 | --- | --- | --- |
 | `run_params` | `runparams *` | Pointer to run configuration parameters |
-| `true_state` | `state` |  |
 
 ### Returns
 

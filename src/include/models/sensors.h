@@ -53,9 +53,9 @@ cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
                         cartvec a_total_true, cartvec a_grav_true,
                         cartvec a_grav_est) {
   // Gyroscope measurements
-  est_state->theta_long = true_state->theta_long + est_state->gyro_error.yaw -
+  est_state->theta_long = true_state->theta_long + true_state->gyro_error.yaw -
                           true_state->initial_theta_long_pert;
-  est_state->theta_lat = true_state->theta_lat + est_state->gyro_error.pitch -
+  est_state->theta_lat = true_state->theta_lat + true_state->gyro_error.pitch -
                          true_state->initial_theta_lat_pert;
 
   // IMU measures total acceleration minus gravity

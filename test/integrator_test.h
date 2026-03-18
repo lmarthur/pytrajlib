@@ -71,11 +71,11 @@ static int physics_test_zero_drift(runparams *run_params, imu *imu,
 // Constant diffusion helper that injects known coefficients into the gyro
 // error SDE so the Wiener increment scaling can be checked directly.
 static void physics_test_constant_diffusion(imu *imu,
-                                            state *est_state_diffusion) {
+                                            state *true_state_diffusion) {
   (void)imu;
-  *est_state_diffusion = (state){0};
-  est_state_diffusion->gyro_error.pitch = 2.0;
-  est_state_diffusion->gyro_error.yaw = -3.0;
+  *true_state_diffusion = (state){0};
+  true_state_diffusion->gyro_error.pitch = 2.0;
+  true_state_diffusion->gyro_error.yaw = -3.0;
 }
 
 TEST(integrator, euler_maruyama_step) {
@@ -196,10 +196,10 @@ TEST(integrator, euler_maruyama_step_diffusion) {
                                     physics_test_constant_diffusion);
 
   REQUIRE_EQ(success, 1);
-  REQUIRE_EQ(true_state.gyro_error.pitch, 0);
-  REQUIRE_EQ(true_state.gyro_error.yaw, 0);
-  REQUIRE_EQ(est_state.gyro_error.pitch, 2.0 * expected_dW.pitch);
-  REQUIRE_EQ(est_state.gyro_error.yaw, -3.0 * expected_dW.yaw);
+  REQUIRE_EQ(est_state.gyro_error.pitch, 0);
+  REQUIRE_EQ(est_state.gyro_error.yaw, 0);
+  REQUIRE_EQ(true_state.gyro_error.pitch, 2.0 * expected_dW.pitch);
+  REQUIRE_EQ(true_state.gyro_error.yaw, -3.0 * expected_dW.yaw);
 }
 
 static double sra3_test_diffusion_input = 1.0;
@@ -226,20 +226,20 @@ static int sra3_test_drift(runparams *run_params, imu *imu, vehicle *vehicle,
   true_state_drift->gyro_error.pitch = -true_state->gyro_error.pitch;
   est_state_drift->gyro_error.pitch = -est_state->gyro_error.pitch;
 
-  sra3_test_diffusion_input = est_state->gyro_error.pitch;
+  sra3_test_diffusion_input = true_state->gyro_error.pitch;
   return 1;
 }
 
-static void sra3_test_diffusion(imu *imu, state *est_state_diffusion) {
+static void sra3_test_diffusion(imu *imu, state *true_state_diffusion) {
   (void)imu;
 
-  *est_state_diffusion = (state){0};
-  est_state_diffusion->gyro_error.pitch = 0.5 * sra3_test_diffusion_input;
+  *true_state_diffusion = (state){0};
+  true_state_diffusion->gyro_error.pitch = 0.5 * sra3_test_diffusion_input;
 }
 
-static void sra3_test_zero_diffusion(imu *imu, state *est_state_diffusion) {
+static void sra3_test_zero_diffusion(imu *imu, state *true_state_diffusion) {
   (void)imu;
-  *est_state_diffusion = (state){0};
+  *true_state_diffusion = (state){0};
 }
 
 TEST(integrator, sra3_sde_stays_positive) {
@@ -264,7 +264,7 @@ TEST(integrator, sra3_sde_stays_positive) {
     REQUIRE_EQ(success, 1);
   }
 
-  double final_value = est_state.gyro_error.pitch;
+  double final_value = true_state.gyro_error.pitch;
   printf("Final sra3 test SDE value: %.12f\n", final_value);
   REQUIRE_GT(final_value, 0.0);
 }
@@ -310,7 +310,7 @@ TEST(integrator, sra3_sde_differs_from_zero_diffusion) {
     REQUIRE_EQ(success, 1);
   }
 
-  REQUIRE_GT(fabs(est_state_with_diffusion.gyro_error.pitch -
-                  est_state_zero_diffusion.gyro_error.pitch),
+  REQUIRE_GT(fabs(true_state_with_diffusion.gyro_error.pitch -
+                  true_state_zero_diffusion.gyro_error.pitch),
              1e-12);
 }

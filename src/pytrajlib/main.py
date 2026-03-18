@@ -196,15 +196,6 @@ def optimize_trajectory(config_dict):
 
         return miss_dist
 
-    # Set desired time
-    # Calculate the range to the aimpoint over the surface of the Earth
-    # This is the great circle distance between the aimpoint and the origin
-    aimpoint_lon = np.arctan2(config_dict["y_aim"], config_dict["x_aim"])
-    aimpoint_lat = np.arctan2(
-        config_dict["z_aim"],
-        np.sqrt(config_dict["x_aim"] ** 2 + config_dict["y_aim"] ** 2),
-    )
-
     range_km = config_dict["range"] / 1000.0
 
     # Basic guess of the desired time modified from Zarchan's (2012) Listing 33.1
@@ -217,13 +208,19 @@ def optimize_trajectory(config_dict):
         x0=(tf_des, without_error_params["theta_long"]),
         method="Nelder-Mead",
         bounds=[(300, 5000), (0, np.pi)],
-        options=dict(maxfev=100),
+        options=dict(maxfev=200),
     )
     print(result)
     return result.x
 
 
-def run(config: str = None, plot: bool = False, plot_path: str = None, **kwargs):
+def run(
+    config: str = None,
+    plot: bool = False,
+    plot_path: str = None,
+    return_config=False,
+    **kwargs,
+):
     """Load config, override with kwargs, and run the C Monte Carlo code.
 
     Args
@@ -245,15 +242,12 @@ def run(config: str = None, plot: bool = False, plot_path: str = None, **kwargs)
                 **config_dict.get("VEHICLE", {}),
                 **config_dict.get("ERRORPARAMS", {}),
             }
-        print(f"Loaded from TOML: {config_dict}")
     else:
         config_dict = _get_default_config().copy()
-        print("No config file, using built-in defaults")
 
     explicit_kwargs = {k: v for k, v in kwargs.items() if v is not _UNSET}
 
     if explicit_kwargs:
-        print(f"Overriding with CLI args: {explicit_kwargs}")
         config_dict.update(explicit_kwargs)
 
     atm_path = str(
@@ -269,7 +263,6 @@ def run(config: str = None, plot: bool = False, plot_path: str = None, **kwargs)
     config_dict.setdefault("optimize_boost", 1)
     _set_aimpoint_from_range(config_dict)
 
-    print("Final config:", config_dict)
     print("Running...")
 
     if config_dict["optimize_boost"]:
@@ -299,11 +292,12 @@ def run(config: str = None, plot: bool = False, plot_path: str = None, **kwargs)
         print("Generating trajectory plots...")
         plot_trajectory(trajectory_df, save_path=save_path)
 
-    print(impact_df)
     print(f"CEP={np.quantile(miss_distance, 0.5)}")
     print("Done!")
     _keep_alive.clear()
 
+    if return_config:
+        return impact_df, config_dict
     return impact_df
 
 
@@ -344,7 +338,8 @@ def cli():
     if plot and plot_path is None:
         plot_path = os.getcwd()
 
-    run(config=config, plot=plot, plot_path=plot_path, **kwargs)
+    impact_df = run(config=config, plot=plot, plot_path=plot_path, **kwargs)
+    print(impact_df)
 
 
 if __name__ == "__main__":
