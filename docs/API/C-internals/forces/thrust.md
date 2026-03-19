@@ -105,10 +105,12 @@ Get thrust acceleration using Lambert Guidance outside the atmosphere
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `state` | `state *` |  |
+| `true_state` | `state *` |  |
+| `est_state` | `state *` |  |
 | `vehicle` | `vehicle *` |  |
 | `run_params` | `runparams *` |  |
-| `grav_model` | `grav *` |  |
+| `true_grav` | `grav *` |  |
+| `est_grav` | `grav *` |  |
 | `t` | `double` |  |
 
 ### Returns

@@ -30,14 +30,9 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
           state *true_state_drift, state *est_state_drift) {
 
   // Get thrust acceleration
-  cartvec a_thrust_true;
-  if (run_params->perfect_boost) {
-    a_thrust_true =
-        get_thrust_acc(true_state, vehicle, run_params, true_grav, true_t);
-  } else {
-    a_thrust_true =
-        get_thrust_acc(est_state, vehicle, run_params, est_grav, est_t);
-  }
+  cartvec a_thrust_true = get_thrust_acc(
+      true_state, est_state, vehicle, run_params, true_grav, est_grav, true_t);
+
   // If Lambert Guidance fails, quickly exit
   if (isnan(a_thrust_true.x)) {
     return 0;
