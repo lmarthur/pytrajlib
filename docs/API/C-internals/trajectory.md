@@ -61,6 +61,10 @@ Writes a trajectory state row to an output file.
 
 Computes interpolated impact states and applies coriolis/aimpoint correction.
 
+The Coriolis effect on miss distance only shows up in the difference between
+true and estimated timing because the Coriolis force is equivalent on both
+true and estimated trajectories.
+
 ### Parameters
 
 | Name | Type | Description |

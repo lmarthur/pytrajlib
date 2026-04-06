@@ -35,7 +35,8 @@ because the position is updated using the velocity and the acceleration.
 Advance the state using SRA3 (Stochastic Runge-Kutta for Additive Noise).
 
 References:
-Rößler, A. (2010). Runge–Kutta Methods for the Strong Approximation of
+
+>Rößler, A. (2010). Runge–Kutta Methods for the Strong Approximation of
 Solutions of Stochastic Differential Equations. SIAM Journal on Numerical
 Analysis, 48(3), 922–952. https://doi.org/10.1137/09076636X
 

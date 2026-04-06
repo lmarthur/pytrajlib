@@ -76,6 +76,77 @@ def _split_params(raw_params: str) -> list[str]:
     return parts
 
 
+def extract_header_intro(source: str) -> str:
+    """Extract comment text from the top of a header file.
+
+    Captures leading block (`/* ... */`) and line (`// ...`) comments until the
+    first non-comment token, then returns combined markdown-friendly text.
+    """
+    lines = source.splitlines()
+    idx = 0
+    intro_parts: list[str] = []
+
+    while idx < len(lines) and lines[idx].strip() == "":
+        idx += 1
+
+    while idx < len(lines):
+        stripped = lines[idx].lstrip()
+
+        if stripped.startswith("/*"):
+            block_lines: list[str] = []
+            line = lines[idx]
+
+            if "*/" in line:
+                start = line.find("/*") + 2
+                end = line.find("*/", start)
+                block_lines.append(line[start:end])
+                idx += 1
+            else:
+                start = line.find("/*") + 2
+                block_lines.append(line[start:])
+                idx += 1
+
+                while idx < len(lines):
+                    current = lines[idx]
+                    if "*/" in current:
+                        end = current.find("*/")
+                        block_lines.append(current[:end])
+                        idx += 1
+                        break
+                    block_lines.append(current)
+                    idx += 1
+
+            cleaned = [_strip_doc_prefix(raw) for raw in block_lines]
+            intro_text = _lines_to_text(cleaned)
+            if intro_text:
+                intro_parts.append(intro_text)
+
+            while idx < len(lines) and lines[idx].strip() == "":
+                idx += 1
+            continue
+
+        if stripped.startswith("//"):
+            line_comment_lines: list[str] = []
+            while idx < len(lines):
+                current = lines[idx].lstrip()
+                if not current.startswith("//"):
+                    break
+                line_comment_lines.append(re.sub(r"^\s*//\s?", "", lines[idx]))
+                idx += 1
+
+            intro_text = _lines_to_text(line_comment_lines)
+            if intro_text:
+                intro_parts.append(intro_text)
+
+            while idx < len(lines) and lines[idx].strip() == "":
+                idx += 1
+            continue
+
+        break
+
+    return "\n\n".join(intro_parts)
+
+
 def _parse_param(param: str) -> ParamDoc | None:
     cleaned = _normalize_space(param)
     if not cleaned or cleaned == "void":
@@ -215,7 +286,9 @@ def _format_function_markdown(function_doc: FunctionDoc) -> str:
     return "\n".join(lines)
 
 
-def build_markdown(header_path: Path, functions: list[FunctionDoc]) -> str:
+def build_markdown(
+    header_path: Path, functions: list[FunctionDoc], header_intro: str = ""
+) -> str:
     """Build markdown content for a header.
 
     Args:
@@ -227,6 +300,10 @@ def build_markdown(header_path: Path, functions: list[FunctionDoc]) -> str:
     """
     title = header_path.stem.replace("_", " ").title()
     lines = [f"# {title}", ""]
+
+    if header_intro:
+        lines.extend(header_intro.splitlines())
+        lines.append("")
 
     if not functions:
         lines.append("No documented functions found.")
@@ -253,6 +330,7 @@ def generate_docs(include_root: Path, docs_root: Path) -> tuple[int, list[Path]]
     written: list[Path] = []
     for header_path in sorted(include_root.rglob("*.h")):
         source = header_path.read_text(encoding="utf-8")
+        header_intro = extract_header_intro(source)
         functions = extract_docstrings(source)
         if not functions:
             continue
@@ -260,7 +338,11 @@ def generate_docs(include_root: Path, docs_root: Path) -> tuple[int, list[Path]]
         relative = header_path.relative_to(include_root)
         md_path = docs_root / relative.with_suffix(".md")
         md_path.parent.mkdir(parents=True, exist_ok=True)
-        markdown = build_markdown(header_path=header_path, functions=functions)
+        markdown = build_markdown(
+            header_path=header_path,
+            functions=functions,
+            header_intro=header_intro,
+        )
         md_path.write_text(markdown, encoding="utf-8")
         written.append(md_path)
 

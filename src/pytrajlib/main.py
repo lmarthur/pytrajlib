@@ -2,7 +2,6 @@ import argparse
 import importlib.resources
 import os
 import tempfile
-import time
 import tomllib
 from copy import deepcopy
 from pathlib import Path
@@ -153,7 +152,14 @@ def impact_data_to_df(impact_data, config):
 
 def optimize_trajectory(config_dict):
     """
-    Find optimal desired time of flight, thrust angle inside the atmosphere
+    Use the Nelder-Mead algorithm to select the initial thrust angle and desired
+    flight time by finding the values that minimize the average miss distance
+    across `config_dict['num_runs_optimizer']` trajectories of a ballistic flight
+    with the user-specified atmosphere and no other sources of error.
+
+    >Gao, F. and Han, L. Implementing the Nelder-Mead simplex algorithm with
+    adaptive parameters. 2012. Computational Optimization and Applications.
+    51:1, pp. 259-277
     """
     _keep_alive["loading_bar"] = _LOADING_BAR_DISABLED
     without_error_params = deepcopy(config_dict)

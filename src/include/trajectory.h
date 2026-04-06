@@ -112,6 +112,10 @@ void write_trajectory_state(FILE *traj_file, double t, double current_mass,
 /**
  * Computes interpolated impact states and applies coriolis/aimpoint correction.
  *
+ * The Coriolis effect on miss distance only shows up in the difference between
+ * true and estimated timing because the Coriolis force is equivalent on both
+ * true and estimated trajectories.
+ *
  * @param old_true_state Pointer to pre-impact true state
  * @param true_state Pointer to post-impact true state
  * @param old_true_t Pre-impact true time

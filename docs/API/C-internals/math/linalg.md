@@ -222,7 +222,10 @@ Compute the cross product of two 3-vectors: result = a x b
 
 Rotate vector v around unit vector k by specified angle.
 Uses Rodrigues' rotation formula
-https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
+
+>Wikipedia contributors. (2026). Rodrigues’ rotation formula—Wikipedia, The
+Free Encyclopedia.
+https://en.wikipedia.org/w/index.php?title=Rodrigues%27_rotation_formula&oldid=1340370650
 
 ### Parameters
 

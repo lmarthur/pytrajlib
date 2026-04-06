@@ -24,7 +24,7 @@ PLOT_PARAMS = {
 }
 
 
-def setup_pyplot():
+def _setup_pyplot():
     """Configure matplotlib parameters."""
     plt.rcParams.update(PLOT_PARAMS)
 
@@ -63,7 +63,7 @@ def plot_impact(
     Returns:
         Dictionary with computed statistics (cep, miss_distance, etc.)
     """
-    setup_pyplot()
+    _setup_pyplot()
 
     impact_x_local, impact_y_local = get_local_impact(impact_df, aimpoint)
 
@@ -170,7 +170,7 @@ def plot_trajectory(
         trajectory_df: DataFrame with trajectory data
         save_path: Optional path to save figures
     """
-    setup_pyplot()
+    _setup_pyplot()
 
     # Extract columns
     t = trajectory_df["t"].values
