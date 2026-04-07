@@ -43,11 +43,10 @@ def traj_plot(run_path):
     est_ax_total = traj_data[:, 17]
     est_ay_total = traj_data[:, 18]
     est_az_total = traj_data[:, 19]
-    true_ax_lift = traj_data[:, 20]
-    true_ay_lift = traj_data[:, 21]
-    true_az_lift = traj_data[:, 22]
-    est_ax_lift = traj_data[:, 23]
-    est_ay_lift = traj_data[:, 24]
+    true_deflection_angle = traj_data[:, 20]
+    true_alpha = traj_data[:, 21]
+    est_deflection_angle = traj_data[:, 22]
+    est_alpha = traj_data[:, 23]
     est_az_lift = traj_data[:, 25]
 
     true_altitude = (
@@ -272,28 +271,24 @@ def traj_plot(run_path):
     plt.close()
 
     # lift acceleration
+    # plot deflection angle and angle of attack vs. time during reentry
     plt.figure(figsize=(10, 10))
     plt.plot(
         true_t[(true_altitude < 1e5) & (true_t > 200)],
-        true_ax_lift[(true_altitude < 1e5) & (true_t > 200)],
-        label="ax",
+        true_deflection_angle[(true_altitude < 1e5) & (true_t > 200)] * 180 / np.pi,
+        label="Deflection Angle",
     )
     plt.plot(
         true_t[(true_altitude < 1e5) & (true_t > 200)],
-        true_ay_lift[(true_altitude < 1e5) & (true_t > 200)],
-        label="ay",
-    )
-    plt.plot(
-        true_t[(true_altitude < 1e5) & (true_t > 200)],
-        true_az_lift[(true_altitude < 1e5) & (true_t > 200)],
-        label="az",
+        true_alpha[(true_altitude < 1e5) & (true_t > 200)] * 180 / np.pi,
+        label="Angle of Attack",
     )
     plt.xlabel("Time (s)")
-    plt.ylabel("Lift Acceleration (m/s^2)")
-    plt.title("Lift Acceleration")
+    plt.ylabel("Angle (degrees)")
+    plt.title("Control Surface Deflection and Angle of Attack During Reentry")
     plt.legend()
     plt.grid()
-    plt.savefig(run_path + "lift_acceleration.pdf")
+    plt.savefig(run_path + "deflection_and_aoa.pdf")
     plt.close()
 
     # plot y and z position vs. altitude

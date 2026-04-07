@@ -163,6 +163,14 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
       add_state(add_state(true_state_initial, true_state_drift_update),
                 true_state_diffusion_update);
   *est_state = add_state(est_state_initial, est_state_drift_update);
+  true_state->alpha = fmod(true_state->alpha, 2 * M_PI);
+
+  // Convert resolution from degrees to radians
+  double resolution = run_params->actuator_resolution * M_PI / 180;
+  double max_extent = run_params->max_deflection_angle * M_PI / 180;
+  double clipped = clip(fmod(true_state->deflection_angle, 2 * M_PI),
+                        -max_extent, max_extent);
+  true_state->deflection_angle = round(clipped / resolution) * resolution;
   *true_t += time_step;
   *est_t += time_step;
   return 1;

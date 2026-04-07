@@ -1,100 +1,76 @@
 #include "../../src/include/forces/lift.h"
+#include <math.h>
 #include <tau/tau.h>
 
-TEST(lift, get_a_lift_avail_jerk) {
-  state est_state = {0};
-  est_state.position.x = EARTH_RADIUS_M + 50e3;
-  est_state.velocity.x = -4000;
-  est_state.velocity.y = 100;
-
+TEST(lift, get_a_lift_mag) {
   runparams run_params = {0};
-  run_params.deflection_time = 0.02;
-  run_params.actuator_force = 100;
-  run_params.gearing_ratio = 1;
-  run_params.nav_gain = 5;
-  run_params.flap_gain = 100;
-  run_params.x_aim = EARTH_RADIUS_M * cos(M_PI / 6);
-  run_params.y_aim = EARTH_RADIUS_M * sin(M_PI / 6);
-  run_params.z_aim = 0;
+  state current_state = init_true_state(&run_params);
+  current_state.velocity.x = 1000;
+  current_state.alpha = 0.1;
 
-  vehicle vehicle;
+  vehicle vehicle = {0};
   vehicle.rv = init_swerve_rv();
-  vehicle.booster = init_mmiii_booster();
-  vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
 
   atm_cond atm_cond = {0};
-  atm_cond.altitude = 50e3;
   atm_cond.density = 1.225;
 
-  double est_t = 100.0;
-  cartvec d_a_lift_avail_dt = get_a_lift_avail_jerk(&est_state, &run_params,
-                                                    &vehicle, &atm_cond, est_t);
+  double a_lift_mag = get_a_lift_mag(&current_state, &vehicle, &atm_cond);
 
-  double jerk_max = get_jerk_max(&run_params, &vehicle);
-  cartvec est_e1, est_e2, est_e3;
-  int valid_basis =
-      get_body_frame(&est_state, &atm_cond, &est_e1, &est_e2, &est_e3, 0);
-  REQUIRE_EQ(valid_basis, 1);
-
-  REQUIRE_LE(fabs(d_a_lift_avail_dt.x), jerk_max);
-  REQUIRE_LE(fabs(d_a_lift_avail_dt.y), jerk_max);
-  REQUIRE_LE(fabs(d_a_lift_avail_dt.z), jerk_max);
-  REQUIRE_LT(fabs(dot(d_a_lift_avail_dt, est_e1)), 1e-10);
-
-  double non_reentry_t = 0.0;
-  cartvec zero_jerk = get_a_lift_avail_jerk(&est_state, &run_params, &vehicle,
-                                            &atm_cond, non_reentry_t);
-  REQUIRE_EQ(zero_jerk.x, 0);
-  REQUIRE_EQ(zero_jerk.y, 0);
-  REQUIRE_EQ(zero_jerk.z, 0);
+  REQUIRE_GT(a_lift_mag, 0);
+  REQUIRE_TRUE(isfinite(a_lift_mag));
 }
 
-TEST(lift, get_a_lift_jerk) {
-  state current_state = {0};
-  current_state.position.x = EARTH_RADIUS_M + 50e3;
-  current_state.velocity.x = -4000;
-  current_state.velocity.y = 100;
-
+TEST(lift, get_lift_acc) {
   runparams run_params = {0};
-  run_params.deflection_time = 0.02;
-  run_params.actuator_force = 100;
-  run_params.gearing_ratio = 1;
+  run_params.rv_maneuv = 1;
+  run_params.theta_long = 0; // Initialize attitudes
+  run_params.theta_lat = 0;
 
-  vehicle vehicle;
+  state true_state = init_true_state(&run_params);
+  state est_state = init_est_state(&run_params);
+  true_state.position.x = EARTH_RADIUS_M + 50000; // 50 km altitude
+  true_state.velocity.x = -5000; // Moving toward Earth for reentry
+  true_state.velocity.y = 1000;  // Lateral velocity component
+  true_state.velocity.z = -2000; // Downward velocity
+  true_state.alpha = 0.1;
+  est_state.position.x = EARTH_RADIUS_M + 50000;
+  est_state.velocity.x = -5000;
+  est_state.velocity.y = 1000;
+  est_state.velocity.z = -2000;
+
+  vehicle vehicle = {0};
   vehicle.rv = init_swerve_rv();
-  vehicle.booster = init_mmiii_booster();
-  vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
 
   atm_cond atm_cond = {0};
-  atm_cond.altitude = 50e3;
   atm_cond.density = 1.225;
 
-  double acc_resolution = get_acc_resolution(&run_params, &vehicle);
-  current_state.a_lift_avail.z = 3 * acc_resolution;
-  current_state.a_lift.z = 3 * acc_resolution;
+  grav grav = init_grav(&run_params);
+  cartvec a_lift = get_lift_acc(&true_state, &est_state, &run_params, &vehicle,
+                                &atm_cond, 100.0, &grav);
 
-  double t = 100.0;
-  cartvec zero_jerk =
-      get_a_lift_jerk(&current_state, &run_params, &vehicle, &atm_cond, t);
-  REQUIRE_LT(fabs(zero_jerk.x), 1e-12);
-  REQUIRE_LT(fabs(zero_jerk.y), 1e-12);
-  REQUIRE_LT(fabs(zero_jerk.z), 1e-12);
+  REQUIRE_TRUE(isfinite(a_lift.x));
+  REQUIRE_TRUE(isfinite(a_lift.y));
+  REQUIRE_TRUE(isfinite(a_lift.z));
+  REQUIRE_GT(norm(a_lift), 0);
+}
 
-  current_state.a_lift = zeros();
-  cartvec d_a_lift_dt =
-      get_a_lift_jerk(&current_state, &run_params, &vehicle, &atm_cond, t);
+TEST(lift, get_aoa_angular_acceleration) {
+  runparams run_params = {0};
 
-  cartvec xhat, yhat, zhat;
-  int valid_basis =
-      get_body_frame(&current_state, &atm_cond, &xhat, &yhat, &zhat, 0);
-  REQUIRE_EQ(valid_basis, 1);
+  state current_state = init_true_state(&run_params);
+  current_state.velocity.x = 1000;
+  current_state.alpha = 0.05;
+  current_state.d_alpha_dt = 0.01;
+  current_state.deflection_angle = 0.02;
 
-  REQUIRE_GT(norm(d_a_lift_dt), 0);
-  REQUIRE_LT(fabs(dot(d_a_lift_dt, xhat)), 1e-10);
+  vehicle vehicle = {0};
+  vehicle.rv = init_swerve_rv();
 
-  cartvec no_reentry =
-      get_a_lift_jerk(&current_state, &run_params, &vehicle, &atm_cond, 0.0);
-  REQUIRE_EQ(no_reentry.x, 0);
-  REQUIRE_EQ(no_reentry.y, 0);
-  REQUIRE_EQ(no_reentry.z, 0);
+  atm_cond atm_cond = {0};
+  atm_cond.density = 1.225;
+
+  double ddot_alpha = get_aoa_angular_acceleration(&current_state, &run_params,
+                                                   &vehicle, &atm_cond, 100.0);
+
+  REQUIRE_TRUE(isfinite(ddot_alpha));
 }

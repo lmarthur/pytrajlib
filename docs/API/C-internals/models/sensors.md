@@ -27,11 +27,17 @@ estimated state.
 | Name | Type | Description |
 | --- | --- | --- |
 | `imu` | `imu *` | Pointer to IMU model/state |
+| `run_params` | `runparams *` | Pointer to run configuration parameters |
+| `true_atm_cond` | `atm_cond *` | Pointer to true atmospheric conditions |
+| `est_atm_cond` | `atm_cond *` | Pointer to estimated atmospheric conditions |
+| `true_t` | `double` | Current true simulation time in seconds |
+| `est_t` | `double` | Current estimated simulation time in seconds |
 | `true_state` | `state *` | Pointer to true vehicle state |
 | `est_state` | `state *` | Pointer to estimated vehicle state to update |
 | `a_total_true` | `cartvec` |  |
 | `a_grav_true` | `cartvec` |  |
 | `a_grav_est` | `cartvec` |  |
+| `est_grav` | `grav *` |  |
 
 ### Returns
 

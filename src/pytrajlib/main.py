@@ -296,7 +296,7 @@ def run(
         plot_impact(impact_df, save_path=save_path, aimpoint=aimpoint)
 
         print("Generating trajectory plots...")
-        plot_trajectory(trajectory_df, save_path=save_path)
+        plot_trajectory(trajectory_df, save_path=save_path, aimpoint=aimpoint)
 
     print(f"CEP={np.quantile(miss_distance, 0.5)}")
     print("Done!")

@@ -8,10 +8,8 @@
 // Define a struct to store the state of a vehicle in 3D space
 typedef struct state {
   // State parameters
-  cartvec position;     // position in meters
-  cartvec velocity;     // velocity in meters per second
-  cartvec a_lift;       // acceleration due to lift in meters per second squared
-  cartvec a_lift_avail; // "available" lift. Encodes flap positions
+  cartvec position;               // position in meters
+  cartvec velocity;               // velocity in meters per second
   double initial_theta_long_pert; // initial perturbation in the longitudinal
                                   // thrust angle in radians
   double initial_theta_lat_pert;  // initial perturbation in the latitudinal
@@ -20,7 +18,11 @@ typedef struct state {
                      // the x-z plane in radians
   double theta_lat;  // thrust angle in the latitudinal direction measured from
                      // the x-y plane in radians
+  double deflection_angle; // control surface deflection angle in radians
   anglevec gyro_error;
+
+  double alpha;      // angle of attack
+  double d_alpha_dt; // time derivative of the angle of attack
 
 } state;
 /**
@@ -55,15 +57,15 @@ state init_true_state(runparams *run_params) {
       fabs(run_params->theta_long * initial_rot_pert);
   state.theta_long = run_params->theta_long + state.initial_theta_long_pert;
   state.theta_lat = run_params->theta_lat + state.initial_theta_lat_pert;
-
-  state.a_lift = zeros();
-
-  state.a_lift_avail = zeros();
+  state.deflection_angle = 0;
 
   // The true state holds the gyro error for ease of calculating the body frame
   // which uses the gyro error to perturb the true body frame.
   state.gyro_error.pitch = state.initial_theta_lat_pert;
   state.gyro_error.yaw = state.initial_theta_long_pert;
+
+  state.alpha = 0;
+  state.d_alpha_dt = 0;
 
   return state;
 }
@@ -88,13 +90,13 @@ state init_est_state(runparams *run_params) {
   state.theta_lat = run_params->theta_lat;
   state.initial_theta_lat_pert = 0;
   state.initial_theta_long_pert = 0;
-
-  state.a_lift = zeros();
-
-  state.a_lift_avail = zeros();
+  state.deflection_angle = 0;
 
   state.gyro_error.pitch = 0;
   state.gyro_error.yaw = 0;
+
+  state.alpha = 0;
+  state.d_alpha_dt = 0;
 
   return state;
 }
@@ -107,17 +109,19 @@ state add_state(state a, state b) {
 
   result.position = add(a.position, b.position);
   result.velocity = add(a.velocity, b.velocity);
-  result.a_lift = add(a.a_lift, b.a_lift);
-  result.a_lift_avail = add(a.a_lift_avail, b.a_lift_avail);
   result.initial_theta_long_pert =
       a.initial_theta_long_pert + b.initial_theta_long_pert;
   result.initial_theta_lat_pert =
       a.initial_theta_lat_pert + b.initial_theta_lat_pert;
   result.theta_long = a.theta_long + b.theta_long;
   result.theta_lat = a.theta_lat + b.theta_lat;
+  result.deflection_angle = a.deflection_angle + b.deflection_angle;
 
   result.gyro_error.pitch = a.gyro_error.pitch + b.gyro_error.pitch;
   result.gyro_error.yaw = a.gyro_error.yaw + b.gyro_error.yaw;
+
+  result.alpha = a.alpha + b.alpha;
+  result.d_alpha_dt = a.d_alpha_dt + b.d_alpha_dt;
 
   return result;
 }
@@ -130,15 +134,17 @@ state smultiply_state(state a, double s) {
 
   result.position = smultiply(a.position, s);
   result.velocity = smultiply(a.velocity, s);
-  result.a_lift = smultiply(a.a_lift, s);
-  result.a_lift_avail = smultiply(a.a_lift_avail, s);
   result.initial_theta_long_pert = a.initial_theta_long_pert * s;
   result.initial_theta_lat_pert = a.initial_theta_lat_pert * s;
   result.theta_long = a.theta_long * s;
   result.theta_lat = a.theta_lat * s;
+  result.deflection_angle = a.deflection_angle * s;
 
   result.gyro_error.pitch = a.gyro_error.pitch * s;
   result.gyro_error.yaw = a.gyro_error.yaw * s;
+
+  result.alpha = a.alpha * s;
+  result.d_alpha_dt = a.d_alpha_dt * s;
 
   return result;
 }

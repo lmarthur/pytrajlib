@@ -4,7 +4,7 @@ num_runs = 30
 num_runs_optimizer = 3
 time_step_lambert = 0.01
 time_step_midcourse = 0.01
-time_step_atm = 0.01
+time_step_atm = 0.001
 traj_output = 1
 # 100 longitude (~11e3 km range)
 # Range is in meters
@@ -44,8 +44,11 @@ rv_type = 1
 deflection_time = 0.02
 actuator_force = 100
 gearing_ratio = 1
+actuator_resolution = 0.01
+max_deflection_angle = 10
 nav_gain = 5
 flap_gain = 100
+Kp = 1e-2
 # Vehicle parameter defaults (SWERVE RV + MMIII booster)
 rv_mass = 450.0
 rv_length = 2.75

@@ -4,7 +4,6 @@
 #include "grav_test.h"
 #include "guidance_test.h"
 #include "integrator_test.h"
-#include "maneuverability_test.h"
 #include "mass_test.h"
 #include "sensors_test.h"
 #include "trajectory_test.h"

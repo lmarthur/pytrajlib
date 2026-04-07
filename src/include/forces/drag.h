@@ -104,11 +104,9 @@ cartvec get_drag_acc(runparams *run_params, vehicle *vehicle,
   else {
     area = vehicle->rv.rv_area;
     double aoa;
-    // When maneuvering, we can calculate the angle of attack using the lift
+    // When maneuvering use the state's angle of attack
     if (run_params->rv_maneuv == 1) {
-      double lift_magnitude = norm(state->a_lift);
-      double max_a_exec = get_max_a_exec(run_params, vehicle);
-      aoa = lift_magnitude * (AOA_MAX / max_a_exec * M_PI / 180);
+      aoa = state->alpha;
     }
     // If not maneuvering, calculate angle of attack based on wind direction
     // assuming vehicle oriented along velocity vector

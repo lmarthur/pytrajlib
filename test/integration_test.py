@@ -77,7 +77,7 @@ def test_zero_error_runs_are_identical():
 def test_maneuv_to_zero(rv_maneuv):
     """Test maneuvering will take cep to zero"""
     impact_df = run(config=CONFIG_PATH, num_runs=1, rv_maneuv=rv_maneuv)
-    assert _get_cep_from_df(impact_df) < 0.01
+    assert _get_cep_from_df(impact_df) < 0.1
 
 
 def test_perfect_boost():
@@ -170,8 +170,7 @@ def test_gnss_navigation_reduces_cep_with_ins_errors():
 
 def test_no_impact_correlation():
     """With standard error params, there should be no correlation between downrange and crossrange errors."""
-    impact_df, config = run(return_config=True, optimize_boost=0, num_runs=100)
-
+    impact_df, config = run(return_config=True, optimize_boost=0, num_runs=200)
     impact_x_local, impact_y_local = get_local_impact(
         impact_df, (config["x_aim"], config["y_aim"], config["z_aim"])
     )

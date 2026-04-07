@@ -46,8 +46,11 @@ ffibuilder.cdef(
         double deflection_time;
         double actuator_force;
         double gearing_ratio;
+        double actuator_resolution;
+        double max_deflection_angle;
         double nav_gain;
         double flap_gain;
+        double Kp;
 
         double initial_x_error;
         double initial_pos_error;
@@ -89,13 +92,14 @@ ffibuilder.cdef(
     typedef struct state {
         cartvec position;
         cartvec velocity;
-        cartvec a_lift;
-        cartvec a_lift_avail;
         double initial_theta_long_pert;
         double initial_theta_lat_pert;
         double theta_long;
         double theta_lat;
+        double deflection_angle;
         anglevec gyro_error;
+        double alpha;
+        double d_alpha_dt;
     } state;
 
     typedef struct impact_data {

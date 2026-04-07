@@ -37,20 +37,10 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
   if (isnan(a_thrust_true.x)) {
     return 0;
   }
-  // Get time derivative of available lift acceleration
-  cartvec d_a_lift_avail_dt, d_a_lift_dt;
-  if (run_params->rv_maneuv == 1) {
-    d_a_lift_avail_dt = get_a_lift_avail_jerk(est_state, run_params, vehicle,
-                                              est_atm_cond, est_t);
-
-    d_a_lift_dt =
-        get_a_lift_jerk(true_state, run_params, vehicle, true_atm_cond, true_t);
-  } else {
-    d_a_lift_avail_dt = zeros();
-    d_a_lift_dt = zeros();
-  }
 
   // Calculate total acceleration
+  cartvec a_lift_true = get_lift_acc(true_state, est_state, run_params, vehicle,
+                                     true_atm_cond, true_t, est_grav);
   cartvec a_grav_true = get_gravity_acc(true_grav, true_state);
   cartvec a_grav_est = get_gravity_acc(est_grav, est_state);
   cartvec a_drag_true;
@@ -61,23 +51,27 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
     a_drag_true = zeros();
   }
 
-  cartvec a_total_true = add(
-      add(add(a_thrust_true, a_drag_true), true_state->a_lift), a_grav_true);
-  cartvec a_total_est = imu_measurement(imu, true_state, est_state,
-                                        a_total_true, a_grav_true, a_grav_est);
+  cartvec a_total_true =
+      add(add(add(a_thrust_true, a_drag_true), a_lift_true), a_grav_true);
+  cartvec a_total_est = imu_measurement(
+      imu, run_params, true_atm_cond, est_atm_cond, true_t, est_t, true_state,
+      est_state, a_total_true, a_grav_true, a_grav_est, est_grav);
+  double dot_delta = get_deflection_angular_speed(
+      est_state, vehicle, est_atm_cond, run_params, true_t, est_grav);
+  double ddot_alpha = get_aoa_angular_acceleration(
+      true_state, run_params, vehicle, true_atm_cond, true_t);
 
   // Set true state derivatives
   true_state_drift->position = true_state->velocity;
   true_state_drift->velocity = a_total_true;
-  true_state_drift->a_lift = d_a_lift_dt;
-  true_state_drift->a_lift_avail = d_a_lift_avail_dt;
   true_state_drift->gyro_error = (anglevec){0};
+  true_state_drift->alpha = true_state->d_alpha_dt;
+  true_state_drift->d_alpha_dt = ddot_alpha;
+  true_state_drift->deflection_angle = dot_delta;
 
   // Set estimated state derivatives
   est_state_drift->position = est_state->velocity;
   est_state_drift->velocity = a_total_est;
-  est_state_drift->a_lift = zeros();
-  est_state_drift->a_lift_avail = d_a_lift_avail_dt;
 
   // If ballistic run, turn off gyro error accumulation after boost phase
   // to avoid slightly overestimating Coriolis error

@@ -46,12 +46,20 @@ imu imu_init(runparams *run_params, state *initial_state) {
  * estimated state.
  *
  * @param imu Pointer to IMU model/state
+ * @param run_params Pointer to run configuration parameters
+ * @param true_atm_cond Pointer to true atmospheric conditions
+ * @param est_atm_cond Pointer to estimated atmospheric conditions
+ * @param true_t Current true simulation time in seconds
+ * @param est_t Current estimated simulation time in seconds
  * @param true_state Pointer to true vehicle state
  * @param est_state Pointer to estimated vehicle state to update
  */
-cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
-                        cartvec a_total_true, cartvec a_grav_true,
-                        cartvec a_grav_est) {
+cartvec imu_measurement(imu *imu, runparams *run_params,
+                        atm_cond *true_atm_cond, atm_cond *est_atm_cond,
+                        double true_t, double est_t, state *true_state,
+                        state *est_state, cartvec a_total_true,
+                        cartvec a_grav_true, cartvec a_grav_est,
+                        grav *est_grav) {
   // Gyroscope measurements
   est_state->theta_long = true_state->theta_long + true_state->gyro_error.yaw -
                           true_state->initial_theta_long_pert;
@@ -65,11 +73,11 @@ cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
   cartvec xhat;
   cartvec yhat;
   cartvec zhat;
-  int valid = get_body_frame(true_state, NULL, &xhat, &yhat, &zhat, 0);
+  int valid = get_body_frame(true_state, est_state, run_params, true_t, NULL,
+                             &xhat, &yhat, &zhat, 0, est_grav);
   if (!valid) {
     printf("Warning: Invalid body frame\n");
   }
-
   // Change to body-centric basis
   cartvec a_measurable_body_frame = {
       dot(a_measurable, xhat),
@@ -90,7 +98,8 @@ cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
   cartvec xhat_est;
   cartvec yhat_est;
   cartvec zhat_est;
-  valid = get_body_frame(true_state, NULL, &xhat_est, &yhat_est, &zhat_est, 1);
+  valid = get_body_frame(true_state, est_state, run_params, est_t, NULL,
+                         &xhat_est, &yhat_est, &zhat_est, 1, est_grav);
   if (!valid) {
     printf("Warning: Invalid estimated body frame\n");
   }
@@ -103,7 +112,6 @@ cartvec imu_measurement(imu *imu, state *true_state, state *est_state,
 
   // Total acceleration is measured + estimated gravity
   cartvec a_total_est = add(a_measured, a_grav_est);
-
   return a_total_est;
 }
 

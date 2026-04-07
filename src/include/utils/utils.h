@@ -200,19 +200,10 @@ double sign(double x) {
   }
 }
 
-double get_max_a_exec(runparams *run_params, vehicle *vehicle) {
+double get_max_flap_force(runparams *run_params, vehicle *vehicle) {
   double max_flap_force =
       run_params->actuator_force * run_params->gearing_ratio * 1000;
-  double max_lift_force =
-      (vehicle->rv.c_l_alpha * max_flap_force *
-       (vehicle->rv.x_flap - vehicle->rv.x_com) /
-       (vehicle->rv.c_m_alpha *
-        vehicle->rv.rv_length)); // maximum lift force in N, based on moment arm
-                                 // and lift properties
-  double max_a_exec = (max_lift_force /
-                       vehicle->rv.rv_mass); // maximum acceleration that can be
-                                             // executed by the flaps in m/s^2
-  return max_a_exec;
+  return max_flap_force;
 }
 
 /**

@@ -78,9 +78,11 @@ state impact_linterp(state *state_0, state *state_1, double t0, double t1,
   impact_state.velocity = add(
       state_0->velocity,
       smultiply(subtract(state_1->velocity, state_0->velocity), interp_factor));
-  impact_state.a_lift =
-      add(state_0->a_lift,
-          smultiply(subtract(state_1->a_lift, state_0->a_lift), interp_factor));
+  impact_state.deflection_angle =
+      state_0->deflection_angle +
+      interp_factor * (state_1->deflection_angle - state_0->deflection_angle);
+  impact_state.alpha =
+      state_0->alpha + interp_factor * (state_1->alpha - state_0->alpha);
 
   return impact_state;
 }
@@ -98,15 +100,14 @@ void write_trajectory_state(FILE *traj_file, double t, double current_mass,
                             state *true_state, state *est_state) {
   fprintf(traj_file,
           "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n",
+          "%g, %g\n",
           t, current_mass, true_state->position.x, true_state->position.y,
           true_state->position.z, true_state->velocity.x,
-          true_state->velocity.y, true_state->velocity.z,
-          norm(true_state->a_lift), 0.0, 0.0, 0.0, est_state->position.x,
-          est_state->position.y, est_state->position.z, est_state->velocity.x,
-          est_state->velocity.y, est_state->velocity.z, 0.0, 0.0, 0.0,
-          true_state->a_lift.x, true_state->a_lift.y, true_state->a_lift.z,
-          est_state->a_lift.x, est_state->a_lift.y, est_state->a_lift.z);
+          true_state->velocity.y, true_state->velocity.z, 0.0,
+          est_state->position.x, est_state->position.y, est_state->position.z,
+          est_state->velocity.x, est_state->velocity.y, est_state->velocity.z,
+          true_state->deflection_angle, true_state->alpha,
+          est_state->deflection_angle, est_state->alpha);
 }
 
 /**
@@ -144,7 +145,7 @@ state impact_with_coriolis(state *old_true_state, state *true_state,
   // Add coriolis effect based on the latitude and the impact time error
   double lat = ran_flat(-M_PI / 2, M_PI / 2);
   double lon = ran_flat(-M_PI, M_PI);
-  double time_error = *true_final_t - est_final_t;
+  double time_error = est_final_t - *true_final_t;
   double rot_speed = 464 * cos(lat);
   double coriolis = rot_speed * time_error;
 
@@ -152,12 +153,8 @@ state impact_with_coriolis(state *old_true_state, state *true_state,
   // This might seem like a bug, but I promise it's just clever
   // This replicates flying in a random direction, not just along the
   // equator
-  true_final_state.position.x =
-      true_final_state.position.x - coriolis * sin(lon) * cos(lat);
-  true_final_state.position.y =
-      true_final_state.position.y + coriolis * cos(lon) * cos(lat);
-  true_final_state.position.z =
-      true_final_state.position.z + coriolis * sin(lat);
+  true_final_state.position.x -= coriolis * sin(lon);
+  true_final_state.position.y += coriolis * cos(lon);
   if (run_params->rv_maneuv == 2) {
     // If perfect rv maneuver, update the final position
     true_final_state.position =
@@ -249,13 +246,11 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
   FILE *traj_file;
   if (run_params->traj_output == 1) {
     traj_file = fopen(run_params->trajectory_path, "w");
-    fprintf(
-        traj_file,
-        "t, current_mass, x, y, z, vx, vy, vz, "
-        "a_lift, ax_total, ay_total, az_total, est_x, est_y, est_z, est_vx, "
-        "est_vy, est_vz, est_ax_total, est_ay_total, est_az_total, "
-        "true_a_lift_x, true_a_lift_y, "
-        "true_a_lift_z, est_a_lift_x, est_a_lift_y, est_a_lift_z \n");
+    fprintf(traj_file, "t, current_mass, x, y, z, vx, vy, vz, "
+                       "a_lift, est_x, est_y, est_z, est_vx, "
+                       "est_vy, est_vz, "
+                       "true_deflection_angle, true_alpha, "
+                       "est_deflection_angle, est_alpha \n");
     // Write the initial state to the trajectory file
     write_trajectory_state(traj_file, true_t, get_vehicle_mass(vehicle, true_t),
                            &true_state, &est_state);

@@ -43,9 +43,12 @@ typedef struct runparams {
                           // maneuverability
   double gearing_ratio;   // gearing ratio of the control surfaces, used for
                           // maneuverability
+  double actuator_resolution;  // actuator angular resolution in degrees
+  double max_deflection_angle; // maximum flap deflection angle in radians
   double nav_gain;  // navigation gain for proportional navigation guidance
   double flap_gain; // Gain for approaching the commanded flap position when
                     // slower than max rate.
+  double Kp;        // proportional gain for deflection control
 
   double initial_x_error;     // initial x-error in meters
   double initial_pos_error;   // initial position error in meters

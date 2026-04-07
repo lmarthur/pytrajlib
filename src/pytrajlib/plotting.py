@@ -29,15 +29,6 @@ def _setup_pyplot():
     plt.rcParams.update(PLOT_PARAMS)
 
 
-def _get_series_or_default(
-    trajectory_df: pd.DataFrame, column_name: str, default: float = 0.0
-) -> np.ndarray:
-    """Return a trajectory column if present, otherwise a constant array."""
-    if column_name in trajectory_df.columns:
-        return trajectory_df[column_name].values
-    return np.full(len(trajectory_df), default)
-
-
 def _save_figure(fig_path: Optional[Path], fig_name: str) -> None:
     """Save figure if path is provided."""
     if fig_path is not None:
@@ -162,6 +153,7 @@ def plot_impact(
 def plot_trajectory(
     trajectory_df: pd.DataFrame,
     save_path: Optional[Path] = None,
+    aimpoint: Optional[Tuple[float, float, float]] = None,
 ) -> None:
     """
     Generate trajectory analysis plots.
@@ -169,6 +161,7 @@ def plot_trajectory(
     Args:
         trajectory_df: DataFrame with trajectory data
         save_path: Optional path to save figures
+        aimpoint: Optional aim point tuple of (x_aim, y_aim, z_aim) in ECEF
     """
     _setup_pyplot()
 
@@ -194,26 +187,11 @@ def plot_trajectory(
         trajectory_df["est_vy"].values,
         trajectory_df["est_vz"].values,
     )
-    ax_total, ay_total, az_total = (
-        trajectory_df["ax_total"].values,
-        trajectory_df["ay_total"].values,
-        trajectory_df["az_total"].values,
-    )
     current_mass = trajectory_df["current_mass"].values
-    est_ax_total, est_ay_total, est_az_total = (
-        trajectory_df["est_ax_total"].values,
-        trajectory_df["est_ay_total"].values,
-        trajectory_df["est_az_total"].values,
-    )
-    ax_lift, ay_lift, az_lift = (
-        trajectory_df["true_a_lift_x"].values,
-        trajectory_df["true_a_lift_y"].values,
-        trajectory_df["true_a_lift_z"].values,
-    )
 
-    est_ax_lift = _get_series_or_default(trajectory_df, "est_a_lift_x")
-    est_ay_lift = _get_series_or_default(trajectory_df, "est_a_lift_y")
-    est_az_lift = _get_series_or_default(trajectory_df, "est_a_lift_z")
+    # Extract deflection angle and angle of attack
+    deflection_angle = trajectory_df["true_deflection_angle"].values
+    alpha = trajectory_df["true_alpha"].values
 
     # Calculate altitude
     altitude = np.sqrt(x**2 + y**2 + z**2) - 6.371e6
@@ -260,35 +238,14 @@ def plot_trajectory(
             reentry_mask,
             save_path,
         ),
-        "acceleration_true_est": lambda: _plot_acceleration_true_est(
+        "deflection_and_aoa": lambda: _plot_deflection_and_aoa(
             t,
-            ax_total,
-            ay_total,
-            az_total,
-            est_ax_total,
-            est_ay_total,
-            est_az_total,
-            boost_mask,
-            midcourse_mask,
+            deflection_angle,
+            alpha,
             reentry_mask,
             save_path,
         ),
-        "lift_true_est": lambda: _plot_force_true_est(
-            t,
-            ax_lift,
-            ay_lift,
-            az_lift,
-            est_ax_lift,
-            est_ay_lift,
-            est_az_lift,
-            boost_mask,
-            midcourse_mask,
-            reentry_mask,
-            "Lift",
-            "lift_true_est.png",
-            save_path,
-        ),
-        "orbit": lambda: _plot_orbit(x, y, est_x, est_y, save_path),
+        "orbit": lambda: _plot_orbit(x, y, est_x, est_y, save_path, aimpoint),
     }
 
     for plot_name, plot_func in plots.items():
@@ -562,7 +519,7 @@ def _plot_velocity_error_phases(
     plt.close()
 
 
-def _plot_orbit(x, y, est_x, est_y, save_path):
+def _plot_orbit(x, y, est_x, est_y, save_path, aimpoint=None):
     """Orbital trajectory in x-y plane."""
     plt.figure(figsize=(10, 10))
 
@@ -582,6 +539,19 @@ def _plot_orbit(x, y, est_x, est_y, save_path):
         linestyle="--",
         label="Estimated Trajectory",
     )
+
+    if aimpoint is not None:
+        x_aim, y_aim, _ = aimpoint
+        plt.scatter(
+            x_aim,
+            y_aim,
+            s=50,
+            c="black",
+            marker="x",
+            label="Aim Point",
+            zorder=5,
+        )
+
     plt.xlim(-1.2 * earth_radius, 1.5 * earth_radius)
     plt.ylim(-1.2 * earth_radius, 1.5 * earth_radius)
     plt.axis("off")
@@ -594,67 +564,40 @@ def _plot_orbit(x, y, est_x, est_y, save_path):
     plt.close()
 
 
-def _plot_acceleration_true_est(
+def _plot_deflection_and_aoa(
     t,
-    ax_total,
-    ay_total,
-    az_total,
-    est_ax_total,
-    est_ay_total,
-    est_az_total,
-    boost_mask,
-    midcourse_mask,
+    deflection_angle,
+    alpha,
     reentry_mask,
     save_path,
 ):
-    """True and estimated acceleration during different flight phases."""
-    fig, axes = plt.subplots(3, 1, figsize=(10, 10))
+    """True control angles over time during reentry."""
+    t_reentry = t[reentry_mask]
+    deflection_reentry = deflection_angle[reentry_mask]
+    alpha_reentry = alpha[reentry_mask]
 
-    phases = [
-        ("Boost", boost_mask),
-        ("Midcourse", midcourse_mask),
-        ("Reentry", reentry_mask),
-    ]
+    fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
-    for ax, (phase_name, mask) in zip(axes, phases):
-        (line_ax,) = ax.plot(t[mask], ax_total[mask], label="ax", linewidth=2)
-        (line_ay,) = ax.plot(t[mask], ay_total[mask], label="ay", linewidth=2)
-        (line_az,) = ax.plot(t[mask], az_total[mask], label="az", linewidth=2)
+    axes[0].plot(
+        t_reentry,
+        np.degrees(deflection_reentry),
+        label="Deflection",
+        linewidth=2,
+    )
+    axes[0].set_ylabel("Deflection (deg)")
+    axes[0].set_title("Deflection Angle vs Time (Reentry)")
+    axes[0].legend()
+    axes[0].grid(alpha=0.3)
 
-        ax.plot(
-            t[mask],
-            est_ax_total[mask],
-            label="est ax",
-            linewidth=2,
-            linestyle="--",
-            color=line_ax.get_color(),
-        )
-        ax.plot(
-            t[mask],
-            est_ay_total[mask],
-            label="est ay",
-            linewidth=2,
-            linestyle="--",
-            color=line_ay.get_color(),
-        )
-        ax.plot(
-            t[mask],
-            est_az_total[mask],
-            label="est az",
-            linewidth=2,
-            linestyle="--",
-            color=line_az.get_color(),
-        )
-
-        ax.set_ylabel("Acceleration (m/s²)")
-        ax.set_title(f"Acceleration ({phase_name} Phase)")
-        ax.legend()
-        ax.grid(alpha=0.3)
-
-    axes[-1].set_xlabel("Time (s)")
+    axes[1].plot(t_reentry, np.degrees(alpha_reentry), label="AoA", linewidth=2)
+    axes[1].set_xlabel("Time (s)")
+    axes[1].set_ylabel("AoA (deg)")
+    axes[1].set_title("Angle of Attack vs Time (Reentry)")
+    axes[1].legend()
+    axes[1].grid(alpha=0.3)
 
     if save_path:
-        _save_figure(Path(save_path), "acceleration_true_est.png")
+        _save_figure(Path(save_path), "deflection_and_aoa.png")
     else:
         plt.show()
     plt.close()

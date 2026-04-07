@@ -471,7 +471,6 @@ cartvec get_thrust_acc(state *true_state, state *est_state, vehicle *vehicle,
     a_thrust.z = a_thrust_mag * sin(gyro_state.gyro_error.pitch);
     return a_thrust;
   }
-
   if (get_altitude(state->position) < 100e3) {
     a_thrust.x = a_thrust_mag * cos(state->theta_long) * cos(state->theta_lat);
     a_thrust.y = a_thrust_mag * sin(state->theta_long) * cos(state->theta_lat);
