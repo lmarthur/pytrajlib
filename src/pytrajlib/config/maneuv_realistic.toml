@@ -18,6 +18,7 @@ theta_lat = 0.0
 
 # 0 is modified Euler-Maruyama, 1 is SRA3
 integrator = 1
+random_seed = -1
 
 [FLIGHT]
 # Gravitational error model

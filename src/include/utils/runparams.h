@@ -22,8 +22,9 @@ typedef struct runparams {
   double z_aim;         // target z-coordinate in meters
   double theta_long;    // thrust angle in the longitudinal direction in radians
   double theta_lat;     // thrust angle in the latitudinal direction in radians
-  int integrator; // flag for which numerical integration method to use (0 for
-                  // modified Euler-Maruyama, 1 for SRA3)
+  int integrator;   // flag for which numerical integration method to use (0 for
+                    // modified Euler-Maruyama, 1 for SRA3)
+  long random_seed; // RNG seed (-1 = auto-seed)
 
   int grav_error;      // flag to include gravitational perturbations
   int include_drag;    // flag to include aerodynamic drag force

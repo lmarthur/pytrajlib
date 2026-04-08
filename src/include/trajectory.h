@@ -2,8 +2,17 @@
 #define TRAJECTORY_H
 
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+
+#ifdef _WIN32
+#include <process.h>
+#define getpid _getpid
+#else
+#include <unistd.h>
+#endif
 
 #include "derivatives.h"
 #include "forces/drag.h"
@@ -407,6 +416,16 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
  * @return Impact states for all runs
  */
 impact_data mc_run(runparams run_params) {
+  uint64_t seed;
+  if (run_params.random_seed >= 0) {
+    seed = (uint64_t)run_params.random_seed;
+  } else {
+    seed =
+        (uint64_t)time(NULL) ^ ((uint64_t)clock() << 32) ^ (uint64_t)getpid();
+  }
+  init_genrand64(seed);
+  reset_ran_gaussian();
+
   // Initialize the variables
   int num_runs = run_params.num_runs;
   if (num_runs > MAX_RUNS) {

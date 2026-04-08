@@ -30,6 +30,7 @@ ffibuilder.cdef(
         double theta_long;
         double theta_lat;
         int integrator;
+        long random_seed;
 
         int grav_error;
         int include_drag;

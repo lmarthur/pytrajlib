@@ -267,6 +267,7 @@ def run(
     config_dict["trajectory_path"] = _TEMP_DIR + "/trajectory.txt"
     config_dict.setdefault("include_drag", 1)
     config_dict.setdefault("optimize_boost", 1)
+    config_dict.setdefault("random_seed", -1)
     _set_aimpoint_from_range(config_dict)
 
     print("Running...")
