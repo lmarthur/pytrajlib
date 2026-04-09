@@ -59,11 +59,36 @@ Writes a trajectory state row to an output file.
 
 ## `impact_with_coriolis`
 
-Computes interpolated impact states and applies coriolis/aimpoint correction.
-
-The Coriolis effect on miss distance only shows up in the difference between
-true and estimated timing because the Coriolis force is equivalent on both
-true and estimated trajectories.
+In an ECI frame, assuming boost and reentry guidance account for Earth
+rotation, the discrepancy between true and estimated trajectories due to
+Coriolis appears through the difference between true and estimated impact
+times. For random aimpoints with fixed great-circle range, rotation speed is
+adjusted from equatorial surface speed to local latitude:
+$$
+\begin{align}
+v_\text{rot} = 464 \cos(\text{lat}).
+\end{align}
+$$
+With interpolated impact-time error
+$$
+\begin{align}
+\Delta t = t_\text{est} - t_\text{true},
+\end{align}
+$$
+the Coriolis offset is
+$$
+\begin{align}
+c = v_\text{rot} \Delta t.
+\end{align}
+$$
+In the local east direction, Cartesian offsets are
+$$
+\begin{align}
+\Delta x &= -c \sin(\text{lon}) \\
+\Delta y &= c \cos(\text{lon}).
+\end{align}
+$$
+The corrected impact position is $(x + \Delta x, y + \Delta y, z)$.
 
 ### Parameters
 

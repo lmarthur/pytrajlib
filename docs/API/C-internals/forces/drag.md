@@ -2,18 +2,17 @@
 
 ## `get_drag_acceleration_generic`
 
-Calculate the drag acceleration for any drag coefficient and characteristic
-area.
-
-Given the atmospheric density $\rho$ ($kg/m^3$), the magnitude of the
-relative velocity with respect to the current wind $v_\text{rel}$ ($m/s$),
-the cross-sectional area of the booster $A$ ($m^2$), the booster's drag
-coefficient $C_D$, and the current mass $m$, the magnitude of the drag
-acceleration ($m/s^2$) is
+For all modes, the magnitude of the drag acceleration is a function of the
+atmospheric density $\rho$ ($kg/m^3$), the magnitude of the relative
+velocity with respect to the current wind $v_\text{rel}$ ($m/s$), the
+cross-sectional area $A$ ($m^2$), drag coefficient $C_D$, and current mass
+$m$ ($kg$):
 $$
-|\vec a_\text{drag}| = \frac{1}{2} \rho v^2 A C_D / m.
+\begin{align}
+a_\text{drag} = \frac{1}{2} \rho v_\text{rel}^2 A C_D / m.
+\end{align}
 $$
-The drag vector opposes the direction of relative velocity.
+The drag acceleration vector is directed opposite the relative velocity.
 
 ### Parameters
 
@@ -34,30 +33,29 @@ The drag vector opposes the direction of relative velocity.
 
 ## `get_drag_acc`
 
-Compute drag acceleration for each regime (boost, reentry) and mode
-(ballistic, maneuverable).
+The drag acceleration opposes the direction of relative velocity and depends
+on the angle of attack, $\alpha$. During boost phase, the change in drag
+coefficient as a function of angle of attack is proportional to
+$\cos^2(\alpha)$ for an axisymmetric vehicle, and the boost-phase angle of
+attack remains small, so the boost drag coefficient is modeled as
+independent of angle of attack.
 
-During boost phase, the change of drag coefficient as a function of angle of
-attack is proportional to $\cos^2(\alpha)$ for an axially symmetric vehicle.
-The boost-phase angle of attack remains small ($<1\degree$), so the boost
-drag coefficient is modeled as independent of angle of attack.
-
-During reentry, drag coefficient is modeled as a linear function of angle of
-attack, where $C_{D,0}$ is the drag coefficient at zero angle of attack and
-$C_{D,\alpha}$ is its derivative with respect to angle of attack:
+During reentry, the drag coefficient is modeled as a linear function of
+angle of attack, where $C_{D,0}$ is the drag coefficient at zero angle of
+attack and $C_{D,\alpha}$ is the derivative with respect to angle of attack:
 $$
+\begin{align}
 C_D = C_{D,0} + C_{D,\alpha} \alpha.
+\end{align}
 $$
-For ballistic reentry vehicles, angle of attack is estimated assuming the
-vehicle is oriented along the velocity vector:
+For ballistic reentry vehicles, the angle of attack is estimated assuming
+the vehicle is oriented along the velocity vector:
 $$
-\alpha = \arctan(|\vec v_\text{wind}| / |\vec v|).
+\begin{align}
+\alpha = \arctan(v_\text{wind} / v).
+\end{align}
 $$
-For maneuverable reentry vehicles, angle of attack is estimated from current
-lift, maximum achievable lift, and maximum achievable angle of attack:
-$$
-\alpha = |\vec a_\text{lift}| \alpha_\text{max} / a_\text{lift,max}.
-$$
+For maneuverable reentry vehicles, the angle of attack is a state variable.
 
 ### Parameters
 

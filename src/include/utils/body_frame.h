@@ -37,7 +37,52 @@ int is_reentry(state *state, double t) {
 }
 
 /**
+ * The body-centric coordinate system is defined as follows: $\hat x$ (roll)
+ * points along relative velocity, $\hat z$ (yaw) points along commanded lift
+ * acceleration (or global z if there is no lift), and
+ * $\hat y = \hat z \times \hat x$. Because commanded lift may not be exactly
+ * perpendicular to wind-relative velocity, the lift direction is
+ * orthogonalized with Gram-Schmidt to produce an orthonormal basis.
  *
+ * Gyroscope error in pitch and yaw is modeled as small-angle rotations of the
+ * true body frame. A pitch-axis rotation by $\theta$ is
+ * <div>
+ * $$
+ * \begin{align}
+ * \mathbf{R_y} = \begin{bmatrix} 1 & 0 & \theta  \\ 0 & 1 & 0 \\ -\theta & 0 &
+ * 1\end{bmatrix}.
+ * \end{align}
+ * $$
+ * </div>
+ * A yaw-axis rotation by $\phi$ is
+ * <div>
+ * $$
+ * \begin{align}
+ * \mathbf{R_z} = \begin{bmatrix} 1 & -\phi & 0  \\ \phi & 1 & 0 \\ 0 & 0 &
+ * 1\end{bmatrix}.
+ * \end{align}
+ * $$
+ * </div>
+ * Under small-angle approximation, rotations commute and the cross-coupling
+ * matrix is
+ * <div>
+ * $$
+ * \begin{align}
+ * \mathbf{C} = \mathbf{R_y R_z} = \mathbf{R_z R_y} =
+ * \begin{bmatrix} 1 & -\phi & \theta  \\ \phi & 1 & 0 \\ -\theta & 0 &
+ * 1\end{bmatrix}.
+ * \end{align}
+ * $$
+ * </div>
+ * With true basis
+ * <div>
+ * $$
+ * \begin{align}
+ * \mathbf{B} &= \begin{bmatrix} \hat x & \hat y & \hat z \end{bmatrix} \\
+ * \mathbf{B}_\text{est} &= \mathbf{C} \mathbf{B}.
+ * \end{align}
+ * $$
+ * </div>
  * @param current_state Current vehicle state containing position, velocity,
  *                      lift acceleration, and gyro error data.
  * @param atm_cond Atmospheric conditions used to compute wind-relative

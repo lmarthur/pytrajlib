@@ -32,8 +32,25 @@ state sra3_H(state drift_evals[3], state diffusion_evals[3], state Y, int i,
  * Advance the state by one Euler-Maruyama step. Note, it is not strictly EM
  * because the position is updated using the velocity and the acceleration.
  *
- * @param state Pointer to state to be updated in place
- * @param time_step Integration time step in seconds
+ * This integrator is currently not used in the trajectory simulation path.
+ *
+ * @param run_params Pointer to run configuration parameters.
+ * @param imu Pointer to IMU model.
+ * @param vehicle Pointer to vehicle model.
+ * @param true_grav Pointer to true gravity model.
+ * @param est_grav Pointer to estimated gravity model.
+ * @param true_atm_cond Pointer to true atmospheric conditions.
+ * @param est_atm_cond Pointer to estimated atmospheric conditions.
+ * @param true_state Pointer to true state, updated in place.
+ * @param est_state Pointer to estimated state, updated in place.
+ * @param true_t Pointer to true simulation time, incremented by `time_step`.
+ * @param est_t Pointer to estimated simulation time, incremented by
+ *              `time_step`.
+ * @param time_step Integration time step in seconds.
+ * @param drift_fn Drift callback used to compute deterministic derivatives.
+ * @param diffusion_fn Diffusion callback used to compute stochastic
+ *                     derivatives.
+ * @return 1 on success, 0 if the drift callback reports failure.
  */
 int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
                         grav *true_grav, grav *est_grav,
@@ -87,6 +104,24 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
  * >Rößler, A. (2010). Runge–Kutta Methods for the Strong Approximation of
  * Solutions of Stochastic Differential Equations. SIAM Journal on Numerical
  * Analysis, 48(3), 922–952. https://doi.org/10.1137/09076636X
+ *
+ * @param run_params Pointer to run configuration parameters.
+ * @param imu Pointer to IMU model.
+ * @param vehicle Pointer to vehicle model.
+ * @param true_grav Pointer to true gravity model.
+ * @param est_grav Pointer to estimated gravity model.
+ * @param true_atm_cond Pointer to true atmospheric conditions.
+ * @param est_atm_cond Pointer to estimated atmospheric conditions.
+ * @param true_state Pointer to true state, updated in place.
+ * @param est_state Pointer to estimated state, updated in place.
+ * @param true_t Pointer to true simulation time, incremented by `time_step`.
+ * @param est_t Pointer to estimated simulation time, incremented by
+ *              `time_step`.
+ * @param time_step Integration time step in seconds.
+ * @param drift_fn Drift callback used for deterministic stage evaluations.
+ * @param diffusion_fn Diffusion callback used for additive-noise stage
+ *                     evaluations.
+ * @return 1 on success, 0 if any drift stage reports failure.
  */
 int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
               grav *true_grav, grav *est_grav, atm_cond *true_atm_cond,

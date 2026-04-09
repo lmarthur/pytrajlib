@@ -19,33 +19,19 @@ calculate the true lift, which is used to update the vehicle's velocity.
 #include "gravity.h"
 
 /**
- * Project a vector into the lift plane, clip, then reconstruct in Cartesian.
+ * The lift acceleration magnitude is modeled from the angle of attack at each
+ * time step:
+ * $$
+ * \begin{align}
+ * a_L = C_{L\alpha} \alpha \bar q A.
+ * \end{align}
+ * $$
  *
- * Given orthonormal lift-plane basis vectors $(\mathbf e_2,\mathbf e_3)$,
- * the vector components are clipped independently to
- * $[-\text{max\_val},\text{max\_val}]$ and mapped back.
- *
- * @param yhat Lift-plane basis vector
- * @param zhat Lift-plane basis vector
- * @param arr Vector to project and clip
- * @param max_val Absolute clip limit in projected coordinates
- * @return Projected and clipped vector in Cartesian coordinates
+ * @param state Pointer to state providing velocity and angle of attack.
+ * @param vehicle Pointer to vehicle model constants.
+ * @param atm_cond Pointer to atmospheric conditions.
+ * @return Lift acceleration magnitude in m/s^2.
  */
-cartvec project_and_clip(cartvec yhat, cartvec zhat, cartvec arr,
-                         double max_val) {
-  // Project onto yhat and zhat
-  double arr_yhat = dot(arr, yhat);
-  double arr_zhat = dot(arr, zhat);
-
-  // Clip to max_val
-  arr_yhat = clip(arr_yhat, -max_val, max_val);
-  arr_zhat = clip(arr_zhat, -max_val, max_val);
-
-  // Project back to Cartesian basis
-  cartvec result = add(smultiply(yhat, arr_yhat), smultiply(zhat, arr_zhat));
-  return result;
-}
-
 double get_a_lift_mag(state *state, vehicle *vehicle, atm_cond *atm_cond) {
   double v = norm(state->velocity);
   double dynamic_pressure = 0.5 * atm_cond->density * v * v;
@@ -54,6 +40,25 @@ double get_a_lift_mag(state *state, vehicle *vehicle, atm_cond *atm_cond) {
   return a_lift;
 }
 
+/**
+ * The lift acceleration is directed perpendicular to the vehicle's relative
+ * velocity toward the commanded lift direction, and is constructed from the
+ * body-frame lift axis.
+ * $$
+ * \begin{align}
+ * \vec a_L = a_L\frac{\vec a_c - \vec a_{g\perp}}{|\vec a_c - \vec a_{g\perp}|}
+ * \end{align}
+ * $$
+ *
+ * @param true_state Pointer to true state used for lift magnitude and frame.
+ * @param est_state Pointer to estimated state used for reentry checks.
+ * @param run_params Pointer to run configuration parameters.
+ * @param vehicle Pointer to vehicle model constants.
+ * @param atm_cond Pointer to atmospheric conditions.
+ * @param t Current simulation time in seconds.
+ * @param grav Pointer to gravity model used by body-frame construction.
+ * @return Lift acceleration vector in inertial Cartesian coordinates.
+ */
 cartvec get_lift_acc(state *true_state, state *est_state, runparams *run_params,
                      vehicle *vehicle, atm_cond *atm_cond, double t,
                      grav *grav) {
@@ -67,6 +72,33 @@ cartvec get_lift_acc(state *true_state, state *est_state, runparams *run_params,
   return smultiply(zhat, a_lift_mag);
 }
 
+/**
+ * For a given acceleration command $\vec a_c$, current lift acceleration
+ * $\vec a_L$, and gravity component perpendicular to velocity
+ * $\vec a_{g\perp}$, the commanded change in acceleration is
+ * $$
+ * \begin{align}
+ * \Delta \vec a_c = \vec a_c - \vec a_L - \vec a_{g\perp}.
+ * \end{align}
+ * $$
+ * For acceleration magnitude to be gained $\Delta a_c$ and proportional gain
+ * $K_p$, the commanded flap deflection angular speed is clipped by
+ * $\dot\delta_\text{max}$:
+ * $$
+ * \begin{align}
+ * \dot \delta = \text{clip}(\Delta a_c K_p, -\dot\delta_\text{max},
+ * \dot\delta_\text{max}).
+ * \end{align}
+ * $$
+ *
+ * @param est_state Pointer to estimated state.
+ * @param vehicle Pointer to vehicle model constants.
+ * @param atm_cond Pointer to atmospheric conditions.
+ * @param run_params Pointer to run configuration parameters.
+ * @param t Current simulation time in seconds.
+ * @param grav Pointer to gravity model used by guidance.
+ * @return Commanded flap deflection angular speed in rad/s.
+ */
 double get_deflection_angular_speed(state *est_state, vehicle *vehicle,
                                     atm_cond *atm_cond, runparams *run_params,
                                     double t, grav *grav) {
@@ -86,6 +118,39 @@ double get_deflection_angular_speed(state *est_state, vehicle *vehicle,
   return dot_delta;
 }
 
+/**
+ * The rotational equation of motion for angle of attack uses a Newtonian
+ * pitching-moment approximation with effective flap angle
+ * $\delta_\text{eff} = \delta + \alpha$.
+ * $$
+ * \begin{align}
+ * I \ddot \alpha \approx (C_{M_\delta} \delta_\text{eff} + C_{M_\alpha} \alpha
+ * + C_{M_q} \frac{c}{2V} \dot\alpha)\bar q A c.
+ * \end{align}
+ * $$
+ * With
+ * $$
+ * \begin{align}
+ * p=\frac{C_{Mq} \bar qAc^2}{2IV},\; k=\frac{C_{M\alpha}\bar q A c}{I},\;
+ * n = \frac{C_{M\delta} \bar q A c}{I},
+ * \end{align}
+ * $$
+ * the forced second-order model is
+ * $$
+ * \begin{align}
+ * \ddot \alpha - p\dot\alpha - k \alpha =
+ * \text{clip}(n\delta_\text{eff}, \frac{-F_\text{flap,max}r_\text{flap}}{I},
+ * \frac{F_\text{flap,max}r_\text{flap}}{I}).
+ * \end{align}
+ * $$
+ *
+ * @param true_state Pointer to true state containing angle states.
+ * @param run_params Pointer to run configuration parameters.
+ * @param vehicle Pointer to vehicle model constants.
+ * @param atm_cond Pointer to atmospheric conditions.
+ * @param t Current simulation time in seconds.
+ * @return Angular acceleration of angle of attack in rad/s^2.
+ */
 double get_aoa_angular_acceleration(state *true_state, runparams *run_params,
                                     vehicle *vehicle, atm_cond *atm_cond,
                                     double t) {

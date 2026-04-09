@@ -19,8 +19,35 @@ Initialize IMU parameters and initial gyro error states.
 
 ## `imu_measurement`
 
-Apply IMU attitude and acceleration measurement model to update
-estimated state.
+The acceleration measurable by the accelerometer is the vehicle acceleration
+without gravity:
+$$
+\begin{align}
+\vec a_\text{measurable} = \vec a - \vec a_\text{grav}.
+\end{align}
+$$
+The accelerometer measures in the body frame with scale errors on roll,
+pitch, and yaw axes:
+<div>
+$$
+\begin{align}
+\vec a_\text{measured} = \begin{bmatrix}1 + \text{scale}_x & 0 & 0 \\ 0 & 1 +
+\text{scale}_y & 0 \\ 0 & 0 & 1 + \text{scale}_z\end{bmatrix} \mathbf{B}^T
+\vec a_\text{measurable}.
+\end{align}
+$$
+</div>
+The total estimated acceleration is obtained by transforming measured
+acceleration back to ECI using the estimated body frame and adding estimated
+gravity:
+<div>
+$$
+\begin{align}
+\vec a_\text{est} = \mathbf{B}_\text{est}\vec a_\text{measured} + \vec
+a_\text{grav,est}.
+\end{align}
+$$
+</div>
 
 ### Parameters
 
@@ -34,16 +61,16 @@ estimated state.
 | `est_t` | `double` | Current estimated simulation time in seconds |
 | `true_state` | `state *` | Pointer to true vehicle state |
 | `est_state` | `state *` | Pointer to estimated vehicle state to update |
-| `a_total_true` | `cartvec` |  |
-| `a_grav_true` | `cartvec` |  |
-| `a_grav_est` | `cartvec` |  |
-| `est_grav` | `grav *` |  |
+| `a_total_true` | `cartvec` | Total acceleration of true state in m/s^2. |
+| `a_grav_true` | `cartvec` | Gravitational acceleration at true position in m/s^2. |
+| `a_grav_est` | `cartvec` | Gravitational acceleration at estimated position in m/s^2. |
+| `est_grav` | `grav *` | Pointer to estimated gravity model. |
 
 ### Returns
 
 | Type | Description |
 | --- | --- |
-| `cartvec` |  |
+| `cartvec` | Measured total estimated acceleration in ECI coordinates in m/s^2. |
 
 ## `get_gyro_drift`
 

@@ -137,6 +137,35 @@ Returns the sign of a value.
 | --- | --- |
 | `double` | `1` if positive, `-1` if negative, otherwise `0`. |
 
+## `get_max_flap_force`
+
+The maximum achievable flap force is limited by actuator force $F_a$ and
+gearing ratio $G$:
+$$
+\begin{align}
+F_\text{flap,max} = G F_a.
+\end{align}
+$$
+The actuator rate limit used by lift control is modeled as
+$$
+\begin{align}
+\dot\delta_\text{max} = \frac{\delta_\text{max}}{t_\text{deflect}}.
+\end{align}
+$$
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `run_params` | `runparams *` |  |
+| `vehicle` | `vehicle *` |  |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `double` |  |
+
 ## `clip`
 
 Clip a value to a specified range

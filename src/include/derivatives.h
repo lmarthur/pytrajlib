@@ -23,6 +23,27 @@ typedef void (*diffusion_func)(imu *imu, state *est_state_diffusion);
 
 /**
  * Calculate deterministic drift component of the state update.
+ *
+ * This function writes derivative outputs into `true_state_drift` and
+ * `est_state_drift`. These output state structs should be initialized to
+ * `{0}` before being passed in.
+ *
+ * @param run_params Pointer to run configuration parameters.
+ * @param imu Pointer to IMU model.
+ * @param vehicle Pointer to vehicle model.
+ * @param true_grav Pointer to true gravity model.
+ * @param est_grav Pointer to estimated gravity model.
+ * @param true_atm_cond Pointer to true atmospheric conditions.
+ * @param est_atm_cond Pointer to estimated atmospheric conditions.
+ * @param true_state Pointer to true state.
+ * @param est_state Pointer to estimated state.
+ * @param true_t Current true simulation time in seconds.
+ * @param est_t Current estimated simulation time in seconds.
+ * @param true_state_drift Output deterministic drift for true state; initialize
+ *                         to `{0}` before passing.
+ * @param est_state_drift Output deterministic drift for estimated state;
+ *                        initialize to `{0}` before passing.
+ * @return 1 on success, 0 if thrust guidance fails
  */
 int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
           grav *est_grav, atm_cond *true_atm_cond, atm_cond *est_atm_cond,
@@ -84,6 +105,17 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
   return 1;
 }
 
+/**
+ * Calculate stochastic diffusion component of the state update.
+ *
+ * This function writes diffusion outputs into `true_state_diffusion`.
+ * The output state struct should be initialized to `{0}` before being passed
+ * in.
+ *
+ * @param imu Pointer to IMU model.
+ * @param true_state_diffusion Output stochastic diffusion for true state;
+ *                             initialize to `{0}` before passing.
+ */
 void diffusion(imu *imu, state *true_state_diffusion) {
   true_state_diffusion->gyro_error.pitch = get_gyro_diffusion(imu);
   true_state_diffusion->gyro_error.yaw = get_gyro_diffusion(imu);

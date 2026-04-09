@@ -37,7 +37,13 @@ Calculate remaining delta-v by summing the delta-v of each stage
 
 ## `get_central_angle`
 
-Get the central angle in radians between current position and aimpoint
+The central angle between current position and aimpoint is
+$$
+\begin{align}
+\phi = \arccos\left( \frac{\vec x \cdot \vec x_\text{aim}}
+{|\vec x||\vec x_\text{aim}|} \right).
+\end{align}
+$$
 
 ### Parameters
 
@@ -54,7 +60,16 @@ Get the central angle in radians between current position and aimpoint
 
 ## `get_lambert_velocity`
 
-Compute Lambert transfer speed magnitude for a given flight-path angle.
+Given the standard gravitational parameter $GM$, the angle between current
+position and aimpoint $\phi$, and the flight path angle $\gamma$, the final
+desired speed is
+$$
+\begin{align}
+v_\text{Lambert} = \sqrt{ \frac{ GM (1 - \cos\phi) }
+{ |\vec x| \cos(\gamma) (|\vec x| \cos(\gamma) / |\vec x_\text{aim}|
+- \cos(\phi + \gamma)) } }.
+\end{align}
+$$
 
 ### Parameters
 
@@ -74,19 +89,23 @@ Compute Lambert transfer speed magnitude for a given flight-path angle.
 
 ## `time_to_fly`
 
-Estimate time of flight for a Lambert transfer.
-
 The time of flight for each flight path angle $\gamma$ and associated speed
-$v_\text{Lambert}$ is calculated assuming an elliptical flight path:
-
+$v_\text{Lambert}$ is calculated assuming an elliptical flight path
+$(\lambda = \frac{|\vec x| v_\text{Lambert}^2}{GM} < 2)$:
 <div class="math-scroll">
 $$
-t=\frac{|\vec x|}{v_\text{Lambert}\cos\gamma} \left[  \frac{\tan\gamma(1 -
-\cos\phi) + (1-\lambda)\sin\phi}
-{(2-\lambda)\left(\frac{1-\cos\phi}{\lambda\cos^2\gamma}+\frac{\cos(\gamma+\phi)}{\cos\gamma}\right)}
+\begin{align}
+t=\frac{|\vec x|}{v_\text{Lambert}\cos\gamma}  \left[
+\frac{\tan\gamma(1 - \cos\phi) + (1-\lambda)\sin\phi}
+{(2-\lambda)\left(\frac{1-\cos\phi}{\lambda\cos^2\gamma}+
+\frac{\cos(\gamma+\phi)}{\cos\gamma}\right)}
 + \frac{2\cos\gamma}{\lambda\left(\frac{2}{\lambda}-1\right)^{3/2}}
-\arctan\left(  \frac{\sqrt{\frac{2}{\lambda}-1}}
-{\cos\gamma\cot(\phi/2)-\sin\gamma}  \right)  \right]
+\arctan\left(
+\frac{\sqrt{\frac{2}{\lambda}-1}}
+{\cos\gamma\cot(\phi/2)-\sin\gamma}
+\right)
+\right]
+\end{align}
 $$
 </div>
 
@@ -132,9 +151,9 @@ Compute maximum feasible flight-path angle for the transfer geometry.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `r0` | `double` | Initial radius magnitude. |
-| `rf` | `double` | Final radius magnitude. |
-| `phi` | `double` | Central angle between start and end points in radians. |
+| `r0` | `double` | Vehicle position magnitude wrt center of Earth. |
+| `rf` | `double` | Aimpoint position magnitude wrt center of Earth. |
+| `phi` | `double` | Central angle between vehicle and aimpoint in radians. |
 
 ### Returns
 
@@ -145,15 +164,15 @@ Compute maximum feasible flight-path angle for the transfer geometry.
 ## `get_flight_angle`
 
 The flight path angle $\gamma$ is determined numerically using the
-secant-method to achieve the desired flight time (within a relative tolerance
-of $10^{-8}$).
+secant method to achieve the desired flight time (within a relative
+tolerance of $10^{-8}$).
 
 ### Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `r0` | `double` | Initial radius magnitude. |
-| `rf` | `double` | Final radius magnitude. |
+| `r0` | `double` | Vehicle position magnitude wrt center of Earth. |
+| `rf` | `double` | Aimpoint position magnitude wrt center of Earth. |
 | `phi` | `double` | Central angle between start and end points in radians. |
 | `t_f_des` | `double` | Desired time of flight in seconds. |
 | `grav_model` | `grav *` | Pointer to gravity model. |
@@ -166,17 +185,24 @@ of $10^{-8}$).
 
 ## `get_lambert_velocity_vector`
 
-The direction of the Lambert velocity vector is calculated as
-
+The direction of the Lambert velocity vector is
 $$
-\hat v_\text{Lambert} = \hat x \cos\left(\frac{\pi}{2} - \gamma \right) -
-\frac{\vec x \cdot \vec x_\text{aim}|\vec x| \sin\left(\frac{\pi}{2} - \gamma
-\right)}{|\vec x|^2 |\vec x \times \vec x_\text{aim}|} + \frac{\vec
-x_\text{aim} |\vec x| \sin\left(\frac{\pi}{2} - \gamma \right)}{|\vec x
-\times \vec x_\text{aim}|}.
+\begin{align}
+\hat v_\text{Lambert} = \frac{\vec x}{|\vec x|}
+\cos\left(\frac{\pi}{2} - \gamma \right)
+-  \frac{\vec x \cdot \vec x_\text{aim}|\vec x|
+\sin\left(\frac{\pi}{2} - \gamma \right)}{|\vec x|^2
+|\vec x \times \vec x_\text{aim}|}
++ \frac{\vec x_\text{aim} |\vec x|
+\sin\left(\frac{\pi}{2} - \gamma \right)}{|\vec x \times \vec x_\text{aim}|}.
+\end{align}
 $$
-
->See Zarchan (2012) Listing 28.2
+so
+$$
+\begin{align}
+\vec v_\text{Lambert} = v_\text{Lambert} \hat v_\text{Lambert}.
+\end{align}
+$$
 
 ### Parameters
 
@@ -195,17 +221,16 @@ $$
 
 ## `thrust_offset`
 
-General energy management steering offsets the thrust by an angle $\theta$
-calculated from the remaining delta-v (Note for clarity: delta-v or $\Delta
-v$ refers to the total velocity changes the vehicle is capable of, not the
-difference between the desired velocity and the current velocity which is
-denoted $\vec v_\text{gain}$). This allows us to achieve the same final
-desired velocity without early thrust termination.
-
+Instead of directing thrust along the velocity-to-be-gained vector, general
+energy management steering offsets the thrust by an angle $\theta$ computed
+from the remaining delta-v. Here $\Delta v$ is the total thrust impulse per
+unit mass the vehicle can still produce, not the difference between desired
+and current velocity.
 $$
-\theta = \sqrt{6\left(1 - \frac{\vec v_\text{gain}}{\Delta v}\right)}
+\begin{align}
+\theta = \sqrt{6\left(1 - \frac{|\vec v_\text{gain}|}{\Delta v}\right)}.
+\end{align}
 $$
->See Zarchan (2012) Chapter 13 and Listing 13.4
 
 ### Parameters
 
@@ -229,7 +254,9 @@ the specific impulse, $I_{sp,i}$, the gravitational acceleration at sea level
 $g_0$, positive fuel burn rate $\dot m_i$, and mass $m(t)$:
 
 $$
+\begin{align}
 a_\text{thrust} = I_{sp,i} g_0 \dot m_i / m(t).
+\end{align}
 $$
 
 ### Parameters
@@ -248,28 +275,28 @@ $$
 
 ## `get_thrust_vector`
 
-Lambert Guidance finds the velocity needed at the end of boost phase for the
-vehicle to reach its target at the desired time. Writing the final desired
-velocity as $\vec v_\text{Lambert}$ and the current velocity as $\vec v$, the
-velocity to be gained is
-
+Lambert Guidance determines the velocity required at the end of boost for
+the vehicle to reach the target at the desired time, ignoring drag. Denoting
+final desired velocity as $\vec v_\text{Lambert}$ and current velocity as
+$\vec v$, the velocity to be gained is
 $$
+\begin{align}
 \vec v_\text{gain} = \vec v_\text{Lambert} - \vec v.
+\end{align}
 $$
-
-We use Rodrigues' rotation formula to rotate the velocity to-be-gained vector
-in the plane of motion around the vector orthogonal to both the position and
-the aimpoint (given by their cross-product):
-
+Using Rodrigues' rotation formula in the plane of motion around
+$\vec x \times \vec x_\text{aim}$:
 $$
-\hat a_\text{thrust} = \text{rotate}(\hat v_\text{gain}, \theta, \vec x
-\times \vec x_\text{aim}).
+\begin{align}
+\hat a_\text{thrust} = \text{rotate}(\hat v_\text{gain}, \theta,
+\vec x \times \vec x_\text{aim}).
+\end{align}
 $$
-
-The thrust acceleration vector is the thrust direction vector scaled by the
-magnitude of thrust acceleration:
+The thrust acceleration vector is
 $$
+\begin{align}
 \vec a_\text{thrust} = a_\text{thrust} \hat a_\text{thrust}.
+\end{align}
 $$
 
 ### Parameters
@@ -290,21 +317,15 @@ $$
 
 ## `get_thrust_acc`
 
-After the first ten seconds of vertical flight, the thrust is directed along
-a constant vector in an ECEF frame until the vehicle's altitude reaches
-100km. Above 100km, low air density allows for efficient, low-drag,
-maneuvering. Maneuvers are determined using Lambert Guidance with general
-energy management steering as described in Zarchan (2012).
+After the first ten seconds of vertical flight, thrust is directed along a
+constant vector in an ECI frame until altitude reaches 100 km. Above 100 km,
+maneuvers are determined using Lambert Guidance with general energy
+management steering.
 
-When the `perfect_boost` option in `run_params` is disabled (default), the
-thrust angles are rotated by the gyroscope error and the Lambert Guidance
-routine relies on estimated state measurements. When `perfect_boost` is
-enabled, the gyroscope errors have no effect and the Lambert Guidance uses
-the true vehicle state.
-
->Zarchan, P. (2012). Tactical and Strategic Missile Guidance, Sixth Edition.
-American Institute of Aeronautics and Astronautics, Inc.
-https://doi.org/10.2514/4.868948
+When `perfect_boost` in `run_params` is disabled (default), thrust angles
+are rotated by gyroscope error and Lambert Guidance relies on estimated
+state measurements. When `perfect_boost` is enabled, gyroscope errors have
+no effect and Lambert Guidance uses the true vehicle state.
 
 ### Parameters
 

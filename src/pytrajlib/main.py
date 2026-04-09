@@ -152,14 +152,13 @@ def impact_data_to_df(impact_data, config):
 
 def optimize_trajectory(config_dict):
     """
-    Use the Nelder-Mead algorithm to select the initial thrust angle and desired
-    flight time by finding the values that minimize the average miss distance
-    across `config_dict['num_runs_optimizer']` trajectories of a ballistic flight
-    with the user-specified atmosphere and no other sources of error.
+    Lambert Guidance assumes there is no drag upon reentry to the atmosphere.
+    To overcome this limitation, tune initial thrust angle and desired flight
+    time for an optimally lofted flight.
 
-    >Gao, F. and Han, L. Implementing the Nelder-Mead simplex algorithm with
-    adaptive parameters. 2012. Computational Optimization and Applications.
-    51:1, pp. 259-277
+    The Nelder-Mead algorithm selects initial thrust angle and desired flight
+    time by minimizing average miss distance across three ballistic
+    trajectories in a realistic atmosphere with no other error sources.
     """
     _keep_alive["loading_bar"] = _LOADING_BAR_DISABLED
     without_error_params = deepcopy(config_dict)

@@ -200,6 +200,21 @@ double sign(double x) {
   }
 }
 
+/**
+ * The maximum achievable flap force is limited by actuator force $F_a$ and
+ * gearing ratio $G$:
+ * $$
+ * \begin{align}
+ * F_\text{flap,max} = G F_a.
+ * \end{align}
+ * $$
+ * The actuator rate limit used by lift control is modeled as
+ * $$
+ * \begin{align}
+ * \dot\delta_\text{max} = \frac{\delta_\text{max}}{t_\text{deflect}}.
+ * \end{align}
+ * $$
+ */
 double get_max_flap_force(runparams *run_params, vehicle *vehicle) {
   double max_flap_force =
       run_params->actuator_force * run_params->gearing_ratio * 1000;

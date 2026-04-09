@@ -1,10 +1,13 @@
+from typing import Tuple
+
 import numpy as np
+import pandas as pd
 
 
 def get_local_impact(
-    impact_df,
-    aimpoint,
-):
+    impact_df: pd.DataFrame,
+    aimpoint: Tuple[float, float, float],
+) -> Tuple[np.ndarray, np.ndarray]:
     r"""
     Get distance from aim point to local ENU where $\phi$ is the aimpoint longitude, $\theta$ is the aimpoint latitude, $x_\text{local}$ is the east component, $y_\text{local}$ is the north component, and the up component is discarded:
     
@@ -16,16 +19,12 @@ def get_local_impact(
     $$
 
     Args:
-        impact_df : pandas.DataFrame
-            DataFrame containing impact coordinates with columns ``x``, ``y``, and ``z``.
-        aimpoint : tuple[float, float, float]
-            Aimpoint coordinates ``(x_aim, y_aim, z_aim)`` in the same global frame as
+        impact_df: DataFrame containing impact coordinates with columns ``x``, ``y``, and ``z``.
+        aimpoint: Aimpoint coordinates ``(x_aim, y_aim, z_aim)`` in the same global frame as
             ``impact_df``.
 
     Returns:
-        tuple[numpy.ndarray, numpy.ndarray]
-            ``(impact_x_local, impact_y_local)`` arrays containing east and north local
-            offsets for each impact sample.
+        ``(impact_x_local, impact_y_local)`` arrays containing east and north local offsets for each impact sample.
     """
 
     x_aim, y_aim, z_aim = aimpoint
@@ -57,9 +56,9 @@ def get_local_impact(
 
 
 def get_miss_distance(
-    impact_df,
-    aimpoint,
-):
+    impact_df: pd.DataFrame,
+    aimpoint: Tuple[float, float, float],
+) -> np.ndarray:
     r"""
     Compute scalar miss distance from local east/north impact offsets.
 
@@ -68,16 +67,12 @@ def get_miss_distance(
     $$
 
     Args:
-        impact_df : pandas.DataFrame
-            DataFrame containing impact coordinates with columns ``x``, ``y``, and ``z``.
-        aimpoint : tuple[float, float, float]
-            Aimpoint coordinates ``(x_aim, y_aim, z_aim)`` in the same global frame as
+        impact_df: DataFrame containing impact coordinates with columns ``x``, ``y``, and ``z``.
+        aimpoint: Aimpoint coordinates ``(x_aim, y_aim, z_aim)`` in the same global frame as
             ``impact_df``.
 
     Returns:
-        numpy.ndarray
-            Per-sample miss distance computed as
-            ``sqrt(impact_x_local**2 + impact_y_local**2)``.
+        Per-sample miss distance computed as ``sqrt(impact_x_local**2 + impact_y_local**2)``.
     """
 
     impact_x_local, impact_y_local = get_local_impact(impact_df, aimpoint)

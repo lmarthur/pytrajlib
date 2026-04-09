@@ -16,6 +16,11 @@ typedef struct anglevec {
   double yaw;
 } anglevec;
 
+/**
+ * Create a zero 3-vector.
+ *
+ * @return Vector with all components equal to zero.
+ */
 cartvec zeros() {
   cartvec z;
   z.x = 0;
@@ -26,6 +31,8 @@ cartvec zeros() {
 
 /**
  * Generate a cartesian vector with independent N(0, 1) entries.
+ *
+ * @return Gaussian random 3-vector.
  */
 cartvec gaussian_cartvec() {
   cartvec g;
@@ -37,6 +44,8 @@ cartvec gaussian_cartvec() {
 
 /**
  * Generate an angle vector with independent N(0, 1) entries.
+ *
+ * @return Gaussian random angle vector.
  */
 anglevec gaussian_anglevec() {
   anglevec g;
@@ -63,7 +72,11 @@ double dot(cartvec a, cartvec b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 double norm(cartvec vec) { return sqrt(dot(vec, vec)); }
 
 /**
- * Multiply a 3-vector by a scalar
+ * Multiply a 3-vector by a scalar.
+ *
+ * @param vec Vector to scale.
+ * @param s Scalar multiplier.
+ * @return Scaled vector.
  */
 cartvec smultiply(cartvec vec, double s) {
   cartvec result;
@@ -74,7 +87,11 @@ cartvec smultiply(cartvec vec, double s) {
 }
 
 /**
- * Multiply an anglevec by a scalar
+ * Multiply an angle vector by a scalar.
+ *
+ * @param vec Angle vector to scale.
+ * @param s Scalar multiplier.
+ * @return Scaled angle vector.
  */
 anglevec smultiply_angle(anglevec vec, double s) {
   anglevec result;
@@ -84,7 +101,11 @@ anglevec smultiply_angle(anglevec vec, double s) {
 }
 
 /**
- * Divide a 3-vector by a scalar
+ * Divide a 3-vector by a scalar.
+ *
+ * @param vec Vector to divide.
+ * @param s Scalar divisor.
+ * @return Scaled vector.
  */
 cartvec sdivide(cartvec vec, double s) {
   cartvec result;
@@ -95,7 +116,11 @@ cartvec sdivide(cartvec vec, double s) {
 }
 
 /**
- * Elementwise multiplication of two anglevecs
+ * Elementwise multiplication of two angle vectors.
+ *
+ * @param a First angle vector.
+ * @param b Second angle vector.
+ * @return Elementwise product.
  */
 anglevec multiply_anglevec(anglevec a, anglevec b) {
   anglevec result;
@@ -105,7 +130,11 @@ anglevec multiply_anglevec(anglevec a, anglevec b) {
 }
 
 /**
- * Add vector b to vector a
+ * Add vector b to vector a.
+ *
+ * @param a First vector.
+ * @param b Second vector.
+ * @return Sum vector.
  */
 cartvec add(cartvec a, cartvec b) {
   cartvec result;
@@ -116,7 +145,11 @@ cartvec add(cartvec a, cartvec b) {
 }
 
 /**
- * Add anglevec b to anglevec a
+ * Add angle vector b to angle vector a.
+ *
+ * @param a First angle vector.
+ * @param b Second angle vector.
+ * @return Sum angle vector.
  */
 anglevec add_anglevec(anglevec a, anglevec b) {
   anglevec result;
@@ -126,7 +159,11 @@ anglevec add_anglevec(anglevec a, anglevec b) {
 }
 
 /**
- * Subtract vector b from vector a
+ * Subtract vector b from vector a.
+ *
+ * @param a First vector.
+ * @param b Second vector.
+ * @return Difference vector.
  */
 cartvec subtract(cartvec a, cartvec b) {
   cartvec result;
@@ -168,11 +205,16 @@ cartvec cross(cartvec a, cartvec b) {
 
 /**
  * Rotate vector v around unit vector k by specified angle.
- * Uses Rodrigues' rotation formula
+ * Uses Rodrigues' rotation formula.
  *
- * >Wikipedia contributors. (2026). Rodrigues’ rotation formula—Wikipedia, The
+ * >Wikipedia contributors. (2026). Rodrigues' rotation formula—Wikipedia, The
  * Free Encyclopedia.
  * https://en.wikipedia.org/w/index.php?title=Rodrigues%27_rotation_formula&oldid=1340370650
+ *
+ * @param v Vector to rotate.
+ * @param k Unit vector defining rotation axis.
+ * @param angle Rotation angle in radians.
+ * @return Rotated vector.
  */
 cartvec rotate(cartvec v, cartvec k, double angle) {
   cartvec v_rot =
@@ -182,7 +224,11 @@ cartvec rotate(cartvec v, cartvec k, double angle) {
 }
 
 /**
- * Project vector v onto vector u
+ * Project vector v onto vector u.
+ *
+ * @param v Vector to project.
+ * @param u Direction to project onto.
+ * @return Projection of v onto u.
  */
 cartvec project(cartvec v, cartvec u) {
   return smultiply(u, dot(v, u) / dot(u, u));
@@ -190,7 +236,12 @@ cartvec project(cartvec v, cartvec u) {
 
 /**
  * Create an orthonormal basis e0, e1 from linearly independent vectors
- * v0, v1 where e0 = v0 / norm(v0)
+ * v0, v1 where e0 = v0 / norm(v0).
+ *
+ * @param v0 First input vector.
+ * @param v1 Second input vector.
+ * @param e0 Output first orthonormal basis vector.
+ * @param e1 Output second orthonormal basis vector.
  */
 void gram_schmidt_orthonorm(cartvec v0, cartvec v1, cartvec *e0, cartvec *e1) {
   cartvec u0 = v0;

@@ -1,5 +1,21 @@
 # Linalg
 
+## `zeros`
+
+Create a zero 3-vector.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| (none) | - | - |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `cartvec` | Vector with all components equal to zero. |
+
 ## `gaussian_cartvec`
 
 Generate a cartesian vector with independent N(0, 1) entries.
@@ -14,7 +30,7 @@ Generate a cartesian vector with independent N(0, 1) entries.
 
 | Type | Description |
 | --- | --- |
-| `cartvec` |  |
+| `cartvec` | Gaussian random 3-vector. |
 
 ## `gaussian_anglevec`
 
@@ -30,7 +46,7 @@ Generate an angle vector with independent N(0, 1) entries.
 
 | Type | Description |
 | --- | --- |
-| `anglevec` |  |
+| `anglevec` | Gaussian random angle vector. |
 
 ## `dot`
 
@@ -67,122 +83,122 @@ Get the L2 norm of a 3-vector
 
 ## `smultiply`
 
-Multiply a 3-vector by a scalar
+Multiply a 3-vector by a scalar.
 
 ### Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `vec` | `cartvec` |  |
-| `s` | `double` |  |
+| `vec` | `cartvec` | Vector to scale. |
+| `s` | `double` | Scalar multiplier. |
 
 ### Returns
 
 | Type | Description |
 | --- | --- |
-| `cartvec` |  |
+| `cartvec` | Scaled vector. |
 
 ## `smultiply_angle`
 
-Multiply an anglevec by a scalar
+Multiply an angle vector by a scalar.
 
 ### Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `vec` | `anglevec` |  |
-| `s` | `double` |  |
+| `vec` | `anglevec` | Angle vector to scale. |
+| `s` | `double` | Scalar multiplier. |
 
 ### Returns
 
 | Type | Description |
 | --- | --- |
-| `anglevec` |  |
+| `anglevec` | Scaled angle vector. |
 
 ## `sdivide`
 
-Divide a 3-vector by a scalar
+Divide a 3-vector by a scalar.
 
 ### Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `vec` | `cartvec` |  |
-| `s` | `double` |  |
+| `vec` | `cartvec` | Vector to divide. |
+| `s` | `double` | Scalar divisor. |
 
 ### Returns
 
 | Type | Description |
 | --- | --- |
-| `cartvec` |  |
+| `cartvec` | Scaled vector. |
 
 ## `multiply_anglevec`
 
-Elementwise multiplication of two anglevecs
+Elementwise multiplication of two angle vectors.
 
 ### Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `a` | `anglevec` |  |
-| `b` | `anglevec` |  |
+| `a` | `anglevec` | First angle vector. |
+| `b` | `anglevec` | Second angle vector. |
 
 ### Returns
 
 | Type | Description |
 | --- | --- |
-| `anglevec` |  |
+| `anglevec` | Elementwise product. |
 
 ## `add`
 
-Add vector b to vector a
+Add vector b to vector a.
 
 ### Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `a` | `cartvec` |  |
-| `b` | `cartvec` |  |
+| `a` | `cartvec` | First vector. |
+| `b` | `cartvec` | Second vector. |
 
 ### Returns
 
 | Type | Description |
 | --- | --- |
-| `cartvec` |  |
+| `cartvec` | Sum vector. |
 
 ## `add_anglevec`
 
-Add anglevec b to anglevec a
+Add angle vector b to angle vector a.
 
 ### Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `a` | `anglevec` |  |
-| `b` | `anglevec` |  |
+| `a` | `anglevec` | First angle vector. |
+| `b` | `anglevec` | Second angle vector. |
 
 ### Returns
 
 | Type | Description |
 | --- | --- |
-| `anglevec` |  |
+| `anglevec` | Sum angle vector. |
 
 ## `subtract`
 
-Subtract vector b from vector a
+Subtract vector b from vector a.
 
 ### Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `a` | `cartvec` |  |
-| `b` | `cartvec` |  |
+| `a` | `cartvec` | First vector. |
+| `b` | `cartvec` | Second vector. |
 
 ### Returns
 
 | Type | Description |
 | --- | --- |
-| `cartvec` |  |
+| `cartvec` | Difference vector. |
 
 ## `matvec_multiply`
 
@@ -221,9 +237,9 @@ Compute the cross product of two 3-vectors: result = a x b
 ## `rotate`
 
 Rotate vector v around unit vector k by specified angle.
-Uses Rodrigues' rotation formula
+Uses Rodrigues' rotation formula.
 
->Wikipedia contributors. (2026). Rodrigues’ rotation formula—Wikipedia, The
+>Wikipedia contributors. (2026). Rodrigues' rotation formula—Wikipedia, The
 Free Encyclopedia.
 https://en.wikipedia.org/w/index.php?title=Rodrigues%27_rotation_formula&oldid=1340370650
 
@@ -231,46 +247,46 @@ https://en.wikipedia.org/w/index.php?title=Rodrigues%27_rotation_formula&oldid=1
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `v` | `cartvec` |  |
-| `k` | `cartvec` |  |
-| `angle` | `double` |  |
+| `v` | `cartvec` | Vector to rotate. |
+| `k` | `cartvec` | Unit vector defining rotation axis. |
+| `angle` | `double` | Rotation angle in radians. |
 
 ### Returns
 
 | Type | Description |
 | --- | --- |
-| `cartvec` |  |
+| `cartvec` | Rotated vector. |
 
 ## `project`
 
-Project vector v onto vector u
+Project vector v onto vector u.
 
 ### Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `v` | `cartvec` |  |
-| `u` | `cartvec` |  |
+| `v` | `cartvec` | Vector to project. |
+| `u` | `cartvec` | Direction to project onto. |
 
 ### Returns
 
 | Type | Description |
 | --- | --- |
-| `cartvec` |  |
+| `cartvec` | Projection of v onto u. |
 
 ## `gram_schmidt_orthonorm`
 
 Create an orthonormal basis e0, e1 from linearly independent vectors
-v0, v1 where e0 = v0 / norm(v0)
+v0, v1 where e0 = v0 / norm(v0).
 
 ### Parameters
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `v0` | `cartvec` |  |
-| `v1` | `cartvec` |  |
-| `e0` | `cartvec *` |  |
-| `e1` | `cartvec *` |  |
+| `v0` | `cartvec` | First input vector. |
+| `v1` | `cartvec` | Second input vector. |
+| `e0` | `cartvec *` | Output first orthonormal basis vector. |
+| `e1` | `cartvec *` | Output second orthonormal basis vector. |
 
 ### Returns
 
