@@ -217,7 +217,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
           double *burnout_ang, double *apogee_alt, double *reentry_vel,
           double *reentry_ang) {
 
-  int max_steps = 10000000;
+  int max_steps = 100000000;
 
   // Initialize time step to the "inside atmosphere" time step
   double time_step = run_params->time_step_atm;

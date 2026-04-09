@@ -95,9 +95,11 @@ int get_body_frame(state *true_state, state *est_state, runparams *run_params,
   *xhat = sdivide(v_rel, norm(v_rel));
   cartvec lift_perp =
       subtract(tmp_lift, smultiply(*xhat, dot(tmp_lift, *xhat)));
-  // If the lift is parallel to the velocity, use Gram-Schmidt fallback
+  // If the lift is parallel to the velocity, print warning
   if (norm(lift_perp) < 1e-6) {
-    gram_schmidt_orthonorm(*xhat, (cartvec){0., 0., 1.}, xhat, zhat);
+    printf("Warning: lift is parallel to velocity. Can't find body frame\n");
+    return 0;
+
   }
   // Create zhat vector by subtracting the component of the commanded lift along
   // the relative velocity vector
