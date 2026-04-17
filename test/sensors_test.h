@@ -82,9 +82,9 @@ TEST(sensors, imu_update) {
   REQUIRE_EQ(a_total_est.y, 0);
   REQUIRE_EQ(a_total_est.z, 0);
   REQUIRE_EQ(est_state.theta_long,
-             true_state.theta_long + true_state.gyro_error.yaw);
+             run_params.theta_long + true_state.gyro_error.yaw);
   REQUIRE_EQ(est_state.theta_lat,
-             true_state.theta_lat + true_state.gyro_error.pitch);
+             run_params.theta_lat + true_state.gyro_error.pitch);
 
   run_params.gyro_noise = 1e-3;
   run_params.gyro_bias_stability = 2e-3;

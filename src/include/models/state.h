@@ -8,12 +8,8 @@
 // Define a struct to store the state of a vehicle in 3D space
 typedef struct state {
   // State parameters
-  cartvec position;               // position in meters
-  cartvec velocity;               // velocity in meters per second
-  double initial_theta_long_pert; // initial perturbation in the longitudinal
-                                  // thrust angle in radians
-  double initial_theta_lat_pert;  // initial perturbation in the latitudinal
-                                  // thrust angle in radians
+  cartvec position;  // position in meters
+  cartvec velocity;  // velocity in meters per second
   double theta_long; // thrust angle in the longitudinal direction measured from
                      // the x-z plane in radians
   double theta_lat;  // thrust angle in the latitudinal direction measured from
@@ -46,23 +42,23 @@ state init_true_state(runparams *run_params) {
   state.velocity = smultiply(velocity_noise, run_params->initial_vel_error);
 
   double initial_rot_pert = run_params->initial_angle_error * ran_gaussian(1);
-
-  state.initial_theta_lat_pert =
+  double initial_theta_lat_pert =
       run_params->initial_angle_error * ran_gaussian(1) +
       run_params->theta_long * initial_rot_pert -
       fabs(run_params->theta_lat * initial_rot_pert);
-  state.initial_theta_long_pert =
+  double initial_theta_long_pert =
       run_params->initial_angle_error * ran_gaussian(1) -
       run_params->theta_lat * initial_rot_pert -
       fabs(run_params->theta_long * initial_rot_pert);
-  state.theta_long = run_params->theta_long + state.initial_theta_long_pert;
-  state.theta_lat = run_params->theta_lat + state.initial_theta_lat_pert;
+
+  state.theta_long = run_params->theta_long + initial_theta_long_pert;
+  state.theta_lat = run_params->theta_lat + initial_theta_lat_pert;
   state.deflection_angle = 0;
 
   // The true state holds the gyro error for ease of calculating the body frame
   // which uses the gyro error to perturb the true body frame.
-  state.gyro_error.pitch = state.initial_theta_lat_pert;
-  state.gyro_error.yaw = state.initial_theta_long_pert;
+  state.gyro_error.pitch = initial_theta_lat_pert;
+  state.gyro_error.yaw = initial_theta_long_pert;
 
   state.alpha = 0;
   state.d_alpha_dt = 0;
@@ -88,8 +84,6 @@ state init_est_state(runparams *run_params) {
 
   state.theta_long = run_params->theta_long;
   state.theta_lat = run_params->theta_lat;
-  state.initial_theta_lat_pert = 0;
-  state.initial_theta_long_pert = 0;
   state.deflection_angle = 0;
 
   state.gyro_error.pitch = 0;
@@ -109,10 +103,6 @@ state add_state(state a, state b) {
 
   result.position = add(a.position, b.position);
   result.velocity = add(a.velocity, b.velocity);
-  result.initial_theta_long_pert =
-      a.initial_theta_long_pert + b.initial_theta_long_pert;
-  result.initial_theta_lat_pert =
-      a.initial_theta_lat_pert + b.initial_theta_lat_pert;
   result.theta_long = a.theta_long + b.theta_long;
   result.theta_lat = a.theta_lat + b.theta_lat;
   result.deflection_angle = a.deflection_angle + b.deflection_angle;
@@ -134,8 +124,6 @@ state smultiply_state(state a, double s) {
 
   result.position = smultiply(a.position, s);
   result.velocity = smultiply(a.velocity, s);
-  result.initial_theta_long_pert = a.initial_theta_long_pert * s;
-  result.initial_theta_lat_pert = a.initial_theta_lat_pert * s;
   result.theta_long = a.theta_long * s;
   result.theta_lat = a.theta_lat * s;
   result.deflection_angle = a.deflection_angle * s;

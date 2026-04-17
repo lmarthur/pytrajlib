@@ -114,7 +114,7 @@ rv init_swerve_rv() {
   rv.c_m_alpha = -0.15;
   rv.c_m_q = -0.2;
   rv.c_l_alpha = 1.72;
-  rv.c_m_delta = -0.06;
+  rv.c_m_delta = 0.06;
   rv.flap_area = 0.04;
   rv.x_flap = -2.65;
   rv.x_com = -0.6 * rv.rv_length;

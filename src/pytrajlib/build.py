@@ -93,8 +93,6 @@ ffibuilder.cdef(
     typedef struct state {
         cartvec position;
         cartvec velocity;
-        double initial_theta_long_pert;
-        double initial_theta_lat_pert;
         double theta_long;
         double theta_lat;
         double deflection_angle;
