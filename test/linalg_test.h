@@ -161,3 +161,78 @@ TEST(linalg, rotate_non_orthogonal) {
   REQUIRE_EQ(c.y, 1);
   REQUIRE_LT(c.z, 1e-10);
 }
+
+TEST(linalg, get_body_to_eci_matrix_identity) {
+  quaternion q = identity_quaternion();
+  double C_EB[3][3] = {{0}};
+
+  get_body_to_eci_matrix(q, C_EB);
+
+  REQUIRE_EQ(C_EB[0][0], 1.0);
+  REQUIRE_EQ(C_EB[0][1], 0.0);
+  REQUIRE_EQ(C_EB[0][2], 0.0);
+  REQUIRE_EQ(C_EB[1][0], 0.0);
+  REQUIRE_EQ(C_EB[1][1], 1.0);
+  REQUIRE_EQ(C_EB[1][2], 0.0);
+  REQUIRE_EQ(C_EB[2][0], 0.0);
+  REQUIRE_EQ(C_EB[2][1], 0.0);
+  REQUIRE_EQ(C_EB[2][2], 1.0);
+}
+
+TEST(linalg, body_to_eci_quarter_turn_about_z) {
+  const double half_sqrt2 = sqrt(0.5);
+  quaternion q = {
+      .w = half_sqrt2,
+      .x = 0.0,
+      .y = 0.0,
+      .z = half_sqrt2,
+  };
+  cartvec v_B = {1.0, 0.0, 0.0};
+
+  cartvec v_E = body_to_eci(v_B, q);
+
+  REQUIRE_LT(fabs(v_E.x), 1e-12);
+  REQUIRE_LT(fabs(v_E.y - 1.0), 1e-12);
+  REQUIRE_LT(fabs(v_E.z), 1e-12);
+}
+
+TEST(linalg, eci_to_body_inverse_of_body_to_eci) {
+  /* Start with a vector in body frame */
+  cartvec v_B_original = {1.0, 2.0, 3.0};
+
+  const double half_sqrt2 = sqrt(0.5);
+  quaternion q = {
+      .w = half_sqrt2,
+      .x = 0.0,
+      .y = 0.0,
+      .z = half_sqrt2,
+  };
+
+  /* Transform body -> ECI -> body, should return to original */
+  cartvec v_E = body_to_eci(v_B_original, q);
+  cartvec v_B_recovered = eci_to_body(v_E, q);
+
+  REQUIRE_LT(fabs(v_B_recovered.x - v_B_original.x), 1e-12);
+  REQUIRE_LT(fabs(v_B_recovered.y - v_B_original.y), 1e-12);
+  REQUIRE_LT(fabs(v_B_recovered.z - v_B_original.z), 1e-12);
+}
+
+TEST(linalg, eci_to_body_quarter_turn_about_z) {
+  /* 90 degree rotation about z-axis for body_to_eci: (1,0,0) body -> (0,1,0)
+   * ECI */
+  /* For eci_to_body (transpose = -90 degrees): (1,0,0) ECI -> (0,-1,0) body */
+  const double half_sqrt2 = sqrt(0.5);
+  quaternion q = {
+      .w = half_sqrt2,
+      .x = 0.0,
+      .y = 0.0,
+      .z = half_sqrt2,
+  };
+  cartvec v_E = {1.0, 0.0, 0.0};
+
+  cartvec v_B = eci_to_body(v_E, q);
+
+  REQUIRE_LT(fabs(v_B.x), 1e-12);
+  REQUIRE_LT(fabs(v_B.y + 1.0), 1e-12); /* v_B.y should be -1 */
+  REQUIRE_LT(fabs(v_B.z), 1e-12);
+}

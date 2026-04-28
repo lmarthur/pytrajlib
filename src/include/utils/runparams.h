@@ -34,6 +34,7 @@ typedef struct runparams {
   double reentry_vel;  // reentry velocity in meters per second
   int perfect_boost;   // 1 perfect boost, 0 realistic
   int optimize_boost;  // 1 optimize t_des_final/theta_long, 0 use provided
+  int optimize_maneuv; // 1 optimize tau_deflect, 0 use provided
   double t_des_final;  // desired flight time (optimized by code)
   double t_vert_boost; // Duration of vertical boost (optimized by code)
 
@@ -46,10 +47,11 @@ typedef struct runparams {
                           // maneuverability
   double actuator_resolution;  // actuator angular resolution in degrees
   double max_deflection_angle; // maximum flap deflection angle in radians
-  double nav_gain;  // navigation gain for proportional navigation guidance
-  double flap_gain; // Gain for approaching the commanded flap position when
-                    // slower than max rate.
-  double Kp;        // proportional gain for deflection control
+  double nav_gain;    // navigation gain for proportional navigation guidance
+  double flap_gain;   // Gain for approaching the commanded flap position when
+                      // slower than max rate.
+  double Glp;         // low-pass filter gain used in maneuverability control
+  double tau_deflect; // Time constant for deflection control
 
   double initial_x_error;     // initial x-error in meters
   double initial_pos_error;   // initial position error in meters

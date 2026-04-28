@@ -404,4 +404,20 @@ cartvec get_cart_wind(state *state, atm_cond *atm_cond) {
   return cartvec_wind;
 }
 
+/**
+ * Gets relative wind in ECI coordinates.
+ *
+ * The relative wind is defined as wind minus vehicle velocity:
+ * $$\mathbf V_{\mathrm{rel},E} = \mathbf V_{\mathrm{wind},E} - \mathbf v_E$$
+ *
+ * @param current_state Pointer to current vehicle state.
+ * @param atm_cond Pointer to local atmospheric conditions.
+ * @return Relative wind vector in ECI coordinates.
+ */
+static inline cartvec get_relative_wind_eci(state *current_state,
+                                            atm_cond *atm_cond) {
+  cartvec wind_vec = get_cart_wind(current_state, atm_cond);
+  return subtract(wind_vec, current_state->velocity);
+}
+
 #endif

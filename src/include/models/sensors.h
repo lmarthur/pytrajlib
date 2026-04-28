@@ -2,9 +2,10 @@
 #define SENSORS_H
 
 #include "../rng/rng.h"
-#include "../utils/body_frame.h"
 #include "../utils/utils.h"
 #include "state.h"
+#include "atmosphere.h"
+#include "grav.h"
 
 // Define an inertial measurement unit struct
 typedef struct imu {
@@ -42,35 +43,6 @@ imu imu_init(runparams *run_params, state *initial_state) {
 }
 
 /**
- * The acceleration measurable by the accelerometer is the vehicle acceleration
- * without gravity:
- * $$
- * \begin{align}
- * \vec a_\text{measurable} = \vec a - \vec a_\text{grav}.
- * \end{align}
- * $$
- * The accelerometer measures in the body frame with scale errors on roll,
- * pitch, and yaw axes:
- * <div>
- * $$
- * \begin{align}
- * \vec a_\text{measured} = \begin{bmatrix}1 + \text{scale}_x & 0 & 0 \\ 0 & 1 +
- * \text{scale}_y & 0 \\ 0 & 0 & 1 + \text{scale}_z\end{bmatrix} \mathbf{B}^T
- * \vec a_\text{measurable}.
- * \end{align}
- * $$
- * </div>
- * The total estimated acceleration is obtained by transforming measured
- * acceleration back to ECI using the estimated body frame and adding estimated
- * gravity:
- * <div>
- * $$
- * \begin{align}
- * \vec a_\text{est} = \mathbf{B}_\text{est}\vec a_\text{measured} + \vec
- * a_\text{grav,est}.
- * \end{align}
- * $$
- * </div>
  *
  * @param imu Pointer to IMU model/state
  * @param run_params Pointer to run configuration parameters
@@ -92,56 +64,29 @@ cartvec imu_measurement(imu *imu, runparams *run_params,
                         state *est_state, cartvec a_total_true,
                         cartvec a_grav_true, cartvec a_grav_est,
                         grav *est_grav) {
-  // Gyroscope measurements
-  est_state->theta_long = run_params->theta_long + true_state->gyro_error.yaw;
-  est_state->theta_lat = run_params->theta_lat + true_state->gyro_error.pitch;
+      // Thrust angle measurements from accumulated gyro error
+      est_state->theta_long = run_params->theta_long + true_state->gyro_error.yaw;
+      est_state->theta_lat = run_params->theta_lat + true_state->gyro_error.pitch;
 
   // IMU measures total acceleration minus gravity
-  cartvec a_measurable = subtract(a_total_true, a_grav_true);
+  cartvec a_measurable_E = subtract(a_total_true, a_grav_true);
 
-  // Get body-centric basis vectors
-  cartvec xhat;
-  cartvec yhat;
-  cartvec zhat;
-  int valid = get_body_frame(true_state, est_state, run_params, true_t, NULL,
-                             &xhat, &yhat, &zhat, 0, est_grav);
-  if (!valid) {
-    printf("Warning: Invalid body frame\n");
-  }
-  // Change to body-centric basis
-  cartvec a_measurable_body_frame = {
-      dot(a_measurable, xhat),
-      dot(a_measurable, yhat),
-      dot(a_measurable, zhat),
-  };
+  // Change from ECI to body-frame
+  cartvec a_measurable_B = eci_to_body(a_measurable_E, true_state->q_EB);
 
-  double accelerometer_measurement[3][3] = {
+  // Get measured acceleration in the body frame with accelerometer scale errors
+  double scale_errors[3][3] = {
       {1 + imu->acc_scale.x, 0, 0},
       {0, 1 + imu->acc_scale.y, 0},
       {0, 0, 1 + imu->acc_scale.z},
   };
+  cartvec a_measured_B = matvec_multiply(scale_errors, a_measurable_B);
 
-  // Get measured acceleration in the body-centric basis
-  cartvec a_measured_body_frame =
-      matvec_multiply(accelerometer_measurement, a_measurable_body_frame);
-
-  cartvec xhat_est;
-  cartvec yhat_est;
-  cartvec zhat_est;
-  valid = get_body_frame(true_state, est_state, run_params, est_t, NULL,
-                         &xhat_est, &yhat_est, &zhat_est, 1, est_grav);
-  if (!valid) {
-    printf("Warning: Invalid estimated body frame\n");
-  }
-
-  // Change back to global basis using the estimated body frame
-  double B[3][3] = {{xhat_est.x, yhat_est.x, zhat_est.x},
-                    {xhat_est.y, yhat_est.y, zhat_est.y},
-                    {xhat_est.z, yhat_est.z, zhat_est.z}};
-  cartvec a_measured = matvec_multiply(B, a_measured_body_frame);
+  // Transform back to the estimated ECI frame
+  cartvec a_measured_E = body_to_eci(a_measured_B, est_state->q_EB);
 
   // Total acceleration is measured + estimated gravity
-  cartvec a_total_est = add(a_measured, a_grav_est);
+  cartvec a_total_est = add(a_measured_E, a_grav_est);
   return a_total_est;
 }
 

@@ -16,6 +16,134 @@ typedef struct anglevec {
   double yaw;
 } anglevec;
 
+typedef struct quaternion {
+  double w;
+  double x;
+  double y;
+  double z;
+} quaternion;
+
+/**
+ * Create the identity quaternion.
+ *
+ * @return Quaternion with no rotation.
+ */
+quaternion identity_quaternion() {
+  quaternion q;
+  q.w = 1;
+  q.x = 0;
+  q.y = 0;
+  q.z = 0;
+  return q;
+}
+
+/**
+ * Hamilton product of two quaternions
+ *
+ * @param q1 First quaternion
+ * @param q2 Second quaternion
+ * @return The product quaternion
+ */
+quaternion qmultiply(quaternion q1, quaternion q2) {
+  quaternion result;
+  result.w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
+  result.x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
+  result.y = q1.w * q2.y - q1.x * q2.z + q1.y * q2.w + q1.z * q2.x;
+  result.z = q1.w * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.w;
+  return result;
+}
+
+/**
+ * Multiply each quaternion component by a scalar.
+ *
+ * @param q Quaternion to scale.
+ * @param s Scalar multiplier.
+ * @return Scaled quaternion.
+ */
+quaternion qsmultiply(quaternion q, double s) {
+  quaternion result;
+  result.w = q.w * s;
+  result.x = q.x * s;
+  result.y = q.y * s;
+  result.z = q.z * s;
+  return result;
+}
+
+/**
+ * Compute the L2 norm of a quaternion.
+ *
+ * @param q Quaternion to compute norm of.
+ * @return Quaternion norm.
+ */
+double qnorm(quaternion q) {
+  return sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
+}
+
+/**
+ * Build the body-to-ECI direction cosine matrix from scalar-first quaternion
+ * q_EB = [w, x, y, z].
+ *
+ * @param q_EB Quaternion rotating body-frame vectors into ECI.
+ * @param C_EB Output 3x3 body-to-ECI DCM.
+ */
+void get_body_to_eci_matrix(quaternion q_EB, double C_EB[3][3]) {
+  const double q0 = q_EB.w;
+  const double q1 = q_EB.x;
+  const double q2 = q_EB.y;
+  const double q3 = q_EB.z;
+
+  C_EB[0][0] = 1.0 - 2.0 * (q2 * q2 + q3 * q3);
+  C_EB[0][1] = 2.0 * (q1 * q2 - q0 * q3);
+  C_EB[0][2] = 2.0 * (q1 * q3 + q0 * q2);
+
+  C_EB[1][0] = 2.0 * (q1 * q2 + q0 * q3);
+  C_EB[1][1] = 1.0 - 2.0 * (q1 * q1 + q3 * q3);
+  C_EB[1][2] = 2.0 * (q2 * q3 - q0 * q1);
+
+  C_EB[2][0] = 2.0 * (q1 * q3 - q0 * q2);
+  C_EB[2][1] = 2.0 * (q2 * q3 + q0 * q1);
+  C_EB[2][2] = 1.0 - 2.0 * (q1 * q1 + q2 * q2);
+}
+
+/**
+ * Transform a vector from body coordinates to ECI coordinates using q_EB.
+ *
+ * @param v_B Vector in body coordinates.
+ * @param q_EB Quaternion rotating body-frame vectors into ECI.
+ * @return Vector expressed in ECI coordinates.
+ */
+cartvec body_to_eci(cartvec v_B, quaternion q_EB) {
+  double C_EB[3][3];
+  get_body_to_eci_matrix(q_EB, C_EB);
+  cartvec v_E;
+  v_E.x = C_EB[0][0] * v_B.x + C_EB[0][1] * v_B.y + C_EB[0][2] * v_B.z;
+  v_E.y = C_EB[1][0] * v_B.x + C_EB[1][1] * v_B.y + C_EB[1][2] * v_B.z;
+  v_E.z = C_EB[2][0] * v_B.x + C_EB[2][1] * v_B.y + C_EB[2][2] * v_B.z;
+  return v_E;
+}
+
+/**
+ * Transform a vector from ECI coordinates to body coordinates using q_EB.
+ * Applies the transpose of C_EB (the ECI-to-body rotation) using flipped
+ * indexing. Equivalent to: v_B = C_EB^T * v_E where C_EB^T = C_EB^(-1) for
+ * orthogonal rotations.
+ *
+ * @param v_E Vector in ECI coordinates.
+ * @param q_EB Quaternion rotating body-frame vectors into ECI.
+ * @return Vector expressed in body coordinates.
+ */
+cartvec eci_to_body(cartvec v_E, quaternion q_EB) {
+  double C_EB[3][3];
+  get_body_to_eci_matrix(q_EB, C_EB);
+
+  /* Compute v_B = C_EB^T * v_E */
+  cartvec v_B;
+  v_B.x = C_EB[0][0] * v_E.x + C_EB[1][0] * v_E.y + C_EB[2][0] * v_E.z;
+  v_B.y = C_EB[0][1] * v_E.x + C_EB[1][1] * v_E.y + C_EB[2][1] * v_E.z;
+  v_B.z = C_EB[0][2] * v_E.x + C_EB[1][2] * v_E.y + C_EB[2][2] * v_E.z;
+  return v_B;
+}
+
 /**
  * Create a zero 3-vector.
  *

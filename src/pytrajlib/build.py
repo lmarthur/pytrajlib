@@ -40,6 +40,7 @@ ffibuilder.cdef(
         double reentry_vel;
         int perfect_boost;
         int optimize_boost;
+        int optimize_maneuv;
         double t_des_final;
         double t_vert_boost;
 
@@ -51,7 +52,8 @@ ffibuilder.cdef(
         double max_deflection_angle;
         double nav_gain;
         double flap_gain;
-        double Kp;
+        double Glp;
+        double tau_deflect;
 
         double initial_x_error;
         double initial_pos_error;
@@ -90,15 +92,28 @@ ffibuilder.cdef(
         double yaw;
     } anglevec;
 
+    typedef struct quaternion {
+        double w;
+        double x;
+        double y;
+        double z;
+    } quaternion;
+
     typedef struct state {
         cartvec position;
         cartvec velocity;
+        quaternion q_EB;
+        cartvec angular_vel_B;
         double theta_long;
         double theta_lat;
-        double deflection_angle;
         anglevec gyro_error;
-        double alpha;
-        double d_alpha_dt;
+        anglevec orientation_angle_change;
+        double delta_1;
+        double delta_2;
+        double prev_a_cmd_1;
+        double prev_a_cmd_2;
+        double prev_delta_1;
+        double prev_delta_2;
     } state;
 
     typedef struct impact_data {

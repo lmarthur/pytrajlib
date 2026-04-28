@@ -165,6 +165,10 @@ def plot_trajectory(
     """
     _setup_pyplot()
 
+    # Normalize CSV headers to avoid misses from trailing spaces.
+    trajectory_df = trajectory_df.copy()
+    trajectory_df.columns = trajectory_df.columns.str.strip()
+
     # Extract columns
     t = trajectory_df["t"].values
     x, y, z = (
@@ -189,9 +193,42 @@ def plot_trajectory(
     )
     current_mass = trajectory_df["current_mass"].values
 
-    # Extract deflection angle and angle of attack
-    deflection_angle = trajectory_df["true_deflection_angle"].values
-    alpha = trajectory_df["true_alpha"].values
+    # Extract flap-pair deflections
+    delta_1 = trajectory_df["true_delta_1"].values
+    delta_2 = trajectory_df["true_delta_2"].values
+
+    has_quaternion = {
+        "true_q_w",
+        "true_q_x",
+        "true_q_y",
+        "true_q_z",
+        "est_q_w",
+        "est_q_x",
+        "est_q_y",
+        "est_q_z",
+    }.issubset(trajectory_df.columns)
+    if has_quaternion:
+        true_q_w = trajectory_df["true_q_w"].values
+        true_q_x = trajectory_df["true_q_x"].values
+        true_q_y = trajectory_df["true_q_y"].values
+        true_q_z = trajectory_df["true_q_z"].values
+        est_q_w = trajectory_df["est_q_w"].values
+        est_q_x = trajectory_df["est_q_x"].values
+        est_q_y = trajectory_df["est_q_y"].values
+        est_q_z = trajectory_df["est_q_z"].values
+
+    # Extract gyro error
+    has_gyro_error = {"gyro_error_pitch", "gyro_error_yaw"}.issubset(trajectory_df.columns)
+    if has_gyro_error:
+        gyro_error_pitch = trajectory_df["gyro_error_pitch"].values * 180 / np.pi
+        gyro_error_yaw = trajectory_df["gyro_error_yaw"].values * 180 / np.pi
+
+    has_wind_components = {"u1", "u2", "u3"}.issubset(trajectory_df.columns)
+    if has_wind_components:
+        u1 = trajectory_df["u1"].values
+        u2 = trajectory_df["u2"].values
+        u3 = trajectory_df["u3"].values
+        aoa_alpha_deg, aoa_azimuth_deg = _compute_aoa_angles(u1, u2, u3)
 
     # Calculate altitude
     altitude = np.sqrt(x**2 + y**2 + z**2) - 6.371e6
@@ -238,19 +275,99 @@ def plot_trajectory(
             reentry_mask,
             save_path,
         ),
-        "deflection_and_aoa": lambda: _plot_deflection_and_aoa(
+        "flap_deltas": lambda: _plot_flap_deltas(
             t,
-            deflection_angle,
-            alpha,
+            delta_1,
+            delta_2,
             reentry_mask,
             save_path,
         ),
         "orbit": lambda: _plot_orbit(x, y, est_x, est_y, save_path, aimpoint),
     }
 
+    if has_quaternion:
+        plots["quaternion"] = lambda: _plot_quaternion(
+            t,
+            boost_mask,
+            midcourse_mask,
+            reentry_mask,
+            true_q_w,
+            true_q_x,
+            true_q_y,
+            true_q_z,
+            est_q_w,
+            est_q_x,
+            est_q_y,
+            est_q_z,
+            save_path,
+        )
+    else:
+        print("Skipping quaternion plot (true_q_* / est_q_* not found).")
+
+    if has_gyro_error:
+        plots["gyro_error"] = lambda: _plot_gyro_error(
+            t, gyro_error_pitch, gyro_error_yaw, save_path
+        )
+    else:
+        print("Skipping gyro_error plot (gyro_error_pitch/yaw not found).")
+
+    if has_wind_components:
+        plots["aoa_components"] = lambda: _plot_aoa_components(
+            t, aoa_alpha_deg, aoa_azimuth_deg, reentry_mask, save_path
+        )
+    else:
+        print("Skipping aoa_components plot (u1/u2/u3 not found).")
+
     for plot_name, plot_func in plots.items():
         print(f"Generating {plot_name}...")
         plot_func()
+
+
+def plot_reentry_guidance(
+    guidance_df: pd.DataFrame,
+    save_path: Optional[Path] = None,
+) -> None:
+    """Plot commanded and estimated acceleration vectors during reentry."""
+    _setup_pyplot()
+
+    guidance_df = guidance_df.copy()
+    guidance_df.columns = guidance_df.columns.str.strip()
+
+    t = guidance_df["t"].values
+    a_cmd_x = guidance_df["a_cmd_x"].values
+    a_cmd_y = guidance_df["a_cmd_y"].values
+    a_cmd_z = guidance_df["a_cmd_z"].values
+    a_est_x = guidance_df["a_total_est_x"].values
+    a_est_y = guidance_df["a_total_est_y"].values
+    a_est_z = guidance_df["a_total_est_z"].values
+
+    fig, axes = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
+
+    axes[0].plot(t, a_cmd_x, label="a_cmd x", linewidth=2, alpha=0.4)
+    axes[0].plot(t, a_cmd_y, label="a_cmd y", linewidth=2, alpha=0.4)
+    axes[0].plot(t, a_cmd_z, label="a_cmd z", linewidth=2, alpha=0.4)
+    axes[0].set_ylabel("Commanded Acceleration (m/s²)")
+    axes[0].set_title("Reentry Guidance Command")
+    axes[0].legend(frameon=False)
+    axes[0].grid(alpha=0.3)
+    axes[0].set_ylim((-100, 100))
+
+    axes[1].plot(t, a_est_x, label="a_est x", linewidth=2, alpha=0.4)
+    axes[1].plot(t, a_est_y, label="a_est y", linewidth=2, alpha=0.4)
+    axes[1].plot(t, a_est_z, label="a_est z", linewidth=2, alpha=0.4)
+    axes[1].set_xlabel("Time (s)")
+    axes[1].set_ylabel("Estimated Transverse Acceleration (m/s²)")
+    axes[1].set_title("Reentry Estimated Transverse Acceleration")
+    axes[1].legend(frameon=False)
+    axes[1].grid(alpha=0.3)
+
+    plt.tight_layout()
+
+    if save_path:
+        _save_figure(Path(save_path), "reentry_guidance.png")
+    else:
+        plt.show()
+    plt.close()
 
 
 def _plot_position(t, x, y, z, est_x, est_y, est_z, save_path):
@@ -564,40 +681,80 @@ def _plot_orbit(x, y, est_x, est_y, save_path, aimpoint=None):
     plt.close()
 
 
-def _plot_deflection_and_aoa(
+def _plot_flap_deltas(
     t,
-    deflection_angle,
-    alpha,
+    delta_1,
+    delta_2,
     reentry_mask,
     save_path,
 ):
-    """True control angles over time during reentry."""
+    """True flap-pair deflections over time during reentry."""
     t_reentry = t[reentry_mask]
-    deflection_reentry = deflection_angle[reentry_mask]
-    alpha_reentry = alpha[reentry_mask]
+    delta_1_reentry = delta_1[reentry_mask]
+    delta_2_reentry = delta_2[reentry_mask]
 
     fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
     axes[0].plot(
         t_reentry,
-        np.degrees(deflection_reentry),
-        label="Deflection",
+        np.degrees(delta_1_reentry),
+        label="Delta 1",
         linewidth=2,
     )
-    axes[0].set_ylabel("Deflection (deg)")
-    axes[0].set_title("Deflection Angle vs Time (Reentry)")
+    axes[0].set_ylabel("Delta 1 (deg)")
+    axes[0].set_title("Flap Pair 1 Deflection vs Time (Reentry)")
     axes[0].legend()
     axes[0].grid(alpha=0.3)
 
-    axes[1].plot(t_reentry, np.degrees(alpha_reentry), label="AoA", linewidth=2)
+    axes[1].plot(t_reentry, np.degrees(delta_2_reentry), label="Delta 2", linewidth=2)
     axes[1].set_xlabel("Time (s)")
-    axes[1].set_ylabel("AoA (deg)")
-    axes[1].set_title("Angle of Attack vs Time (Reentry)")
+    axes[1].set_ylabel("Delta 2 (deg)")
+    axes[1].set_title("Flap Pair 2 Deflection vs Time (Reentry)")
     axes[1].legend()
     axes[1].grid(alpha=0.3)
 
     if save_path:
-        _save_figure(Path(save_path), "deflection_and_aoa.png")
+        _save_figure(Path(save_path), "flap_deltas.png")
+    else:
+        plt.show()
+    plt.close()
+
+
+def _compute_aoa_angles(u1, u2, u3):
+    """Compute AoA alpha=acos(u3) and azimuth chi=atan2(u2, u1) in degrees."""
+    # Clip u3 to avoid invalid acos values from small floating-point drift.
+    clipped_u3 = np.clip(u3, -1.0, 1.0)
+    aoa_alpha_deg = np.degrees(np.arccos(clipped_u3))
+    aoa_azimuth_deg = np.degrees(np.arctan2(u2, u1))
+    aoa_azimuth_deg[np.sqrt(u1**2 + u2**2) < 1e-2] = 0
+    print(np.sqrt(u1**2 + u2**2))
+    return aoa_alpha_deg, aoa_azimuth_deg
+
+
+def _plot_aoa_components(t, aoa_alpha_deg, aoa_azimuth_deg, reentry_mask, save_path):
+    """Plot AoA alpha and azimuth during reentry phase from alpha=acos(u3), chi=atan2(u2, u1)."""
+    # Filter for reentry phase only
+    t_reentry = t[reentry_mask]
+    aoa_alpha_reentry = aoa_alpha_deg[reentry_mask]
+    aoa_azimuth_reentry = aoa_azimuth_deg[reentry_mask]
+    
+    fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+
+    axes[0].plot(t_reentry, aoa_alpha_reentry, linewidth=2, label=r"$\alpha=\arccos(u_3)$")
+    axes[0].set_ylabel(r"$\alpha$ (deg)")
+    axes[0].set_title("Angle of Attack During Reentry")
+    axes[0].grid(alpha=0.3)
+    axes[0].legend()
+
+    axes[1].plot(t_reentry, aoa_azimuth_reentry, linewidth=2, label=r"$\chi_{\alpha}=\operatorname{atan2}(u_2,u_1)$")
+    axes[1].set_xlabel("Time (s)")
+    axes[1].set_ylabel(r"$\chi_{\alpha}$ (deg)")
+    axes[1].set_title("AoA Azimuth During Reentry")
+    axes[1].grid(alpha=0.3)
+    axes[1].legend()
+
+    if save_path:
+        _save_figure(Path(save_path), "aoa_components.png")
     else:
         plt.show()
     plt.close()
@@ -666,6 +823,91 @@ def _plot_force_true_est(
 
     if save_path:
         _save_figure(Path(save_path), fig_name)
+    else:
+        plt.show()
+    plt.close()
+
+
+def _plot_gyro_error(t, gyro_error_pitch, gyro_error_yaw, save_path):
+    """Gyro error (pitch and yaw) vs time in degrees."""
+    plt.figure(figsize=(10, 6))
+    plt.plot(t, gyro_error_pitch, label="Gyro Error Pitch", linewidth=2)
+    plt.plot(t, gyro_error_yaw, label="Gyro Error Yaw", linewidth=2)
+    plt.xlabel("Time (s)")
+    plt.ylabel("Gyro Error (degrees)")
+    plt.title("Gyro Error vs Time")
+    plt.legend(frameon=False)
+    plt.grid(alpha=0.3)
+    if save_path:
+        _save_figure(Path(save_path), "gyro_error.png")
+    else:
+        plt.show()
+    plt.close()
+
+
+def _plot_quaternion(
+    t,
+    boost_mask,
+    midcourse_mask,
+    reentry_mask,
+    true_q_w,
+    true_q_x,
+    true_q_y,
+    true_q_z,
+    est_q_w,
+    est_q_x,
+    est_q_y,
+    est_q_z,
+    save_path,
+):
+    """True and estimated quaternion components vs time, split by phase."""
+    fig, axes = plt.subplots(3, 1, figsize=(11, 10), sharey=True)
+    components = [
+        ("w", true_q_w, est_q_w),
+        ("x", true_q_x, est_q_x),
+        ("y", true_q_y, est_q_y),
+        ("z", true_q_z, est_q_z),
+    ]
+    phases = [
+        ("Boost", boost_mask),
+        ("Midcourse", midcourse_mask),
+        ("Reentry", reentry_mask),
+    ]
+
+    component_colors = ["C0", "C1", "C2", "C3"]
+
+    for ax, (phase_name, mask) in zip(axes, phases):
+        for color, (name, true_values, est_values) in zip(component_colors, components):
+            ax.plot(
+                t[mask],
+                true_values[mask],
+                color=color,
+                linewidth=2,
+                label=f"{name} true",
+            )
+            ax.plot(
+                t[mask],
+                est_values[mask],
+                color=color,
+                linewidth=2,
+                linestyle="--",
+                label=f"{name} est",
+            )
+
+        ax.set_title(f"Quaternion Components ({phase_name} Phase)")
+        ax.set_ylabel("Value")
+        ax.grid(alpha=0.3)
+        ax.set_ylim((-1.1, 1.1))
+
+    axes[0].legend(frameon=False, ncol=4, fontsize=9)
+
+    axes[-1].set_xlabel("Time (s)")
+
+    fig.suptitle("True vs Estimated Quaternion Components by Phase")
+    plt.tight_layout()
+
+    if save_path:
+        _save_figure(Path(save_path), "quaternion.png")
     else:
         plt.show()
     plt.close()

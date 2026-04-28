@@ -78,6 +78,24 @@ static void physics_test_constant_diffusion(imu *imu,
   true_state_diffusion->gyro_error.yaw = -3.0;
 }
 
+TEST(integrator, integrate_quaternion_step) {
+  // Case 1: identity attitude with 180 deg rotation about body z-axis.
+  quaternion q0 = identity_quaternion();
+  cartvec omega_B = {0.0, 0.0, M_PI};
+  double dt = 1.0;
+
+  quaternion q1 = integrate_quaternion_step(q0, omega_B, dt);
+  REQUIRE_LT(fabs(q1.w), 1e-12);
+  REQUIRE_LT(fabs(q1.x), 1e-12);
+  REQUIRE_LT(fabs(q1.y), 1e-12);
+  REQUIRE_LT(fabs(q1.z - 1.0), 1e-12);
+
+  // Case 2: output should always be unit length after normalization.
+  quaternion q_bad = {2.0, -1.0, 0.5, -0.25};
+  quaternion q2 = integrate_quaternion_step(q_bad, zeros(), 0.0);
+  REQUIRE_LT(fabs(qnorm(q2) - 1.0), 1e-12);
+}
+
 TEST(integrator, euler_maruyama_step) {
   // Scenario 1: zero velocity and zero acceleration should leave the state
   // unchanged after one step.

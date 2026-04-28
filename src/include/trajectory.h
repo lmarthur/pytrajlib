@@ -17,7 +17,6 @@
 #include "derivatives.h"
 #include "forces/drag.h"
 #include "forces/gravity.h"
-#include "forces/lift.h"
 #include "forces/thrust.h"
 #include "integrator.h"
 #include "models/atmosphere.h"
@@ -25,6 +24,7 @@
 #include "models/sensors.h"
 #include "models/vehicle.h"
 #include "rng/rng.h"
+#include "utils/run_logging.h"
 #include "utils/utils.h"
 
 // Define a constant upper limit for the number of Monte Carlo runs
@@ -87,36 +87,12 @@ state impact_linterp(state *state_0, state *state_1, double t0, double t1,
   impact_state.velocity = add(
       state_0->velocity,
       smultiply(subtract(state_1->velocity, state_0->velocity), interp_factor));
-  impact_state.deflection_angle =
-      state_0->deflection_angle +
-      interp_factor * (state_1->deflection_angle - state_0->deflection_angle);
-  impact_state.alpha =
-      state_0->alpha + interp_factor * (state_1->alpha - state_0->alpha);
+  impact_state.delta_1 =
+      state_0->delta_1 + interp_factor * (state_1->delta_1 - state_0->delta_1);
+  impact_state.delta_2 =
+      state_0->delta_2 + interp_factor * (state_1->delta_2 - state_0->delta_2);
 
   return impact_state;
-}
-
-/**
- * Writes a trajectory state row to an output file.
- *
- * @param traj_file Output trajectory file stream.
- * @param t Simulation time in seconds.
- * @param current_mass Vehicle mass in kilograms.
- * @param true_state Pointer to true state.
- * @param est_state Pointer to estimated state.
- */
-void write_trajectory_state(FILE *traj_file, double t, double current_mass,
-                            state *true_state, state *est_state) {
-  fprintf(traj_file,
-          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-          "%g, %g\n",
-          t, current_mass, true_state->position.x, true_state->position.y,
-          true_state->position.z, true_state->velocity.x,
-          true_state->velocity.y, true_state->velocity.z, 0.0,
-          est_state->position.x, est_state->position.y, est_state->position.z,
-          est_state->velocity.x, est_state->velocity.y, est_state->velocity.z,
-          true_state->deflection_angle, true_state->alpha,
-          est_state->deflection_angle, est_state->alpha);
 }
 
 /**
@@ -276,18 +252,15 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
   double prev_true_t = true_t;
   double prev_est_t = est_t;
 
-  // Create a .txt file to store the trajectory data
-  FILE *traj_file;
+  // Initialize run logging files.
   if (run_params->traj_output == 1) {
-    traj_file = fopen(run_params->trajectory_path, "w");
-    fprintf(traj_file, "t, current_mass, x, y, z, vx, vy, vz, "
-                       "a_lift, est_x, est_y, est_z, est_vx, "
-                       "est_vy, est_vz, "
-                       "true_deflection_angle, true_alpha, "
-                       "est_deflection_angle, est_alpha \n");
+    init_run_logging(run_params->trajectory_path);
+    double initial_altitude = get_altitude(true_state.position);
+    atm_cond initial_true_atm_cond = get_atm_cond(
+        initial_altitude, &exp_atm_model, run_params, &atm_profile);
     // Write the initial state to the trajectory file
-    write_trajectory_state(traj_file, true_t, get_vehicle_mass(vehicle, true_t),
-                           &true_state, &est_state);
+    write_trajectory_log_row(true_t, get_vehicle_mass(vehicle, true_t),
+                             &true_state, &est_state, &initial_true_atm_cond);
   }
 
   int sampled_new_profile = 0; // flag to indicate whether a new profile has
@@ -307,13 +280,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
 
   // Begin the integration loop
   for (int i = 0; i < max_steps; i++) {
-    // Write trajectory data to file
-    if (run_params->traj_output == 1) {
-      write_trajectory_state(traj_file, true_t,
-                             get_vehicle_mass(vehicle, true_t), &true_state,
-                             &est_state);
-    }
-
     // Track apogee
     double altitude = get_altitude(true_state.position);
     if (altitude > max_altitude) {
@@ -368,10 +334,13 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
           &est_final_state);
       if (run_params->traj_output == 1) {
         // Write the final state to the trajectory file
-        write_trajectory_state(traj_file, true_final_t,
-                               get_vehicle_mass(vehicle, true_final_t),
-                               &true_final_state, &est_final_state);
-        fclose(traj_file);
+        double final_altitude = get_altitude(true_final_state.position);
+        atm_cond true_final_atm_cond = get_atm_cond(
+            final_altitude, &exp_atm_model, run_params, &atm_profile);
+        write_trajectory_log_row(
+            true_final_t, get_vehicle_mass(vehicle, true_final_t),
+            &true_final_state, &est_final_state, &true_final_atm_cond);
+        close_run_logging();
       }
 
       *impact_time = true_final_t;
@@ -388,6 +357,12 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
         get_atm_cond(altitude, &exp_atm_model, run_params, &atm_profile);
     atm_cond est_atm_cond = get_exp_atm_cond(altitude, &exp_atm_model);
 
+    // Write trajectory data to file
+    if (run_params->traj_output == 1) {
+      write_trajectory_log_row(true_t, get_vehicle_mass(vehicle, true_t),
+                               &true_state, &est_state, &true_atm_cond);
+    }
+
     // GNSS Measurement
     gnss.time_since_last_update += time_step;
     if ((run_params->gnss_nav == 1) &&
@@ -396,6 +371,13 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
       gnss_measurement(&gnss, &true_state, &est_state);
       gnss.time_since_last_update = 0.0;
     }
+
+    // Align quaternion with velocity just before reentry
+  if (get_altitude(true_state.position) < 120e3 &&
+      get_altitude(true_state.position) > 100e3) {
+    true_state.q_EB = align_roll_axis_with_velocity(true_state.velocity);
+    est_state.q_EB = align_roll_axis_with_velocity(est_state.velocity);
+  }
 
     // Perform an integration step
     prev_true_state = true_state;
@@ -417,6 +399,9 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
 
     if (!success) {
       printf("WARNING, integrator error, returning early\n");
+      if (run_params->traj_output == 1) {
+        close_run_logging();
+      }
       return true_state;
     }
   }
@@ -424,7 +409,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
   printf("Warning: Maximum number of steps reached with no impact\n");
   // Close the trajectory file
   if (run_params->traj_output == 1) {
-    fclose(traj_file);
+    close_run_logging();
   }
 
   // Only save full trajectory on the first run.

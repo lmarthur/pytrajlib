@@ -29,7 +29,7 @@
  * @param grav Pointer to the gravity model used for correction.
  * @return Commanded acceleration vector in ECI coordinates.
  */
-cartvec prop_nav(state *estimated_state, runparams *run_params, grav *grav) {
+cartvec prop_nav(state *estimated_state, runparams *run_params) {
   cartvec aimpoint = {run_params->x_aim, run_params->y_aim, run_params->z_aim};
   // Calculate the relative position vector to the target
   cartvec r_target = subtract(aimpoint, estimated_state->position);
@@ -47,14 +47,6 @@ cartvec prop_nav(state *estimated_state, runparams *run_params, grav *grav) {
   // relative velocity and the rotation vector, scaled by the navigation gain
   cartvec cross_v_rot = cross(v_rel, rot);
   cartvec a_command = smultiply(cross_v_rot, run_params->nav_gain);
-
-  // Subtract component of estimated gravity in the lift plane because this
-  // acceleration exists and does not need to be commanded
-  cartvec a_grav = get_gravity_acc(grav, estimated_state);
-  cartvec vhat =
-      sdivide(estimated_state->velocity, norm(estimated_state->velocity));
-  cartvec a_grav_perp = subtract(a_grav, smultiply(vhat, dot(a_grav, vhat)));
-  a_command = subtract(a_command, a_grav_perp);
 
   return a_command;
 }

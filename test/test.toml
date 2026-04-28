@@ -24,6 +24,7 @@ rv_maneuv = 0
 reentry_vel = 7500
 perfect_boost = 0
 optimize_boost = 0
+optimize_maneuv = 0
 t_des_final = 2753.7160616465
 t_vert_boost = 10
 
@@ -36,7 +37,8 @@ actuator_resolution = 0.01
 max_deflection_angle = 10
 nav_gain = 5
 flap_gain = 100
-Kp = 1e-2
+Glp = 1
+tau_deflect = 1e-2
 rv_mass = 450.0
 rv_length = 2.75
 rv_radius = 0.23
