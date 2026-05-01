@@ -1,9 +1,9 @@
 #ifndef PROPNAV_H
 #define PROPNAV_H
 
-#include "../forces/gravity.h"
 #include "../models/grav.h"
 #include "../models/state.h"
+#include "../physics/gravity.h"
 #include "runparams.h"
 
 /**

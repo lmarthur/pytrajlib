@@ -1,4 +1,4 @@
-#include "../../src/include/forces/gravity.h"
+#include "../../src/include/physics/gravity.h"
 #include <tau/tau.h>
 
 TEST(gravity, get_gravity_acc) {

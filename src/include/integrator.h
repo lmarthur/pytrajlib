@@ -131,8 +131,6 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
                         double *est_t, double time_step, drift_func drift_fn,
                         diffusion_func diffusion_fn) {
 
-  fprintf(stderr, "EM: enter euler_maruyama_step\n");
-
   // Each of the drift/diffusion states contains the derivative (wrt to time or
   // weiner process) In other words, true_state_drift.position is velocity,
   // true_state_drift.velocity is acceleration ...

@@ -1,4 +1,4 @@
-#include "../../src/include/forces/thrust.h"
+#include "../../src/include/physics/thrust.h"
 #include <tau/tau.h>
 
 TEST(thrust, get_central_angle) {

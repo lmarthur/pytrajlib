@@ -1,17 +1,17 @@
 #ifndef DERIVATIVES_H
 #define DERIVATIVES_H
 
-#include "forces/aero_forces.h"
-#include "forces/aero_moments.h"
-#include "forces/drag.h"
-#include "forces/gravity.h"
-#include "forces/thrust.h"
 #include "models/atmosphere.h"
 #include "models/autopilot.h"
 #include "models/grav.h"
 #include "models/sensors.h"
 #include "models/state.h"
 #include "models/vehicle.h"
+#include "physics/aero_forces.h"
+#include "physics/aero_moments.h"
+#include "physics/drag.h"
+#include "physics/gravity.h"
+#include "physics/thrust.h"
 #include "utils/utils.h"
 
 typedef int (*drift_func)(runparams *run_params, imu *imu, vehicle *vehicle,

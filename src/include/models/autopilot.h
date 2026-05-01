@@ -1,8 +1,8 @@
 #ifndef AUTOPILOT_H
 #define AUTOPILOT_H
 
-#include "../forces/aero_forces.h"
 #include "../math/linalg.h"
+#include "../physics/aero_forces.h"
 #include "../utils/propnav.h"
 #include "../utils/run_logging.h"
 #include "../utils/utils.h"

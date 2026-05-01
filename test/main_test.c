@@ -10,10 +10,10 @@
 #include "utils_test.h"
 #include "vehicle_test.h"
 
-#include "forces/drag_test.h"
-#include "forces/gravity_test.h"
-#include "forces/lift_test.h"
-#include "forces/thrust_test.h"
+#include "physics/drag_test.h"
+#include "physics/gravity_test.h"
+#include "physics/lift_test.h"
+#include "physics/thrust_test.h"
 
 #include "linalg_test.h"
 

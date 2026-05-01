@@ -15,14 +15,14 @@
 #endif
 
 #include "derivatives.h"
-#include "forces/drag.h"
-#include "forces/gravity.h"
-#include "forces/thrust.h"
 #include "integrator.h"
 #include "models/atmosphere.h"
 #include "models/grav.h"
 #include "models/sensors.h"
 #include "models/vehicle.h"
+#include "physics/drag.h"
+#include "physics/gravity.h"
+#include "physics/thrust.h"
 #include "rng/rng.h"
 #include "utils/run_logging.h"
 #include "utils/utils.h"
@@ -373,11 +373,11 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     }
 
     // Align quaternion with velocity just before reentry
-  if (get_altitude(true_state.position) < 120e3 &&
-      get_altitude(true_state.position) > 100e3) {
-    true_state.q_EB = align_roll_axis_with_velocity(true_state.velocity);
-    est_state.q_EB = align_roll_axis_with_velocity(est_state.velocity);
-  }
+    if (get_altitude(true_state.position) < 120e3 &&
+        get_altitude(true_state.position) > 100e3) {
+      true_state.q_EB = align_roll_axis_with_velocity(true_state.velocity);
+      est_state.q_EB = align_roll_axis_with_velocity(est_state.velocity);
+    }
 
     // Perform an integration step
     prev_true_state = true_state;

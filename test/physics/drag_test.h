@@ -1,4 +1,4 @@
-#include "../../src/include/forces/drag.h"
+#include "../../src/include/physics/drag.h"
 #include <tau/tau.h>
 
 TEST(drag, get_drag_acc) {
