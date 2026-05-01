@@ -11,9 +11,10 @@ range = 10000000
 x_aim = -1106312.539916013
 y_aim = 6274210.194440777
 z_aim = 0.0
-theta_long = 0.9519165463
+theta_long = 0.9634581923287147
 theta_lat = 0.0
 integrator = 1
+random_seed = 0
 
 [FLIGHT]
 grav_error = 0
@@ -25,7 +26,7 @@ reentry_vel = 7500
 perfect_boost = 0
 optimize_boost = 0
 optimize_maneuv = 0
-t_des_final = 2753.7160616465
+t_des_final = 1869.5101831808277
 t_vert_boost = 10
 
 [VEHICLE]

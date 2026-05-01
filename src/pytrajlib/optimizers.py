@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 import numpy as np
-from scipy.optimize import minimize, differential_evolution
+from scipy.optimize import minimize
 
 from pytrajlib._traj import lib as traj
 from pytrajlib.runtime import (
@@ -54,7 +54,9 @@ def _run_nelder_mead(config_dict, parameter_names, x0, bounds, extra_updates, lo
     objective_config = _prepare_optimizer_config(config_dict, extra_updates)
 
     def objective(parameter_values):
-        miss_dist = _evaluate_candidate(objective_config, parameter_names, parameter_values)
+        miss_dist = _evaluate_candidate(
+            objective_config, parameter_names, parameter_values
+        )
 
         _keep_alive.clear()
         _keep_alive["loading_bar"] = _LOADING_BAR_DISABLED
@@ -62,21 +64,14 @@ def _run_nelder_mead(config_dict, parameter_names, x0, bounds, extra_updates, lo
 
         return miss_dist
 
-    # result = minimize(
-    #     objective,
-    #     x0=tuple(float(value) for value in x0),
-    #     method="Nelder-Mead",
-    #     bounds=bounds,
-    #     options=dict(maxfev=200),
-    # )
-
-    result = differential_evolution(
+    result = minimize(
         objective,
         x0=tuple(float(value) for value in x0),
+        method="Nelder-Mead",
         bounds=bounds,
-        maxiter=100,
-        popsize=1000,
+        options=dict(maxfev=200),
     )
+
     print(result)
     return tuple(float(value) for value in result.x)
 
@@ -88,11 +83,12 @@ def optimize_boost(config_dict):
     """
     range_km = config_dict["range"] / 1000.0
     tf_des = 188 + 0.223 * range_km - 4e-6 * range_km**2
+    theta_long = 0.9
 
     return _run_nelder_mead(
         config_dict,
         parameter_names=("t_des_final", "theta_long"),
-        x0=(tf_des, config_dict["theta_long"]),
+        x0=(tf_des, theta_long),
         bounds=[(300, 5000), (0, np.pi)],
         extra_updates={
             "gnss_nav": 0,

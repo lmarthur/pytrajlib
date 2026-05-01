@@ -5,6 +5,7 @@
 // Constant acceleration injected into the mock drift model below so the test
 // can exercise the integrator with simple closed-form motion.
 static cartvec physics_test_acceleration = {0};
+static runparams rp = {0};
 
 // Minimal deterministic drift used to test `euler_maruyama_step()` in
 // isolation. Position derivative is velocity, and velocity derivative is the
@@ -38,8 +39,10 @@ static int physics_test_drift(runparams *run_params, imu *imu, vehicle *vehicle,
 
 // No stochastic diffusion term for this test: it is intended to validate only
 // the deterministic Euler-Maruyama update path.
-static void physics_test_diffusion(imu *imu, state *est_state_diffusion) {
+static void physics_test_diffusion(imu *imu, state *true_state_diffusion,
+                                   state *est_state_diffusion) {
   (void)imu;
+  *true_state_diffusion = (state){0};
   *est_state_diffusion = (state){0};
 }
 
@@ -71,28 +74,35 @@ static int physics_test_zero_drift(runparams *run_params, imu *imu,
 // Constant diffusion helper that injects known coefficients into the gyro
 // error SDE so the Wiener increment scaling can be checked directly.
 static void physics_test_constant_diffusion(imu *imu,
-                                            state *true_state_diffusion) {
+                                            state *true_state_diffusion,
+                                            state *est_state_diffusion) {
   (void)imu;
   *true_state_diffusion = (state){0};
+  *est_state_diffusion = (state){0};
   true_state_diffusion->gyro_error.pitch = 2.0;
   true_state_diffusion->gyro_error.yaw = -3.0;
 }
 
 TEST(integrator, integrate_quaternion_step) {
-  // Case 1: identity attitude with 180 deg rotation about body z-axis.
-  quaternion q0 = identity_quaternion();
-  cartvec omega_B = {0.0, 0.0, M_PI};
-  double dt = 1.0;
+  // Case 1: identity attitude with a delta rotation about the body X axis
+  // represented via `orientation_angle_change`. The integrator maps
+  // orientation_angle_change.yaw -> delta_angle_B.x, pitch -> delta_angle_B.y.
+  state s = {0};
+  s.q_EB = identity_quaternion();
+  s.orientation_angle_change.pitch = 0.0;
+  s.orientation_angle_change.yaw = M_PI; // delta vector = (pi, 0, 0)
 
-  quaternion q1 = integrate_quaternion_step(q0, omega_B, dt);
+  quaternion q1 = integrate_quaternion_step(s);
   REQUIRE_LT(fabs(q1.w), 1e-12);
-  REQUIRE_LT(fabs(q1.x), 1e-12);
   REQUIRE_LT(fabs(q1.y), 1e-12);
-  REQUIRE_LT(fabs(q1.z - 1.0), 1e-12);
+  REQUIRE_LT(fabs(q1.z), 1e-12);
+  REQUIRE_LT(fabs(q1.x - 1.0), 1e-12);
 
-  // Case 2: output should always be unit length after normalization.
-  quaternion q_bad = {2.0, -1.0, 0.5, -0.25};
-  quaternion q2 = integrate_quaternion_step(q_bad, zeros(), 0.0);
+  // Case 2: excessive-length quaternion should be normalized to unit length
+  state s_bad = {0};
+  s_bad.q_EB = (quaternion){2.0, -1.0, 0.5, -0.25};
+  s_bad.orientation_angle_change = (anglevec){0};
+  quaternion q2 = integrate_quaternion_step(s_bad);
   REQUIRE_LT(fabs(qnorm(q2) - 1.0), 1e-12);
 }
 
@@ -106,9 +116,11 @@ TEST(integrator, euler_maruyama_step) {
   double time_step = 1;
 
   physics_test_acceleration = zeros();
+  rp.actuator_resolution = 1.0;    // degrees
+  rp.max_deflection_angle = 180.0; // degrees, large enough to avoid clipping
   int success = euler_maruyama_step(
-      NULL, NULL, NULL, NULL, NULL, NULL, NULL, &true_state, &est_state,
-      &true_t, &est_t, time_step, physics_test_drift, physics_test_diffusion);
+      &rp, NULL, NULL, NULL, NULL, NULL, NULL, &true_state, &est_state, &true_t,
+      &est_t, time_step, physics_test_drift, physics_test_diffusion);
 
   REQUIRE_EQ(success, 1);
   REQUIRE_EQ(true_state.position.x, 0);
@@ -131,8 +143,8 @@ TEST(integrator, euler_maruyama_step) {
   physics_test_acceleration = zeros();
 
   success = euler_maruyama_step(
-      NULL, NULL, NULL, NULL, NULL, NULL, NULL, &true_state, &est_state,
-      &true_t, &est_t, time_step, physics_test_drift, physics_test_diffusion);
+      &rp, NULL, NULL, NULL, NULL, NULL, NULL, &true_state, &est_state, &true_t,
+      &est_t, time_step, physics_test_drift, physics_test_diffusion);
 
   REQUIRE_EQ(success, 1);
   REQUIRE_EQ(true_state.position.x, time_step);
@@ -154,8 +166,8 @@ TEST(integrator, euler_maruyama_step) {
   physics_test_acceleration.z = 1;
 
   success = euler_maruyama_step(
-      NULL, NULL, NULL, NULL, NULL, NULL, NULL, &true_state, &est_state,
-      &true_t, &est_t, time_step, physics_test_drift, physics_test_diffusion);
+      &rp, NULL, NULL, NULL, NULL, NULL, NULL, &true_state, &est_state, &true_t,
+      &est_t, time_step, physics_test_drift, physics_test_diffusion);
 
   REQUIRE_EQ(success, 1);
   REQUIRE_EQ(true_state.position.x, 0.5);
@@ -180,8 +192,8 @@ TEST(integrator, euler_maruyama_step) {
   physics_test_acceleration.z = 1;
 
   success = euler_maruyama_step(
-      NULL, NULL, NULL, NULL, NULL, NULL, NULL, &true_state, &est_state,
-      &true_t, &est_t, time_step, physics_test_drift, physics_test_diffusion);
+      &rp, NULL, NULL, NULL, NULL, NULL, NULL, &true_state, &est_state, &true_t,
+      &est_t, time_step, physics_test_drift, physics_test_diffusion);
 
   REQUIRE_EQ(success, 1);
   REQUIRE_EQ(true_state.position.x, 1.5);
@@ -208,7 +220,7 @@ TEST(integrator, euler_maruyama_step_diffusion) {
   double est_t = 0;
   double time_step = 0.25;
 
-  int success = euler_maruyama_step(NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+  int success = euler_maruyama_step(&rp, NULL, NULL, NULL, NULL, NULL, NULL,
                                     &true_state, &est_state, &true_t, &est_t,
                                     time_step, physics_test_zero_drift,
                                     physics_test_constant_diffusion);
@@ -248,16 +260,20 @@ static int sra3_test_drift(runparams *run_params, imu *imu, vehicle *vehicle,
   return 1;
 }
 
-static void sra3_test_diffusion(imu *imu, state *true_state_diffusion) {
+static void sra3_test_diffusion(imu *imu, state *true_state_diffusion,
+                                state *est_state_diffusion) {
   (void)imu;
 
   *true_state_diffusion = (state){0};
+  *est_state_diffusion = (state){0};
   true_state_diffusion->gyro_error.pitch = 0.5 * sra3_test_diffusion_input;
 }
 
-static void sra3_test_zero_diffusion(imu *imu, state *true_state_diffusion) {
+static void sra3_test_zero_diffusion(imu *imu, state *true_state_diffusion,
+                                     state *est_state_diffusion) {
   (void)imu;
   *true_state_diffusion = (state){0};
+  *est_state_diffusion = (state){0};
 }
 
 TEST(integrator, sra3_sde_stays_positive) {
@@ -277,7 +293,7 @@ TEST(integrator, sra3_sde_stays_positive) {
 
   for (int i = 0; i < num_steps; i++) {
     int success = euler_maruyama_step(
-        NULL, NULL, NULL, NULL, NULL, NULL, NULL, &true_state, &est_state,
+        &rp, NULL, NULL, NULL, NULL, NULL, NULL, &true_state, &est_state,
         &true_t, &est_t, time_step, sra3_test_drift, sra3_test_diffusion);
     REQUIRE_EQ(success, 1);
   }
@@ -304,7 +320,7 @@ TEST(integrator, sra3_sde_differs_from_zero_diffusion) {
 
   for (int i = 0; i < num_steps; i++) {
     int success = euler_maruyama_step(
-        NULL, NULL, NULL, NULL, NULL, NULL, NULL, &true_state_with_diffusion,
+        &rp, NULL, NULL, NULL, NULL, NULL, NULL, &true_state_with_diffusion,
         &est_state_with_diffusion, &true_t_with_diffusion,
         &est_t_with_diffusion, time_step, sra3_test_drift, sra3_test_diffusion);
     REQUIRE_EQ(success, 1);
@@ -321,7 +337,7 @@ TEST(integrator, sra3_sde_differs_from_zero_diffusion) {
 
   for (int i = 0; i < num_steps; i++) {
     int success = euler_maruyama_step(
-        NULL, NULL, NULL, NULL, NULL, NULL, NULL, &true_state_zero_diffusion,
+        &rp, NULL, NULL, NULL, NULL, NULL, NULL, &true_state_zero_diffusion,
         &est_state_zero_diffusion, &true_t_zero_diffusion,
         &est_t_zero_diffusion, time_step, sra3_test_drift,
         sra3_test_zero_diffusion);

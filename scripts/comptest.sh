@@ -29,6 +29,6 @@ if ! uv run src/pytrajlib/build.py; then
 fi
 
 echo "Running integration tests..."
-uv run pytest -v || fail "Integration tests failed"
+uv run pytest -sv || fail "Integration tests failed"
 
 echo "Done."

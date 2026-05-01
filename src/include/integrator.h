@@ -51,8 +51,7 @@ quaternion align_roll_axis_with_velocity(cartvec velocity) {
  * Standard first-order kinematics:
  * q_{k+1} = normalize(q_k \otimes \delta q).
  */
-static inline quaternion
-integrate_quaternion_step(state current_state) {
+static inline quaternion integrate_quaternion_step(state current_state) {
   cartvec delta_angle_B = {current_state.orientation_angle_change.yaw,
                            current_state.orientation_angle_change.pitch, 0.0};
   double theta = norm(delta_angle_B);
@@ -131,6 +130,8 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
                         state *true_state, state *est_state, double *true_t,
                         double *est_t, double time_step, drift_func drift_fn,
                         diffusion_func diffusion_fn) {
+
+  fprintf(stderr, "EM: enter euler_maruyama_step\n");
 
   // Each of the drift/diffusion states contains the derivative (wrt to time or
   // weiner process) In other words, true_state_drift.position is velocity,
@@ -308,10 +309,10 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
     anglevec stochastic_gain = add_anglevec(smultiply_angle(dW, beta1[i]),
                                             smultiply_angle(I0, beta2[i]));
 
-    true_state_diffusion_update.gyro_error = add_anglevec(
-        true_state_diffusion_update.gyro_error,
-        multiply_anglevec(true_state_diffusion_eval[i].gyro_error,
-                          stochastic_gain));
+    true_state_diffusion_update.gyro_error =
+        add_anglevec(true_state_diffusion_update.gyro_error,
+                     multiply_anglevec(true_state_diffusion_eval[i].gyro_error,
+                                       stochastic_gain));
 
     true_state_diffusion_update.orientation_angle_change = add_anglevec(
         true_state_diffusion_update.orientation_angle_change,
@@ -324,17 +325,17 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
                           stochastic_gain));
   }
 
-    state true_state_total_update = add_state(true_state_drift_update,
-                                              true_state_diffusion_update);
-    *true_state = add_state(true_state_initial, true_state_total_update);
-    true_state->orientation_angle_change =
-        true_state_total_update.orientation_angle_change;
+  state true_state_total_update =
+      add_state(true_state_drift_update, true_state_diffusion_update);
+  *true_state = add_state(true_state_initial, true_state_total_update);
+  true_state->orientation_angle_change =
+      true_state_total_update.orientation_angle_change;
 
-    state est_state_total_update = add_state(est_state_drift_update,
-                                             est_state_diffusion_update);
-    *est_state = add_state(est_state_initial, est_state_total_update);
-    est_state->orientation_angle_change =
-        est_state_total_update.orientation_angle_change;
+  state est_state_total_update =
+      add_state(est_state_drift_update, est_state_diffusion_update);
+  *est_state = add_state(est_state_initial, est_state_total_update);
+  est_state->orientation_angle_change =
+      est_state_total_update.orientation_angle_change;
 
   est_state->prev_a_cmd_1 = next_prev_a_cmd_1;
   est_state->prev_a_cmd_2 = next_prev_a_cmd_2;
@@ -362,8 +363,8 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   // est_state->delta_1 = round(clipped_est_delta_1 / resolution) * resolution;
   // est_state->delta_2 = round(clipped_est_delta_2 / resolution) * resolution;
 
-      true_state->q_EB = integrate_quaternion_step(*true_state);
-      est_state->q_EB = integrate_quaternion_step(*est_state);
+  true_state->q_EB = integrate_quaternion_step(*true_state);
+  est_state->q_EB = integrate_quaternion_step(*est_state);
   // est_state->q_EB = integrate_quaternion_step(
   //     q_est_prev, true_state->angular_vel_B, time_step);
 

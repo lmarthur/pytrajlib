@@ -160,6 +160,8 @@ rv init_swerve_rv() {
 
   rv rv;
   // Define parameters for a maneuverable reentry vehicle
+  // NOTE: C_D, C_L, C_M, C_M_q all use the tables above for a maneuvering
+  // reentry vehicle
   strcpy(rv.name, "SWERVE");
   rv.maneuverability_flag = 1;
   rv.rv_mass = 450;

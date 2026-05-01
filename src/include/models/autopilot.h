@@ -1,6 +1,7 @@
 #ifndef AUTOPILOT_H
 #define AUTOPILOT_H
 
+#include "../forces/aero_forces.h"
 #include "../math/linalg.h"
 #include "../utils/propnav.h"
 #include "../utils/run_logging.h"
@@ -23,7 +24,7 @@ void get_flap_angular_velocity(double t, state *est_state,
                                double *dot_deflection) {
   dot_deflection[0] = 0;
   dot_deflection[1] = 0;
-  if (run_params->rv_maneuv == 0 || !is_reentry(est_state, t)) {
+  if (run_params->rv_maneuv != 1 || !is_reentry(est_state, t)) {
     return;
   }
   // Estimate dynamic pressure
@@ -41,12 +42,13 @@ void get_flap_angular_velocity(double t, state *est_state,
       (q_inf * vehicle->rv.rv_area / vehicle->rv.rv_mass) *
       SWERVE_CL_TABLE[SWERVE_AERO_TABLE_SIZE - 1];
   if (a_cmd_mag > a_max_achievable) {
-    a_cmd_E = smultiply(a_cmd_E, a_max_achievable / a_cmd_mag);
+    // a_cmd_E = smultiply(a_cmd_E, a_max_achievable / a_cmd_mag);
   }
 
-  // Subtract estimated transverse acceleration from the commanded acceleration
-  // to determine how much additional acceleration must be produced by lift
-  cartvec acc_change_E = a_cmd_E;
+  // cartvec a_grav_est = get_gravity_acc(est_grav, est_state);
+  // a_cmd_E = subtract(a_cmd_E, a_grav_est);
+  // a_cmd_E = subtract(a_cmd_E, smultiply(sdivide(v_rel_E, v_rel), dot(a_cmd_E,
+  // sdivide(v_rel_E, v_rel))));
 
   // Transform acceleration change from ECI frame to local body frame
   cartvec a_cmd_B = eci_to_body(a_cmd_E, est_state->q_EB);
@@ -77,13 +79,12 @@ void get_flap_angular_velocity(double t, state *est_state,
   dot_deflection[1] =
       clip(dot_deflection_2, -max_deflection_speed, max_deflection_speed);
 
-//   dot_deflection[0] = 0.0;
-//   dot_deflection[1] = 0.0;
+  //   dot_deflection[0] = 0.0;
+  //   dot_deflection[1] = 0.0;
 
   // Log acceleration command and transverse imu acceleration
   cartvec vhat = sdivide(est_state->velocity, norm(est_state->velocity));
-  cartvec a_est_transverse = subtract(
-      a_imu, smultiply(vhat, dot(a_imu, vhat)));
+  cartvec a_est_transverse = subtract(a_imu, smultiply(vhat, dot(a_imu, vhat)));
   write_reentry_guidance_log_row(t, a_cmd_E, a_est_transverse);
 }
 

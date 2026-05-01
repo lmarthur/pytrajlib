@@ -37,26 +37,6 @@ Interpolate between two states to estimate impact crossing at altitude 0.
 | --- | --- |
 | `state` | Interpolated impact state |
 
-## `write_trajectory_state`
-
-Writes a trajectory state row to an output file.
-
-### Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `traj_file` | `FILE *` | Output trajectory file stream. |
-| `t` | `double` | Simulation time in seconds. |
-| `current_mass` | `double` | Vehicle mass in kilograms. |
-| `true_state` | `state *` | Pointer to true state. |
-| `est_state` | `state *` | Pointer to estimated state. |
-
-### Returns
-
-| Type | Description |
-| --- | --- |
-| `void` | None. |
-
 ## `impact_with_coriolis`
 
 In an ECI frame, assuming boost and reentry guidance account for Earth

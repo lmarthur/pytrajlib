@@ -1,5 +1,25 @@
 # Integrator
 
+## `integrate_quaternion_step`
+
+Integrate body-to-ECI quaternion using the state's incremental orientation
+angle change over the current step.
+
+Standard first-order kinematics:
+q_{k+1} = normalize(q_k \otimes \delta q).
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `current_state` | `state` |  |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `static inline quaternion` |  |
+
 ## `euler_maruyama_step`
 
 Advance the state by one Euler-Maruyama step. Note, it is not strictly EM

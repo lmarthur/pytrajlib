@@ -154,3 +154,23 @@ Gets wind at the current location in standard Cartesian coordinates.
 | Type | Description |
 | --- | --- |
 | `cartvec` | Wind vector in Cartesian coordinates. |
+
+## `get_relative_wind_eci`
+
+Gets relative wind in ECI coordinates.
+
+The relative wind is defined as wind minus vehicle velocity:
+$$\mathbf V_{\mathrm{rel},E} = \mathbf V_{\mathrm{wind},E} - \mathbf v_E$$
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `current_state` | `state *` | Pointer to current vehicle state. |
+| `atm_cond` | `atm_cond *` | Pointer to local atmospheric conditions. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `static inline cartvec` | Relative wind vector in ECI coordinates. |

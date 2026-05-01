@@ -1,44 +1,68 @@
-#include "../src/include/forces/lift.h"
+#include "../src/include/math/linalg.h"
+#include "../src/include/utils/propnav.h"
+#include <math.h>
 #include <tau/tau.h>
 
-TEST(guidance, prop_nav) {
+// When the velocity is exactly toward the aimpoint, the
+// proportional-navigation command should be (near) zero because there is no
+// line-of-sight rotation.
+TEST(guidance, prop_nav_radial_velocity_zero) {
   runparams run_params = {0};
   state estimated_state = init_true_state(&run_params);
   grav grav_model = init_grav(&run_params);
 
-  // Set aimpoint near the equator at sea level
   run_params.x_aim = EARTH_RADIUS_M;
   run_params.y_aim = 0;
   run_params.z_aim = 0;
-  run_params.nav_gain = 3.0; // Higher gain for more responsive guidance
+  run_params.nav_gain = 3.0;
 
-  // Starting position 10 km north of aimpoint at altitude
   estimated_state.position.x = EARTH_RADIUS_M;
   estimated_state.position.y = 10000;
   estimated_state.position.z = 0;
-  // Velocity pointing toward aimpoint with significant speed
-  estimated_state.velocity.x = 0;
-  estimated_state.velocity.y =
-      -5000; // Higher velocity for ballistic trajectory
-  estimated_state.velocity.z = 0;
-
-  cartvec a_command = prop_nav(&estimated_state, &run_params, &grav_model);
-  // Proportional navigation should produce a reasonable acceleration command
-  REQUIRE_TRUE(isfinite(a_command.x));
-  REQUIRE_TRUE(isfinite(a_command.y));
-  REQUIRE_TRUE(isfinite(a_command.z));
-
-  // Now add cross-track velocity to test guidance correction
-  estimated_state.position.x = EARTH_RADIUS_M;
-  estimated_state.position.y = 10000;
-  estimated_state.position.z = 0;
+  // Velocity directly toward aimpoint (radial)
   estimated_state.velocity.x = 0;
   estimated_state.velocity.y = -5000;
-  estimated_state.velocity.z = 2000; // Cross-track velocity component
+  estimated_state.velocity.z = 0;
 
-  a_command = prop_nav(&estimated_state, &run_params, &grav_model);
-  // Command should be finite and reasonable for guiding back to target
-  REQUIRE_TRUE(isfinite(a_command.x));
-  REQUIRE_TRUE(isfinite(a_command.y));
-  REQUIRE_TRUE(isfinite(a_command.z));
+  cartvec a_command = prop_nav(&estimated_state, &run_params);
+  double a_norm = norm(a_command);
+  REQUIRE_LT(a_norm, 1e-8);
+}
+
+// When the velocity is perpendicular to the line-of-sight, the closed-form
+// expression gives a_command = N * r * |v|^2 / |r|^2 -> magnitude = N*|v|^2/|r|
+// and the acceleration should be parallel to the displacement vector `r`.
+TEST(guidance, prop_nav_perp_velocity_magnitude_and_direction) {
+  runparams run_params = {0};
+  state estimated_state = init_true_state(&run_params);
+  grav grav_model = init_grav(&run_params);
+
+  run_params.x_aim = EARTH_RADIUS_M;
+  run_params.y_aim = 0;
+  run_params.z_aim = 0;
+  run_params.nav_gain = 3.0;
+
+  estimated_state.position.x = EARTH_RADIUS_M;
+  estimated_state.position.y = 10000;
+  estimated_state.position.z = 0;
+  // Velocity perpendicular to r (cross-track)
+  estimated_state.velocity.x = 0;
+  estimated_state.velocity.y = 0;
+  estimated_state.velocity.z = 5000;
+
+  cartvec a_command = prop_nav(&estimated_state, &run_params);
+
+  cartvec r_target =
+      subtract((cartvec){run_params.x_aim, run_params.y_aim, run_params.z_aim},
+               estimated_state.position);
+  double r_norm = norm(r_target);
+  double v_norm = norm(estimated_state.velocity);
+  double expected = run_params.nav_gain * (v_norm * v_norm) / r_norm;
+
+  double a_norm = norm(a_command);
+  double rel_err = fabs(a_norm - expected) / (expected + 1e-12);
+  REQUIRE_LT(rel_err, 1e-6);
+
+  cartvec cross_ra = cross(r_target, a_command);
+  REQUIRE_LT(norm(cross_ra), 1e-8);
 }

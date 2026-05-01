@@ -269,8 +269,8 @@ get_limited_incremental_flap_force(cartvec deflected_force_B,
 
   double incremental_force_mag_limited =
       clip(incremental_force_mag, 0, max_flap_force);
-  cartvec flap_force = smultiply(incremental_force,
-                   incremental_force_mag_limited / incremental_force_mag);
+  cartvec flap_force = smultiply(
+      incremental_force, incremental_force_mag_limited / incremental_force_mag);
 
   return flap_force;
 }
@@ -442,7 +442,7 @@ static inline cartvec get_aerodynamic_acc(double t, state *current_state,
   }
 
   // Ballistic reentry drag
-  if (run_params->rv_maneuv == 0) {
+  if (run_params->rv_maneuv != 1) {
     cartvec a_drag =
         ballistic_reentry_drag(t, current_state, atm_cond, vehicle);
     return a_drag;

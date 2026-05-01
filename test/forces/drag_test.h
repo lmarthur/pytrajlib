@@ -23,7 +23,8 @@ TEST(drag, get_drag_acc) {
   state.position.z = 0;
   state.velocity = zeros();
 
-  cartvec a_drag = get_drag_acc(&run_params, &vehicle, &atm_cond, &state, 1.0);
+  cartvec a_drag = get_drag_acceleration_generic(
+      0.0, &state, &atm_cond, &vehicle, vehicle.rv.c_d_0, vehicle.rv.rv_area);
 
   // Check that the drag acceleration components are zero
   REQUIRE_LT(fabs(a_drag.x), 1e-6);
@@ -38,7 +39,8 @@ TEST(drag, get_drag_acc) {
   state.velocity.y = 1;
   state.velocity.z = 1;
 
-  a_drag = get_drag_acc(&run_params, &vehicle, &atm_cond, &state, 1.0);
+  a_drag = get_drag_acceleration_generic(0.0, &state, &atm_cond, &vehicle,
+                                         vehicle.rv.c_d_0, vehicle.rv.rv_area);
 
   REQUIRE_LT(fabs(a_drag.x), 1e-6);
   REQUIRE_LT(fabs(a_drag.y), 1e-6);
@@ -52,7 +54,8 @@ TEST(drag, get_drag_acc) {
   state.velocity.y = 1;
   state.velocity.z = 1;
 
-  a_drag = get_drag_acc(&run_params, &vehicle, &atm_cond, &state, 1.0);
+  a_drag = get_drag_acceleration_generic(0.0, &state, &atm_cond, &vehicle,
+                                         vehicle.rv.c_d_0, vehicle.rv.rv_area);
 
   REQUIRE_GT(fabs(a_drag.x), 1e-6);
   REQUIRE_GT(fabs(a_drag.y), 1e-6);
@@ -67,7 +70,8 @@ TEST(drag, get_drag_acc) {
   state.velocity.y = 0;
   state.velocity.z = 0;
 
-  a_drag = get_drag_acc(&run_params, &vehicle, &atm_cond, &state, 1.0);
+  a_drag = get_drag_acceleration_generic(0.0, &state, &atm_cond, &vehicle,
+                                         vehicle.rv.c_d_0, vehicle.rv.rv_area);
 
   REQUIRE_LT(a_drag.x, 0);
   REQUIRE_LT(fabs(a_drag.y), 1e-12);

@@ -1,5 +1,126 @@
 # Linalg
 
+## `identity_quaternion`
+
+Create the identity quaternion.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| (none) | - | - |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `quaternion` | Quaternion with no rotation. |
+
+## `qmultiply`
+
+Hamilton product of two quaternions
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `q1` | `quaternion` | First quaternion |
+| `q2` | `quaternion` | Second quaternion |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `quaternion` | The product quaternion |
+
+## `qsmultiply`
+
+Multiply each quaternion component by a scalar.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `q` | `quaternion` | Quaternion to scale. |
+| `s` | `double` | Scalar multiplier. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `quaternion` | Scaled quaternion. |
+
+## `qnorm`
+
+Compute the L2 norm of a quaternion.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `q` | `quaternion` | Quaternion to compute norm of. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `double` | Quaternion norm. |
+
+## `get_body_to_eci_matrix`
+
+Build the body-to-ECI direction cosine matrix from scalar-first quaternion
+q_EB = [w, x, y, z].
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `q_EB` | `quaternion` | Quaternion rotating body-frame vectors into ECI. |
+| `double C_EB[3][3]` | `-` |  |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `void` | None. |
+
+## `body_to_eci`
+
+Transform a vector from body coordinates to ECI coordinates using q_EB.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `v_B` | `cartvec` | Vector in body coordinates. |
+| `q_EB` | `quaternion` | Quaternion rotating body-frame vectors into ECI. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `cartvec` | Vector expressed in ECI coordinates. |
+
+## `eci_to_body`
+
+Transform a vector from ECI coordinates to body coordinates using q_EB.
+Applies the transpose of C_EB (the ECI-to-body rotation) using flipped
+indexing. Equivalent to: v_B = C_EB^T * v_E where C_EB^T = C_EB^(-1) for
+orthogonal rotations.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `v_E` | `cartvec` | Vector in ECI coordinates. |
+| `q_EB` | `quaternion` | Quaternion rotating body-frame vectors into ECI. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `cartvec` | Vector expressed in body coordinates. |
+
 ## `zeros`
 
 Create a zero 3-vector.

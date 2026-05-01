@@ -19,36 +19,6 @@ Initialize IMU parameters and initial gyro error states.
 
 ## `imu_measurement`
 
-The acceleration measurable by the accelerometer is the vehicle acceleration
-without gravity:
-$$
-\begin{align}
-\vec a_\text{measurable} = \vec a - \vec a_\text{grav}.
-\end{align}
-$$
-The accelerometer measures in the body frame with scale errors on roll,
-pitch, and yaw axes:
-<div>
-$$
-\begin{align}
-\vec a_\text{measured} = \begin{bmatrix}1 + \text{scale}_x & 0 & 0 \\ 0 & 1 +
-\text{scale}_y & 0 \\ 0 & 0 & 1 + \text{scale}_z\end{bmatrix} \mathbf{B}^T
-\vec a_\text{measurable}.
-\end{align}
-$$
-</div>
-The total estimated acceleration is obtained by transforming measured
-acceleration back to ECI using the estimated body frame and adding estimated
-gravity:
-<div>
-$$
-\begin{align}
-\vec a_\text{est} = \mathbf{B}_\text{est}\vec a_\text{measured} + \vec
-a_\text{grav,est}.
-\end{align}
-$$
-</div>
-
 ### Parameters
 
 | Name | Type | Description |

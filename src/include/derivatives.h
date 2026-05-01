@@ -78,7 +78,7 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
   double dot_deflection[2] = {0, 0};
   get_flap_angular_velocity(true_t, est_state, run_params, vehicle, est_grav,
                             est_atm_cond, a_total_est, dot_deflection);
-                            
+
   // Set true state derivatives
   true_state_drift->position = true_state->velocity;
   true_state_drift->velocity = a_total_true;
@@ -99,14 +99,7 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
   est_state_drift->delta_1 = dot_deflection[0];
   est_state_drift->delta_2 = dot_deflection[1];
 
-  // If ballistic run, turn off gyro error accumulation after boost phase
-  // to avoid slightly overestimating Coriolis error
-  if (run_params->rv_maneuv == 0 &&
-      true_t >= vehicle->booster.total_burn_time) {
-    true_state_drift->gyro_error = (anglevec){0};
-  } else {
-    true_state_drift->gyro_error = get_gyro_drift(imu);
-  }
+  true_state_drift->gyro_error = get_gyro_drift(imu);
   return 1;
 }
 
