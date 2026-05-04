@@ -103,23 +103,22 @@ def optimize_boost(config_dict):
 
 def optimize_maneuv(config_dict):
     """
-    Tune tau_deflect, Glp, and nav_gain for realistic RV maneuverability.
+    Tune tau_deflect and nav_gain for realistic RV maneuverability.
     """
     return _run_nelder_mead(
         config_dict,
-        parameter_names=("tau_deflect", "Glp", "nav_gain"),
+        parameter_names=("tau_deflect", "nav_gain"),
         x0=(
             config_dict["tau_deflect"],
-            config_dict["Glp"],
             config_dict["nav_gain"],
         ),
-        bounds=[(1e-3, 100), (1, 5), (1, 5)],
+        bounds=[(1e-3, 100), (1, 5)],
         extra_updates={
             "gnss_nav": 1,
             "perfect_boost": 1,
             "rv_maneuv": 1,
         },
         log_fn=lambda miss_dist, values: (
-            f"{miss_dist=:.9f} (avg), {float(values[0]):.9f}, {float(values[1]):.9f}, {float(values[2]):.9f}"
+            f"{miss_dist=:.9f} (avg), {float(values[0]):.9f}, {float(values[1]):.9f}"
         ),
     )

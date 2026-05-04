@@ -51,8 +51,6 @@ ffibuilder.cdef(
         double actuator_resolution;
         double max_deflection_angle;
         double nav_gain;
-        double flap_gain;
-        double Glp;
         double tau_deflect;
 
         double initial_x_error;

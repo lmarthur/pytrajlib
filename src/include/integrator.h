@@ -175,26 +175,6 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
 
   true_state->q_EB = integrate_quaternion_step(*true_state);
   est_state->q_EB = integrate_quaternion_step(*est_state);
-  // Convert resolution from degrees to radians
-  double resolution = run_params->actuator_resolution * M_PI / 180;
-  double max_extent = run_params->max_deflection_angle * M_PI / 180;
-  double clipped_delta_1 =
-      clip(fmod(true_state->delta_1, 2 * M_PI), -max_extent, max_extent);
-  double clipped_delta_2 =
-      clip(fmod(true_state->delta_2, 2 * M_PI), -max_extent, max_extent);
-  // TODO add actuator resolution back in
-  true_state->delta_1 = clipped_delta_1;
-  true_state->delta_2 = clipped_delta_2;
-  // true_state->delta_1 = round(clipped_delta_1 / resolution) * resolution;
-  // true_state->delta_2 = round(clipped_delta_2 / resolution) * resolution;
-  double clipped_est_delta_1 =
-      clip(fmod(est_state->delta_1, 2 * M_PI), -max_extent, max_extent);
-  double clipped_est_delta_2 =
-      clip(fmod(est_state->delta_2, 2 * M_PI), -max_extent, max_extent);
-  est_state->delta_1 = clipped_est_delta_1;
-  est_state->delta_2 = clipped_est_delta_2;
-  // est_state->delta_1 = round(clipped_est_delta_1 / resolution) * resolution;
-  // est_state->delta_2 = round(clipped_est_delta_2 / resolution) * resolution;
 
   *true_t += time_step;
   *est_t += time_step;
@@ -347,24 +327,9 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
       clip(fmod(true_state->delta_1, 2 * M_PI), -max_extent, max_extent);
   double clipped_delta_2 =
       clip(fmod(true_state->delta_2, 2 * M_PI), -max_extent, max_extent);
-  // TODO add actuator resolution back in
-  true_state->delta_1 = clipped_delta_1;
-  true_state->delta_2 = clipped_delta_2;
-  // true_state->delta_1 = round(clipped_delta_1 / resolution) * resolution;
-  // true_state->delta_2 = round(clipped_delta_2 / resolution) * resolution;
-  double clipped_est_delta_1 =
-      clip(fmod(est_state->delta_1, 2 * M_PI), -max_extent, max_extent);
-  double clipped_est_delta_2 =
-      clip(fmod(est_state->delta_2, 2 * M_PI), -max_extent, max_extent);
-  est_state->delta_1 = clipped_est_delta_1;
-  est_state->delta_2 = clipped_est_delta_2;
-  // est_state->delta_1 = round(clipped_est_delta_1 / resolution) * resolution;
-  // est_state->delta_2 = round(clipped_est_delta_2 / resolution) * resolution;
 
   true_state->q_EB = integrate_quaternion_step(*true_state);
   est_state->q_EB = integrate_quaternion_step(*est_state);
-  // est_state->q_EB = integrate_quaternion_step(
-  //     q_est_prev, true_state->angular_vel_B, time_step);
 
   *true_t += time_step;
   *est_t += time_step;

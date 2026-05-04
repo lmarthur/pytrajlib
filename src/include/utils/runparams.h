@@ -48,9 +48,6 @@ typedef struct runparams {
   double actuator_resolution;  // actuator angular resolution in degrees
   double max_deflection_angle; // maximum flap deflection angle in radians
   double nav_gain;    // navigation gain for proportional navigation guidance
-  double flap_gain;   // Gain for approaching the commanded flap position when
-                      // slower than max rate.
-  double Glp;         // low-pass filter gain used in maneuverability control
   double tau_deflect; // Time constant for deflection control
 
   double initial_x_error;     // initial x-error in meters

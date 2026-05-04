@@ -37,7 +37,7 @@ reentry_vel = 7500
 perfect_boost = 0
 # If 1, optimize t_des_final/theta_long. If 0, use provided values directly.
 optimize_boost = 1
-# If 1, optimize tau_deflect, Glp, and nav_gain with rv_maneuv forced to 1 during optimization.
+# If 1, optimize tau_deflect and nav_gain with rv_maneuv forced to 1 during optimization.
 optimize_maneuv = 0
 t_des_final = 2000
 t_vert_boost = 10
@@ -47,11 +47,9 @@ rv_type = 1
 deflection_time = 0.02
 actuator_force = 100
 gearing_ratio = 1
-actuator_resolution = 0.01
+actuator_resolution = 1e-3
 max_deflection_angle = 10
 nav_gain = 2
-flap_gain = 100
-Glp = 1
 tau_deflect = 0.5
 # Vehicle parameter defaults (SWERVE RV + MMIII booster)
 rv_mass = 450.0

@@ -45,6 +45,7 @@ void get_flap_angular_velocity(double t, state *est_state,
     // a_cmd_E = smultiply(a_cmd_E, a_max_achievable / a_cmd_mag);
   }
 
+  // TODO remove comments
   // cartvec a_grav_est = get_gravity_acc(est_grav, est_state);
   // a_cmd_E = subtract(a_cmd_E, a_grav_est);
   // a_cmd_E = subtract(a_cmd_E, smultiply(sdivide(v_rel_E, v_rel), dot(a_cmd_E,

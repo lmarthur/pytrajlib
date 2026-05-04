@@ -170,7 +170,9 @@ def test_gnss_navigation_reduces_cep_with_ins_errors():
 
 def test_no_impact_correlation():
     """With standard error params, there should be no correlation between downrange and crossrange errors."""
-    impact_df, config = run(return_config=True, optimize_boost=0, num_runs=200)
+    impact_df, config = run(
+        return_config=True, optimize_boost=0, num_runs=200, random_seed=0
+    )
     impact_x_local, impact_y_local = get_local_impact(
         impact_df, (config["x_aim"], config["y_aim"], config["z_aim"])
     )

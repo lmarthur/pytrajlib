@@ -378,6 +378,18 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
       true_state.q_EB = align_roll_axis_with_velocity(true_state.velocity);
       est_state.q_EB = align_roll_axis_with_velocity(est_state.velocity);
     }
+    // Convert resolution from degrees to radians
+    double resolution = run_params->actuator_resolution * M_PI / 180;
+    double max_extent = run_params->max_deflection_angle * M_PI / 180;
+    double clipped_delta_1 =
+        clip(fmod(true_state.delta_1, 2 * M_PI), -max_extent, max_extent);
+    double clipped_delta_2 =
+        clip(fmod(true_state.delta_2, 2 * M_PI), -max_extent, max_extent);
+
+    true_state.delta_1 = round(clipped_delta_1 / resolution) * resolution;
+    true_state.delta_2 = round(clipped_delta_2 / resolution) * resolution;
+    est_state.delta_1 = true_state.delta_1;
+    est_state.delta_2 = true_state.delta_2;
 
     // Perform an integration step
     prev_true_state = true_state;

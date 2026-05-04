@@ -11,6 +11,7 @@ from pytrajlib._traj import lib as traj
 
 # Import plotting functions
 from pytrajlib.optimizers import optimize_boost, optimize_maneuv
+from pytrajlib.plotting import plot_impact, plot_reentry_guidance, plot_trajectory
 from pytrajlib.runtime import (
     _LOADING_BAR_DISABLED,
     _TEMP_DIR,
@@ -21,7 +22,6 @@ from pytrajlib.runtime import (
     create_runparams_struct,
     impact_data_to_df,
 )
-from pytrajlib.plotting import plot_impact, plot_reentry_guidance, plot_trajectory
 from pytrajlib.utils import get_miss_distance
 
 
@@ -73,7 +73,6 @@ def run(
     config_dict.setdefault("include_drag", 1)
     config_dict.setdefault("optimize_boost", 1)
     config_dict.setdefault("optimize_maneuv", 0)
-    config_dict.setdefault("Glp", 1)
     config_dict.setdefault("random_seed", -1)
     _set_aimpoint_from_range(config_dict)
 
@@ -89,10 +88,9 @@ def run(
 
     if config_dict["optimize_maneuv"]:
         if int(config_dict.get("rv_maneuv", 0)) == 1:
-            tau_deflect, Glp, nav_gain = optimize_maneuv(config_dict)
-            print(f"{tau_deflect=}, {Glp=}, {nav_gain=}")
+            tau_deflect, nav_gain = optimize_maneuv(config_dict)
+            print(f"{tau_deflect=}, {nav_gain=}")
             config_dict["tau_deflect"] = tau_deflect
-            config_dict["Glp"] = Glp
             config_dict["nav_gain"] = nav_gain
         else:
             print("Skipping maneuverability optimization; requires rv_maneuv = 1")
