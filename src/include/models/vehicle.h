@@ -99,7 +99,6 @@ typedef struct rv {
   double c_m_alpha; // pitching moment coefficient derivative (per radian)
   double c_m_q;     // pitch damping coefficient
   double c_m_delta; // derivative of pitching moment wrt flap deflection angle
-  // TODO remove
   double c_l_alpha; // lift coefficient derivative (per radian, valid for small
                     // angles of attack)
   double flap_area; // flap area in square meters
@@ -169,12 +168,12 @@ rv init_swerve_rv() {
   rv.rv_radius = 0.23;
   rv.half_angle = 0.0916; // 5.25 degrees
   rv.rv_area = M_PI * rv.rv_radius * rv.rv_radius;
-  rv.c_d_0 = 0.1;
+  rv.c_d_0 = 0.0180;
   rv.c_d_alpha = 0.487;
-  rv.c_m_alpha = -0.15;
-  rv.c_m_q = -0.2;
-  rv.c_l_alpha = 1.72;
-  rv.c_m_delta = 0.06;
+  rv.c_m_alpha = -0.111;
+  rv.c_m_q = -0.429;
+  rv.c_l_alpha = 1.988;
+  rv.c_m_delta = 0.059;
   rv.flap_area = 0.04;
   rv.x_flap = -2.65;
   rv.x_com = -0.6 * rv.rv_length;

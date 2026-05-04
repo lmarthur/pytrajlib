@@ -35,22 +35,6 @@ void get_flap_angular_velocity(double t, state *est_state,
   // Get acceleration command
   cartvec a_cmd_E = prop_nav(est_state, run_params);
 
-  // Limit acceleration command to a feasible range based on estimate of the
-  // maximum achievable lift acceleration
-  double a_cmd_mag = norm(a_cmd_E);
-  double a_max_achievable =
-      (q_inf * vehicle->rv.rv_area / vehicle->rv.rv_mass) *
-      SWERVE_CL_TABLE[SWERVE_AERO_TABLE_SIZE - 1];
-  if (a_cmd_mag > a_max_achievable) {
-    // a_cmd_E = smultiply(a_cmd_E, a_max_achievable / a_cmd_mag);
-  }
-
-  // TODO remove comments
-  // cartvec a_grav_est = get_gravity_acc(est_grav, est_state);
-  // a_cmd_E = subtract(a_cmd_E, a_grav_est);
-  // a_cmd_E = subtract(a_cmd_E, smultiply(sdivide(v_rel_E, v_rel), dot(a_cmd_E,
-  // sdivide(v_rel_E, v_rel))));
-
   // Transform acceleration change from ECI frame to local body frame
   cartvec a_cmd_B = eci_to_body(a_cmd_E, est_state->q_EB);
 
@@ -79,9 +63,6 @@ void get_flap_angular_velocity(double t, state *est_state,
       clip(dot_deflection_1, -max_deflection_speed, max_deflection_speed);
   dot_deflection[1] =
       clip(dot_deflection_2, -max_deflection_speed, max_deflection_speed);
-
-  //   dot_deflection[0] = 0.0;
-  //   dot_deflection[1] = 0.0;
 
   // Log acceleration command and transverse imu acceleration
   cartvec vhat = sdivide(est_state->velocity, norm(est_state->velocity));

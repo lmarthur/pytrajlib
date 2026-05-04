@@ -11,8 +11,6 @@ from src.pylib import *
 
 EARTH_RADIUS_M = 6371e3
 
-# TODO: Add a calculation of the range to the aimpoint
-
 
 def impact_plot(run_path, run_params):
     # print error if the paths are not found

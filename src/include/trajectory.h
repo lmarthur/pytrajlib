@@ -312,10 +312,10 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
         sampled_new_profile = 1;
 
         // Align body with velocity vector at end of boost phase instead of
-        // recomputing the alignment at each step during boost
+        // recomputing the alignment at each step during boost because the vehicle
+        // is assumed to be oriented along the velocity vector during boost 
         true_state.q_EB = align_roll_axis_with_velocity(true_state.velocity);
         est_state.q_EB = align_roll_axis_with_velocity(est_state.velocity);
-        printf("Aligning quaternion with velocity\n");
       }
     }
 
@@ -377,6 +377,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
       gnss_measurement(&gnss, &true_state, &est_state);
       gnss.time_since_last_update = 0.0;
     }
+
+
 
     // Convert resolution from degrees to radians
     double resolution = run_params->actuator_resolution * M_PI / 180;

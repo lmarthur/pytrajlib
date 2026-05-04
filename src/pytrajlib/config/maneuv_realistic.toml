@@ -43,6 +43,7 @@ t_des_final = 2000
 t_vert_boost = 10
 
 [VEHICLE]
+# Reentry vehicle type (0: ballistic, 1: maneuverable)
 rv_type = 1
 deflection_time = 0.02
 actuator_force = 100
