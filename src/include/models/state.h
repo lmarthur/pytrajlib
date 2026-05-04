@@ -18,12 +18,8 @@ typedef struct state {
                      // the x-y plane in radians
   anglevec gyro_error;
   anglevec orientation_angle_change; // incremental body orientation change
-  double delta_1;      // flap pair {1, 3} deflection extent
-  double delta_2;      // flap pair {2, 4} deflection extent
-  double prev_a_cmd_1; // previous transverse command acceleration (body axis 1)
-  double prev_a_cmd_2; // previous transverse command acceleration (body axis 2)
-  double prev_delta_1; // previous flap pair {1, 3} deflection extent
-  double prev_delta_2; // previous flap pair {2, 4} deflection extent
+  double delta_1;                    // flap pair {1, 3} deflection extent
+  double delta_2;                    // flap pair {2, 4} deflection extent
 
 } state;
 /**
@@ -62,10 +58,6 @@ state init_true_state(runparams *run_params) {
   state.theta_lat = run_params->theta_lat + initial_theta_lat_pert;
   state.delta_1 = 0;
   state.delta_2 = 0;
-  state.prev_a_cmd_1 = 0;
-  state.prev_a_cmd_2 = 0;
-  state.prev_delta_1 = 0;
-  state.prev_delta_2 = 0;
 
   // The true state holds the gyro error
   state.gyro_error.pitch = initial_theta_lat_pert;
@@ -97,10 +89,6 @@ state init_est_state(runparams *run_params) {
   state.theta_lat = run_params->theta_lat;
   state.delta_1 = 0;
   state.delta_2 = 0;
-  state.prev_a_cmd_1 = 0;
-  state.prev_a_cmd_2 = 0;
-  state.prev_delta_1 = 0;
-  state.prev_delta_2 = 0;
 
   state.gyro_error.pitch = 0;
   state.gyro_error.yaw = 0;
@@ -123,15 +111,11 @@ state add_state(state a, state b) {
   result.theta_lat = a.theta_lat + b.theta_lat;
   result.delta_1 = a.delta_1 + b.delta_1;
   result.delta_2 = a.delta_2 + b.delta_2;
-  result.prev_a_cmd_1 = a.prev_a_cmd_1 + b.prev_a_cmd_1;
-  result.prev_a_cmd_2 = a.prev_a_cmd_2 + b.prev_a_cmd_2;
-  result.prev_delta_1 = a.prev_delta_1 + b.prev_delta_1;
-  result.prev_delta_2 = a.prev_delta_2 + b.prev_delta_2;
 
   result.gyro_error.pitch = a.gyro_error.pitch + b.gyro_error.pitch;
   result.gyro_error.yaw = a.gyro_error.yaw + b.gyro_error.yaw;
-  result.orientation_angle_change = add_anglevec(a.orientation_angle_change,
-                                                 b.orientation_angle_change);
+  result.orientation_angle_change =
+      add_anglevec(a.orientation_angle_change, b.orientation_angle_change);
 
   return result;
 }
@@ -150,14 +134,11 @@ state smultiply_state(state a, double s) {
   result.theta_lat = a.theta_lat * s;
   result.delta_1 = a.delta_1 * s;
   result.delta_2 = a.delta_2 * s;
-  result.prev_a_cmd_1 = a.prev_a_cmd_1 * s;
-  result.prev_a_cmd_2 = a.prev_a_cmd_2 * s;
-  result.prev_delta_1 = a.prev_delta_1 * s;
-  result.prev_delta_2 = a.prev_delta_2 * s;
 
   result.gyro_error.pitch = a.gyro_error.pitch * s;
   result.gyro_error.yaw = a.gyro_error.yaw * s;
-  result.orientation_angle_change = smultiply_angle(a.orientation_angle_change, s);
+  result.orientation_angle_change =
+      smultiply_angle(a.orientation_angle_change, s);
 
   return result;
 }

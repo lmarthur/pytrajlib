@@ -3,9 +3,9 @@
 
 #include "../rng/rng.h"
 #include "../utils/utils.h"
-#include "state.h"
 #include "atmosphere.h"
 #include "grav.h"
+#include "state.h"
 
 // Define an inertial measurement unit struct
 typedef struct imu {
@@ -64,10 +64,6 @@ cartvec imu_measurement(imu *imu, runparams *run_params,
                         state *est_state, cartvec a_total_true,
                         cartvec a_grav_true, cartvec a_grav_est,
                         grav *est_grav) {
-      // Thrust angle measurements from accumulated gyro error
-      est_state->theta_long = run_params->theta_long + true_state->gyro_error.yaw;
-      est_state->theta_lat = run_params->theta_lat + true_state->gyro_error.pitch;
-
   // IMU measures total acceleration minus gravity
   cartvec a_measurable_E = subtract(a_total_true, a_grav_true);
 

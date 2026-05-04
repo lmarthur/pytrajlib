@@ -108,10 +108,6 @@ ffibuilder.cdef(
         anglevec orientation_angle_change;
         double delta_1;
         double delta_2;
-        double prev_a_cmd_1;
-        double prev_a_cmd_2;
-        double prev_delta_1;
-        double prev_delta_2;
     } state;
 
     typedef struct impact_data {

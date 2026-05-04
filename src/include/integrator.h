@@ -233,12 +233,6 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   state est_state_drift_update = {0};
   state est_state_diffusion_update = {0};
 
-  // Preserve controller memory updated inside drift() across SRA3 stage copies.
-  double next_prev_a_cmd_1 = est_state_initial.prev_a_cmd_1;
-  double next_prev_a_cmd_2 = est_state_initial.prev_a_cmd_2;
-  double next_prev_delta_1 = est_state_initial.prev_delta_1;
-  double next_prev_delta_2 = est_state_initial.prev_delta_2;
-
   anglevec dW = smultiply_angle(gaussian_anglevec(), sqrt(time_step));
   anglevec zeta = smultiply_angle(gaussian_anglevec(), sqrt(time_step));
   anglevec I0;
@@ -268,11 +262,6 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
 
     true_state_drift_eval[i] = true_drift;
     est_state_drift_eval[i] = est_drift;
-
-    next_prev_a_cmd_1 = H_est.prev_a_cmd_1;
-    next_prev_a_cmd_2 = H_est.prev_a_cmd_2;
-    next_prev_delta_1 = H_est.prev_delta_1;
-    next_prev_delta_2 = H_est.prev_delta_2;
 
     true_state_drift_update = add_state(
         true_state_drift_update,
@@ -314,19 +303,6 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   *est_state = add_state(est_state_initial, est_state_total_update);
   est_state->orientation_angle_change =
       est_state_total_update.orientation_angle_change;
-
-  est_state->prev_a_cmd_1 = next_prev_a_cmd_1;
-  est_state->prev_a_cmd_2 = next_prev_a_cmd_2;
-  est_state->prev_delta_1 = next_prev_delta_1;
-  est_state->prev_delta_2 = next_prev_delta_2;
-
-  // Convert resolution from degrees to radians
-  double resolution = run_params->actuator_resolution * M_PI / 180;
-  double max_extent = run_params->max_deflection_angle * M_PI / 180;
-  double clipped_delta_1 =
-      clip(fmod(true_state->delta_1, 2 * M_PI), -max_extent, max_extent);
-  double clipped_delta_2 =
-      clip(fmod(true_state->delta_2, 2 * M_PI), -max_extent, max_extent);
 
   true_state->q_EB = integrate_quaternion_step(*true_state);
   est_state->q_EB = integrate_quaternion_step(*est_state);

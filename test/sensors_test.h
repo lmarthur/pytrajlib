@@ -59,45 +59,6 @@ TEST(sensors, imu_meas) {
   REQUIRE_GT(norm(subtract(a_total_est, a_total_true)), 0);
 }
 
-TEST(sensors, imu_update) {
-  // Confirm the attitude estimate is reconstructed from the stored gyro error,
-  // and that the gyro drift/diffusion accessors expose the IMU parameters used
-  // by the integrator.
-  runparams run_params = {0};
-  state true_state = init_true_state(&run_params);
-  state est_state = init_est_state(&run_params);
-
-  true_state.theta_long = 1;
-  true_state.theta_lat = -0.5;
-  true_state.gyro_error.yaw = 0.1;
-  true_state.gyro_error.pitch = -0.2;
-
-  imu imu = imu_init(&run_params, &true_state);
-  grav est_grav = init_grav(&run_params);
-  cartvec a_total_est =
-      imu_measurement(&imu, &run_params, NULL, NULL, 0.0, 0.0, &true_state,
-                      &est_state, zeros(), zeros(), zeros(), &est_grav);
-
-  REQUIRE_EQ(a_total_est.x, 0);
-  REQUIRE_EQ(a_total_est.y, 0);
-  REQUIRE_EQ(a_total_est.z, 0);
-  REQUIRE_EQ(est_state.theta_long,
-             run_params.theta_long + true_state.gyro_error.yaw);
-  REQUIRE_EQ(est_state.theta_lat,
-             run_params.theta_lat + true_state.gyro_error.pitch);
-
-  run_params.gyro_noise = 1e-3;
-  run_params.gyro_bias_stability = 2e-3;
-  imu = imu_init(&run_params, &true_state);
-
-  anglevec drift = get_gyro_drift(&imu);
-  double diffusion = get_gyro_diffusion(&imu);
-
-  REQUIRE_EQ(drift.pitch, imu.gyro_bias.pitch);
-  REQUIRE_EQ(drift.yaw, imu.gyro_bias.yaw);
-  REQUIRE_EQ(diffusion, imu.gyro_noise);
-}
-
 TEST(sensors, gnss_init) {
   // GNSS initialization should preserve the configured position noise level.
   runparams run_params = {0};
