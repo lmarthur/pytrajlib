@@ -310,6 +310,12 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
         int atm_profile_num = (int)ran_flat(0, 100);
         atm_profile = parse_atm("input/atmprofiles.txt", atm_profile_num);
         sampled_new_profile = 1;
+
+        // Align body with velocity vector at end of boost phase instead of
+        // recomputing the alignment at each step during boost
+        true_state.q_EB = align_roll_axis_with_velocity(true_state.velocity);
+        est_state.q_EB = align_roll_axis_with_velocity(est_state.velocity);
+        printf("Aligning quaternion with velocity\n");
       }
     }
 
@@ -372,12 +378,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
       gnss.time_since_last_update = 0.0;
     }
 
-    // Align quaternion with velocity just before reentry
-    if (get_altitude(true_state.position) < 120e3 &&
-        get_altitude(true_state.position) > 100e3) {
-      true_state.q_EB = align_roll_axis_with_velocity(true_state.velocity);
-      est_state.q_EB = align_roll_axis_with_velocity(est_state.velocity);
-    }
     // Convert resolution from degrees to radians
     double resolution = run_params->actuator_resolution * M_PI / 180;
     double max_extent = run_params->max_deflection_angle * M_PI / 180;
