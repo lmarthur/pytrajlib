@@ -104,7 +104,6 @@ ffibuilder.cdef(
         cartvec angular_vel_B;
         double theta_long;
         double theta_lat;
-        anglevec gyro_error;
         anglevec orientation_angle_change;
         double delta_1;
         double delta_2;

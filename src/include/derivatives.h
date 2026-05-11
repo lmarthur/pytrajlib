@@ -21,8 +21,7 @@ typedef int (*drift_func)(runparams *run_params, imu *imu, vehicle *vehicle,
                           double est_t, state *true_state_drift,
                           state *est_state_drift);
 
-typedef void (*diffusion_func)(imu *imu, state *true_state_diffusion,
-                               state *est_state_diffusion);
+typedef void (*diffusion_func)(imu *imu, state *est_state_diffusion);
 
 /**
  * Calculate deterministic drift component of the state update.
@@ -85,7 +84,6 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
   true_state_drift->angular_vel_B = angular_vel_B;
   true_state_drift->orientation_angle_change =
       (anglevec){angular_vel_B.y, angular_vel_B.x};
-  true_state_drift->gyro_error = (anglevec){0};
   true_state_drift->delta_1 = dot_deflection[0];
   true_state_drift->delta_2 = dot_deflection[1];
 
@@ -98,15 +96,12 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
                  angular_vel_B.x + imu->gyro_bias.yaw};
   est_state_drift->delta_1 = dot_deflection[0];
   est_state_drift->delta_2 = dot_deflection[1];
-
-  true_state_drift->gyro_error = get_gyro_drift(imu);
   return 1;
 }
 
 /**
  * Calculate stochastic diffusion component of the state update.
  *
- * This function writes diffusion outputs into `true_state_diffusion`.
  * The output state struct should be initialized to `{0}` before being passed
  * in.
  *
@@ -116,11 +111,7 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
  * @param est_state_diffusion Output stochastic diffusion for estimated state;
  *                            initialize to `{0}` before passing.
  */
-void diffusion(imu *imu, state *true_state_diffusion,
-               state *est_state_diffusion) {
-  true_state_diffusion->gyro_error.pitch = get_gyro_diffusion(imu);
-  true_state_diffusion->gyro_error.yaw = get_gyro_diffusion(imu);
-  true_state_diffusion->orientation_angle_change = (anglevec){0};
+void diffusion(imu *imu, state *est_state_diffusion) {
   est_state_diffusion->orientation_angle_change.pitch = get_gyro_diffusion(imu);
   est_state_diffusion->orientation_angle_change.yaw = get_gyro_diffusion(imu);
 }

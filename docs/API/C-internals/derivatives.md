@@ -36,7 +36,6 @@ This function writes derivative outputs into `true_state_drift` and
 
 Calculate stochastic diffusion component of the state update.
 
-This function writes diffusion outputs into `true_state_diffusion`.
 The output state struct should be initialized to `{0}` before being passed
 in.
 
@@ -45,7 +44,6 @@ in.
 | Name | Type | Description |
 | --- | --- | --- |
 | `imu` | `imu *` | Pointer to IMU model. |
-| `true_state_diffusion` | `state *` | Output stochastic diffusion for true state;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;initialize to `{0}` before passing. |
 | `est_state_diffusion` | `state *` | Output stochastic diffusion for estimated state;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;initialize to `{0}` before passing. |
 
 ### Returns

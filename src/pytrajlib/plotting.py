@@ -217,12 +217,6 @@ def plot_trajectory(
         est_q_y = trajectory_df["est_q_y"].values
         est_q_z = trajectory_df["est_q_z"].values
 
-    # Extract gyro error
-    has_gyro_error = {"gyro_error_pitch", "gyro_error_yaw"}.issubset(trajectory_df.columns)
-    if has_gyro_error:
-        gyro_error_pitch = trajectory_df["gyro_error_pitch"].values * 180 / np.pi
-        gyro_error_yaw = trajectory_df["gyro_error_yaw"].values * 180 / np.pi
-
     has_wind_components = {"u1", "u2", "u3"}.issubset(trajectory_df.columns)
     if has_wind_components:
         u1 = trajectory_df["u1"].values
@@ -303,13 +297,6 @@ def plot_trajectory(
         )
     else:
         print("Skipping quaternion plot (true_q_* / est_q_* not found).")
-
-    if has_gyro_error:
-        plots["gyro_error"] = lambda: _plot_gyro_error(
-            t, gyro_error_pitch, gyro_error_yaw, save_path
-        )
-    else:
-        print("Skipping gyro_error plot (gyro_error_pitch/yaw not found).")
 
     if has_wind_components:
         plots["aoa_components"] = lambda: _plot_aoa_components(
@@ -737,16 +724,23 @@ def _plot_aoa_components(t, aoa_alpha_deg, aoa_azimuth_deg, reentry_mask, save_p
     t_reentry = t[reentry_mask]
     aoa_alpha_reentry = aoa_alpha_deg[reentry_mask]
     aoa_azimuth_reentry = aoa_azimuth_deg[reentry_mask]
-    
+
     fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
-    axes[0].plot(t_reentry, aoa_alpha_reentry, linewidth=2, label=r"$\alpha=\arccos(u_3)$")
+    axes[0].plot(
+        t_reentry, aoa_alpha_reentry, linewidth=2, label=r"$\alpha=\arccos(u_3)$"
+    )
     axes[0].set_ylabel(r"$\alpha$ (deg)")
     axes[0].set_title("Angle of Attack During Reentry")
     axes[0].grid(alpha=0.3)
     axes[0].legend()
 
-    axes[1].plot(t_reentry, aoa_azimuth_reentry, linewidth=2, label=r"$\chi_{\alpha}=\operatorname{atan2}(u_2,u_1)$")
+    axes[1].plot(
+        t_reentry,
+        aoa_azimuth_reentry,
+        linewidth=2,
+        label=r"$\chi_{\alpha}=\operatorname{atan2}(u_2,u_1)$",
+    )
     axes[1].set_xlabel("Time (s)")
     axes[1].set_ylabel(r"$\chi_{\alpha}$ (deg)")
     axes[1].set_title("AoA Azimuth During Reentry")
@@ -823,23 +817,6 @@ def _plot_force_true_est(
 
     if save_path:
         _save_figure(Path(save_path), fig_name)
-    else:
-        plt.show()
-    plt.close()
-
-
-def _plot_gyro_error(t, gyro_error_pitch, gyro_error_yaw, save_path):
-    """Gyro error (pitch and yaw) vs time in degrees."""
-    plt.figure(figsize=(10, 6))
-    plt.plot(t, gyro_error_pitch, label="Gyro Error Pitch", linewidth=2)
-    plt.plot(t, gyro_error_yaw, label="Gyro Error Yaw", linewidth=2)
-    plt.xlabel("Time (s)")
-    plt.ylabel("Gyro Error (degrees)")
-    plt.title("Gyro Error vs Time")
-    plt.legend(frameon=False)
-    plt.grid(alpha=0.3)
-    if save_path:
-        _save_figure(Path(save_path), "gyro_error.png")
     else:
         plt.show()
     plt.close()

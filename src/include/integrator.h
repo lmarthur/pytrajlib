@@ -90,8 +90,6 @@ state sra3_H(state drift_evals[3], state diffusion_evals[3], state Y, int i,
 
     state diffusion_update = {0};
     anglevec stochastic_scale = smultiply_angle(I0, B0[i][j]);
-    diffusion_update.gyro_error =
-        multiply_anglevec(diffusion_evals[j].gyro_error, stochastic_scale);
     diffusion_update.orientation_angle_change = multiply_anglevec(
         diffusion_evals[j].orientation_angle_change, stochastic_scale);
     H = add_state(H, diffusion_update);
@@ -144,7 +142,7 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
   if (!success) {
     return 0;
   }
-  diffusion_fn(imu, &true_state_diffusion, &est_state_diffusion);
+  diffusion_fn(imu, &est_state_diffusion);
 
   *true_state =
       add_state(*true_state, smultiply_state(true_state_drift, time_step));
@@ -162,10 +160,6 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
   // Only draw a single dW because all of the diffusion terms are related to the
   // gyroscope measurement
   anglevec dW = smultiply_angle(gaussian_anglevec(), sqrt(time_step));
-  true_state->gyro_error =
-      add_anglevec(true_state->gyro_error,
-                   multiply_anglevec(true_state_diffusion.gyro_error, dW));
-
   true_state->orientation_angle_change = add_anglevec(
       smultiply_angle(true_state_drift.orientation_angle_change, time_step),
       multiply_anglevec(true_state_diffusion.orientation_angle_change, dW));
@@ -240,8 +234,7 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   I0.yaw = 0.5 * (dW.yaw + (1.0 / sqrt(3.0)) * zeta.yaw);
 
   for (int i = 0; i < num_stages; i++) {
-    diffusion_fn(imu, &true_state_diffusion_eval[i],
-                 &est_state_diffusion_eval[i]);
+    diffusion_fn(imu, &est_state_diffusion_eval[i]);
   }
 
   for (int i = 0; i < num_stages; i++) {
@@ -275,11 +268,6 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   for (int i = 0; i < num_stages; i++) {
     anglevec stochastic_gain = add_anglevec(smultiply_angle(dW, beta1[i]),
                                             smultiply_angle(I0, beta2[i]));
-
-    true_state_diffusion_update.gyro_error =
-        add_anglevec(true_state_diffusion_update.gyro_error,
-                     multiply_anglevec(true_state_diffusion_eval[i].gyro_error,
-                                       stochastic_gain));
 
     true_state_diffusion_update.orientation_angle_change = add_anglevec(
         true_state_diffusion_update.orientation_angle_change,

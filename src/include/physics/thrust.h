@@ -465,18 +465,18 @@ cartvec get_thrust_acc(state *true_state, state *est_state, vehicle *vehicle,
     return zeros();
   }
 
-  state gyro_state;
+  state vert_state;
   state *state;
   grav *grav_model;
-  // To simulate perfect boost, use the estimated state for gyro error
-  // calculation because the estimated gyro error is 0 and use the true state
-  // for the remaining calculations because it has the true position & velocity
+  // To simulate perfect boost, use the estimated state for vertical thrust
+  // because it has no angle error and use the true state for the remaining
+  // calculations because it has the true position & velocity
   if (run_params->perfect_boost) {
-    gyro_state = *est_state;
+    vert_state = *est_state;
     state = true_state;
     grav_model = true_grav;
   } else {
-    gyro_state = *true_state;
+    vert_state = *true_state;
     state = est_state;
     grav_model = est_grav;
   }
@@ -485,11 +485,14 @@ cartvec get_thrust_acc(state *true_state, state *est_state, vehicle *vehicle,
 
   // Vertical thrust for the beginning of the flight
   if (t < run_params->t_vert_boost) {
-    a_thrust.x = a_thrust_mag * cos(gyro_state.gyro_error.pitch) *
-                 cos(gyro_state.gyro_error.yaw);
-    a_thrust.y = a_thrust_mag * cos(gyro_state.gyro_error.pitch) *
-                 sin(gyro_state.gyro_error.yaw);
-    a_thrust.z = a_thrust_mag * sin(gyro_state.gyro_error.pitch);
+    a_thrust.x = a_thrust_mag *
+                 cos(vert_state.theta_long - run_params->theta_long) *
+                 cos(vert_state.theta_lat - run_params->theta_lat);
+    a_thrust.y = a_thrust_mag *
+                 cos(vert_state.theta_lat - run_params->theta_lat) *
+                 sin(vert_state.theta_long - run_params->theta_long);
+    a_thrust.z =
+        a_thrust_mag * sin(vert_state.theta_lat - run_params->theta_lat);
     return a_thrust;
   }
   if (get_altitude(state->position) < 100e3) {

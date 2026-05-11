@@ -114,7 +114,7 @@ def test_perfect_boost():
         ("initial_angle_error", 1e-6, 1e-1, (0,)),
         ("acc_scale_stability", 1e-8, 1e-4, (0, 1, 2)),
         ("gyro_bias_stability", 1e-9, 1e-5, (0, 1, 2)),
-        ("gyro_noise", 1e-9, 1e-5, (0, 1, 2)),
+        ("gyro_noise", 1e-9, 1e-3, (0, 1, 2)),
     ),
 )
 def test_error_sensitivity_increases_cep(

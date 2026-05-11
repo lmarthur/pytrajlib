@@ -40,13 +40,12 @@ static inline void init_run_logging(const char *trajectory_path) {
     printf("Warning: could not open trajectory log at %s\n", trajectory_path);
   } else {
     fprintf(trajectory_log_file, "t, current_mass, x, y, z, vx, vy, vz, "
-                   "a_lift, est_x, est_y, est_z, est_vx, "
-                   "est_vy, est_vz, "
-                   "true_delta_1, true_delta_2, "
-                   "est_delta_1, est_delta_2, u1, u2, u3, "
-                   "true_q_w, true_q_x, true_q_y, true_q_z, "
-                   "est_q_w, est_q_x, est_q_y, est_q_z, "
-                   "gyro_error_pitch, gyro_error_yaw \n");
+                                 "a_lift, est_x, est_y, est_z, est_vx, "
+                                 "est_vy, est_vz, "
+                                 "true_delta_1, true_delta_2, "
+                                 "est_delta_1, est_delta_2, u1, u2, u3, "
+                                 "true_q_w, true_q_x, true_q_y, true_q_z, "
+                                 "est_q_w, est_q_x, est_q_y, est_q_z \n");
   }
 
   char guidance_path[4096];
@@ -90,20 +89,18 @@ static inline void write_trajectory_log_row(double t, double current_mass,
   cartvec u_hat_B = eci_to_body(u_hat_E, true_state->q_EB);
 
   fprintf(trajectory_log_file,
-      "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-      "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-      "%g, %g\n",
+          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
+          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n",
           t, current_mass, true_state->position.x, true_state->position.y,
           true_state->position.z, true_state->velocity.x,
           true_state->velocity.y, true_state->velocity.z, 0.0,
           est_state->position.x, est_state->position.y, est_state->position.z,
           est_state->velocity.x, est_state->velocity.y, est_state->velocity.z,
           true_state->delta_1, true_state->delta_2, est_state->delta_1,
-      est_state->delta_2, u_hat_B.x, u_hat_B.y, u_hat_B.z,
-      true_state->q_EB.w, true_state->q_EB.x, true_state->q_EB.y,
-      true_state->q_EB.z, est_state->q_EB.w, est_state->q_EB.x,
-      est_state->q_EB.y, est_state->q_EB.z, true_state->gyro_error.pitch,
-      true_state->gyro_error.yaw);
+          est_state->delta_2, u_hat_B.x, u_hat_B.y, u_hat_B.z,
+          true_state->q_EB.w, true_state->q_EB.x, true_state->q_EB.y,
+          true_state->q_EB.z, est_state->q_EB.w, est_state->q_EB.x,
+          est_state->q_EB.y, est_state->q_EB.z);
 }
 
 static inline void write_reentry_guidance_log_row(double t, cartvec a_cmd_E,
