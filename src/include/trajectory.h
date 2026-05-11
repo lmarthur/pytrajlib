@@ -64,6 +64,43 @@ static inline double flight_path_angle(cartvec position, cartvec velocity) {
 }
 
 /**
+ * Target angle = initial angle + rotation
+ *
+ * Assuming the entry angle = -burnout angle (not entirely true; burnout is
+ * ~170km, entry is 100km) Initial angle = 90 - burnout flight path angle Target
+ * angle = 90 - entry angle + central angle between position and aimpoint
+ * (simplifying assumption that reentry is close to the aimpoint)
+ * -->
+ * rotation = burnout flight path angle - entry angle + central angle
+ * See Regan 6.7 "Deployment Attitudes"
+ */
+static inline void set_entry_angle(state *true_state, state *est_state,
+                                   runparams *run_params) {
+  cartvec aimpoint = {run_params->x_aim, run_params->y_aim, run_params->z_aim};
+  double est_burnout_angle =
+      flight_path_angle(est_state->position, est_state->velocity);
+  double entry_angle = -est_burnout_angle;
+  double central_angle = acos(dot(aimpoint, est_state->position) /
+                              (norm(aimpoint) * norm(est_state->position)));
+  double rot_angle = est_burnout_angle - (entry_angle - central_angle);
+  cartvec rot_axis = cross(est_state->position, aimpoint);
+  cartvec hat_rot_axis = sdivide(rot_axis, norm(rot_axis));
+
+  cartvec est_goal_entry_vector =
+      rotate(est_state->velocity, hat_rot_axis, rot_angle);
+  est_goal_entry_vector =
+      sdivide(est_goal_entry_vector, norm(est_goal_entry_vector));
+
+  cartvec true_goal_entry_vector =
+      rotate(true_state->velocity, hat_rot_axis, rot_angle);
+  true_goal_entry_vector =
+      sdivide(true_goal_entry_vector, norm(true_goal_entry_vector));
+
+  true_state->q_EB = align_roll_axis_with_velocity(true_goal_entry_vector);
+  est_state->q_EB = align_roll_axis_with_velocity(est_goal_entry_vector);
+}
+
+/**
  * Interpolate between two states to estimate impact crossing at altitude 0.
  *
  * @param state_0 Pointer to pre-impact state
@@ -292,6 +329,15 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
       time_step = run_params->time_step_lambert;
     }
 
+    if (!burnout_captured && true_t > run_params->t_vert_boost) {
+      // Align body with velocity vector during boost phase because the vehicle
+      // is assumed to be oriented along the velocity vector during boost.
+      // Needed so that the IMU calculates accelerometer errors properly
+      // throughout boost
+      true_state.q_EB = align_roll_axis_with_velocity(true_state.velocity);
+      est_state.q_EB = align_roll_axis_with_velocity(est_state.velocity);
+    }
+
     // Check burnout event
     if (!burnout_captured && true_t > vehicle->booster.total_burn_time) {
       burnout_captured = 1;
@@ -310,19 +356,16 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
         int atm_profile_num = (int)ran_flat(0, 100);
         atm_profile = parse_atm("input/atmprofiles.txt", atm_profile_num);
         sampled_new_profile = 1;
-
-        // Align body with velocity vector at end of boost phase instead of
-        // recomputing the alignment at each step during boost because the vehicle
-        // is assumed to be oriented along the velocity vector during boost 
-        true_state.q_EB = align_roll_axis_with_velocity(true_state.velocity);
-        est_state.q_EB = align_roll_axis_with_velocity(est_state.velocity);
       }
+      // Post-boost attitude deployment
+      set_entry_angle(&true_state, &est_state, run_params);
     }
 
     // Check reentry event. Use altitude of 120km rather than 100km so the
     // smaller time step captures all atmospheric events below 100km
     int descending = altitude < max_altitude;
-    if (!reentry_captured && descending && altitude < 1.2e5) {
+    if (!reentry_captured && descending && altitude < 1.2e5 &&
+        true_t > run_params->t_vert_boost) {
       reentry_captured = 1;
       time_step = run_params->time_step_atm;
       *reentry_vel = norm(true_state.velocity);
@@ -331,7 +374,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     }
 
     // Check impact event
-    if (get_altitude(true_state.position) < 0) {
+    if (get_altitude(true_state.position) < 0 &&
+        true_t > run_params->t_vert_boost) {
       double true_final_t;
       state est_final_state;
       state true_final_state = impact_with_coriolis(
@@ -377,8 +421,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
       gnss_measurement(&gnss, &true_state, &est_state);
       gnss.time_since_last_update = 0.0;
     }
-
-
 
     // Convert resolution from degrees to radians
     double resolution = run_params->actuator_resolution * M_PI / 180;
