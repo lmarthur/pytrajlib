@@ -27,7 +27,7 @@ typedef struct runparams {
   long random_seed; // RNG seed (-1 = auto-seed)
 
   int grav_error;      // flag to include gravitational perturbations
-  int include_drag;    // flag to include aerodynamic drag force
+  int ballistic_drag;  // flag to use simplified reentry drag calculation
   int atm_model;       // flag to select the atmospheric model
   int gnss_nav;        // flag to include GNSS navigation
   int rv_maneuv;       // flag to include guidance during the reentry phase

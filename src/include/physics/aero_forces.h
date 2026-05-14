@@ -102,11 +102,18 @@ static inline cartvec get_body_force(state *current_state, atm_cond *atm_cond,
   cartvec l_hat_B = get_body_lift_direction(u_hat_B);
 
   // Get angle of attack based on relative wind in the body frame
-  double alpha_deg = get_aoa(u_hat_B) * 180.0 / M_PI;
+  double alpha = get_aoa(u_hat_B);
 
   // Get drag and lift coefficients based on the angle of attack
-  double C_D = interpolate_swerve_coeff(alpha_deg, SWERVE_CD_TABLE);
-  double C_L = interpolate_swerve_coeff(alpha_deg, SWERVE_CL_TABLE);
+  double C_D, C_L;
+  if (strcmp(vehicle->rv.name, "SWERVE") == 0) {
+    double alpha_deg = alpha * 180.0 / M_PI;
+    C_D = interpolate_swerve_coeff(alpha_deg, SWERVE_CD_TABLE);
+    C_L = interpolate_swerve_coeff(alpha_deg, SWERVE_CL_TABLE);
+  } else {
+    C_D = vehicle->rv.c_d_0 + vehicle->rv.c_d_alpha * alpha;
+    C_L = vehicle->rv.c_l_alpha * alpha;
+  }
 
   // Reference area for drag and lift coefficients
   double S_ref = vehicle->rv.rv_area;
@@ -442,7 +449,7 @@ static inline cartvec get_aerodynamic_acc(double t, state *current_state,
   }
 
   // Ballistic reentry drag
-  if (run_params->rv_maneuv != 1) {
+  if (run_params->rv_maneuv != 1 && run_params->ballistic_drag) {
     cartvec a_drag =
         ballistic_reentry_drag(t, current_state, atm_cond, vehicle);
     return a_drag;

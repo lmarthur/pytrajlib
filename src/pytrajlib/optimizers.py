@@ -81,9 +81,8 @@ def optimize_boost(config_dict):
     Tune initial thrust angle and desired flight time for an optimally lofted
     flight.
     """
-    range_km = config_dict["range"] / 1000.0
-    tf_des = 188 + 0.223 * range_km - 4e-6 * range_km**2
-    theta_long = 0.9
+    tf_des = config_dict["t_des_final"]
+    theta_long = config_dict["theta_long"]
 
     return _run_nelder_mead(
         config_dict,
@@ -92,7 +91,7 @@ def optimize_boost(config_dict):
         bounds=[(300, 5000), (0, np.pi)],
         extra_updates={
             "gnss_nav": 0,
-            "perfect_boost": 1,
+            "perfect_boost": 0,
             "rv_maneuv": 0,
         },
         log_fn=lambda miss_dist, values: (
@@ -112,10 +111,10 @@ def optimize_maneuv(config_dict):
             config_dict["tau_deflect"],
             config_dict["nav_gain"],
         ),
-        bounds=[(1e-3, 100), (1, 5)],
+        bounds=[(1e-3, 100), (1, 10)],
         extra_updates={
             "gnss_nav": 1,
-            "perfect_boost": 1,
+            "perfect_boost": 0,
             "rv_maneuv": 1,
         },
         log_fn=lambda miss_dist, values: (

@@ -165,7 +165,7 @@ rv init_swerve_rv() {
   rv.maneuverability_flag = 1;
   rv.rv_mass = 450;
   rv.rv_length = 2.75;
-  rv.rv_radius = 0.23;
+  rv.rv_radius = 0.277;
   rv.half_angle = 0.0916; // 5.25 degrees
   rv.rv_area = M_PI * rv.rv_radius * rv.rv_radius;
   rv.c_d_0 = 0.0180;

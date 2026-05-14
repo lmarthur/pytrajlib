@@ -1,9 +1,9 @@
 [RUN]
 run_name = "run_4"
-num_runs = 30
+num_runs = 1000
 num_runs_optimizer = 10
 time_step_lambert = 1e-3
-time_step_midcourse = 1e-3
+time_step_midcourse = 0.01
 time_step_atm = 1e-4
 traj_output = 1
 # Range is in meters
@@ -12,7 +12,7 @@ range = 10000000
 x_aim = -1106312.539916013
 y_aim = 6274210.194440777
 z_aim = 0
-theta_long = 0.831170787
+theta_long = 0.981760631
 theta_lat = 0.0
 
 # 0 is modified Euler-Maruyama, 1 is SRA3
@@ -22,14 +22,14 @@ random_seed = -1
 [FLIGHT]
 # Gravitational error model
 grav_error = 1
-# Use simplified drag (1 on, 0 off)
+# Simplified drag force (1 on, 0 off)
 ballistic_drag = 0
 # Atmospheric model. 0 is exponential, 1 is exponential with perturbations, 2 is EarthGram, 3 is mean EarthGram
 atm_model = 2
 # Positioning updates during exoatmospheric flight (1 is on, 0 is off)
-gnss_nav = 1
+gnss_nav = 0
 # If set to 1, enables RV proportional navigation w/ realistic maneuverability, if set to 2, idealized maneuverability
-rv_maneuv = 1
+rv_maneuv = 0
 # Reentry velocity (m/s)
 reentry_vel = 7500
 # If 0, indicates realistic boost, 1 perfect
@@ -38,25 +38,25 @@ perfect_boost = 0
 optimize_boost = 0
 # If 1, optimize tau_deflect and nav_gain with rv_maneuv forced to 1 during optimization.
 optimize_maneuv = 0
-t_des_final = 2445.862986880
+t_des_final = 2384.729760125
 t_vert_boost = 10
 
 [VEHICLE]
 # Reentry vehicle type (0: ballistic, 1: maneuverable)
-rv_type = 1
+rv_type = 0
 deflection_time = 0.02
 actuator_force = 100
 gearing_ratio = 1
 actuator_resolution = 1e-3
-max_deflection_angle = 10.0
-nav_gain = 2.059697723
-tau_deflect = 0.445824242
-# Vehicle parameter defaults (SWERVE RV + MMIII booster)
-rv_mass = 450.0
-rv_length = 2.75
+max_deflection_angle = 10
+nav_gain = 2
+tau_deflect = 0.5
+# Vehicle parameter defaults (Ballistic RV + MMIII booster)
+rv_mass = 400.0
+rv_length = 1.5
 rv_radius = 0.23
-rv_c_d_0 = 0.0180
-rv_c_d_alpha = 0.487
+rv_c_d_0 = 0.1
+rv_c_d_alpha = 0.4
 booster_area = 2.2698
 booster_maxdiam = 1.7
 booster_c_d_0 = 0.15

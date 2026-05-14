@@ -38,7 +38,7 @@ def _save_figure(fig_path: Optional[Path], fig_name: str) -> None:
         print(f"Saved: {output_path}")
 
 
-def plot_impact(
+def create_impact_plot(
     impact_df: pd.DataFrame,
     save_path: Optional[Path] = None,
     aimpoint: Optional[Tuple[float, float, float]] = None,
@@ -150,10 +150,11 @@ def plot_impact(
     }
 
 
-def plot_trajectory(
+def create_traj_plots(
     trajectory_df: pd.DataFrame,
     save_path: Optional[Path] = None,
     aimpoint: Optional[Tuple[float, float, float]] = None,
+    guidance_df: Optional[pd.DataFrame] = None,
 ) -> None:
     """
     Generate trajectory analysis plots.
@@ -169,6 +170,8 @@ def plot_trajectory(
     trajectory_df = trajectory_df.copy()
     trajectory_df.columns = trajectory_df.columns.str.strip()
 
+    # Speed up plot generation by subsampling
+    trajectory_df = trajectory_df[::100]
     # Extract columns
     t = trajectory_df["t"].values
     x, y, z = (
@@ -309,16 +312,53 @@ def plot_trajectory(
         print(f"Generating {plot_name}...")
         plot_func()
 
+    # If reentry guidance data was provided, plot it using the reentry time window
+    if guidance_df is not None:
+        try:
+            # Compute reentry time window from trajectory reentry mask (aligned to trajectory_df)
+            t_reentry = t[reentry_mask]
+            if t_reentry.size > 0:
+                reentry_window = (float(t_reentry.min()), float(t_reentry.max()))
+                plot_reentry_guidance(
+                    guidance_df, save_path=save_path, reentry_window=reentry_window
+                )
+            else:
+                print(
+                    "No reentry interval found in trajectory; skipping reentry guidance plot."
+                )
+        except Exception as e:
+            print(f"Failed to plot reentry guidance: {e}")
+
 
 def plot_reentry_guidance(
     guidance_df: pd.DataFrame,
     save_path: Optional[Path] = None,
+    reentry_window: Optional[Tuple[float, float]] = None,
 ) -> None:
-    """Plot commanded and estimated acceleration vectors during reentry."""
+    """Plot commanded and estimated acceleration vectors during reentry.
+
+    `reentry_window` is a simple (t_start, t_end) tuple that specifies the
+    time interval to plot. This keeps alignment simple: the caller computes
+    the reentry interval from the trajectory data and `plot_reentry_guidance`
+    filters `guidance_df` by `t`.
+    """
     _setup_pyplot()
 
     guidance_df = guidance_df.copy()
     guidance_df.columns = guidance_df.columns.str.strip()
+
+    if "t" not in guidance_df.columns:
+        print("plot_reentry_guidance: 't' column missing; skipping plot.")
+        return
+
+    t0, t1 = reentry_window
+    guidance_df = guidance_df[(guidance_df["t"] >= t0) & (guidance_df["t"] <= t1)]
+    if guidance_df.empty:
+        print("No reentry guidance data in the specified window; skipping plot.")
+        return
+
+    # Subsample for plotting
+    guidance_df = guidance_df[::100]
 
     t = guidance_df["t"].values
     a_cmd_x = guidance_df["a_cmd_x"].values
@@ -555,35 +595,6 @@ def _plot_velocity_phases(
     plt.close()
 
 
-def _plot_velocity_est_phases(
-    t, est_vx, est_vy, est_vz, boost_mask, midcourse_mask, reentry_mask, save_path
-):
-    """Estimated velocity during different flight phases."""
-    fig, axes = plt.subplots(3, 1, figsize=(10, 10))
-
-    phases = [
-        ("Boost", boost_mask),
-        ("Midcourse", midcourse_mask),
-        ("Reentry", reentry_mask),
-    ]
-
-    for ax, (phase_name, mask) in zip(axes, phases):
-        ax.plot(t[mask], est_vx[mask], label="est vx", linewidth=2)
-        ax.plot(t[mask], est_vy[mask], label="est vy", linewidth=2)
-        ax.plot(t[mask], est_vz[mask], label="est vz", linewidth=2)
-        ax.set_ylabel("Estimated Velocity (m/s)")
-        ax.set_title(f"Estimated Velocity ({phase_name} Phase)")
-        ax.legend()
-        ax.grid(alpha=0.3)
-
-    axes[-1].set_xlabel("Time (s)")
-    if save_path:
-        _save_figure(Path(save_path), "velocity_est_phases.png")
-    else:
-        plt.show()
-    plt.close()
-
-
 def _plot_velocity_error_phases(
     t,
     vx,
@@ -714,7 +725,6 @@ def _compute_aoa_angles(u1, u2, u3):
     aoa_alpha_deg = np.degrees(np.arccos(clipped_u3))
     aoa_azimuth_deg = np.degrees(np.arctan2(u2, u1))
     aoa_azimuth_deg[np.sqrt(u1**2 + u2**2) < 1e-2] = 0
-    print(np.sqrt(u1**2 + u2**2))
     return aoa_alpha_deg, aoa_azimuth_deg
 
 
@@ -749,74 +759,6 @@ def _plot_aoa_components(t, aoa_alpha_deg, aoa_azimuth_deg, reentry_mask, save_p
 
     if save_path:
         _save_figure(Path(save_path), "aoa_components.png")
-    else:
-        plt.show()
-    plt.close()
-
-
-def _plot_force_true_est(
-    t,
-    ax_true,
-    ay_true,
-    az_true,
-    ax_est,
-    ay_est,
-    az_est,
-    boost_mask,
-    midcourse_mask,
-    reentry_mask,
-    force_name,
-    fig_name,
-    save_path,
-):
-    """True and estimated force components during different flight phases."""
-    fig, axes = plt.subplots(3, 1, figsize=(10, 10))
-
-    phases = [
-        ("Boost", boost_mask),
-        ("Midcourse", midcourse_mask),
-        ("Reentry", reentry_mask),
-    ]
-
-    for ax, (phase_name, mask) in zip(axes, phases):
-        (line_x,) = ax.plot(t[mask], ax_true[mask], label="x", linewidth=2)
-        (line_y,) = ax.plot(t[mask], ay_true[mask], label="y", linewidth=2)
-        (line_z,) = ax.plot(t[mask], az_true[mask], label="z", linewidth=2)
-
-        ax.plot(
-            t[mask],
-            ax_est[mask],
-            label="est x",
-            linewidth=2,
-            linestyle="--",
-            color=line_x.get_color(),
-        )
-        ax.plot(
-            t[mask],
-            ay_est[mask],
-            label="est y",
-            linewidth=2,
-            linestyle="--",
-            color=line_y.get_color(),
-        )
-        ax.plot(
-            t[mask],
-            az_est[mask],
-            label="est z",
-            linewidth=2,
-            linestyle="--",
-            color=line_z.get_color(),
-        )
-
-        ax.set_ylabel(f"{force_name} Accel (m/s²)")
-        ax.set_title(f"{force_name} Acceleration ({phase_name} Phase)")
-        ax.legend()
-        ax.grid(alpha=0.3)
-
-    axes[-1].set_xlabel("Time (s)")
-
-    if save_path:
-        _save_figure(Path(save_path), fig_name)
     else:
         plt.show()
     plt.close()

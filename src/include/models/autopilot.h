@@ -24,7 +24,12 @@ void get_flap_angular_velocity(double t, state *est_state,
                                double *dot_deflection) {
   dot_deflection[0] = 0;
   dot_deflection[1] = 0;
+
+  cartvec vhat = sdivide(est_state->velocity, norm(est_state->velocity));
+  cartvec a_est_transverse = subtract(a_imu, smultiply(vhat, dot(a_imu, vhat)));
+
   if (run_params->rv_maneuv != 1 || !is_reentry(est_state, t)) {
+    write_reentry_guidance_log_row(t, zeros(), a_est_transverse);
     return;
   }
   // Estimate dynamic pressure
@@ -65,8 +70,6 @@ void get_flap_angular_velocity(double t, state *est_state,
       clip(dot_deflection_2, -max_deflection_speed, max_deflection_speed);
 
   // Log acceleration command and transverse imu acceleration
-  cartvec vhat = sdivide(est_state->velocity, norm(est_state->velocity));
-  cartvec a_est_transverse = subtract(a_imu, smultiply(vhat, dot(a_imu, vhat)));
   write_reentry_guidance_log_row(t, a_cmd_E, a_est_transverse);
 }
 

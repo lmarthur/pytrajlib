@@ -8,42 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-quaternion align_roll_axis_with_velocity(cartvec velocity) {
-  // Normalize velocity
-  double v_norm_val = norm(velocity);
-  if (v_norm_val < 1e-12) {
-    return identity_quaternion(); // Default orientation
-  }
-  cartvec v_normalized = smultiply(velocity, 1.0 / v_norm_val);
-
-  // Create quaternion that rotates the roll axis [0,0,-1] to v_normalized
-  cartvec from = {0.0, 0.0, -1.0};
-
-  // Rotation axis: from × to
-  cartvec rot_axis = cross(from, v_normalized);
-  double axis_norm = norm(rot_axis);
-
-  if (axis_norm < 1e-12) {
-    // Aligned or opposite
-    double dot_prod = dot(from, v_normalized);
-    if (dot_prod > 0) {
-      return identity_quaternion();
-    } else {
-      // 180° rotation around Y-axis
-      return (quaternion){0.0, 0.0, 1.0, 0.0};
-    }
-  }
-
-  rot_axis = smultiply(rot_axis, 1.0 / axis_norm);
-  double angle = acos(dot(from, v_normalized));
-
-  // Quaternion from axis-angle
-  double half_angle = angle / 2.0;
-  return (quaternion){cos(half_angle), sin(half_angle) * rot_axis.x,
-                      sin(half_angle) * rot_axis.y,
-                      sin(half_angle) * rot_axis.z};
-}
-
 /**
  * Integrate body-to-ECI quaternion using the state's incremental orientation
  * angle change over the current step.

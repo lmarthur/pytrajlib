@@ -55,7 +55,7 @@ TEST(trajectory, fly) {
   run_params.integrator = 0;
   run_params.rv_type = 0;
   run_params.grav_error = 0;
-  run_params.include_drag = 0;
+  run_params.ballistic_drag = 1;
   run_params.atm_model = 0;
   run_params.gnss_nav = 0;
   run_params.rv_maneuv = 0;

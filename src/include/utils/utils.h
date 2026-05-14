@@ -9,8 +9,6 @@
 #include "constants.h"
 #include "runparams.h"
 
-#include "../models/state.h"
-
 /**
  * Calculates the altitude of a point above Earth's surface.
  *
@@ -109,7 +107,7 @@ void print_config(runparams *run_params) {
   printf("Latitudinal thrust angle: %f\n", run_params->theta_lat);
 
   printf("Gravitational perturbations: %d\n", run_params->grav_error);
-  printf("Include drag: %d\n", run_params->include_drag);
+  printf("Ballistic drag: %d\n", run_params->ballistic_drag);
   printf("Atmospheric model: %d\n", run_params->atm_model);
   printf("GNSS navigation: %d\n", run_params->gnss_nav);
   printf("Reentry phase guidance: %d\n", run_params->rv_maneuv);
@@ -238,6 +236,42 @@ double clip(double value, double min, double max) {
   } else {
     return value;
   }
+}
+
+quaternion align_roll_axis_with_vector(cartvec velocity) {
+  // Normalize velocity
+  double v_norm_val = norm(velocity);
+  if (v_norm_val < 1e-12) {
+    return identity_quaternion(); // Default orientation
+  }
+  cartvec v_normalized = smultiply(velocity, 1.0 / v_norm_val);
+
+  // Create quaternion that rotates the roll axis [0,0,-1] to v_normalized
+  cartvec from = {0.0, 0.0, -1.0};
+
+  // Rotation axis: from × to
+  cartvec rot_axis = cross(from, v_normalized);
+  double axis_norm = norm(rot_axis);
+
+  if (axis_norm < 1e-12) {
+    // Aligned or opposite
+    double dot_prod = dot(from, v_normalized);
+    if (dot_prod > 0) {
+      return identity_quaternion();
+    } else {
+      // 180° rotation around Y-axis
+      return (quaternion){0.0, 0.0, 1.0, 0.0};
+    }
+  }
+
+  rot_axis = smultiply(rot_axis, 1.0 / axis_norm);
+  double angle = acos(dot(from, v_normalized));
+
+  // Quaternion from axis-angle
+  double half_angle = angle / 2.0;
+  return (quaternion){cos(half_angle), sin(half_angle) * rot_axis.x,
+                      sin(half_angle) * rot_axis.y,
+                      sin(half_angle) * rot_axis.z};
 }
 
 #endif

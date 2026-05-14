@@ -75,29 +75,52 @@ static inline double flight_path_angle(cartvec position, cartvec velocity) {
  * See Regan 6.7 "Deployment Attitudes"
  */
 static inline void set_entry_angle(state *true_state, state *est_state,
-                                   runparams *run_params) {
+                                   runparams *run_params, vehicle *vehicle,
+                                   grav *grav) {
   cartvec aimpoint = {run_params->x_aim, run_params->y_aim, run_params->z_aim};
   double est_burnout_angle =
       flight_path_angle(est_state->position, est_state->velocity);
-  double entry_angle = -est_burnout_angle;
+
+  double current_est_speed = norm(est_state->velocity);
+  double current_r = norm(est_state->position);
+  double reentry_r = 100e3 + grav->earth_radius;
+  state reentry_est_state = (state){0};
+  reentry_est_state.position =
+      (cartvec){reentry_r, 0, 0}; // actual position does not matter for the
+                                  // gravity estimation, only the magnitude
+
+  double current_kinetic =
+      0.5 * vehicle->rv.rv_mass * current_est_speed * current_est_speed;
+  double current_potential = current_r * norm(get_gravity_acc(grav, est_state));
+  double reentry_potential =
+      reentry_r * norm(get_gravity_acc(grav, &reentry_est_state));
+
+  double reentry_est_speed =
+      sqrt((current_kinetic + current_potential - reentry_potential) * 2 /
+           vehicle->rv.rv_mass);
+  double reentry_angle =
+      acos(current_r * current_est_speed * cos(est_burnout_angle) /
+           (reentry_r * reentry_est_speed));
+  double entry_angle = -reentry_angle;
   double central_angle = acos(dot(aimpoint, est_state->position) /
                               (norm(aimpoint) * norm(est_state->position)));
   double rot_angle = est_burnout_angle - (entry_angle - central_angle);
-  cartvec rot_axis = cross(est_state->position, aimpoint);
-  cartvec hat_rot_axis = sdivide(rot_axis, norm(rot_axis));
+
+  cartvec rot_axis_E = cross(est_state->position, aimpoint);
+  cartvec hat_rot_axis_E = sdivide(rot_axis_E, norm(rot_axis_E));
 
   cartvec est_goal_entry_vector =
-      rotate(est_state->velocity, hat_rot_axis, rot_angle);
+      rotate(est_state->velocity, hat_rot_axis_E, rot_angle);
   est_goal_entry_vector =
       sdivide(est_goal_entry_vector, norm(est_goal_entry_vector));
 
   cartvec true_goal_entry_vector =
-      rotate(true_state->velocity, hat_rot_axis, rot_angle);
+      rotate(true_state->velocity, hat_rot_axis_E, rot_angle);
   true_goal_entry_vector =
       sdivide(true_goal_entry_vector, norm(true_goal_entry_vector));
 
-  true_state->q_EB = align_roll_axis_with_velocity(true_goal_entry_vector);
-  est_state->q_EB = align_roll_axis_with_velocity(est_goal_entry_vector);
+  true_state->q_EB = align_roll_axis_with_vector(true_goal_entry_vector);
+  est_state->q_EB = align_roll_axis_with_vector(est_goal_entry_vector);
 }
 
 /**
@@ -329,15 +352,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
       time_step = run_params->time_step_lambert;
     }
 
-    if (!burnout_captured && true_t > run_params->t_vert_boost) {
-      // Align body with velocity vector during boost phase because the vehicle
-      // is assumed to be oriented along the velocity vector during boost.
-      // Needed so that the IMU calculates accelerometer errors properly
-      // throughout boost
-      true_state.q_EB = align_roll_axis_with_velocity(true_state.velocity);
-      est_state.q_EB = align_roll_axis_with_velocity(est_state.velocity);
-    }
-
     // Check burnout event
     if (!burnout_captured && true_t > vehicle->booster.total_burn_time) {
       burnout_captured = 1;
@@ -357,8 +371,12 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
         atm_profile = parse_atm("input/atmprofiles.txt", atm_profile_num);
         sampled_new_profile = 1;
       }
-      // Post-boost attitude deployment
-      set_entry_angle(&true_state, &est_state, run_params);
+      // Post-boost attitude maneuver
+      set_entry_angle(&true_state, &est_state, run_params, vehicle, &est_grav);
+      // Assume the post-boost attitude-setting maneuver results in zero angular
+      // velocity
+      true_state.angular_vel_B = zeros();
+      est_state.angular_vel_B = zeros();
     }
 
     // Check reentry event. Use altitude of 120km rather than 100km so the
@@ -479,7 +497,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
  * Run a Monte Carlo trajectory simulation.
  *
  * @param run_params Run configuration parameters
- * @return Impact states for all runs
+ * @return Impact states for a single run
  */
 impact_data mc_run(runparams run_params) {
   uint64_t seed;
@@ -502,42 +520,24 @@ impact_data mc_run(runparams run_params) {
   }
   impact_data impact_data;
 
-#ifdef FROM_PYTHON
-  update_loading_bar(0, num_runs);
-#endif
+  vehicle vehicle;
 
-  for (int i = 0; i < num_runs; i++) {
-    vehicle vehicle;
-
-    if (run_params.rv_type == 0) {
-      vehicle = init_mmiii_ballistic(&run_params);
-    } else if (run_params.rv_type == 1) {
-      vehicle = init_mmiii_swerve(&run_params);
-    } else {
-      printf("Error: Invalid RV type\n");
-      exit(1);
-    }
-
-    state initial_true_state = init_true_state(&run_params);
-
-    impact_data.impact_states[i] =
-        fly(&run_params, &initial_true_state, &vehicle,
-            &impact_data.impact_times[i], &impact_data.burnout_speed[i],
-            &impact_data.burnout_altitude[i], &impact_data.burnout_angle[i],
-            &impact_data.apogee[i], &impact_data.reentry_speed[i],
-            &impact_data.reentry_angle[i]);
-
-#ifdef FROM_PYTHON
-    int five_percent = (int)(num_runs / 20);
-    five_percent = (int)clip(five_percent, 1, 100);
-    if ((i + 1) % five_percent == 0) {
-      update_loading_bar(i + 1, num_runs);
-    }
-    if (i == num_runs - 1) {
-      update_loading_bar(num_runs, num_runs);
-    }
-#endif
+  if (run_params.rv_type == 0) {
+    vehicle = init_mmiii_ballistic(&run_params);
+  } else if (run_params.rv_type == 1) {
+    vehicle = init_mmiii_swerve(&run_params);
+  } else {
+    printf("Error: Invalid RV type\n");
+    exit(1);
   }
+
+  state initial_true_state = init_true_state(&run_params);
+
+  impact_data.impact_states[0] = fly(
+      &run_params, &initial_true_state, &vehicle, &impact_data.impact_times[0],
+      &impact_data.burnout_speed[0], &impact_data.burnout_altitude[0],
+      &impact_data.burnout_angle[0], &impact_data.apogee[0],
+      &impact_data.reentry_speed[0], &impact_data.reentry_angle[0]);
 
   // Output the impact data
   return impact_data;

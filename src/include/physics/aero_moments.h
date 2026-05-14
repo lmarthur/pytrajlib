@@ -48,11 +48,18 @@ static inline cartvec get_body_moment(state *current_state, atm_cond *atm_cond,
   cartvec v_rel_E = get_relative_wind_eci(current_state, atm_cond);
   cartvec u_hat_E = sdivide(v_rel_E, norm(v_rel_E));
   cartvec u_hat_B = eci_to_body(u_hat_E, current_state->q_EB);
-  double alpha_deg = get_aoa(u_hat_B) * 180.0 / M_PI;
 
-  // Interpolate the coefficient tables using the angle of attack
-  double C_M = interpolate_swerve_coeff(alpha_deg, SWERVE_CM_TABLE);
-  double C_Mq = interpolate_swerve_coeff(alpha_deg, SWERVE_CMQ_TABLE);
+  double alpha = get_aoa(u_hat_B);
+  double C_M, C_Mq;
+  if (strcmp(vehicle->rv.name, "SWERVE") == 0) {
+    // Interpolate the coefficient tables using the angle of attack
+    double alpha_deg = alpha * 180.0 / M_PI;
+    C_Mq = interpolate_swerve_coeff(alpha_deg, SWERVE_CMQ_TABLE);
+    C_M = interpolate_swerve_coeff(alpha_deg, SWERVE_CM_TABLE);
+  } else {
+    C_M = vehicle->rv.c_m_alpha * alpha;
+    C_Mq = vehicle->rv.c_m_q;
+  }
 
   // Calculate dynamic pressure
   double v_rel = norm(v_rel_E);
@@ -128,17 +135,17 @@ static inline cartvec sum_incremental_moments(state *current_state,
   return sum_moments;
 }
 
-static inline cartvec get_angular_acceleration(double t, state *current_state,
+static inline cartvec get_angular_acceleration(double t, state *true_state,
                                                atm_cond *atm_cond,
                                                vehicle *vehicle,
                                                runparams *run_params) {
-  if (run_params->rv_maneuv != 1 || !is_reentry(current_state, t)) {
+  if (run_params->rv_maneuv != 1 || !is_reentry(true_state, t)) {
     return zeros();
   }
   // Get body moment + sum incremental moments from the flaps
-  cartvec body_moment = get_body_moment(current_state, atm_cond, vehicle);
+  cartvec body_moment = get_body_moment(true_state, atm_cond, vehicle);
   cartvec incremental_flap_moment =
-      sum_incremental_moments(current_state, atm_cond, vehicle, run_params);
+      sum_incremental_moments(true_state, atm_cond, vehicle, run_params);
   cartvec total_moment = add(body_moment, incremental_flap_moment);
 
   // We neglect angular acceleration around the roll axis

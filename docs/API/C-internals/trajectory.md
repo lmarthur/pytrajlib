@@ -17,6 +17,34 @@ Calculate flight path angle relative to local horizon.
 | --- | --- |
 | `static inline double` | Flight path angle in radians |
 
+## `set_entry_angle`
+
+Target angle = initial angle + rotation
+
+Assuming the entry angle = -burnout angle (not entirely true; burnout is
+~170km, entry is 100km) Initial angle = 90 - burnout flight path angle Target
+angle = 90 - entry angle + central angle between position and aimpoint
+(simplifying assumption that reentry is close to the aimpoint)
+-->
+rotation = burnout flight path angle - entry angle + central angle
+See Regan 6.7 "Deployment Attitudes"
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `true_state` | `state *` |  |
+| `est_state` | `state *` |  |
+| `run_params` | `runparams *` |  |
+| `vehicle` | `vehicle *` |  |
+| `grav` | `grav *` |  |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `static inline void` |  |
+
 ## `impact_linterp`
 
 Interpolate between two states to estimate impact crossing at altitude 0.
@@ -149,4 +177,4 @@ Run a Monte Carlo trajectory simulation.
 
 | Type | Description |
 | --- | --- |
-| `impact_data` | Impact states for all runs |
+| `impact_data` | Impact states for a single run |
