@@ -270,6 +270,23 @@ Elementwise multiplication of two angle vectors.
 | --- | --- |
 | `anglevec` | Elementwise product. |
 
+## `multiply_cartvec`
+
+Elementwise multiplication of two cartvecs.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `a` | `cartvec` | First cartvec. |
+| `b` | `cartvec` | Second cartvec. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `cartvec` | Elementwise product. |
+
 ## `add`
 
 Add vector b to vector a.

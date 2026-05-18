@@ -16,9 +16,9 @@ typedef struct state {
                      // the x-z plane in radians
   double theta_lat;  // thrust angle in the latitudinal direction measured from
                      // the x-y plane in radians
-  anglevec orientation_angle_change; // incremental body orientation change
-  double delta_1;                    // flap pair {1, 3} deflection extent
-  double delta_2;                    // flap pair {2, 4} deflection extent
+  cartvec orientation_angle_change; // incremental body orientation change
+  double delta_1;                   // flap pair {1, 3} deflection extent
+  double delta_2;                   // flap pair {2, 4} deflection extent
 
 } state;
 /**
@@ -58,7 +58,7 @@ state init_true_state(runparams *run_params) {
   state.delta_1 = 0;
   state.delta_2 = 0;
   state.orientation_angle_change =
-      (anglevec){initial_theta_lat_pert, initial_theta_long_pert};
+      (cartvec){initial_theta_long_pert, initial_theta_lat_pert, 0};
 
   return state;
 }
@@ -85,7 +85,7 @@ state init_est_state(runparams *run_params) {
   state.theta_lat = run_params->theta_lat;
   state.delta_1 = 0;
   state.delta_2 = 0;
-  state.orientation_angle_change = (anglevec){0};
+  state.orientation_angle_change = (cartvec){0};
 
   return state;
 }
@@ -105,7 +105,7 @@ state add_state(state a, state b) {
   result.delta_1 = a.delta_1 + b.delta_1;
   result.delta_2 = a.delta_2 + b.delta_2;
   result.orientation_angle_change =
-      add_anglevec(a.orientation_angle_change, b.orientation_angle_change);
+      add(a.orientation_angle_change, b.orientation_angle_change);
 
   return result;
 }
@@ -124,8 +124,7 @@ state smultiply_state(state a, double s) {
   result.theta_lat = a.theta_lat * s;
   result.delta_1 = a.delta_1 * s;
   result.delta_2 = a.delta_2 * s;
-  result.orientation_angle_change =
-      smultiply_angle(a.orientation_angle_change, s);
+  result.orientation_angle_change = smultiply(a.orientation_angle_change, s);
 
   return result;
 }

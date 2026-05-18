@@ -84,7 +84,7 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
   true_state_drift->velocity = a_total_true;
   true_state_drift->angular_vel_B = angular_acceleration_B;
   true_state_drift->orientation_angle_change =
-      (anglevec){true_state->angular_vel_B.y, true_state->angular_vel_B.x};
+      (cartvec){true_state->angular_vel_B.x, true_state->angular_vel_B.y, 0};
   true_state_drift->delta_1 = dot_deflection[0];
   true_state_drift->delta_2 = dot_deflection[1];
 
@@ -92,9 +92,9 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
   est_state_drift->position = est_state->velocity;
   est_state_drift->velocity = a_total_est;
   est_state_drift->angular_vel_B = zeros();
-  est_state_drift->orientation_angle_change =
-      (anglevec){true_state->angular_vel_B.y + imu->gyro_bias.pitch,
-                 true_state->angular_vel_B.x + imu->gyro_bias.yaw};
+  est_state_drift->orientation_angle_change = (cartvec){
+      true_state->angular_vel_B.x + imu->gyro_bias.x,
+      true_state->angular_vel_B.y + imu->gyro_bias.y, imu->gyro_bias.z};
   est_state_drift->delta_1 = dot_deflection[0];
   est_state_drift->delta_2 = dot_deflection[1];
   return 1;
@@ -113,8 +113,9 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
  *                            initialize to `{0}` before passing.
  */
 void diffusion(imu *imu, state *est_state_diffusion) {
-  est_state_diffusion->orientation_angle_change.pitch = get_gyro_diffusion(imu);
-  est_state_diffusion->orientation_angle_change.yaw = get_gyro_diffusion(imu);
+  est_state_diffusion->orientation_angle_change.x = get_gyro_diffusion(imu);
+  est_state_diffusion->orientation_angle_change.y = get_gyro_diffusion(imu);
+  est_state_diffusion->orientation_angle_change.z = get_gyro_diffusion(imu);
 }
 
 #endif

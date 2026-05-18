@@ -16,7 +16,7 @@ typedef struct imu {
   double gyro_bias_stability; // Gyro bias (rad/s)
   double gyro_noise;          // Gyro noise/random walk (rad/s/sqrt(s))
 
-  anglevec gyro_bias; // Gyro bias (rad/s)
+  cartvec gyro_bias; // Gyro bias (rad/s)
 
 } imu;
 
@@ -36,8 +36,8 @@ imu imu_init(runparams *run_params, state *initial_state) {
   imu.gyro_bias_stability = run_params->gyro_bias_stability;
   imu.gyro_noise = run_params->gyro_noise;
 
-  imu.gyro_bias.pitch = imu.gyro_bias_stability * ran_gaussian(1); // rad/s
-  imu.gyro_bias.yaw = imu.gyro_bias_stability * ran_gaussian(1);   // rad/s
+  imu.gyro_bias =
+      smultiply(gaussian_cartvec(), imu.gyro_bias_stability); // rad/s
 
   return imu;
 }
@@ -89,7 +89,7 @@ cartvec imu_measurement(imu *imu, runparams *run_params,
 /**
  * Get drift component of gyro error (scales with dt)
  */
-anglevec get_gyro_drift(imu *imu) { return imu->gyro_bias; }
+cartvec get_gyro_drift(imu *imu) { return imu->gyro_bias; }
 
 /**
  * Get stochastic diffusion component of gyro error (scales with sqrt(dt))

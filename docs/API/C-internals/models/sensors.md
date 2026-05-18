@@ -56,7 +56,7 @@ Get drift component of gyro error (scales with dt)
 
 | Type | Description |
 | --- | --- |
-| `anglevec` |  |
+| `cartvec` |  |
 
 ## `get_gyro_diffusion`
 

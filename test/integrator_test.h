@@ -76,8 +76,8 @@ static void physics_test_constant_diffusion(imu *imu,
                                             state *est_state_diffusion) {
   (void)imu;
   *est_state_diffusion = (state){0};
-  est_state_diffusion->orientation_angle_change.pitch = 2.0;
-  est_state_diffusion->orientation_angle_change.yaw = -3.0;
+  est_state_diffusion->orientation_angle_change.x = 2.0;
+  est_state_diffusion->orientation_angle_change.y = -3.0;
 }
 
 // Parameters/helpers for deterministic scalar exponential decay,
@@ -115,12 +115,12 @@ static void exp_decay_zero_diffusion(imu *imu, state *est_state_diffusion) {
 
 TEST(integrator, integrate_quaternion_step) {
   // Case 1: identity attitude with a delta rotation about the body X axis
-  // represented via `orientation_angle_change`. The integrator maps
-  // orientation_angle_change.yaw -> delta_angle_B.x, pitch -> delta_angle_B.y.
+  // represented via `orientation_angle_change` as a 3-vector `delta_angle_B`.
   state s = {0};
   s.q_EB = identity_quaternion();
-  s.orientation_angle_change.pitch = 0.0;
-  s.orientation_angle_change.yaw = M_PI; // delta vector = (pi, 0, 0)
+  s.orientation_angle_change.x = M_PI; // delta vector = (pi, 0, 0)
+  s.orientation_angle_change.y = 0.0;
+  s.orientation_angle_change.z = 0.0;
 
   quaternion q1 = integrate_quaternion_step(s);
   REQUIRE_LT(fabs(q1.w), 1e-12);
@@ -131,7 +131,7 @@ TEST(integrator, integrate_quaternion_step) {
   // Case 2: excessive-length quaternion should be normalized to unit length
   state s_bad = {0};
   s_bad.q_EB = (quaternion){2.0, -1.0, 0.5, -0.25};
-  s_bad.orientation_angle_change = (anglevec){0};
+  s_bad.orientation_angle_change = (cartvec){0};
   quaternion q2 = integrate_quaternion_step(s_bad);
   REQUIRE_LT(fabs(qnorm(q2) - 1.0), 1e-12);
 }
@@ -238,7 +238,7 @@ TEST(integrator, euler_maruyama_step_diffusion) {
   // Seed the RNG so the sampled Wiener increment is reproducible.
   init_genrand64(UINT64_C(12345));
   reset_ran_gaussian();
-  anglevec expected_dW = smultiply_angle(gaussian_anglevec(), sqrt(0.25));
+  cartvec expected_dW = smultiply(gaussian_cartvec(), sqrt(0.25));
 
   // Reset the RNG so the integrator sees the exact same random draw.
   init_genrand64(UINT64_C(12345));
@@ -256,8 +256,8 @@ TEST(integrator, euler_maruyama_step_diffusion) {
                                     physics_test_constant_diffusion);
 
   REQUIRE_EQ(success, 1);
-  REQUIRE_EQ(est_state.orientation_angle_change.pitch, 2.0 * expected_dW.pitch);
-  REQUIRE_EQ(est_state.orientation_angle_change.yaw, -3.0 * expected_dW.yaw);
+  REQUIRE_EQ(est_state.orientation_angle_change.x, 2.0 * expected_dW.x);
+  REQUIRE_EQ(est_state.orientation_angle_change.y, -3.0 * expected_dW.y);
 }
 
 TEST(integrator, em_sra3_exponential_decay_agree) {

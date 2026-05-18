@@ -258,6 +258,21 @@ anglevec multiply_anglevec(anglevec a, anglevec b) {
 }
 
 /**
+ * Elementwise multiplication of two cartvecs.
+ *
+ * @param a First cartvec.
+ * @param b Second cartvec.
+ * @return Elementwise product.
+ */
+cartvec multiply_cartvec(cartvec a, cartvec b) {
+  cartvec result;
+  result.x = a.x * b.x;
+  result.y = a.y * b.y;
+  result.z = a.z * b.z;
+  return result;
+}
+
+/**
  * Add vector b to vector a.
  *
  * @param a First vector.

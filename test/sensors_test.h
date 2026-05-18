@@ -13,8 +13,9 @@ TEST(sensors, imu_init) {
   REQUIRE_EQ(norm(imu.acc_scale), 0);
   REQUIRE_EQ(imu.gyro_bias_stability, run_params.gyro_bias_stability);
   REQUIRE_EQ(imu.gyro_noise, run_params.gyro_noise);
-  REQUIRE_EQ(imu.gyro_bias.pitch, 0);
-  REQUIRE_EQ(imu.gyro_bias.yaw, 0);
+  REQUIRE_EQ(imu.gyro_bias.x, 0);
+  REQUIRE_EQ(imu.gyro_bias.y, 0);
+  REQUIRE_EQ(imu.gyro_bias.z, 0);
 }
 
 TEST(sensors, imu_meas) {

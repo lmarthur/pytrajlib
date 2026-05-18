@@ -16,8 +16,7 @@
  * q_{k+1} = normalize(q_k \otimes \delta q).
  */
 static inline quaternion integrate_quaternion_step(state current_state) {
-  cartvec delta_angle_B = {current_state.orientation_angle_change.yaw,
-                           current_state.orientation_angle_change.pitch, 0.0};
+  cartvec delta_angle_B = current_state.orientation_angle_change;
   double theta = norm(delta_angle_B);
   double half_theta = 0.5 * theta;
 
@@ -44,7 +43,7 @@ static inline quaternion integrate_quaternion_step(state current_state) {
 }
 
 state sra3_H(state drift_evals[3], state diffusion_evals[3], state Y, int i,
-             anglevec I0, double time_step) {
+             cartvec I0, double time_step) {
   const double A0[3][3] = {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.25, 0.25, 0.0}};
   const double B0[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {1.0, 0.5, 0.0}};
 
@@ -53,9 +52,11 @@ state sra3_H(state drift_evals[3], state diffusion_evals[3], state Y, int i,
     H = add_state(H, smultiply_state(drift_evals[j], A0[i][j] * time_step));
 
     state diffusion_update = {0};
-    anglevec stochastic_scale = smultiply_angle(I0, B0[i][j]);
-    diffusion_update.orientation_angle_change = multiply_anglevec(
+    cartvec stochastic_scale = smultiply(I0, B0[i][j]);
+
+    diffusion_update.orientation_angle_change = multiply_cartvec(
         diffusion_evals[j].orientation_angle_change, stochastic_scale);
+
     H = add_state(H, diffusion_update);
   }
 
@@ -123,13 +124,13 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
 
   // Only draw a single dW because all of the diffusion terms are related to the
   // gyroscope measurement
-  anglevec dW = smultiply_angle(gaussian_anglevec(), sqrt(time_step));
-  true_state->orientation_angle_change = add_anglevec(
-      smultiply_angle(true_state_drift.orientation_angle_change, time_step),
-      multiply_anglevec(true_state_diffusion.orientation_angle_change, dW));
-  est_state->orientation_angle_change = add_anglevec(
-      smultiply_angle(est_state_drift.orientation_angle_change, time_step),
-      multiply_anglevec(est_state_diffusion.orientation_angle_change, dW));
+  cartvec dW = smultiply(gaussian_cartvec(), sqrt(time_step));
+  true_state->orientation_angle_change =
+      add(smultiply(true_state_drift.orientation_angle_change, time_step),
+          multiply_cartvec(true_state_diffusion.orientation_angle_change, dW));
+  est_state->orientation_angle_change =
+      add(smultiply(est_state_drift.orientation_angle_change, time_step),
+          multiply_cartvec(est_state_diffusion.orientation_angle_change, dW));
 
   true_state->q_EB = integrate_quaternion_step(*true_state);
   est_state->q_EB = integrate_quaternion_step(*est_state);
@@ -191,11 +192,10 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   state est_state_drift_update = {0};
   state est_state_diffusion_update = {0};
 
-  anglevec dW = smultiply_angle(gaussian_anglevec(), sqrt(time_step));
-  anglevec zeta = smultiply_angle(gaussian_anglevec(), sqrt(time_step));
-  anglevec I0;
-  I0.pitch = 0.5 * (dW.pitch + (1.0 / sqrt(3.0)) * zeta.pitch);
-  I0.yaw = 0.5 * (dW.yaw + (1.0 / sqrt(3.0)) * zeta.yaw);
+  cartvec dW = smultiply(gaussian_cartvec(), sqrt(time_step));
+  cartvec zeta = smultiply(gaussian_cartvec(), sqrt(time_step));
+  cartvec I0;
+  I0 = smultiply(add(dW, smultiply(zeta, 1.0 / sqrt(3.0))), 0.5);
 
   for (int i = 0; i < num_stages; i++) {
     diffusion_fn(imu, &est_state_diffusion_eval[i]);
@@ -230,18 +230,18 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   }
 
   for (int i = 0; i < num_stages; i++) {
-    anglevec stochastic_gain = add_anglevec(smultiply_angle(dW, beta1[i]),
-                                            smultiply_angle(I0, beta2[i]));
+    cartvec stochastic_gain =
+        add(smultiply(dW, beta1[i]), smultiply(I0, beta2[i]));
 
-    true_state_diffusion_update.orientation_angle_change = add_anglevec(
+    true_state_diffusion_update.orientation_angle_change = add(
         true_state_diffusion_update.orientation_angle_change,
-        multiply_anglevec(true_state_diffusion_eval[i].orientation_angle_change,
-                          stochastic_gain));
+        multiply_cartvec(true_state_diffusion_eval[i].orientation_angle_change,
+                         stochastic_gain));
 
-    est_state_diffusion_update.orientation_angle_change = add_anglevec(
+    est_state_diffusion_update.orientation_angle_change = add(
         est_state_diffusion_update.orientation_angle_change,
-        multiply_anglevec(est_state_diffusion_eval[i].orientation_angle_change,
-                          stochastic_gain));
+        multiply_cartvec(est_state_diffusion_eval[i].orientation_angle_change,
+                         stochastic_gain));
   }
 
   state true_state_total_update =
