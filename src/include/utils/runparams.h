@@ -71,6 +71,8 @@ typedef struct runparams {
   double rv_radius;    // RV base radius in m
   double rv_c_d_0;     // RV zero-lift drag coefficient
   double rv_c_d_alpha; // RV drag coefficient derivative (per radian)
+  double rv_c_m_delta; // RV moment coefficient derivative per radian of flap
+                       // deflection
 
   // Booster parameter overrides (-1 = use vehicle type default)
   double booster_area;     // Booster reference area in m^2

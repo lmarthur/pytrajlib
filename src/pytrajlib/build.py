@@ -73,6 +73,7 @@ ffibuilder.cdef(
         double rv_radius;
         double rv_c_d_0;
         double rv_c_d_alpha;
+        double rv_c_m_delta;
 
         double booster_area;
         double booster_maxdiam;

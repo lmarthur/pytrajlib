@@ -58,6 +58,7 @@ rv_length = 2.75
 rv_radius = 0.23
 rv_c_d_0 = 0.0180
 rv_c_d_alpha = 0.487
+rv_c_m_delta = 0.059
 booster_area = 2.2698
 booster_maxdiam = 1.7
 booster_c_d_0 = 0.15

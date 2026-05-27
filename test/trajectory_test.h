@@ -46,7 +46,7 @@ TEST(trajectory, fly) {
   run_params.traj_output = 0;
   run_params.time_step_lambert = 1;
   run_params.time_step_midcourse = 1;
-  run_params.time_step_atm = 1;
+  run_params.time_step_reentry = 1;
   run_params.x_aim = EARTH_RADIUS_M;
   run_params.y_aim = 0;
   run_params.z_aim = 0;

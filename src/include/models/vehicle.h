@@ -249,6 +249,7 @@ void apply_vehicle_overrides(vehicle *vehicle, runparams *run_params) {
   vehicle->rv.rv_area = M_PI * run_params->rv_radius * run_params->rv_radius;
   vehicle->rv.c_d_0 = run_params->rv_c_d_0;
   vehicle->rv.c_d_alpha = run_params->rv_c_d_alpha;
+  vehicle->rv.c_m_delta = run_params->rv_c_m_delta;
 
   vehicle->booster.area = run_params->booster_area;
   vehicle->booster.maxdiam = run_params->booster_maxdiam;
