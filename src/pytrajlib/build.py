@@ -51,7 +51,8 @@ ffibuilder.cdef(
         double gearing_ratio;
         double actuator_resolution;
         double max_deflection_angle;
-        double nav_gain;
+        double nav_gain_0;
+        double nav_gain_1;
         double tau_deflect;
 
         double initial_x_error;

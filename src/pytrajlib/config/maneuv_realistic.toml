@@ -49,9 +49,11 @@ deflection_time = 0.02
 actuator_force = 100
 gearing_ratio = 1
 actuator_resolution = 1e-3
-max_deflection_angle = 10.0
-nav_gain = 2.059697723
-tau_deflect = 0.445824242
+max_deflection_angle = 5.0
+nav_gain_0 = 10.11157952873111
+nav_gain_1 = 0.9570502146004836
+tau_deflect = 0.44159947682865963
+
 # Vehicle parameter defaults (SWERVE RV + MMIII booster)
 rv_mass = 450.0
 rv_length = 2.75

@@ -443,6 +443,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     // Convert resolution from degrees to radians
     double resolution = run_params->actuator_resolution * M_PI / 180;
     double max_extent = run_params->max_deflection_angle * M_PI / 180;
+
+    // Set flap saturation limits
     double clipped_delta_1 =
         clip(fmod(true_state.delta_1, 2 * M_PI), -max_extent, max_extent);
     double clipped_delta_2 =

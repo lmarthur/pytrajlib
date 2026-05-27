@@ -39,13 +39,16 @@ static inline void init_run_logging(const char *trajectory_path) {
   if (trajectory_log_file == NULL) {
     printf("Warning: could not open trajectory log at %s\n", trajectory_path);
   } else {
-    fprintf(trajectory_log_file, "t, current_mass, x, y, z, vx, vy, vz, "
-                                 "a_lift, est_x, est_y, est_z, est_vx, "
-                                 "est_vy, est_vz, "
-                                 "true_delta_1, true_delta_2, "
-                                 "est_delta_1, est_delta_2, u1, u2, u3, "
-                                 "true_q_w, true_q_x, true_q_y, true_q_z, "
-                                 "est_q_w, est_q_x, est_q_y, est_q_z \n");
+    fprintf(trajectory_log_file,
+            "t, current_mass, x, y, z, vx, vy, vz, "
+            "a_lift, est_x, est_y, est_z, est_vx, "
+            "est_vy, est_vz, "
+            "true_delta_1, true_delta_2, "
+            "est_delta_1, est_delta_2, u1, u2, u3, "
+            "true_q_w, true_q_x, true_q_y, true_q_z, "
+            "est_q_w, est_q_x, est_q_y, est_q_z, "
+            "true_omega_B_1, true_omega_B_2, true_omega_B_3, "
+            "est_omega_B_1, est_omega_B_2, est_omega_B_3 \n");
   }
 
   char guidance_path[4096];
@@ -58,7 +61,9 @@ static inline void init_run_logging(const char *trajectory_path) {
   } else {
     fprintf(reentry_guidance_log_file,
             "t, a_cmd_x, a_cmd_y, a_cmd_z, "
-            "a_total_est_x, a_total_est_y, a_total_est_z\n");
+            "a_total_est_x, a_total_est_y, a_total_est_z, "
+            "desired_aoa_deg, desired_delta_1, desired_delta_2, "
+            "desired_omega_B_1, desired_omega_B_2, desired_omega_B_3\n");
   }
 }
 
@@ -90,7 +95,8 @@ static inline void write_trajectory_log_row(double t, double current_mass,
 
   fprintf(trajectory_log_file,
           "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n",
+          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
+          "%g, %g, %g, %g, %g, %g\n",
           t, current_mass, true_state->position.x, true_state->position.y,
           true_state->position.z, true_state->velocity.x,
           true_state->velocity.y, true_state->velocity.z, 0.0,
@@ -100,18 +106,24 @@ static inline void write_trajectory_log_row(double t, double current_mass,
           est_state->delta_2, u_hat_B.x, u_hat_B.y, u_hat_B.z,
           true_state->q_EB.w, true_state->q_EB.x, true_state->q_EB.y,
           true_state->q_EB.z, est_state->q_EB.w, est_state->q_EB.x,
-          est_state->q_EB.y, est_state->q_EB.z);
+          est_state->q_EB.y, est_state->q_EB.z, true_state->angular_vel_B.x,
+          true_state->angular_vel_B.y, true_state->angular_vel_B.z,
+          est_state->angular_vel_B.x, est_state->angular_vel_B.y,
+          est_state->angular_vel_B.z);
 }
 
-static inline void write_reentry_guidance_log_row(double t, cartvec a_cmd_E,
-                                                  cartvec a_total_est) {
+static inline void write_reentry_guidance_log_row(
+    double t, cartvec a_cmd_E, cartvec a_total_est, double desired_aoa_deg,
+    cartvec desired_flap_deflection, cartvec desired_omega_B) {
   if (reentry_guidance_log_file == NULL) {
     return;
   }
 
-  fprintf(reentry_guidance_log_file, "%g, %g, %g, %g, %g, %g, %g\n", t,
-          a_cmd_E.x, a_cmd_E.y, a_cmd_E.z, a_total_est.x, a_total_est.y,
-          a_total_est.z);
+  fprintf(reentry_guidance_log_file,
+          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n", t, a_cmd_E.x,
+          a_cmd_E.y, a_cmd_E.z, a_total_est.x, a_total_est.y, a_total_est.z,
+          desired_aoa_deg, desired_flap_deflection.x, desired_flap_deflection.y,
+          desired_omega_B.x, desired_omega_B.y, desired_omega_B.z);
 }
 
 #endif

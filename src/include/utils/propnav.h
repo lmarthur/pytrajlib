@@ -1,6 +1,7 @@
 #ifndef PROPNAV_H
 #define PROPNAV_H
 
+#include "../models/atmosphere.h"
 #include "../models/grav.h"
 #include "../models/state.h"
 #include "../physics/gravity.h"
@@ -30,8 +31,11 @@ cartvec prop_nav(state *estimated_state, runparams *run_params) {
 
   // Calculate the acceleration command by taking the cross product of the
   // relative velocity and the rotation vector, scaled by the navigation gain
+  double gain = run_params->nav_gain_0 +
+                (run_params->nav_gain_1 - run_params->nav_gain_0) / 120e3 *
+                    get_altitude(estimated_state->position);
   cartvec cross_v_rot = cross(v_rel, rot);
-  cartvec a_command = smultiply(cross_v_rot, run_params->nav_gain);
+  cartvec a_command = smultiply(cross_v_rot, gain);
 
   return a_command;
 }

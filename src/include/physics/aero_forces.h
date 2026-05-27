@@ -82,6 +82,9 @@ static inline cartvec get_body_lift_direction(cartvec u_hat_B) {
   cartvec lift_raw = subtract(e3_B, smultiply(u_hat_B, dot(u_hat_B, e3_B)));
   double lift_raw_norm = norm(lift_raw);
   if (lift_raw_norm < 1e-10) {
+    printf(
+        "Warning: lift direction is near singular for u_hat_B = (%g, %g, %g)\n",
+        u_hat_B.x, u_hat_B.y, u_hat_B.z);
     return zeros();
   }
   return sdivide(lift_raw, lift_raw_norm);

@@ -9,12 +9,12 @@
 TEST(guidance, prop_nav_radial_velocity_zero) {
   runparams run_params = {0};
   state estimated_state = init_true_state(&run_params);
-  grav grav_model = init_grav(&run_params);
 
   run_params.x_aim = EARTH_RADIUS_M;
   run_params.y_aim = 0;
   run_params.z_aim = 0;
-  run_params.nav_gain = 3.0;
+  run_params.nav_gain_0 = 3.0;
+  run_params.nav_gain_1 = 5.0;
 
   estimated_state.position.x = EARTH_RADIUS_M;
   estimated_state.position.y = 10000;
@@ -35,12 +35,12 @@ TEST(guidance, prop_nav_radial_velocity_zero) {
 TEST(guidance, prop_nav_perp_velocity_magnitude_and_direction) {
   runparams run_params = {0};
   state estimated_state = init_true_state(&run_params);
-  grav grav_model = init_grav(&run_params);
 
   run_params.x_aim = EARTH_RADIUS_M;
   run_params.y_aim = 0;
   run_params.z_aim = 0;
-  run_params.nav_gain = 3.0;
+  run_params.nav_gain_0 = 3.0;
+  run_params.nav_gain_1 = 5.0;
 
   estimated_state.position.x = EARTH_RADIUS_M;
   estimated_state.position.y = 10000;
@@ -57,7 +57,10 @@ TEST(guidance, prop_nav_perp_velocity_magnitude_and_direction) {
                estimated_state.position);
   double r_norm = norm(r_target);
   double v_norm = norm(estimated_state.velocity);
-  double expected = run_params.nav_gain * (v_norm * v_norm) / r_norm;
+  double gain = run_params.nav_gain_0 +
+                (run_params.nav_gain_1 - run_params.nav_gain_0) / 120e3 *
+                    get_altitude(estimated_state.position);
+  double expected = gain * (v_norm * v_norm) / r_norm;
 
   double a_norm = norm(a_command);
   double rel_err = fabs(a_norm - expected) / (expected + 1e-12);

@@ -171,7 +171,7 @@ def create_traj_plots(
     trajectory_df.columns = trajectory_df.columns.str.strip()
 
     # Speed up plot generation by subsampling
-    trajectory_df = trajectory_df[::100]
+    trajectory_df = trajectory_df[::10]
     # Extract columns
     t = trajectory_df["t"].values
     x, y, z = (
@@ -199,6 +199,12 @@ def create_traj_plots(
     # Extract flap-pair deflections
     delta_1 = trajectory_df["true_delta_1"].values
     delta_2 = trajectory_df["true_delta_2"].values
+    desired_delta_1 = None
+    desired_delta_2 = None
+    desired_aoa_deg = None
+    desired_omega_B_1 = None
+    desired_omega_B_2 = None
+    desired_omega_B_3 = None
 
     has_quaternion = {
         "true_q_w",
@@ -220,6 +226,22 @@ def create_traj_plots(
         est_q_y = trajectory_df["est_q_y"].values
         est_q_z = trajectory_df["est_q_z"].values
 
+    has_omega_body = {
+        "true_omega_B_1",
+        "true_omega_B_2",
+        "true_omega_B_3",
+        "est_omega_B_1",
+        "est_omega_B_2",
+        "est_omega_B_3",
+    }.issubset(trajectory_df.columns)
+    if has_omega_body:
+        true_omega_B_1 = trajectory_df["true_omega_B_1"].values
+        true_omega_B_2 = trajectory_df["true_omega_B_2"].values
+        true_omega_B_3 = trajectory_df["true_omega_B_3"].values
+        est_omega_B_1 = trajectory_df["est_omega_B_1"].values
+        est_omega_B_2 = trajectory_df["est_omega_B_2"].values
+        est_omega_B_3 = trajectory_df["est_omega_B_3"].values
+
     has_wind_components = {"u1", "u2", "u3"}.issubset(trajectory_df.columns)
     if has_wind_components:
         u1 = trajectory_df["u1"].values
@@ -236,10 +258,83 @@ def create_traj_plots(
     midcourse_mask = (t > 188) & (altitude >= 1e5)
     reentry_mask = (t > 188) & (altitude < 1e5)
 
+    if guidance_df is not None:
+        guidance_df = guidance_df.copy()
+        guidance_df.columns = guidance_df.columns.str.strip()
+        required_columns = {"t", "desired_delta_1", "desired_delta_2"}
+        if required_columns.issubset(guidance_df.columns):
+            t_reentry = t[reentry_mask]
+            if t_reentry.size > 0:
+                t0 = float(t_reentry.min())
+                t1 = float(t_reentry.max())
+                guidance_df = guidance_df[
+                    (guidance_df["t"] >= t0) & (guidance_df["t"] <= t1)
+                ]
+                guidance_df = guidance_df[::10]
+                desired_aoa_raw = (
+                    guidance_df["desired_aoa_deg"].values
+                    if "desired_aoa_deg" in guidance_df.columns
+                    else None
+                )
+                desired_delta_1_raw = guidance_df["desired_delta_1"].values
+                desired_delta_2_raw = guidance_df["desired_delta_2"].values
+                desired_omega_B_1_raw = (
+                    guidance_df["desired_omega_B_1"].values
+                    if "desired_omega_B_1" in guidance_df.columns
+                    else None
+                )
+                desired_omega_B_2_raw = (
+                    guidance_df["desired_omega_B_2"].values
+                    if "desired_omega_B_2" in guidance_df.columns
+                    else None
+                )
+                desired_omega_B_3_raw = (
+                    guidance_df["desired_omega_B_3"].values
+                    if "desired_omega_B_3" in guidance_df.columns
+                    else None
+                )
+                if desired_delta_1_raw.size > 0:
+                    if desired_delta_1_raw.size == t_reentry.size:
+                        desired_aoa_deg = desired_aoa_raw
+                        desired_delta_1 = desired_delta_1_raw
+                        desired_delta_2 = desired_delta_2_raw
+                        desired_omega_B_1 = desired_omega_B_1_raw
+                        desired_omega_B_2 = desired_omega_B_2_raw
+                        desired_omega_B_3 = desired_omega_B_3_raw
+                    else:
+                        sample_idx = np.linspace(
+                            0,
+                            desired_delta_1_raw.size - 1,
+                            t_reentry.size,
+                        ).astype(int)
+                        if desired_aoa_raw is not None:
+                            desired_aoa_deg = desired_aoa_raw[sample_idx]
+                        desired_delta_1 = desired_delta_1_raw[sample_idx]
+                        desired_delta_2 = desired_delta_2_raw[sample_idx]
+                        if desired_omega_B_1_raw is not None:
+                            desired_omega_B_1 = desired_omega_B_1_raw[sample_idx]
+                        if desired_omega_B_2_raw is not None:
+                            desired_omega_B_2 = desired_omega_B_2_raw[sample_idx]
+                        if desired_omega_B_3_raw is not None:
+                            desired_omega_B_3 = desired_omega_B_3_raw[sample_idx]
+
     plots = {
         "position": lambda: _plot_position(t, x, y, z, est_x, est_y, est_z, save_path),
         "position_error": lambda: _plot_position_error(
             t, x, y, z, est_x, est_y, est_z, save_path
+        ),
+        "position_phases": lambda: _plot_position_phases(
+            t,
+            x,
+            y,
+            z,
+            est_x,
+            est_y,
+            est_z,
+            boost_mask,
+            midcourse_mask,
+            reentry_mask,
+            save_path,
         ),
         "altitude": lambda: _plot_altitude(t, altitude, est_altitude, save_path),
         "altitude_error": lambda: _plot_altitude_error(
@@ -276,6 +371,8 @@ def create_traj_plots(
             t,
             delta_1,
             delta_2,
+            desired_delta_1,
+            desired_delta_2,
             reentry_mask,
             save_path,
         ),
@@ -301,9 +398,35 @@ def create_traj_plots(
     else:
         print("Skipping quaternion plot (true_q_* / est_q_* not found).")
 
+    if has_omega_body:
+        plots["omega_body"] = lambda: _plot_omega_body_components(
+            t,
+            reentry_mask,
+            true_omega_B_1,
+            true_omega_B_2,
+            true_omega_B_3,
+            est_omega_B_1,
+            est_omega_B_2,
+            est_omega_B_3,
+            desired_omega_B_1,
+            desired_omega_B_2,
+            desired_omega_B_3,
+            save_path,
+        )
+    else:
+        print("Skipping omega_body plot (true_omega_B_* / est_omega_B_* not found).")
+
     if has_wind_components:
         plots["aoa_components"] = lambda: _plot_aoa_components(
-            t, aoa_alpha_deg, aoa_azimuth_deg, reentry_mask, save_path
+            t,
+            aoa_alpha_deg,
+            aoa_azimuth_deg,
+            desired_aoa_deg,
+            reentry_mask,
+            save_path,
+        )
+        plots["aoa_vs_altitude"] = lambda: _plot_aoa_vs_altitude(
+            altitude, aoa_alpha_deg, desired_aoa_deg, reentry_mask, save_path
         )
     else:
         print("Skipping aoa_components plot (u1/u2/u3 not found).")
@@ -319,9 +442,17 @@ def create_traj_plots(
             t_reentry = t[reentry_mask]
             if t_reentry.size > 0:
                 reentry_window = (float(t_reentry.min()), float(t_reentry.max()))
+                guidance_reentry_df = guidance_df.copy()
+                guidance_reentry_df.columns = guidance_reentry_df.columns.str.strip()
+                if "t" in guidance_reentry_df.columns:
+                    guidance_reentry_df = guidance_reentry_df[
+                        (guidance_reentry_df["t"] >= reentry_window[0])
+                        & (guidance_reentry_df["t"] <= reentry_window[1])
+                    ]
                 plot_reentry_guidance(
                     guidance_df, save_path=save_path, reentry_window=reentry_window
                 )
+                guidance_df = guidance_reentry_df
             else:
                 print(
                     "No reentry interval found in trajectory; skipping reentry guidance plot."
@@ -358,7 +489,7 @@ def plot_reentry_guidance(
         return
 
     # Subsample for plotting
-    guidance_df = guidance_df[::100]
+    guidance_df = guidance_df[::10]
 
     t = guidance_df["t"].values
     a_cmd_x = guidance_df["a_cmd_x"].values
@@ -387,6 +518,7 @@ def plot_reentry_guidance(
     axes[1].set_title("Reentry Estimated Transverse Acceleration")
     axes[1].legend(frameon=False)
     axes[1].grid(alpha=0.3)
+    axes[1].set_ylim((-100, 100))
 
     plt.tight_layout()
 
@@ -452,6 +584,70 @@ def _plot_position_error(t, x, y, z, est_x, est_y, est_z, save_path):
     plt.grid(alpha=0.3)
     if save_path:
         _save_figure(Path(save_path), "position_error.png")
+    else:
+        plt.show()
+    plt.close()
+
+
+def _plot_position_phases(
+    t,
+    x,
+    y,
+    z,
+    est_x,
+    est_y,
+    est_z,
+    boost_mask,
+    midcourse_mask,
+    reentry_mask,
+    save_path,
+):
+    """Position during different flight phases with components on separate axes."""
+    fig, axes = plt.subplots(3, 3, figsize=(12, 10))
+
+    phases = [
+        ("Boost", boost_mask),
+        ("Midcourse", midcourse_mask),
+        ("Reentry", reentry_mask),
+    ]
+
+    components = [
+        (x, est_x, "x"),
+        (y, est_y, "y"),
+        (z, est_z, "z"),
+    ]
+
+    for row, (phase_name, mask) in enumerate(phases):
+        for col, (true_comp, est_comp, comp_name) in enumerate(components):
+            ax = axes[row, col]
+            (line_comp,) = ax.plot(
+                t[mask], true_comp[mask], label=comp_name, linewidth=2
+            )
+            ax.plot(
+                t[mask],
+                est_comp[mask],
+                label=f"est {comp_name}",
+                linewidth=2,
+                linestyle="--",
+                color=line_comp.get_color(),
+            )
+
+            # Labels and titles
+            if col == 0:
+                ax.set_ylabel("Position (m)")
+            if row == 0:
+                ax.set_title(f"Position {comp_name.upper()} Component")
+            if row == 2:
+                ax.set_xlabel(f"Time (s) - {phase_name} Phase")
+            else:
+                ax.set_xlabel("")
+
+            ax.legend()
+            ax.grid(alpha=0.3)
+
+    plt.tight_layout()
+    if save_path:
+        _save_figure(Path(save_path), "position_phases.png")
     else:
         plt.show()
     plt.close()
@@ -683,10 +879,12 @@ def _plot_flap_deltas(
     t,
     delta_1,
     delta_2,
+    desired_delta_1,
+    desired_delta_2,
     reentry_mask,
     save_path,
 ):
-    """True flap-pair deflections over time during reentry."""
+    """True and desired flap-pair deflections over time during reentry."""
     t_reentry = t[reentry_mask]
     delta_1_reentry = delta_1[reentry_mask]
     delta_2_reentry = delta_2[reentry_mask]
@@ -698,18 +896,45 @@ def _plot_flap_deltas(
         np.degrees(delta_1_reentry),
         label="Delta 1",
         linewidth=2,
+        alpha=0.75,
     )
+    if desired_delta_1 is not None:
+        axes[0].plot(
+            t_reentry,
+            np.degrees(desired_delta_1),
+            label="Desired Delta 1",
+            linewidth=2,
+            linestyle="--",
+            alpha=0.75,
+        )
     axes[0].set_ylabel("Delta 1 (deg)")
     axes[0].set_title("Flap Pair 1 Deflection vs Time (Reentry)")
     axes[0].legend()
     axes[0].grid(alpha=0.3)
+    axes[0].set_ylim(-11, 11)
 
-    axes[1].plot(t_reentry, np.degrees(delta_2_reentry), label="Delta 2", linewidth=2)
+    axes[1].plot(
+        t_reentry,
+        np.degrees(delta_2_reentry),
+        label="Delta 2",
+        linewidth=2,
+        alpha=0.75,
+    )
+    if desired_delta_2 is not None:
+        axes[1].plot(
+            t_reentry,
+            np.degrees(desired_delta_2),
+            label="Desired Delta 2",
+            linewidth=2,
+            linestyle="--",
+            alpha=0.75,
+        )
     axes[1].set_xlabel("Time (s)")
     axes[1].set_ylabel("Delta 2 (deg)")
     axes[1].set_title("Flap Pair 2 Deflection vs Time (Reentry)")
     axes[1].legend()
     axes[1].grid(alpha=0.3)
+    axes[1].set_ylim(-11, 11)
 
     if save_path:
         _save_figure(Path(save_path), "flap_deltas.png")
@@ -724,26 +949,40 @@ def _compute_aoa_angles(u1, u2, u3):
     clipped_u3 = np.clip(u3, -1.0, 1.0)
     aoa_alpha_deg = np.degrees(np.arccos(clipped_u3))
     aoa_azimuth_deg = np.degrees(np.arctan2(u2, u1))
-    aoa_azimuth_deg[np.sqrt(u1**2 + u2**2) < 1e-2] = 0
+    # aoa_azimuth_deg[np.sqrt(u1**2 + u2**2) < 1e-2] = 0
     return aoa_alpha_deg, aoa_azimuth_deg
 
 
-def _plot_aoa_components(t, aoa_alpha_deg, aoa_azimuth_deg, reentry_mask, save_path):
+def _plot_aoa_components(
+    t, aoa_alpha_deg, aoa_azimuth_deg, desired_aoa_deg, reentry_mask, save_path
+):
     """Plot AoA alpha and azimuth during reentry phase from alpha=acos(u3), chi=atan2(u2, u1)."""
     # Filter for reentry phase only
     t_reentry = t[reentry_mask]
     aoa_alpha_reentry = aoa_alpha_deg[reentry_mask]
     aoa_azimuth_reentry = aoa_azimuth_deg[reentry_mask]
+    desired_aoa_reentry = None
+    if desired_aoa_deg is not None:
+        desired_aoa_reentry = desired_aoa_deg
 
     fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
     axes[0].plot(
         t_reentry, aoa_alpha_reentry, linewidth=2, label=r"$\alpha=\arccos(u_3)$"
     )
+    if desired_aoa_reentry is not None:
+        axes[0].plot(
+            t_reentry,
+            desired_aoa_reentry,
+            linewidth=2,
+            linestyle="--",
+            label="Desired AoA",
+        )
     axes[0].set_ylabel(r"$\alpha$ (deg)")
     axes[0].set_title("Angle of Attack During Reentry")
     axes[0].grid(alpha=0.3)
     axes[0].legend()
+    axes[0].set_ylim(0, 11)
 
     axes[1].plot(
         t_reentry,
@@ -756,9 +995,162 @@ def _plot_aoa_components(t, aoa_alpha_deg, aoa_azimuth_deg, reentry_mask, save_p
     axes[1].set_title("AoA Azimuth During Reentry")
     axes[1].grid(alpha=0.3)
     axes[1].legend()
+    # axes[1].set_ylim(0, 11)
 
     if save_path:
         _save_figure(Path(save_path), "aoa_components.png")
+    else:
+        plt.show()
+    plt.close()
+
+
+def _plot_aoa_vs_altitude(
+    altitude, aoa_alpha_deg, desired_aoa_deg, reentry_mask, save_path
+):
+    """Plot AoA alpha vs altitude during reentry phase.
+
+    Altitude is plotted in kilometers on the x-axis; AoA in degrees on the y-axis.
+    """
+    # Filter for reentry phase only
+    alt_reentry = altitude[reentry_mask] / 1000.0
+    aoa_reentry = aoa_alpha_deg[reentry_mask]
+    desired_aoa_reentry = None
+    if desired_aoa_deg is not None:
+        desired_aoa_reentry = desired_aoa_deg
+
+    if alt_reentry.size == 0:
+        print("No reentry data for AoA vs altitude; skipping.")
+        return
+
+    # Sort by altitude so the line plot is monotonic in x
+    sort_idx = np.argsort(alt_reentry)
+
+    fig, axes = plt.subplots(2, 1, figsize=(8, 6))
+    axes[0].plot(
+        alt_reentry[sort_idx],
+        aoa_reentry[sort_idx],
+        linewidth=2,
+        label=r"$\alpha=\arccos(u_3)$",
+    )
+    if desired_aoa_reentry is not None:
+        axes[0].plot(
+            alt_reentry[sort_idx],
+            desired_aoa_reentry[sort_idx],
+            linewidth=2,
+            linestyle="--",
+            label="Desired AoA",
+        )
+
+    # axes[0].set_xticks([])
+    axes[0].set_ylabel(r"$\alpha$ (deg)")
+    axes[0].set_title("Angle of Attack vs Altitude (Reentry)")
+    axes[0].grid(alpha=0.3)
+    axes[0].legend()
+    axes[0].set_ylim(0, 11)
+
+    # Create a low-altitude view (< 1 km) by sorting and masking the sorted arrays.
+    alt_sorted = alt_reentry[sort_idx]
+    aoa_sorted = aoa_reentry[sort_idx]
+    low_mask_sorted = alt_sorted < 1.0
+
+    axes[1].plot(
+        alt_sorted[low_mask_sorted],
+        aoa_sorted[low_mask_sorted],
+        linewidth=2,
+        label=r"$\alpha=\arccos(u_3)$",
+    )
+    if desired_aoa_reentry is not None:
+        desired_sorted = desired_aoa_reentry[sort_idx]
+        axes[1].plot(
+            alt_sorted[low_mask_sorted],
+            desired_sorted[low_mask_sorted],
+            linewidth=2,
+            linestyle="--",
+            label="Desired AoA",
+        )
+
+    axes[1].set_xlabel("Altitude (km)")
+    axes[1].set_ylabel(r"$\alpha$ (deg)")
+    axes[1].set_title("Angle of Attack vs Altitude (Reentry < 1km)")
+    axes[1].grid(alpha=0.3)
+    axes[1].legend()
+    axes[1].set_ylim(0, 50)
+
+    if save_path:
+        _save_figure(Path(save_path), "aoa_vs_altitude.png")
+    else:
+        plt.show()
+    plt.tight_layout()
+    plt.close()
+
+
+def _plot_omega_body_components(
+    t,
+    reentry_mask,
+    true_omega_B_1,
+    true_omega_B_2,
+    true_omega_B_3,
+    est_omega_B_1,
+    est_omega_B_2,
+    est_omega_B_3,
+    desired_omega_B_1,
+    desired_omega_B_2,
+    desired_omega_B_3,
+    save_path,
+):
+    """Plot body angular velocity components during reentry."""
+    t_reentry = t[reentry_mask]
+    true_omega_reentry = [
+        np.degrees(true_omega_B_1[reentry_mask]),
+        np.degrees(true_omega_B_2[reentry_mask]),
+        np.degrees(true_omega_B_3[reentry_mask]),
+    ]
+    est_omega_reentry = [
+        np.degrees(est_omega_B_1[reentry_mask]),
+        np.degrees(est_omega_B_2[reentry_mask]),
+        np.degrees(est_omega_B_3[reentry_mask]),
+    ]
+    desired_omega_reentry = None
+    if (
+        desired_omega_B_1 is not None
+        and desired_omega_B_2 is not None
+        and desired_omega_B_3 is not None
+    ):
+        desired_omega_reentry = [
+            np.degrees(desired_omega_B_1),
+            np.degrees(desired_omega_B_2),
+            np.degrees(desired_omega_B_3),
+        ]
+
+    fig, axes = plt.subplots(3, 1, figsize=(10, 9), sharex=True)
+    component_labels = [r"$\omega_{B,1}$", r"$\omega_{B,2}$", r"$\omega_{B,3}$"]
+
+    for idx, (ax, label, true_values, est_values) in enumerate(
+        zip(axes, component_labels, true_omega_reentry, est_omega_reentry)
+    ):
+        ax.plot(t_reentry, true_values, linewidth=2, label="true")
+        ax.plot(t_reentry, est_values, linewidth=2, linestyle="--", label="est")
+        if desired_omega_reentry is not None:
+            ax.plot(
+                t_reentry,
+                desired_omega_reentry[idx],
+                linewidth=2,
+                linestyle=":",
+                label="desired",
+            )
+        ax.set_ylabel("deg/s")
+        ax.set_title(f"{label} During Reentry")
+        ax.grid(alpha=0.3)
+        ax.legend(frameon=False)
+        ax.set_ylim(-360, 360)
+
+    axes[-1].set_xlabel("Time (s)")
+
+    fig.suptitle("Body Angular Velocity Components During Reentry")
+    plt.tight_layout()
+
+    if save_path:
+        _save_figure(Path(save_path), "omega_body.png")
     else:
         plt.show()
     plt.close()
