@@ -32,3 +32,6 @@ __pycache__
 _traj*
 
 site
+
+*.png
+*.csv

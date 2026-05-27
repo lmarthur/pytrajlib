@@ -2,9 +2,10 @@
 run_name = "run_4"
 num_runs = 1000
 num_runs_optimizer = 10
+time_step_boost = 1e-4
 time_step_lambert = 1e-3
 time_step_midcourse = 0.01
-time_step_atm = 1e-4
+time_step_reentry = 1e-4
 traj_output = 1
 # Range is in meters
 range = 10000000

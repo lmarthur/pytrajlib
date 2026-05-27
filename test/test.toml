@@ -2,9 +2,11 @@
 run_name = "test"
 num_runs = 10
 num_runs_optimizer = 1
+
+time_step_boost = 1e-2
 time_step_lambert = 1e-2
-time_step_midcourse = 1
-time_step_atm = 1e-2
+time_step_midcourse = 1.0
+time_step_reentry = 1e-2
 traj_output = 0
 range = 10000000
 x_aim = -1106312.539916013

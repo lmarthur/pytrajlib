@@ -95,10 +95,10 @@ void print_config(runparams *run_params) {
   printf("Output path: %s\n", run_params->output_path);
   printf("Trajectory path: %s\n", run_params->trajectory_path);
   printf("Number of Monte Carlo runs: %d\n", run_params->num_runs);
-  printf("Time step: %f\n", run_params->time_step_midcourse);
+  printf("Time step boost: %f\n", run_params->time_step_boost);
   printf("Time step lambert: %f\n", run_params->time_step_lambert);
   printf("Time step midcourse: %f\n", run_params->time_step_midcourse);
-  printf("Time step in atmosphere: %f\n", run_params->time_step_atm);
+  printf("Time step reentry: %f\n", run_params->time_step_reentry);
   printf("Trajectory output: %d\n", run_params->traj_output);
   printf("Target x-coordinate: %f\n", run_params->x_aim);
   printf("Target y-coordinate: %f\n", run_params->y_aim);

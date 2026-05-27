@@ -10,18 +10,18 @@ typedef struct runparams {
   int num_runs;           // number of Monte Carlo runs
   int num_runs_optimizer; // number of runs to use during trajectory
                           // optimization
-  double
-      time_step_lambert; // time step in seconds during Lambert guidance phase
+  double time_step_boost; // time step in seconds during atmospheric boost phase
+  double time_step_lambert;   // time step in seconds during exoatmospheric
+                              // Lambert guidance phase
   double time_step_midcourse; // time step in seconds during midcourse flight
-  double time_step_atm; // time step in seconds inside atmosphere (reentry and
-                        // first part of boost)
-  int traj_output;      // flag to output trajectory data
-  double range;         // downrange distance along equator in meters
-  double x_aim;         // target x-coordinate in meters
-  double y_aim;         // target y-coordinate in meters
-  double z_aim;         // target z-coordinate in meters
-  double theta_long;    // thrust angle in the longitudinal direction in radians
-  double theta_lat;     // thrust angle in the latitudinal direction in radians
+  double time_step_reentry;   // time step in seconds during reentry
+  int traj_output;            // flag to output trajectory data
+  double range;               // downrange distance along equator in meters
+  double x_aim;               // target x-coordinate in meters
+  double y_aim;               // target y-coordinate in meters
+  double z_aim;               // target z-coordinate in meters
+  double theta_long; // thrust angle in the longitudinal direction in radians
+  double theta_lat;  // thrust angle in the latitudinal direction in radians
   int integrator;   // flag for which numerical integration method to use (0 for
                     // modified Euler-Maruyama, 1 for SRA3)
   long random_seed; // RNG seed (-1 = auto-seed)

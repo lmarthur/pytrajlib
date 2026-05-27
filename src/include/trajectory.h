@@ -280,8 +280,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
 
   int max_steps = 100000000;
 
-  // Initialize time step to the "inside atmosphere" time step
-  double time_step = run_params->time_step_atm;
+  // Initialize time step to the boost-phase time step
+  double time_step = run_params->time_step_boost;
 
   // Init structs
   grav true_grav = init_grav(run_params);
@@ -385,7 +385,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     if (!reentry_captured && descending && altitude < 1.2e5 &&
         true_t > run_params->t_vert_boost) {
       reentry_captured = 1;
-      time_step = run_params->time_step_atm;
+      time_step = run_params->time_step_reentry;
       *reentry_vel = norm(true_state.velocity);
       *reentry_ang =
           flight_path_angle(true_state.position, true_state.velocity);
