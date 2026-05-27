@@ -21,7 +21,8 @@ typedef int (*drift_func)(runparams *run_params, imu *imu, vehicle *vehicle,
                           double est_t, state *true_state_drift,
                           state *est_state_drift);
 
-typedef void (*diffusion_func)(imu *imu, state *est_state_diffusion);
+typedef void (*diffusion_func)(imu *imu, state *est_state_diffusion,
+                               state *true_state_diffusion);
 
 /**
  * Calculate deterministic drift component of the state update.
@@ -83,8 +84,7 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
   true_state_drift->position = true_state->velocity;
   true_state_drift->velocity = a_total_true;
   true_state_drift->angular_vel_B = angular_acceleration_B;
-  true_state_drift->orientation_angle_change =
-      (cartvec){true_state->angular_vel_B.x, true_state->angular_vel_B.y, 0};
+  true_state_drift->orientation_angle_change = true_state->angular_vel_B;
   true_state_drift->delta_1 = dot_deflection[0];
   true_state_drift->delta_2 = dot_deflection[1];
 
@@ -92,9 +92,7 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
   est_state_drift->position = est_state->velocity;
   est_state_drift->velocity = a_total_est;
   est_state_drift->angular_vel_B = zeros();
-  est_state_drift->orientation_angle_change = (cartvec){
-      true_state->angular_vel_B.x + imu->gyro_bias.x,
-      true_state->angular_vel_B.y + imu->gyro_bias.y, imu->gyro_bias.z};
+  est_state_drift->orientation_angle_change = est_state->angular_vel_B;
   est_state_drift->delta_1 = dot_deflection[0];
   est_state_drift->delta_2 = dot_deflection[1];
   return 1;
@@ -112,10 +110,14 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
  * @param est_state_diffusion Output stochastic diffusion for estimated state;
  *                            initialize to `{0}` before passing.
  */
-void diffusion(imu *imu, state *est_state_diffusion) {
+void diffusion(imu *imu, state *est_state_diffusion,
+               state *true_state_diffusion) {
   est_state_diffusion->orientation_angle_change.x = get_gyro_diffusion(imu);
   est_state_diffusion->orientation_angle_change.y = get_gyro_diffusion(imu);
-  est_state_diffusion->orientation_angle_change.z = get_gyro_diffusion(imu);
+
+  // Roll of the true state is assumed to be controlled. Control is limited by
+  // the gyroscope noise
+  true_state_diffusion->orientation_angle_change.z = get_gyro_diffusion(imu);
 }
 
 #endif

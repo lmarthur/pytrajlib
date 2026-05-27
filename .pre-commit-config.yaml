@@ -32,9 +32,18 @@ repos:
         files: ^src/.*\.(c|h)$
 
       - id: comptest
-        name: Compile and Test
-        entry: bash scripts/comptest.sh
+        name: Compile, Unit Test, and Build
+        entry: bash scripts/comptest.sh --skip-integration
         language: system
         pass_filenames: false
         always_run: true
+        verbose: true
+
+      - id: integration-tests
+        name: Integration Tests
+        entry: bash scripts/comptest.sh --integration-only
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
         verbose: true
