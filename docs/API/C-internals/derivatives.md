@@ -45,6 +45,7 @@ in.
 | --- | --- | --- |
 | `imu` | `imu *` | Pointer to IMU model. |
 | `est_state_diffusion` | `state *` | Output stochastic diffusion for estimated state;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;initialize to `{0}` before passing. |
+| `true_state_diffusion` | `state *` | Output stochastic diffusion for true state;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;initialize to `{0}` before passing. |
 
 ### Returns
 
