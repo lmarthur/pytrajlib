@@ -1,9 +1,9 @@
 import argparse
 import importlib.resources
+import json
 import os
 import tomllib
 from copy import deepcopy
-from multiprocessing import Pool
 from pathlib import Path
 
 import numpy as np
@@ -11,6 +11,8 @@ import pandas as pd
 
 # from tqdm.auto import tqdm
 from tqdm.auto import tqdm
+
+from pytrajlib import runtime
 
 # Import plotting functions
 from pytrajlib.optimizers import optimize_boost, optimize_maneuv
@@ -20,7 +22,6 @@ from pytrajlib.plotting import (
     plot_reentry_guidance,
 )
 from pytrajlib.runtime import (
-    _LOADING_BAR_DISABLED,
     _TEMP_DIR,
     _UNSET,
     _get_default_config,
@@ -33,28 +34,12 @@ from pytrajlib.utils import get_miss_distance
 np.random.seed(0)
 
 
-def _mc_run_wrapper(config_dict):
-    """Wrapper function for multiprocessing.
-
-    This function is pickled and executed in worker processes.
-    It imports the CFFI library, runs mc_run, and converts the result to a
-    picklable format to avoid CFFI serialization issues.
-    """
-    from pytrajlib._traj import lib as traj_lib
-    from pytrajlib.runtime import create_runparams_struct
-
-    rp = create_runparams_struct(config_dict)
-    impact_data = traj_lib.mc_run(rp[0])
-    df = impact_data_to_df(impact_data, config_dict)
-    return df
-
-
 def run(
     config: str = None,
     plot_trajectory: bool = False,
     plot_impact: bool = False,
     plot_path: str = None,
-    num_processes: int = 10,
+    num_processes: int = (os.cpu_count() * 5) // 8,
     return_config=False,
     **kwargs,
 ):
@@ -65,7 +50,7 @@ def run(
         plot_trajectory: whether to save trajectory plots
         plot_impact: whether to save impact plot
         plot_path: path to save plots
-        num_processes: number of concurrent processes on which to run simulation
+        num_processes: number of concurrent processes on which to run simulation. Default is 5/8 of the number of cores available so if you have 16 cores, the number of concurrent processes will be 10.
         **kwargs: all other kwargs (see default TOML)
     """
     config_dict = {}
@@ -107,51 +92,21 @@ def run(
     print("Running...")
 
     if config_dict["optimize_boost"]:
-        t_des_final, thrust_lon = optimize_boost(config_dict)
-        print(f"{t_des_final=}, {thrust_lon=}")
-        config_dict["t_des_final"] = t_des_final
-        config_dict["theta_long"] = thrust_lon
+        optimized_params = optimize_boost(config_dict)
+        print(optimized_params)
+        config_dict = {**config_dict, **optimized_params}
     else:
         print("Skipping boost optimization; using configured t_des_final/theta_long")
 
     if config_dict["optimize_maneuv"]:
         if int(config_dict.get("rv_maneuv", 0)) == 1:
-            tau_deflect, nav_gain = optimize_maneuv(config_dict)
-            print(f"{tau_deflect=}, {nav_gain=}")
-            config_dict["tau_deflect"] = tau_deflect
-            config_dict["nav_gain"] = nav_gain
+            optimized_params = optimize_maneuv(config_dict)
+            print(optimized_params)
+            config_dict = {**config_dict, **optimized_params}
         else:
             print("Skipping maneuverability optimization; requires rv_maneuv = 1")
 
-    # Prepare config for multiprocessing
-    random_seed = config_dict["random_seed"]
-    N_processes = min(num_processes, config_dict["num_runs"])
-    traj_output = config_dict["traj_output"]
-    config_dict["traj_output"] = 0
-    configs = []
-    for i in range(config_dict["num_runs"]):
-        configs.append(deepcopy(config_dict))
-        # Give each processes a different random seed
-        if random_seed >= 0:
-            configs[-1]["random_seed"] = random_seed + np.random.randint(0, 10000)
-    configs[0]["traj_output"] = traj_output
-
-    # Run simulation across multiple processes
-    with Pool(processes=N_processes) as p:
-        res = list(
-            tqdm(
-                p.imap_unordered(_mc_run_wrapper, configs),
-                total=config_dict["num_runs"],
-                desc="Progress",
-            )
-        )
-
-    # Restore original params
-    config_dict["traj_output"] = traj_output
-
-    # Concatenate results and reset index to ascending
-    impact_df = pd.concat(res)
-    impact_df = impact_df.reset_index().drop(columns="index")
+    impact_df = runtime.run(config_dict, num_processes)
 
     # Add miss distance column to DataFrame
     aimpoint = (config_dict["x_aim"], config_dict["y_aim"], config_dict["z_aim"])
@@ -159,6 +114,11 @@ def run(
     impact_df["miss_distance"] = miss_distance
 
     save_path = Path(plot_path) if plot_path else None
+    if plot_path:
+        save_path.mkdir(parents=True, exist_ok=True)
+        with open(save_path / "config.json", "w") as f:
+            f.write(json.dumps(config_dict))
+
     if plot_impact:
         print("Generating impact plot...")
         create_impact_plot(impact_df, save_path=save_path, aimpoint=aimpoint)
@@ -185,7 +145,6 @@ def run(
             aimpoint=aimpoint,
             guidance_df=guidance_df,
         )
-
     print(f"CEP={np.quantile(miss_distance, 0.5)}")
     print("Done!")
     _keep_alive.clear()

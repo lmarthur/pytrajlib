@@ -1,7 +1,7 @@
 [RUN]
 run_name = "run_4"
 num_runs = 30
-num_runs_optimizer = 10
+num_runs_optimizer = 20
 time_step_boost = 1e-4
 time_step_lambert = 1e-3
 time_step_midcourse = 1e-2
@@ -13,7 +13,7 @@ range = 10000000
 x_aim = -1106312.539916013
 y_aim = 6274210.194440777
 z_aim = 0
-theta_long = 0.831170787
+theta_long = 0.7938248075646784
 theta_lat = 0.0
 
 # 0 is modified Euler-Maruyama, 1 is SRA3
@@ -39,7 +39,7 @@ perfect_boost = 0
 optimize_boost = 0
 # If 1, optimize tau_deflect and nav_gain with rv_maneuv forced to 1 during optimization.
 optimize_maneuv = 0
-t_des_final = 2445.862986880
+t_des_final = 2530.768046590356
 t_vert_boost = 10
 
 [VEHICLE]
@@ -49,10 +49,13 @@ deflection_time = 0.02
 actuator_force = 100
 gearing_ratio = 1
 actuator_resolution = 1e-3
-max_deflection_angle = 5.0
-nav_gain_0 = 10.11157952873111
-nav_gain_1 = 0.9570502146004836
-tau_deflect = 0.44159947682865963
+max_deflection_angle = 0.26648956179316663
+nav_gain_0 = 10.363583544701887
+nav_gain_1 = 0.5945305847026036
+tau_deflect = 0.6487016837700166
+K_q = -39.11972966189953
+K_pp = 41.73729867299631
+
 
 # Vehicle parameter defaults (SWERVE RV + MMIII booster)
 rv_mass = 450.0

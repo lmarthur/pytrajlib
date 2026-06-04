@@ -202,9 +202,6 @@ def create_traj_plots(
     desired_delta_1 = None
     desired_delta_2 = None
     desired_aoa_deg = None
-    desired_omega_B_1 = None
-    desired_omega_B_2 = None
-    desired_omega_B_3 = None
 
     has_quaternion = {
         "true_q_w",
@@ -278,29 +275,12 @@ def create_traj_plots(
                 )
                 desired_delta_1_raw = guidance_df["desired_delta_1"].values
                 desired_delta_2_raw = guidance_df["desired_delta_2"].values
-                desired_omega_B_1_raw = (
-                    guidance_df["desired_omega_B_1"].values
-                    if "desired_omega_B_1" in guidance_df.columns
-                    else None
-                )
-                desired_omega_B_2_raw = (
-                    guidance_df["desired_omega_B_2"].values
-                    if "desired_omega_B_2" in guidance_df.columns
-                    else None
-                )
-                desired_omega_B_3_raw = (
-                    guidance_df["desired_omega_B_3"].values
-                    if "desired_omega_B_3" in guidance_df.columns
-                    else None
-                )
                 if desired_delta_1_raw.size > 0:
                     if desired_delta_1_raw.size == t_reentry.size:
                         desired_aoa_deg = desired_aoa_raw
                         desired_delta_1 = desired_delta_1_raw
                         desired_delta_2 = desired_delta_2_raw
-                        desired_omega_B_1 = desired_omega_B_1_raw
-                        desired_omega_B_2 = desired_omega_B_2_raw
-                        desired_omega_B_3 = desired_omega_B_3_raw
+                        pass
                     else:
                         sample_idx = np.linspace(
                             0,
@@ -311,12 +291,7 @@ def create_traj_plots(
                             desired_aoa_deg = desired_aoa_raw[sample_idx]
                         desired_delta_1 = desired_delta_1_raw[sample_idx]
                         desired_delta_2 = desired_delta_2_raw[sample_idx]
-                        if desired_omega_B_1_raw is not None:
-                            desired_omega_B_1 = desired_omega_B_1_raw[sample_idx]
-                        if desired_omega_B_2_raw is not None:
-                            desired_omega_B_2 = desired_omega_B_2_raw[sample_idx]
-                        if desired_omega_B_3_raw is not None:
-                            desired_omega_B_3 = desired_omega_B_3_raw[sample_idx]
+                        pass
 
     plots = {
         "position": lambda: _plot_position(t, x, y, z, est_x, est_y, est_z, save_path),
@@ -376,6 +351,15 @@ def create_traj_plots(
             reentry_mask,
             save_path,
         ),
+        "flap_vs_altitude": lambda: _plot_flap_vs_altitude(
+            altitude,
+            delta_1,
+            delta_2,
+            desired_delta_1,
+            desired_delta_2,
+            reentry_mask,
+            save_path,
+        ),
         "orbit": lambda: _plot_orbit(x, y, est_x, est_y, save_path, aimpoint),
     }
 
@@ -408,9 +392,6 @@ def create_traj_plots(
             est_omega_B_1,
             est_omega_B_2,
             est_omega_B_3,
-            desired_omega_B_1,
-            desired_omega_B_2,
-            desired_omega_B_3,
             save_path,
         )
     else:
@@ -427,6 +408,9 @@ def create_traj_plots(
         )
         plots["aoa_vs_altitude"] = lambda: _plot_aoa_vs_altitude(
             altitude, aoa_alpha_deg, desired_aoa_deg, reentry_mask, save_path
+        )
+        plots["wind_components"] = lambda: _plot_rel_wind_components(
+            t, reentry_mask, u1, u2, u3, save_path
         )
     else:
         print("Skipping aoa_components plot (u1/u2/u3 not found).")
@@ -459,6 +443,125 @@ def create_traj_plots(
                 )
         except Exception as e:
             print(f"Failed to plot reentry guidance: {e}")
+
+
+def _plot_flap_vs_altitude(
+    altitude,
+    delta_1,
+    delta_2,
+    desired_delta_1,
+    desired_delta_2,
+    reentry_mask,
+    save_path,
+):
+    """Plot flap pair deflections vs altitude during reentry."""
+    alt_reentry = altitude[reentry_mask] / 1000.0
+    delta_1_reentry = np.degrees(delta_1[reentry_mask])
+    delta_2_reentry = np.degrees(delta_2[reentry_mask])
+    desired_delta_1_reentry = (
+        np.degrees(desired_delta_1) if desired_delta_1 is not None else None
+    )
+    desired_delta_2_reentry = (
+        np.degrees(desired_delta_2) if desired_delta_2 is not None else None
+    )
+
+    if alt_reentry.size == 0:
+        print("No reentry data for flap deflection vs altitude; skipping.")
+        return
+
+    sort_idx = np.argsort(alt_reentry)
+
+    fig, axes = plt.subplots(2, 1, figsize=(8, 6))
+    axes[0].plot(
+        alt_reentry[sort_idx],
+        delta_1_reentry[sort_idx],
+        linewidth=2,
+        color="C0",
+        label="Delta 1",
+    )
+    axes[0].plot(
+        alt_reentry[sort_idx],
+        delta_2_reentry[sort_idx],
+        linewidth=2,
+        color="C1",
+        label="Delta 2",
+    )
+    if desired_delta_1_reentry is not None:
+        axes[0].plot(
+            alt_reentry[sort_idx],
+            desired_delta_1_reentry[sort_idx],
+            linewidth=2,
+            color="C0",
+            linestyle="--",
+            label="Desired Delta 1",
+        )
+    if desired_delta_2_reentry is not None:
+        axes[0].plot(
+            alt_reentry[sort_idx],
+            desired_delta_2_reentry[sort_idx],
+            linewidth=2,
+            color="C1",
+            linestyle="--",
+            label="Desired Delta 2",
+        )
+
+    axes[0].set_ylabel("Deflection (deg)")
+    axes[0].set_title("Flap Deflection vs Altitude (Reentry)")
+    axes[0].grid(alpha=0.3)
+    axes[0].legend()
+    axes[0].set_ylim(-11, 11)
+
+    alt_sorted = alt_reentry[sort_idx]
+    low_mask_sorted = alt_sorted < 1.0
+
+    axes[1].plot(
+        alt_sorted[low_mask_sorted],
+        delta_1_reentry[sort_idx][low_mask_sorted],
+        linewidth=2,
+        color="C0",
+        label="Delta 1",
+    )
+    axes[1].plot(
+        alt_sorted[low_mask_sorted],
+        delta_2_reentry[sort_idx][low_mask_sorted],
+        linewidth=2,
+        color="C1",
+        label="Delta 2",
+    )
+    if desired_delta_1_reentry is not None:
+        desired_delta_1_sorted = desired_delta_1_reentry[sort_idx]
+        axes[1].plot(
+            alt_sorted[low_mask_sorted],
+            desired_delta_1_sorted[low_mask_sorted],
+            linewidth=2,
+            color="C0",
+            linestyle="--",
+            label="Desired Delta 1",
+        )
+    if desired_delta_2_reentry is not None:
+        desired_delta_2_sorted = desired_delta_2_reentry[sort_idx]
+        axes[1].plot(
+            alt_sorted[low_mask_sorted],
+            desired_delta_2_sorted[low_mask_sorted],
+            linewidth=2,
+            color="C1",
+            linestyle="--",
+            label="Desired Delta 2",
+        )
+
+    axes[1].set_xlabel("Altitude (km)")
+    axes[1].set_ylabel("Deflection (deg)")
+    axes[1].set_title("Flap Deflection vs Altitude (Reentry < 1km)")
+    axes[1].grid(alpha=0.3)
+    axes[1].legend()
+    axes[1].set_ylim(-11, 11)
+
+    if save_path:
+        _save_figure(Path(save_path), "flap_vs_altitude.png")
+    else:
+        plt.show()
+    plt.tight_layout()
+    plt.close()
 
 
 def plot_reentry_guidance(
@@ -499,26 +602,33 @@ def plot_reentry_guidance(
     a_est_y = guidance_df["a_total_est_y"].values
     a_est_z = guidance_df["a_total_est_z"].values
 
-    fig, axes = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
+    fig, axes = plt.subplots(3, 1, figsize=(10, 9), sharex=True)
 
-    axes[0].plot(t, a_cmd_x, label="a_cmd x", linewidth=2, alpha=0.4)
-    axes[0].plot(t, a_cmd_y, label="a_cmd y", linewidth=2, alpha=0.4)
-    axes[0].plot(t, a_cmd_z, label="a_cmd z", linewidth=2, alpha=0.4)
-    axes[0].set_ylabel("Commanded Acceleration (m/s²)")
-    axes[0].set_title("Reentry Guidance Command")
-    axes[0].legend(frameon=False)
-    axes[0].grid(alpha=0.3)
-    axes[0].set_ylim((-100, 100))
+    component_data = [
+        (axes[0], "x", a_est_x, a_cmd_x, "C0"),
+        (axes[1], "y", a_est_y, a_cmd_y, "C1"),
+        (axes[2], "z", a_est_z, a_cmd_z, "C2"),
+    ]
+    for ax, component, a_est, a_cmd, color in component_data:
+        ax.plot(
+            t, a_est, label=f"a_est {component}", linewidth=2, alpha=0.5, color=color
+        )
+        ax.plot(
+            t,
+            a_cmd,
+            label=f"a_cmd {component}",
+            linewidth=2,
+            alpha=0.5,
+            linestyle="--",
+            color=color,
+        )
+        ax.set_ylabel("Acceleration (m/s²)")
+        ax.set_title(f"Reentry Guidance {component.upper()} Component")
+        ax.legend(frameon=False)
+        ax.grid(alpha=0.3)
+        ax.set_ylim((-100, 100))
 
-    axes[1].plot(t, a_est_x, label="a_est x", linewidth=2, alpha=0.4)
-    axes[1].plot(t, a_est_y, label="a_est y", linewidth=2, alpha=0.4)
-    axes[1].plot(t, a_est_z, label="a_est z", linewidth=2, alpha=0.4)
-    axes[1].set_xlabel("Time (s)")
-    axes[1].set_ylabel("Estimated Transverse Acceleration (m/s²)")
-    axes[1].set_title("Reentry Estimated Transverse Acceleration")
-    axes[1].legend(frameon=False)
-    axes[1].grid(alpha=0.3)
-    axes[1].set_ylim((-100, 100))
+    axes[-1].set_xlabel("Time (s)")
 
     plt.tight_layout()
 
@@ -1074,7 +1184,7 @@ def _plot_aoa_vs_altitude(
     axes[1].set_title("Angle of Attack vs Altitude (Reentry < 1km)")
     axes[1].grid(alpha=0.3)
     axes[1].legend()
-    axes[1].set_ylim(0, 50)
+    axes[1].set_ylim(0, 20)
 
     if save_path:
         _save_figure(Path(save_path), "aoa_vs_altitude.png")
@@ -1093,9 +1203,6 @@ def _plot_omega_body_components(
     est_omega_B_1,
     est_omega_B_2,
     est_omega_B_3,
-    desired_omega_B_1,
-    desired_omega_B_2,
-    desired_omega_B_3,
     save_path,
 ):
     """Plot body angular velocity components during reentry."""
@@ -1110,17 +1217,6 @@ def _plot_omega_body_components(
         np.degrees(est_omega_B_2[reentry_mask]),
         np.degrees(est_omega_B_3[reentry_mask]),
     ]
-    desired_omega_reentry = None
-    if (
-        desired_omega_B_1 is not None
-        and desired_omega_B_2 is not None
-        and desired_omega_B_3 is not None
-    ):
-        desired_omega_reentry = [
-            np.degrees(desired_omega_B_1),
-            np.degrees(desired_omega_B_2),
-            np.degrees(desired_omega_B_3),
-        ]
 
     fig, axes = plt.subplots(3, 1, figsize=(10, 9), sharex=True)
     component_labels = [r"$\omega_{B,1}$", r"$\omega_{B,2}$", r"$\omega_{B,3}$"]
@@ -1130,19 +1226,11 @@ def _plot_omega_body_components(
     ):
         ax.plot(t_reentry, true_values, linewidth=2, label="true")
         ax.plot(t_reentry, est_values, linewidth=2, linestyle="--", label="est")
-        if desired_omega_reentry is not None:
-            ax.plot(
-                t_reentry,
-                desired_omega_reentry[idx],
-                linewidth=2,
-                linestyle=":",
-                label="desired",
-            )
         ax.set_ylabel("deg/s")
         ax.set_title(f"{label} During Reentry")
         ax.grid(alpha=0.3)
         ax.legend(frameon=False)
-        ax.set_ylim(-360, 360)
+        # ax.set_ylim(-360, 360)
 
     axes[-1].set_xlabel("Time (s)")
 
@@ -1151,6 +1239,34 @@ def _plot_omega_body_components(
 
     if save_path:
         _save_figure(Path(save_path), "omega_body.png")
+    else:
+        plt.show()
+    plt.close()
+
+
+def _plot_rel_wind_components(t, reentry_mask, u1, u2, u3, save_path):
+    """Plot u1, u2, u3 components during reentry."""
+    t_reentry = t[reentry_mask]
+    u1_re = u1[reentry_mask]
+    u2_re = u2[reentry_mask]
+    u3_re = u3[reentry_mask]
+
+    if t_reentry.size == 0:
+        print("No reentry data for wind components; skipping.")
+        return
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(t_reentry, u1_re, label="u1", alpha=0.5)
+    plt.plot(t_reentry, u2_re, label="u2", alpha=0.5)
+    plt.plot(t_reentry, u3_re, label="u3", alpha=0.5)
+    plt.xlabel("Time (s)")
+    plt.ylabel("Component Value")
+    plt.title("Relative Wind Components (u1,u2,u3) During Reentry")
+    plt.legend()
+    plt.grid(alpha=0.3)
+
+    if save_path:
+        _save_figure(Path(save_path), "rel_wind_components.png")
     else:
         plt.show()
     plt.close()

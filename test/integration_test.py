@@ -189,7 +189,6 @@ def test_gnss_navigation_reduces_cep_with_ins_errors():
     assert cep_no_gnss > cep_with_gnss
 
 
-@pytest.mark.xfail(reason="Reluctantly xfailing this for now. TODO investigate")
 def test_no_impact_correlation():
     """With standard error params, there should be no correlation between downrange and crossrange errors."""
     impact_df, config = run(return_config=True, num_runs=200, random_seed=0)

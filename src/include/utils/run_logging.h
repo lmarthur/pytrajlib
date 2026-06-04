@@ -62,8 +62,7 @@ static inline void init_run_logging(const char *trajectory_path) {
     fprintf(reentry_guidance_log_file,
             "t, a_cmd_x, a_cmd_y, a_cmd_z, "
             "a_total_est_x, a_total_est_y, a_total_est_z, "
-            "desired_aoa_deg, desired_delta_1, desired_delta_2, "
-            "desired_omega_B_1, desired_omega_B_2, desired_omega_B_3\n");
+            "desired_aoa_deg, desired_delta_1, desired_delta_2\n");
   }
 }
 
@@ -112,18 +111,18 @@ static inline void write_trajectory_log_row(double t, double current_mass,
           est_state->angular_vel_B.z);
 }
 
-static inline void write_reentry_guidance_log_row(
-    double t, cartvec a_cmd_E, cartvec a_total_est, double desired_aoa_deg,
-    cartvec desired_flap_deflection, cartvec desired_omega_B) {
+static inline void
+write_reentry_guidance_log_row(double t, cartvec a_cmd_E, cartvec a_total_est,
+                               double desired_aoa_deg,
+                               cartvec desired_flap_deflection) {
   if (reentry_guidance_log_file == NULL) {
     return;
   }
 
-  fprintf(reentry_guidance_log_file,
-          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n", t, a_cmd_E.x,
-          a_cmd_E.y, a_cmd_E.z, a_total_est.x, a_total_est.y, a_total_est.z,
-          desired_aoa_deg, desired_flap_deflection.x, desired_flap_deflection.y,
-          desired_omega_B.x, desired_omega_B.y, desired_omega_B.z);
+  fprintf(reentry_guidance_log_file, "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n",
+          t, a_cmd_E.x, a_cmd_E.y, a_cmd_E.z, a_total_est.x, a_total_est.y,
+          a_total_est.z, desired_aoa_deg, desired_flap_deflection.x,
+          desired_flap_deflection.y);
 }
 
 #endif

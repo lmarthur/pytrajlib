@@ -50,6 +50,8 @@ typedef struct runparams {
   double nav_gain_0;
   double nav_gain_1;
   double tau_deflect;
+  double K_q;
+  double K_pp;
 
   double initial_x_error;     // initial x-error in meters
   double initial_pos_error;   // initial position error in meters

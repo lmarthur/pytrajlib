@@ -54,6 +54,9 @@ ffibuilder.cdef(
         double nav_gain_0;
         double nav_gain_1;
         double tau_deflect;
+        double K_q;
+        double K_pp;
+
 
         double initial_x_error;
         double initial_pos_error;

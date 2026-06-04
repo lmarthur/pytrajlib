@@ -1,15 +1,10 @@
 from copy import deepcopy
 
 import numpy as np
-from scipy.optimize import minimize
+import optuna
 
-from pytrajlib._traj import lib as traj
-from pytrajlib.runtime import (
-    _LOADING_BAR_DISABLED,
-    _keep_alive,
-    create_runparams_struct,
-    impact_data_to_df,
-)
+from pytrajlib import runtime
+from pytrajlib.runtime import _keep_alive
 from pytrajlib.utils import get_miss_distance
 
 _DISABLED_ERROR_KEYS = (
@@ -36,88 +31,138 @@ def _prepare_optimizer_config(config_dict, extra_updates=None):
 
 
 def _evaluate_candidate(config_dict, parameter_names, parameter_values):
+    """Loss function is mean squared miss distance to penalize outliers."""
+    config = deepcopy(config_dict)
     for name, value in zip(parameter_names, parameter_values):
-        config_dict[name] = float(value)
+        config[name] = float(value)
 
-    rp = create_runparams_struct(config_dict)
-    impact_df = impact_data_to_df(traj.mc_run(rp[0]), config_dict)
-    return np.mean(
-        get_miss_distance(
-            impact_df=impact_df,
-            aimpoint=(config_dict["x_aim"], config_dict["y_aim"], config_dict["z_aim"]),
-        )
+    impact_df = runtime.run(
+        config, min(config["num_runs"], 16), show_progress_bar=False
     )
 
-
-def _run_nelder_mead(config_dict, parameter_names, x0, bounds, extra_updates, log_fn):
-    _keep_alive["loading_bar"] = _LOADING_BAR_DISABLED
-    objective_config = _prepare_optimizer_config(config_dict, extra_updates)
-
-    def objective(parameter_values):
-        miss_dist = _evaluate_candidate(
-            objective_config, parameter_names, parameter_values
-        )
-
-        _keep_alive.clear()
-        _keep_alive["loading_bar"] = _LOADING_BAR_DISABLED
-        print(log_fn(miss_dist, parameter_values))
-
-        return miss_dist
-
-    result = minimize(
-        objective,
-        x0=tuple(float(value) for value in x0),
-        method="Nelder-Mead",
-        bounds=bounds,
-        options=dict(maxfev=200),
+    dist = get_miss_distance(
+        impact_df=impact_df,
+        aimpoint=(config["x_aim"], config["y_aim"], config["z_aim"]),
     )
-
-    print(result)
-    return tuple(float(value) for value in result.x)
+    return np.mean(dist**2)
 
 
 def optimize_boost(config_dict):
     """
     Tune initial thrust angle and desired flight time for an optimally lofted
-    flight.
+    flight using Optuna.
     """
     tf_des = config_dict["t_des_final"]
     theta_long = config_dict["theta_long"]
 
-    return _run_nelder_mead(
-        config_dict,
-        parameter_names=("t_des_final", "theta_long"),
-        x0=(tf_des, theta_long),
-        bounds=[(300, 5000), (0, np.pi)],
-        extra_updates={
-            "gnss_nav": 0,
-            "perfect_boost": 0,
-            "rv_maneuv": 0,
-        },
-        log_fn=lambda miss_dist, values: (
-            f"{miss_dist=:.9f} (avg), {float(values[0]):.9f}, {float(values[1]):.9f}"
-        ),
-    )
+    extra_updates = {
+        "gnss_nav": 0,
+        "perfect_boost": 0,
+        "rv_maneuv": 0,
+        "ballistic_drag": 1,
+        # Important to note that the optimizer uses the exponential atmosphere wtih gaussian perturbations,
+        # not the EarthGram atmospheres which are reserved for the actual simulation.
+        # This prevents overfitting.
+        "atm_model": 1 if config_dict["atm_model"] > 0 else 0,
+    }
+
+    objective_config = _prepare_optimizer_config(config_dict, extra_updates)
+
+    def optuna_objective(trial):
+        t_des_final = trial.suggest_float("t_des_final", 300.0, 5000.0)
+        theta_long = trial.suggest_float("theta_long", 0.0, np.pi)
+
+        miss_dist = _evaluate_candidate(
+            objective_config,
+            ("t_des_final", "theta_long"),
+            (t_des_final, theta_long),
+        )
+
+        _keep_alive.clear()
+
+        return miss_dist
+
+    study = optuna.create_study(direction="minimize")
+    study.enqueue_trial({"t_des_final": tf_des, "theta_long": theta_long})
+    study.optimize(optuna_objective, n_trials=100)
+
+    print(study.best_params)
+    return dict(study.best_params)
 
 
 def optimize_maneuv(config_dict):
     """
-    Tune tau_deflect and nav_gain for realistic RV maneuverability.
+    Tune tau_deflect and nav_gain for realistic RV maneuverability using Optuna.
+    Returns the best parameter dictionary found by Optuna.
     """
-    return _run_nelder_mead(
-        config_dict,
-        parameter_names=("tau_deflect", "nav_gain"),
-        x0=(
-            config_dict["tau_deflect"],
-            config_dict["nav_gain"],
-        ),
-        bounds=[(1e-3, 100), (1, 10)],
-        extra_updates={
-            "gnss_nav": 1,
-            "perfect_boost": 0,
-            "rv_maneuv": 1,
-        },
-        log_fn=lambda miss_dist, values: (
-            f"{miss_dist=:.9f} (avg), {float(values[0]):.9f}, {float(values[1]):.9f}"
-        ),
+    # Optuna should run with a prepared objective config that disables
+    # non-deterministic error sources and limits output.
+    extra_updates = {
+        "gnss_nav": 1,
+        "perfect_boost": 0,
+        "rv_maneuv": 1,
+        "ballistic_drag": 0,
+        # Important to note that the optimizer uses the exponential atmosphere wtih gaussian perturbations,
+        # not the EarthGram atmospheres which are reserved for the actual simulation.
+        # This prevents overfitting.
+        "atm_model": 1 if config_dict["atm_model"] > 0 else 0,
+    }
+
+    objective_config = _prepare_optimizer_config(config_dict, extra_updates)
+
+    def optuna_objective(trial):
+        # Suggest parameters to tune.
+        max_deflection_angle = trial.suggest_float("max_deflection_angle", 1e-6, 10.0)
+        nav_gain_0 = trial.suggest_float("nav_gain_0", 1e-6, 100.0, log=True)
+        nav_gain_1 = trial.suggest_float("nav_gain_1", 1e-6, 100.0, log=True)
+        # Restrict tau_delta to always be greater than the simulation time step
+        tau_deflect = trial.suggest_float(
+            "tau_deflect",
+            config_dict["time_step_reentry"] + config_dict["time_step_reentry"] * 1e-6,
+            1.0,
+            log=True,
+        )
+        # Include control gains in optimization
+        K_q = trial.suggest_float("K_q", -50.0, 0.0)
+        K_pp = trial.suggest_float("K_pp", 0.0, 50.0)
+
+        parameter_names = (
+            "max_deflection_angle",
+            "nav_gain_0",
+            "nav_gain_1",
+            "tau_deflect",
+            "K_q",
+            "K_pp",
+        )
+
+        parameter_values = (
+            max_deflection_angle,
+            nav_gain_0,
+            nav_gain_1,
+            tau_deflect,
+            K_q,
+            K_pp,
+        )
+
+        miss_dist = _evaluate_candidate(
+            objective_config, parameter_names, parameter_values
+        )
+
+        return miss_dist
+
+    study = optuna.create_study(direction="minimize")
+
+    # Seed the first trial with reasonably good values
+    study.enqueue_trial(
+        {
+            "max_deflection_angle": 5.0,
+            "nav_gain_0": 10.11157952873111,
+            "nav_gain_1": 0.9570502146004836,
+            "tau_deflect": 0.44159947682865963,
+            "K_q": -1.0,
+            "K_pp": 1.0,
+        }
     )
+
+    study.optimize(optuna_objective, n_trials=100)
+    return study.best_params

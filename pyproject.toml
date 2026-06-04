@@ -15,6 +15,7 @@ dependencies = [
     "scipy>=1.15.3",
     "tqdm>=4.67.3",
     "cffi>=2.0.0",
+    "optuna>=4.9.0",
 ]
 
 [dependency-groups]
