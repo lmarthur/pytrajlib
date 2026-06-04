@@ -37,7 +37,8 @@ reentry_vel = 7500
 perfect_boost = 0
 # If 1, optimize t_des_final/theta_long. If 0, use provided values directly.
 optimize_boost = 0
-# If 1, optimize tau_deflect and nav_gain with rv_maneuv forced to 1 during optimization.
+# If 1, optimize the maneuver parameters with `rv_maneuv` forced to 1 during optimization:
+# `max_deflection_angle`, `nav_gain_0`, `nav_gain_1`, `tau_deflect`, `K_q`, and `K_pp`.
 optimize_maneuv = 0
 t_des_final = 2530.768046590356
 t_vert_boost = 10
