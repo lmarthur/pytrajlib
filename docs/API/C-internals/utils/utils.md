@@ -104,23 +104,6 @@ Performs linear interpolation on tabulated data.
 | --- | --- |
 | `double` | Interpolated y-value. |
 
-## `min`
-
-Returns the minimum of two values.
-
-### Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `a` | `double` | First value. |
-| `b` | `double` | Second value. |
-
-### Returns
-
-| Type | Description |
-| --- | --- |
-| `double` | Smaller of `a` and `b`. |
-
 ## `sign`
 
 Returns the sign of a value.

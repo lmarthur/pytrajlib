@@ -166,22 +166,6 @@ double linterp(double x, double xs[], double ys[], int n) {
 }
 
 /**
- * Returns the minimum of two values.
- *
- * @param a First value.
- * @param b Second value.
- * @return Smaller of `a` and `b`.
- */
-double min(double a, double b) {
-
-  if (a < b) {
-    return a;
-  } else {
-    return b;
-  }
-}
-
-/**
  * Returns the sign of a value.
  *
  * @param x Input value.
