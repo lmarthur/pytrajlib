@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include "../src/include/utils/utils.h"
 #include <tau/tau.h>
 

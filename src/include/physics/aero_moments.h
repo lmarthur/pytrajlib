@@ -1,6 +1,8 @@
 #ifndef AERO_MOMENTS_H
 #define AERO_MOMENTS_H
 
+#define _USE_MATH_DEFINES
+
 #include "../math/linalg.h"
 #include "../models/vehicle.h"
 #include "aero_forces.h"

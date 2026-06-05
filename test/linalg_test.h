@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include "../src/include/math/linalg.h"
 #include <math.h>
 #include <tau/tau.h>

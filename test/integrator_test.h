@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include "../src/include/integrator.h"
 #include <stdint.h>
 #include <tau/tau.h>
@@ -39,7 +41,8 @@ static int physics_test_drift(runparams *run_params, imu *imu, vehicle *vehicle,
 
 // No stochastic diffusion term for this test: it is intended to validate only
 // the deterministic Euler-Maruyama update path.
-static void physics_test_diffusion(imu *imu, state *est_state_diffusion, state *true_state_diffusion) {
+static void physics_test_diffusion(imu *imu, state *est_state_diffusion,
+                                   state *true_state_diffusion) {
   (void)imu;
   *est_state_diffusion = (state){0};
 }
@@ -73,7 +76,8 @@ static int physics_test_zero_drift(runparams *run_params, imu *imu,
 // orientation-angle-change SDE so the Wiener increment scaling can be checked
 // directly.
 static void physics_test_constant_diffusion(imu *imu,
-                                            state *est_state_diffusion, state *true_state_diffusion) {
+                                            state *est_state_diffusion,
+                                            state *true_state_diffusion) {
   (void)imu;
   *est_state_diffusion = (state){0};
   est_state_diffusion->orientation_angle_change.x = 2.0;
@@ -108,7 +112,8 @@ static int exp_decay_drift(runparams *run_params, imu *imu, vehicle *vehicle,
   return 1;
 }
 
-static void exp_decay_zero_diffusion(imu *imu, state *est_state_diffusion, state *true_state_diffusion) {
+static void exp_decay_zero_diffusion(imu *imu, state *est_state_diffusion,
+                                     state *true_state_diffusion) {
   (void)imu;
   *est_state_diffusion = (state){0};
 }

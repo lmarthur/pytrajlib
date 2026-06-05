@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include "../../src/include/physics/thrust.h"
 #include <tau/tau.h>
 

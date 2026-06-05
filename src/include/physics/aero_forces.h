@@ -1,6 +1,8 @@
 #ifndef AERO_FORCES_H
 #define AERO_FORCES_H
 
+#define _USE_MATH_DEFINES
+
 #include "../math/linalg.h"
 #include "../models/vehicle.h"
 #include "drag.h"

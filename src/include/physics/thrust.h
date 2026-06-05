@@ -1,6 +1,8 @@
 #ifndef THRUST_H
 #define THRUST_H
 
+#define _USE_MATH_DEFINES
+
 #include <math.h>
 
 #include "../models/atmosphere.h"
