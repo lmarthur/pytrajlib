@@ -1,6 +1,6 @@
 [project]
 name = "pytrajlib"
-version = "1.0.0-alpha.13"
+version = "1.0.0-alpha.14"
 description = "Simulate the flight of a ballistic or maneuverable missile"
 readme = "README.md"
 authors = [
@@ -36,3 +36,4 @@ build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
 before-all = "uname -a"
+build = "cp313-* cp314-*"
