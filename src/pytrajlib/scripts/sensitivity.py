@@ -1,136 +1,336 @@
+import tomllib
+from copy import deepcopy
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import scienceplots
 
 import pytrajlib as ptl
-import pandas as pd
-import matplotlib.pyplot as plt
-from itertools import product
-from multiprocessing import Pool
+from pytrajlib.runtime import _get_default_config
 
-MAX_PROCESSES = 14
+# Avoid unused import warning by asserting scienceplots
+assert scienceplots
 
-DEFAULT = {        
-    "num_runs": 50,
-        "optimize_boost": False,
-        "traj_output": False,
-}
 
-TIME_STEP_PARAMS = (
-    "time_step_lambert",
-    "time_step_midcourse",
-    "time_step_atm",
+plt.style.use(["science"])
+plt.style.use(["no-latex"])
+
+
+SCALE_FACTORS = np.logspace(-1, 1, 7)
+SENSITIVITY_SPECS = (
+    {
+        "name": "initial_pos_error",
+        "label": "Initial position error",
+        "sweep_kind": "scale",
+    },
+    {
+        "name": "initial_vel_error",
+        "label": "Initial velocity error",
+        "sweep_kind": "scale",
+    },
+    {
+        "name": "initial_angle_error",
+        "label": "Initial angle error",
+        "sweep_kind": "scale",
+    },
+    {
+        "name": "acc_scale_stability",
+        "label": "Accelerometer scale stability",
+        "sweep_kind": "scale",
+    },
+    {
+        "name": "gyro_bias_stability",
+        "label": "Gyro bias stability",
+        "sweep_kind": "scale",
+    },
+    {"name": "gyro_noise", "label": "Gyroscope noise", "sweep_kind": "scale"},
+    {"name": "gnss_noise", "label": "GNSS noise", "sweep_kind": "scale"},
+    {"name": "grav_error", "label": "Gravity perturbation", "sweep_kind": "binary"},
+    {
+        "name": "actuator_resolution",
+        "label": "Actuator resolution",
+        "sweep_kind": "scale",
+    },
+    {"name": "actuator_force", "label": "Actuator force", "sweep_kind": "scale"},
+    {
+        "name": "deflection_time",
+        "label": "Actuator deflection time",
+        "sweep_kind": "scale",
+    },
+    {
+        "name": "time_step_boost",
+        "label": "Boost-phase time step",
+        "sweep_kind": "scale",
+    },
+    {
+        "name": "time_step_lambert",
+        "label": "Lambert maneuver time step",
+        "sweep_kind": "scale",
+    },
+    {
+        "name": "time_step_midcourse",
+        "label": "Midcourse time step",
+        "sweep_kind": "scale",
+    },
+    {
+        "name": "time_step_reentry",
+        "label": "Reentry time step",
+        "sweep_kind": "scale",
+    },
 )
 
-TIME_STEP_VALUES = [1e-4, 1e-3, 1e-2]
 
-NO_ERROR = {**DEFAULT,
-            "num_runs": 1,
-        "initial_x_error":0.0,
-        "initial_pos_error":0.0,
-        "initial_vel_error":0.0,
-        "initial_angle_error":0.0,
-        "acc_scale_stability":0.0,
-        "gyro_bias_stability":0.0,
-        "gyro_noise":0.0,
-        "gnss_noise":0.0,
-}
-
-def run_single_param(params):
-    impact_df = ptl.run(**params)
-    return impact_df
+def pretty_parameter_name(parameter_name: str) -> str:
+    return parameter_name.replace("_", " ").strip().capitalize()
 
 
-def _run_single_param_for_values(values):
-    params = {**DEFAULT}
-    params.update(dict(zip(TIME_STEP_PARAMS, values)))
-    df = run_single_param(params=params)
-    for param_name, value in zip(TIME_STEP_PARAMS, values):
-        df[param_name] = value
-    return df
+def load_config(config_path: Path | None) -> dict:
+    base_config = _get_default_config().copy()
+    if config_path is None:
+        return base_config
+
+    with config_path.open("rb") as handle:
+        loaded = tomllib.load(handle)
+
+    merged = base_config.copy()
+    for section_name in ("RUN", "FLIGHT", "VEHICLE", "ERRORPARAMS"):
+        merged.update(loaded.get(section_name, {}))
+    return merged
 
 
-def run_matrix(param_values):
-    combinations = list(
-        product(*(param_values[param_name] for param_name in TIME_STEP_PARAMS))
+def make_case_config(
+    base_config: dict, parameter_name: str, parameter_value: float
+) -> dict:
+    case_config = deepcopy(base_config)
+    case_config.update(
+        {
+            "traj_output": 0,
+            "optimize_boost": 0,
+            "optimize_maneuv": 0,
+            "random_seed": 0,
+            "initial_pos_error": 0.0,
+            "initial_vel_error": 0.0,
+            "initial_angle_error": 0.0,
+            "acc_scale_stability": 0.0,
+            "gyro_bias_stability": 0.0,
+            "gyro_noise": 0.0,
+            "gnss_noise": 0.0,
+            "grav_error": 0,
+        }
     )
-    print(combinations)
-    with Pool(MAX_PROCESSES) as p:
-        results = p.map(_run_single_param_for_values, combinations)
 
-    return pd.concat(results, ignore_index=True)
+    if parameter_name == "grav_error":
+        case_config[parameter_name] = int(parameter_value)
+    else:
+        case_config[parameter_name] = float(parameter_value)
+
+    return case_config
 
 
-def summarize_matrix(impact_df):
-    grouped = (
-        impact_df.groupby(list(TIME_STEP_PARAMS))["miss_distance"]
-        .median()
-        .sort_index()
+def build_sweep_values(spec: dict, base_config: dict) -> tuple[np.ndarray, np.ndarray]:
+    if spec["sweep_kind"] == "binary":
+        return np.array([0.0, 1.0]), np.array([0.0, 1.0])
+
+    baseline_value = float(base_config.get(spec["name"], 0.0))
+    if baseline_value == 0.0:
+        raise SystemExit(
+            f"{spec['name']} has a zero baseline in the selected config, so a log sweep is not meaningful."
+        )
+
+    return SCALE_FACTORS, baseline_value * SCALE_FACTORS
+
+
+def run_case(
+    base_config: dict,
+    parameter_name: str,
+    parameter_value: float,
+    num_runs: int,
+    num_processes: int,
+) -> dict:
+    case_config = make_case_config(base_config, parameter_name, parameter_value)
+    case_config["num_runs"] = num_runs
+    case_config.pop("num_processes", None)
+
+    impact_df = ptl.run(
+        config=None,
+        plot_trajectory=False,
+        plot_impact=False,
+        num_processes=num_processes,
+        **case_config,
     )
-    return grouped
+
+    miss_distance = impact_df["miss_distance"].to_numpy()
+    return {
+        "cep": float(np.quantile(miss_distance, 0.5)),
+        "mean_miss_distance": float(np.mean(miss_distance)),
+        "std_miss_distance": float(np.std(miss_distance)),
+    }
 
 
-def plot_scatter_series(grouped, output_path="sensitivity-lines.png"):
-    midcourse_values = grouped.index.get_level_values("time_step_midcourse").unique()
-    lambert_values = grouped.index.get_level_values("time_step_lambert").unique()
-    n_panels = len(midcourse_values)
-    fig, axes = plt.subplots(
-        1,
-        n_panels,
-        figsize=(5 * n_panels, 4),
-        sharex=True,
-        sharey=True,
-    )
-    if n_panels == 1:
-        axes = [axes]
+def sweep_parameter(
+    base_config: dict, spec: dict, num_runs: int, num_processes: int
+) -> pd.DataFrame:
+    factor_values, actual_values = build_sweep_values(spec, base_config)
+    rows = []
 
-    vmin = grouped.min()
-    vmax = grouped.max()
-    cmap = plt.get_cmap("tab10")
+    for factor, actual_value in zip(factor_values, actual_values):
+        run_result = run_case(
+            base_config, spec["name"], actual_value, num_runs, num_processes
+        )
+        rows.append(
+            {
+                "parameter": spec["name"],
+                "label": spec["label"],
+                "sweep_kind": spec["sweep_kind"],
+                "factor": float(factor),
+                "value": float(actual_value),
+                "baseline": float(base_config.get(spec["name"], 0.0)),
+                **run_result,
+            }
+        )
+        print(
+            f"{spec['name']} factor={factor:.6g} value={actual_value:.6g} cep={run_result['cep']:.6f}"
+        )
 
-    for ax, midcourse_value in zip(axes, midcourse_values):
-        midcourse_slice = grouped.xs(midcourse_value, level="time_step_midcourse")
-        for color_index, lambert_value in enumerate(lambert_values):
-            series = midcourse_slice.xs(lambert_value, level="time_step_lambert")
-            series = series.sort_index()
-            ax.plot(
-                series.index,
-                series.values,
-                color=cmap(color_index % cmap.N),
-                linewidth=1.5,
-                label=f"Lambert = {lambert_value:g}",
-            )
-            ax.scatter(
-                series.index,
-                series.values,
-                color=cmap(color_index % cmap.N),
-                s=30,
-            )
+    return pd.DataFrame(rows)
 
-        ax.set_title(f"time_step_midcourse = {midcourse_value:g}")
-        ax.set_xlabel("time_step_atm")
-        ax.set_ylabel("CEP (m)")
-        ax.set_xscale("log")
-        ax.grid(True, which="both", linestyle=":", linewidth=0.6, alpha=0.6)
 
-    handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(
-        handles,
-        labels,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.02),
-        ncol=min(len(labels), 4),
-        frameon=False,
-    )
-    fig.suptitle("Sensitivity of CEP to time steps", y=1.12)
-    fig.tight_layout(rect=[0, 0, 1, 0.9])
-    fig.savefig(output_path, dpi=200, bbox_inches="tight")
+def plot_combined(results: pd.DataFrame, output_dir: Path) -> tuple[Path, Path]:
+    scale_results = results[results["sweep_kind"] == "scale"].copy()
+    fig, ax = plt.subplots(figsize=(7.2, 5.0))
+
+    colors = plt.cm.viridis(np.linspace(0, 1, len(scale_results["parameter"].unique())))
+    for color, parameter_name in zip(colors, scale_results["parameter"].unique()):
+        subset = scale_results[
+            scale_results["parameter"] == parameter_name
+        ].sort_values("factor")
+        ax.errorbar(
+            subset["factor"],
+            subset["cep"],
+            yerr=subset["std_miss_distance"],
+            marker="o",
+            linewidth=1.4,
+            markersize=4,
+            capsize=2.5,
+            color=color,
+            label=pretty_parameter_name(parameter_name),
+        )
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("Estimated parameter scale factor (E)")
+    ax.set_ylabel("CEP (m)")
+    ax.set_title("CEP sensitivity to error parameters")
+    ax.grid(True, linestyle=":", linewidth=0.7, alpha=0.6)
+    ax.legend(frameon=False, fontsize=8, ncols=2)
+    fig.tight_layout()
+
+    pdf_path = output_dir / "sensitivity_combined.pdf"
+    png_path = output_dir / "sensitivity_combined.png"
+    fig.savefig(pdf_path, bbox_inches="tight")
+    fig.savefig(png_path, dpi=250, bbox_inches="tight")
     plt.close(fig)
+    return pdf_path, png_path
 
 
-if __name__ == "__main__":
-    param_values = {param_name: TIME_STEP_VALUES for param_name in TIME_STEP_PARAMS}
-    impact_df = run_matrix(param_values)
-    impact_df.to_csv("sensitivity-timestep.csv", index=False)
-    # impact_df = pd.read_csv("sensitivity-timestep.csv")
-    print(impact_df)
-    grouped = summarize_matrix(impact_df)
-    print(grouped)
-    plot_scatter_series(grouped)
+def plot_panels(results: pd.DataFrame, output_dir: Path) -> tuple[Path, Path]:
+    ordered_parameters = [
+        spec["name"]
+        for spec in SENSITIVITY_SPECS
+        if spec["name"] in results["parameter"].unique()
+    ]
+    n_panels = len(ordered_parameters)
+    n_cols = 3
+    n_rows = int(np.ceil(n_panels / n_cols))
+
+    fig, axes = plt.subplots(
+        n_rows, n_cols, figsize=(12.0, 3.5 * n_rows), squeeze=False
+    )
+    axes_flat = axes.ravel()
+
+    for axis, parameter_name in zip(axes_flat, ordered_parameters):
+        subset = results[results["parameter"] == parameter_name].sort_values("factor")
+        spec = next(
+            spec for spec in SENSITIVITY_SPECS if spec["name"] == parameter_name
+        )
+
+        x_values = (
+            subset["factor"] if spec["sweep_kind"] == "scale" else subset["value"]
+        )
+        axis.errorbar(
+            x_values,
+            subset["cep"],
+            yerr=subset["std_miss_distance"],
+            marker="o",
+            linewidth=1.4,
+            markersize=4,
+            capsize=2.5,
+            color="#1f77b4",
+        )
+
+        if spec["sweep_kind"] == "scale":
+            axis.set_xscale("log")
+            axis.set_xlabel("Scale factor")
+        else:
+            axis.set_xticks([0, 1], ["off", "on"])
+            axis.set_xlabel("Gravity error flag")
+
+        axis.set_yscale("log")
+        axis.set_ylabel("CEP (m)")
+        axis.set_title(spec["label"])
+        axis.grid(True, linestyle=":", linewidth=0.7, alpha=0.6)
+
+    for axis in axes_flat[n_panels:]:
+        axis.axis("off")
+
+    fig.suptitle("Sensitivity of CEP to error sources", y=1.01, fontsize=12)
+    fig.tight_layout()
+
+    pdf_path = output_dir / "sensitivity_panels.pdf"
+    png_path = output_dir / "sensitivity_panels.png"
+    fig.savefig(pdf_path, bbox_inches="tight")
+    fig.savefig(png_path, dpi=250, bbox_inches="tight")
+    plt.close(fig)
+    return pdf_path, png_path
+
+
+def run_sensitivity(
+    base_config: dict | None = None,
+    output_dir: Path | None = None,
+) -> pd.DataFrame:
+    if base_config is None:
+        base_config = load_config(None)
+
+    output_dir = output_dir or Path()
+    output_dir = output_dir.resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    num_runs = int(base_config.get("num_runs", 30))
+    num_processes = int(base_config.get("num_processes", 10))
+    config_for_runs = {k: v for k, v in base_config.items() if k != "num_processes"}
+
+    frames = []
+    for spec in SENSITIVITY_SPECS:
+        if (
+            spec["sweep_kind"] == "scale"
+            and float(base_config.get(spec["name"], 0.0)) == 0.0
+        ):
+            print(f"Skipping {spec['name']}: baseline is zero in the selected config.")
+            continue
+        frames.append(sweep_parameter(config_for_runs, spec, num_runs, num_processes))
+
+    results = pd.concat(frames, ignore_index=True)
+    csv_path = output_dir / "sensitivity_results.csv"
+    results.to_csv(csv_path, index=False)
+
+    combined_pdf, combined_png = plot_combined(results, output_dir)
+    panels_pdf, panels_png = plot_panels(results, output_dir)
+
+    print(f"Saved data to {csv_path}")
+    print(
+        f"Saved plots to {combined_pdf}, {combined_png}, {panels_pdf}, and {panels_png}"
+    )
+
+    return results

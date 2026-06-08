@@ -20,10 +20,10 @@ def save_mean_atm_profile(atm_profile_path):
 
     # check if the file exists
     if os.path.isfile(mean_atm_path):
-        print(f"Mean EarthGram file exists")
+        print("Mean EarthGram file exists")
         return
 
-    print(f"Creating mean EarthGram file")
+    print("Creating mean EarthGram file")
 
     mean_atm = atm.groupby(1)[[2, 3, 4, 5]].apply(
         lambda altitude_df: altitude_df.mean(axis=0)

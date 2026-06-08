@@ -10,8 +10,6 @@ TEST(drag, get_drag_acc) {
   state state = {0};
   runparams run_params = {0};
   run_params.grav_error = 0;
-  run_params.cl_pert =
-      0; // Set to zero for this test, as we are only testing drag
 
   grav grav = init_grav(&run_params);
   atm_model atm_model = init_exp_atm(&run_params);

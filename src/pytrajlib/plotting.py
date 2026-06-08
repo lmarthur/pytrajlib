@@ -2,7 +2,6 @@
 Plotting utilities for trajectory and impact analysis.
 """
 
-import os
 from pathlib import Path
 from typing import Optional, Tuple
 

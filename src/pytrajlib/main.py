@@ -3,15 +3,12 @@ import importlib.resources
 import json
 import os
 import tomllib
-from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 # from tqdm.auto import tqdm
-from tqdm.auto import tqdm
-
 from pytrajlib import runtime
 
 # Import plotting functions
@@ -19,7 +16,6 @@ from pytrajlib.optimizers import optimize_boost, optimize_maneuv
 from pytrajlib.plotting import (
     create_impact_plot,
     create_traj_plots,
-    plot_reentry_guidance,
 )
 from pytrajlib.runtime import (
     _TEMP_DIR,
@@ -27,11 +23,29 @@ from pytrajlib.runtime import (
     _get_default_config,
     _keep_alive,
     _set_aimpoint_from_range,
-    impact_data_to_df,
 )
+from pytrajlib.scripts.atm_plot import save_atm_plots
+from pytrajlib.scripts.sensitivity import run_sensitivity
 from pytrajlib.utils import get_miss_distance
 
 np.random.seed(0)
+
+
+def _load_config_dict(config: str = None):
+    if config is not None:
+        print(f"Loading config from: {config}")
+        with open(config) as f:
+            config_dict = tomllib.loads(f.read())
+            config_dict = {
+                **config_dict.get("RUN", {}),
+                **config_dict.get("FLIGHT", {}),
+                **config_dict.get("VEHICLE", {}),
+                **config_dict.get("ERRORPARAMS", {}),
+            }
+    else:
+        config_dict = _get_default_config().copy()
+
+    return config_dict
 
 
 def run(
@@ -53,21 +67,7 @@ def run(
         num_processes: number of concurrent processes on which to run simulation. Default is 5/8 of the number of cores available so if you have 16 cores, the number of concurrent processes will be 10.
         **kwargs: all other kwargs (see default TOML)
     """
-    config_dict = {}
-
-    # Load config file if provided
-    if config is not None:
-        print(f"Loading config from: {config}")
-        with open(config) as f:
-            config_dict = tomllib.loads(f.read())
-            config_dict = {
-                **config_dict.get("RUN", {}),
-                **config_dict.get("FLIGHT", {}),
-                **config_dict.get("VEHICLE", {}),
-                **config_dict.get("ERRORPARAMS", {}),
-            }
-    else:
-        config_dict = _get_default_config().copy()
+    config_dict = _load_config_dict(config)
 
     explicit_kwargs = {k: v for k, v in kwargs.items() if v is not _UNSET}
 
@@ -182,6 +182,11 @@ def cli():
         help="Path to save plots",
     )
     parser.add_argument(
+        "--sensitivity",
+        action="store_true",
+        help="Run the error-parameter sensitivity sweep instead of a single simulation.",
+    )
+    parser.add_argument(
         "--num-processes",
         type=int,
         default=10,
@@ -201,8 +206,39 @@ def cli():
     config = kwargs.pop("config")
     plot_trajectory = kwargs.pop("plot_trajectory")
     plot_impact = kwargs.pop("plot_impact")
+    sensitivity = kwargs.pop("sensitivity")
+    num_processes = int(kwargs.pop("num_processes", 10))
 
     plot_path = kwargs.pop("plot_path")
+
+    if sensitivity:
+        base_config = _load_config_dict(config)
+        explicit_kwargs = {k: v for k, v in kwargs.items() if v is not _UNSET}
+        if explicit_kwargs:
+            base_config.update(explicit_kwargs)
+
+        base_config["num_processes"] = num_processes
+
+        # Decide output directory: prefer explicit --plot-path, otherwise
+        # place under `output/<run_name>` to match typical behavior.
+        run_name = str(base_config.get("run_name", "sensitivity"))
+        output_dir = (
+            Path(plot_path) if plot_path is not None else Path("output") / run_name
+        )
+
+        sensitivity_results = run_sensitivity(
+            base_config=base_config,
+            output_dir=output_dir,
+        )
+        print(sensitivity_results)
+
+        # Also generate and save atmospheric plots into the same folder.
+        try:
+            save_atm_plots(output_dir)
+        except Exception as exc:
+            print(f"Warning: failed to generate atm plots: {exc}")
+
+        return
 
     # Set default plot path to current directory if --plot is set but --plot-path is not
     if (plot_trajectory or plot_impact) and plot_path is None:
@@ -213,11 +249,14 @@ def cli():
         plot_trajectory=plot_trajectory,
         plot_impact=plot_impact,
         plot_path=plot_path,
+        num_processes=num_processes,
         return_config=True,
         **kwargs,
     )
     if plot_impact:
-        impact_df.to_csv(Path(plot_path) / "impact.csv", index=False)
+        csv_path = Path(plot_path) / "impact.csv"
+        impact_df.to_csv(csv_path, index=False)
+        print(f"Saved: {csv_path}")
     print(impact_df)
     from pytrajlib.utils import get_local_impact
 

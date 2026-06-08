@@ -125,13 +125,6 @@ void print_config(runparams *run_params) {
   printf("Gyro noise: %f\n", run_params->gyro_noise);
   printf("GNSS noise: %f\n", run_params->gnss_noise);
   printf("GNSS frequency: %f Hz\n", run_params->gnss_freq);
-  printf("Coefficient of lift perturbation: %f\n", run_params->cl_pert);
-  printf("Step acceleration perturbation magnitude: %f\n",
-         run_params->step_acc_mag);
-  printf("Step acceleration perturbation height: %f\n",
-         run_params->step_acc_hgt);
-  printf("Step acceleration perturbation duration: %f\n",
-         run_params->step_acc_dur);
 }
 
 /**

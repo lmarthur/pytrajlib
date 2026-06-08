@@ -81,10 +81,3 @@ gyro_noise = 1e-8
 gnss_noise = 1e-1
 # GNSS update frequency in Hz
 gnss_freq = 1.0
-cl_pert = 0
-# Step function acceleration magnitude (m/s^2)
-step_acc_mag = 0
-# Step function acceleration height (m)
-step_acc_hgt = 0
-# Step function acceleration duration (s)
-step_acc_dur = 0

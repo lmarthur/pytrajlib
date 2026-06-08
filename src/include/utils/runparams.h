@@ -64,11 +64,6 @@ typedef struct runparams {
   double gyro_noise;          // gyro noise in rad/s/sqrt(s)
   double gnss_noise;          // GNSS error in meters
   double gnss_freq;           // GNSS update frequency in Hz
-  double cl_pert;             // Coefficient of lift perturbation
-  double step_acc_mag;        // Step acceleration perturbation magnitude
-  double step_acc_hgt; // Step acceleration perturbation height (altitude) in
-                       // meters
-  double step_acc_dur; // Step acceleration perturbation duration in seconds
 
   // RV parameter overrides (-1 = use vehicle type default)
   double rv_mass;      // RV mass in kg

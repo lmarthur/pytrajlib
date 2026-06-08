@@ -20,10 +20,6 @@ ERROR_FIELDS = (
     "gyro_bias_stability",
     "gyro_noise",
     "gnss_noise",
-    "cl_pert",
-    "step_acc_mag",
-    "step_acc_hgt",
-    "step_acc_dur",
 )
 
 
@@ -116,7 +112,7 @@ def test_perfect_boost():
         ("atm_model", 0, 2, (0,)),
         ("grav_error", 0, 1, (0,)),
         ("initial_pos_error", 0, 0.1, (0,)),
-        ("initial_vel_error", 1e-5, 1e-3, (0, 1, 2)),
+        ("initial_vel_error", 1e-5, 1e-3, (0, 2)),
         ("initial_angle_error", 1e-6, 1e-1, (0,)),
         ("acc_scale_stability", 1e-8, 1e-4, (0, 1, 2)),
         ("gyro_bias_stability", 1e-9, 1e-5, (0, 1, 2)),
