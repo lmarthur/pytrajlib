@@ -12,7 +12,7 @@ import pandas as pd
 from pytrajlib import runtime
 
 # Import plotting functions
-from pytrajlib.optimizers import optimize_boost, optimize_maneuv
+from pytrajlib.optimizers import optimize_boost, optimize_reentry
 from pytrajlib.plotting import (
     create_impact_plot,
     create_traj_plots,
@@ -85,7 +85,7 @@ def run(
     config_dict["trajectory_path"] = _TEMP_DIR + "/trajectory.txt"
     config_dict.setdefault("ballistic_drag", 0)
     config_dict.setdefault("optimize_boost", 1)
-    config_dict.setdefault("optimize_maneuv", 0)
+    config_dict.setdefault("optimize_reentry", 0)
     config_dict.setdefault("random_seed", -1)
     _set_aimpoint_from_range(config_dict)
 
@@ -98,9 +98,9 @@ def run(
     else:
         print("Skipping boost optimization; using configured t_des_final/theta_long")
 
-    if config_dict["optimize_maneuv"]:
+    if config_dict["optimize_reentry"]:
         if int(config_dict.get("rv_maneuv", 0)) == 1:
-            optimized_params = optimize_maneuv(config_dict)
+            optimized_params = optimize_reentry(config_dict)
             print(optimized_params)
             config_dict = {**config_dict, **optimized_params}
         else:

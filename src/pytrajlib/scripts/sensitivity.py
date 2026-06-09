@@ -79,6 +79,11 @@ SENSITIVITY_SPECS = (
         "label": "Reentry time step",
         "sweep_kind": "scale",
     },
+    {
+        "name": "gnss_nav",
+        "label": "GNSS Navigation",
+        "sweep_kind": "binary",
+    },
 )
 
 
@@ -108,7 +113,7 @@ def make_case_config(
         {
             "traj_output": 0,
             "optimize_boost": 0,
-            "optimize_maneuv": 0,
+            "optimize_reentry": 0,
             "random_seed": 0,
             "initial_pos_error": 0.0,
             "initial_vel_error": 0.0,

@@ -84,13 +84,13 @@ def optimize_boost(config_dict):
 
     study = optuna.create_study(direction="minimize")
     study.enqueue_trial({"t_des_final": tf_des, "theta_long": theta_long})
-    study.optimize(optuna_objective, n_trials=100)
+    study.optimize(optuna_objective, n_trials=config_dict["num_trials_optimizer"])
 
     print(study.best_params)
     return dict(study.best_params)
 
 
-def optimize_maneuv(config_dict):
+def optimize_reentry(config_dict):
     """
     Tune tau_deflect and nav_gain for realistic RV maneuverability using Optuna.
     Returns the best parameter dictionary found by Optuna.
@@ -155,14 +155,14 @@ def optimize_maneuv(config_dict):
     # Seed the first trial with reasonably good values
     study.enqueue_trial(
         {
-            "max_deflection_angle": 5.0,
-            "nav_gain_0": 10.11157952873111,
-            "nav_gain_1": 0.9570502146004836,
-            "tau_deflect": 0.44159947682865963,
-            "K_q": -1.0,
-            "K_pp": 1.0,
+            "max_deflection_angle": config_dict["max_deflection_angle"],
+            "nav_gain_0": config_dict["nav_gain_0"],
+            "nav_gain_1": config_dict["nav_gain_1"],
+            "tau_deflect": config_dict["tau_deflect"],
+            "K_q": config_dict["K_q"],
+            "K_pp": config_dict["K_pp"],
         }
     )
 
-    study.optimize(optuna_objective, n_trials=100)
+    study.optimize(optuna_objective, n_trials=config_dict["num_trials_optimizer"])
     return study.best_params

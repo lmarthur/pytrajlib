@@ -19,6 +19,7 @@ ffibuilder.cdef(
         char *mean_atm_path;
         int num_runs;
         int num_runs_optimizer;
+        int num_trials_optimizer;
         double time_step_boost;
         double time_step_lambert;
         double time_step_midcourse;
@@ -41,7 +42,7 @@ ffibuilder.cdef(
         double reentry_vel;
         int perfect_boost;
         int optimize_boost;
-        int optimize_maneuv;
+        int optimize_reentry;
         double t_des_final;
         double t_vert_boost;
 

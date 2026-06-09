@@ -1,10 +1,11 @@
 [RUN]
 run_name = "run_4"
 num_runs = 1000
-num_runs_optimizer = 10
+num_runs_optimizer = 25
+num_trials_optimizer = 100
 time_step_boost = 1e-4
 time_step_lambert = 1e-3
-time_step_midcourse = 0.01
+time_step_midcourse = 1e-2
 time_step_reentry = 1e-4
 traj_output = 1
 # Range is in meters
@@ -39,7 +40,7 @@ perfect_boost = 0
 optimize_boost = 0
 # If 1, optimize the maneuver parameters with `rv_maneuv` forced to 1 during optimization:
 # `max_deflection_angle`, `nav_gain_0`, `nav_gain_1`, `tau_deflect`, `K_q`, and `K_pp`.
-optimize_maneuv = 0
+optimize_reentry = 0
 t_des_final = 2384.729760125
 t_vert_boost = 10
 

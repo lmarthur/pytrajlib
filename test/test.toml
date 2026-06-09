@@ -2,6 +2,7 @@
 run_name = "test"
 num_runs = 10
 num_runs_optimizer = 1
+num_trials_optimizer = 100
 
 time_step_boost = 1e-2
 time_step_lambert = 1e-2
@@ -26,7 +27,7 @@ rv_maneuv = 0
 reentry_vel = 7500
 perfect_boost = 0
 optimize_boost = 0
-optimize_maneuv = 0
+optimize_reentry = 0
 t_des_final = 1869.5101831808277
 t_vert_boost = 10
 

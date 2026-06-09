@@ -2,14 +2,16 @@
 #define RUNPARAMS_H
 
 typedef struct runparams {
-  char *run_name;         // name of the run
-  char *output_path;      // path to the output directory
-  char *trajectory_path;  // path to the trajectory data file
-  char *atm_path;         // path to "atmprofiles.txt"
-  char *mean_atm_path;    // path to "mean_atm.txt"
-  int num_runs;           // number of Monte Carlo runs
-  int num_runs_optimizer; // number of runs to use during trajectory
-                          // optimization
+  char *run_name;           // name of the run
+  char *output_path;        // path to the output directory
+  char *trajectory_path;    // path to the trajectory data file
+  char *atm_path;           // path to "atmprofiles.txt"
+  char *mean_atm_path;      // path to "mean_atm.txt"
+  int num_runs;             // number of Monte Carlo runs
+  int num_runs_optimizer;   // number of runs to use during trajectory
+                            // optimization
+  int num_trials_optimizer; // number of Optuna trials to use during
+                            // optimization
   double time_step_boost; // time step in seconds during atmospheric boost phase
   double time_step_lambert;   // time step in seconds during exoatmospheric
                               // Lambert guidance phase
@@ -26,19 +28,19 @@ typedef struct runparams {
                     // modified Euler-Maruyama, 1 for SRA3)
   long random_seed; // RNG seed (-1 = auto-seed)
 
-  int grav_error;      // flag to include gravitational perturbations
-  int ballistic_drag;  // flag to use simplified reentry drag calculation
-  int atm_model;       // flag to select the atmospheric model
-  int gnss_nav;        // flag to include GNSS navigation
-  int rv_maneuv;       // flag to include guidance during the reentry phase
-  double reentry_vel;  // reentry velocity in meters per second
-  int perfect_boost;   // 1 perfect boost, 0 realistic
-  int optimize_boost;  // 1 optimize t_des_final/theta_long, 0 use provided
-  int optimize_maneuv; // 1 optimize maneuver params (max_deflection_angle,
-                       // nav_gain_0, nav_gain_1, tau_deflect, K_q, K_pp), 0 use
-                       // provided
-  double t_des_final;  // desired flight time (optimized by code)
-  double t_vert_boost; // Duration of vertical boost (optimized by code)
+  int grav_error;       // flag to include gravitational perturbations
+  int ballistic_drag;   // flag to use simplified reentry drag calculation
+  int atm_model;        // flag to select the atmospheric model
+  int gnss_nav;         // flag to include GNSS navigation
+  int rv_maneuv;        // flag to include guidance during the reentry phase
+  double reentry_vel;   // reentry velocity in meters per second
+  int perfect_boost;    // 1 perfect boost, 0 realistic
+  int optimize_boost;   // 1 optimize t_des_final/theta_long, 0 use provided
+  int optimize_reentry; // 1 optimize maneuver params (max_deflection_angle,
+                        // nav_gain_0, nav_gain_1, tau_deflect, K_q, K_pp), 0
+                        // use provided
+  double t_des_final;   // desired flight time (optimized by code)
+  double t_vert_boost;  // Duration of vertical boost (optimized by code)
 
   int rv_type; // reentry vehicle type (0: ballistic, 1: maneuverable)
   double deflection_time; // time to make full flap deflection in seconds, used

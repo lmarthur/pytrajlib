@@ -1,6 +1,6 @@
 [project]
 name = "pytrajlib"
-version = "1.0.0-alpha.13"
+version = "1.0.0-alpha.15"
 description = "Simulate the flight of a ballistic or maneuverable missile"
 readme = "README.md"
 authors = [
@@ -25,6 +25,10 @@ dev = [
     "setuptools>=82.0.0",
     "pre-commit>=4.5.1",
     "pytest>=9.0.3",
+    "zensical>=0.0.44",
+    "mkdocstrings>=1.0.4",
+    "mkdocstrings-c>=0.1.0",
+    "mkdocstrings-python>=2.0.4",
 ]
 
 [project.scripts]
