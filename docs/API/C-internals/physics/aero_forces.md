@@ -232,6 +232,8 @@ Compute absolute force magnitudes for all four flaps.
 
 Compute absolute flap force vectors for all four flaps in body coordinates.
 
+Quantize the flaps according to the actuator resolution.
+
 Each force is oriented along its deflected inward-pointing flap normal:
 $$\mathbf F_{f,i,B} = F_i\hat{\mathbf n}_{i,B}(\delta_{f,i})$$
 
@@ -242,6 +244,7 @@ $$\mathbf F_{f,i,B} = F_i\hat{\mathbf n}_{i,B}(\delta_{f,i})$$
 | `current_state` | `state *` | Current vehicle state. |
 | `atm_cond` | `atm_cond *` | Atmospheric conditions. |
 | `vehicle` | `vehicle *` | Vehicle model containing flap geometry and area. |
+| `run_params` | `runparams *` |  |
 | `delta1` | `double` | Deflection command for flap pair {1, 3} in radians. |
 | `delta2` | `double` | Deflection command for flap pair {2, 4} in radians. |
 | `flap_forces_B` | `cartvec` | Output array of 4 flap force vectors in body<br>coordinates. |

@@ -19,14 +19,6 @@ Calculate flight path angle relative to local horizon.
 
 ## `set_entry_angle`
 
-Target angle = initial angle + rotation
-
-Assuming the entry angle = -burnout angle (not entirely true; burnout is
-~170km, entry is 100km) Initial angle = 90 - burnout flight path angle Target
-angle = 90 - entry angle + central angle between position and aimpoint
-(simplifying assumption that reentry is close to the aimpoint)
--->
-rotation = burnout flight path angle - entry angle + central angle
 See Regan 6.7 "Deployment Attitudes"
 
 ### Parameters

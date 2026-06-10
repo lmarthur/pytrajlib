@@ -361,6 +361,8 @@ static inline void get_absolute_flap_force_magnitudes(
 /**
  * Compute absolute flap force vectors for all four flaps in body coordinates.
  *
+ * Quantize the flaps according to the actuator resolution.
+ *
  * Each force is oriented along its deflected inward-pointing flap normal:
  * $$\mathbf F_{f,i,B} = F_i\hat{\mathbf n}_{i,B}(\delta_{f,i})$$
  *
@@ -376,8 +378,16 @@ static inline void get_absolute_flap_force_magnitudes(
 static inline void get_absolute_flap_forces_body(state *current_state,
                                                  atm_cond *atm_cond,
                                                  vehicle *vehicle,
+                                                 runparams *run_params,
                                                  double delta1, double delta2,
                                                  cartvec flap_forces_B[4]) {
+  // Convert resolution from degrees to radians
+  double resolution = run_params->actuator_resolution * M_PI / 180;
+
+  // Limit resolution of flap deflection angles
+  delta1 = round(delta1 / resolution) * resolution;
+  delta2 = round(delta2 / resolution) * resolution;
+
   cartvec n_deflected_B[4];
   get_deflected_flap_normals(vehicle, delta1, delta2, n_deflected_B);
 
@@ -401,9 +411,9 @@ static inline cartvec sum_incremental_forces(state *current_state,
   // Compute F(deflection angle 0) and F(deflection angle delta_i) for each flap
   cartvec undeflected_flap_forces_B[4];
   cartvec deflected_flap_forces_B[4];
-  get_absolute_flap_forces_body(current_state, atm_cond, vehicle, 0, 0,
-                                undeflected_flap_forces_B);
-  get_absolute_flap_forces_body(current_state, atm_cond, vehicle,
+  get_absolute_flap_forces_body(current_state, atm_cond, vehicle, run_params,
+                                0.0, 0.0, undeflected_flap_forces_B);
+  get_absolute_flap_forces_body(current_state, atm_cond, vehicle, run_params,
                                 current_state->delta_1, current_state->delta_2,
                                 deflected_flap_forces_B);
 

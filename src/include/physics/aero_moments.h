@@ -112,9 +112,9 @@ static inline cartvec sum_incremental_moments(state *current_state,
   // Get forces from deflected and undeflected flaps
   cartvec undeflected_flap_forces_B[4];
   cartvec deflected_flap_forces_B[4];
-  get_absolute_flap_forces_body(current_state, atm_cond, vehicle, 0, 0,
-                                undeflected_flap_forces_B);
-  get_absolute_flap_forces_body(current_state, atm_cond, vehicle,
+  get_absolute_flap_forces_body(current_state, atm_cond, vehicle, run_params, 0,
+                                0, undeflected_flap_forces_B);
+  get_absolute_flap_forces_body(current_state, atm_cond, vehicle, run_params,
                                 current_state->delta_1, current_state->delta_2,
                                 deflected_flap_forces_B);
 

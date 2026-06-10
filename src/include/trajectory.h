@@ -66,14 +66,6 @@ static inline double flight_path_angle(cartvec position, cartvec velocity) {
 }
 
 /**
- * Target angle = initial angle + rotation
- *
- * Assuming the entry angle = -burnout angle (not entirely true; burnout is
- * ~170km, entry is 100km) Initial angle = 90 - burnout flight path angle Target
- * angle = 90 - entry angle + central angle between position and aimpoint
- * (simplifying assumption that reentry is close to the aimpoint)
- * -->
- * rotation = burnout flight path angle - entry angle + central angle
  * See Regan 6.7 "Deployment Attitudes"
  */
 static inline void set_entry_angle(state *true_state, state *est_state,
@@ -93,9 +85,10 @@ static inline void set_entry_angle(state *true_state, state *est_state,
 
   double current_kinetic =
       0.5 * vehicle->rv.rv_mass * current_est_speed * current_est_speed;
-  double current_potential = current_r * norm(get_gravity_acc(grav, est_state));
-  double reentry_potential =
-      reentry_r * norm(get_gravity_acc(grav, &reentry_est_state));
+  double current_potential =
+      -vehicle->rv.rv_mass * current_r * norm(get_gravity_acc(grav, est_state));
+  double reentry_potential = -vehicle->rv.rv_mass * reentry_r *
+                             norm(get_gravity_acc(grav, &reentry_est_state));
 
   double reentry_est_speed =
       sqrt((current_kinetic + current_potential - reentry_potential) * 2 /
@@ -322,7 +315,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
         initial_altitude, &exp_atm_model, run_params, &atm_profile);
     // Write the initial state to the trajectory file
     write_trajectory_log_row(true_t, get_vehicle_mass(vehicle, true_t),
-                             &true_state, &est_state, &initial_true_atm_cond);
+                             &true_state, &est_state, &initial_true_atm_cond,
+                             run_params);
   }
 
   int sampled_new_profile = 0; // flag to indicate whether a new profile has
@@ -407,9 +401,10 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
         double final_altitude = get_altitude(true_final_state.position);
         atm_cond true_final_atm_cond = get_atm_cond(
             final_altitude, &exp_atm_model, run_params, &atm_profile);
-        write_trajectory_log_row(
-            true_final_t, get_vehicle_mass(vehicle, true_final_t),
-            &true_final_state, &est_final_state, &true_final_atm_cond);
+        write_trajectory_log_row(true_final_t,
+                                 get_vehicle_mass(vehicle, true_final_t),
+                                 &true_final_state, &est_final_state,
+                                 &true_final_atm_cond, run_params);
         close_run_logging();
       }
 
@@ -430,7 +425,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     // Write trajectory data to file
     if (run_params->traj_output == 1) {
       write_trajectory_log_row(true_t, get_vehicle_mass(vehicle, true_t),
-                               &true_state, &est_state, &true_atm_cond);
+                               &true_state, &est_state, &true_atm_cond,
+                               run_params);
     }
 
     // GNSS Measurement
@@ -442,8 +438,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
       gnss.time_since_last_update = 0.0;
     }
 
-    // Convert resolution from degrees to radians
-    double resolution = run_params->actuator_resolution * M_PI / 180;
     double max_extent = run_params->max_deflection_angle * M_PI / 180;
 
     // Set flap saturation limits
@@ -452,10 +446,12 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     double clipped_delta_2 =
         clip(fmod(true_state.delta_2, 2 * M_PI), -max_extent, max_extent);
 
-    true_state.delta_1 = round(clipped_delta_1 / resolution) * resolution;
-    true_state.delta_2 = round(clipped_delta_2 / resolution) * resolution;
-    est_state.delta_1 = true_state.delta_1;
-    est_state.delta_2 = true_state.delta_2;
+    // Actuator quantization is enforced in the actuator force calculation to
+    // ensure updates at small time steps still occur
+    true_state.delta_1 = clipped_delta_1;
+    true_state.delta_2 = clipped_delta_2;
+    est_state.delta_1 = clipped_delta_1;
+    est_state.delta_2 = clipped_delta_2;
 
     // Simulate gyroscope measurements by adding noise to the true angular
     // velocity

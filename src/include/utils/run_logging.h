@@ -7,6 +7,7 @@
 
 #include "../models/atmosphere.h"
 #include "../models/state.h"
+#include "../utils/runparams.h"
 
 static FILE *trajectory_log_file = NULL;
 static FILE *reentry_guidance_log_file = NULL;
@@ -77,9 +78,17 @@ static inline void close_run_logging(void) {
   }
 }
 
+static inline double quantize_flap_deflection(double delta,
+                                              double actuator_resolution_deg) {
+  const double pi = 3.14159265358979323846;
+  double resolution = actuator_resolution_deg * pi / 180.0;
+  return round(delta / resolution) * resolution;
+}
+
 static inline void write_trajectory_log_row(double t, double current_mass,
                                             state *true_state, state *est_state,
-                                            atm_cond *true_atm_cond) {
+                                            atm_cond *true_atm_cond,
+                                            runparams *run_params) {
   if (trajectory_log_file == NULL) {
     return;
   }
@@ -92,6 +101,15 @@ static inline void write_trajectory_log_row(double t, double current_mass,
   }
   cartvec u_hat_B = eci_to_body(u_hat_E, true_state->q_EB);
 
+  double true_delta_1 = quantize_flap_deflection(
+      true_state->delta_1, run_params->actuator_resolution);
+  double true_delta_2 = quantize_flap_deflection(
+      true_state->delta_2, run_params->actuator_resolution);
+  double est_delta_1 = quantize_flap_deflection(
+      est_state->delta_1, run_params->actuator_resolution);
+  double est_delta_2 = quantize_flap_deflection(
+      est_state->delta_2, run_params->actuator_resolution);
+
   fprintf(trajectory_log_file,
           "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
           "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
@@ -101,14 +119,13 @@ static inline void write_trajectory_log_row(double t, double current_mass,
           true_state->velocity.y, true_state->velocity.z, 0.0,
           est_state->position.x, est_state->position.y, est_state->position.z,
           est_state->velocity.x, est_state->velocity.y, est_state->velocity.z,
-          true_state->delta_1, true_state->delta_2, est_state->delta_1,
-          est_state->delta_2, u_hat_B.x, u_hat_B.y, u_hat_B.z,
-          true_state->q_EB.w, true_state->q_EB.x, true_state->q_EB.y,
-          true_state->q_EB.z, est_state->q_EB.w, est_state->q_EB.x,
-          est_state->q_EB.y, est_state->q_EB.z, true_state->angular_vel_B.x,
-          true_state->angular_vel_B.y, true_state->angular_vel_B.z,
-          est_state->angular_vel_B.x, est_state->angular_vel_B.y,
-          est_state->angular_vel_B.z);
+          true_delta_1, true_delta_2, est_delta_1, est_delta_2, u_hat_B.x,
+          u_hat_B.y, u_hat_B.z, true_state->q_EB.w, true_state->q_EB.x,
+          true_state->q_EB.y, true_state->q_EB.z, est_state->q_EB.w,
+          est_state->q_EB.x, est_state->q_EB.y, est_state->q_EB.z,
+          true_state->angular_vel_B.x, true_state->angular_vel_B.y,
+          true_state->angular_vel_B.z, est_state->angular_vel_B.x,
+          est_state->angular_vel_B.y, est_state->angular_vel_B.z);
 }
 
 static inline void

@@ -52,8 +52,8 @@ def optimize_boost(config_dict):
     Tune initial thrust angle and desired flight time for an optimally lofted
     flight using Optuna.
     """
-    tf_des = config_dict["t_des_final"]
-    theta_long = config_dict["theta_long"]
+    tf_des = 2000.0
+    theta_long = 0.8
 
     extra_updates = {
         "gnss_nav": 0,
@@ -82,7 +82,8 @@ def optimize_boost(config_dict):
 
         return miss_dist
 
-    study = optuna.create_study(direction="minimize")
+    sampler = optuna.samplers.TPESampler(seed=0)
+    study = optuna.create_study(sampler=sampler, direction="minimize")
     study.enqueue_trial({"t_des_final": tf_des, "theta_long": theta_long})
     study.optimize(optuna_objective, n_trials=config_dict["num_trials_optimizer"])
 
@@ -150,17 +151,18 @@ def optimize_reentry(config_dict):
 
         return miss_dist
 
-    study = optuna.create_study(direction="minimize")
+    sampler = optuna.samplers.TPESampler(seed=0)
+    study = optuna.create_study(sampler=sampler, direction="minimize")
 
     # Seed the first trial with reasonably good values
     study.enqueue_trial(
         {
-            "max_deflection_angle": config_dict["max_deflection_angle"],
-            "nav_gain_0": config_dict["nav_gain_0"],
-            "nav_gain_1": config_dict["nav_gain_1"],
-            "tau_deflect": config_dict["tau_deflect"],
-            "K_q": config_dict["K_q"],
-            "K_pp": config_dict["K_pp"],
+            "max_deflection_angle": 5.0,
+            "nav_gain_0": 10,
+            "nav_gain_1": 1,
+            "tau_deflect": 0.1,
+            "K_q": -10,
+            "K_pp": 10,
         }
     )
 

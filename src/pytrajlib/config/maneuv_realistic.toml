@@ -1,8 +1,8 @@
 [RUN]
 run_name = "run_4"
 num_runs = 30
-num_runs_optimizer = 25
-num_trials_optimizer = 200
+num_runs_optimizer = 50
+num_trials_optimizer = 100
 time_step_boost = 1e-3
 time_step_lambert = 1e-3
 time_step_midcourse = 1e-2
