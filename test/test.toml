@@ -2,7 +2,7 @@
 run_name = "test"
 num_runs = 10
 num_runs_optimizer = 1
-num_trials_optimizer = 100
+num_trials_optimizer = 200
 
 time_step_boost = 1e-2
 time_step_lambert = 1e-2

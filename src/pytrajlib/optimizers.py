@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import numpy as np
 import optuna
+from scipy.optimize import minimize
 
 from pytrajlib import runtime
 from pytrajlib.runtime import _keep_alive
@@ -68,27 +69,24 @@ def optimize_boost(config_dict):
 
     objective_config = _prepare_optimizer_config(config_dict, extra_updates)
 
-    def optuna_objective(trial):
-        t_des_final = trial.suggest_float("t_des_final", 300.0, 5000.0)
-        theta_long = trial.suggest_float("theta_long", 0.0, np.pi)
-
+    def objective(xs):
+        tf, theta = xs
         miss_dist = _evaluate_candidate(
             objective_config,
             ("t_des_final", "theta_long"),
-            (t_des_final, theta_long),
+            (tf, theta),
         )
-
-        _keep_alive.clear()
-
+        print(f"{tf=:.6f}, {theta=:.6f}, {miss_dist=:.6f}")
         return miss_dist
 
-    sampler = optuna.samplers.TPESampler(seed=0)
-    study = optuna.create_study(sampler=sampler, direction="minimize")
-    study.enqueue_trial({"t_des_final": tf_des, "theta_long": theta_long})
-    study.optimize(optuna_objective, n_trials=config_dict["num_trials_optimizer"])
-
-    print(study.best_params)
-    return dict(study.best_params)
+    result = minimize(
+        fun=objective,
+        x0=[tf_des, theta_long],
+        method="Nelder-Mead",
+        options=dict(maxfev=objective_config["num_trials_optimizer"]),
+    )
+    print(result)
+    return {"t_des_final": result.x[0], "theta_long": result.x[1]}
 
 
 def optimize_reentry(config_dict):
