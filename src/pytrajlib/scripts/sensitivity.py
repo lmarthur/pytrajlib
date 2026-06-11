@@ -53,12 +53,7 @@ SENSITIVITY_SPECS = (
         "label": "Actuator resolution",
         "sweep_kind": "scale",
     },
-    {"name": "actuator_force", "label": "Actuator force", "sweep_kind": "scale"},
-    {
-        "name": "deflection_time",
-        "label": "Actuator deflection time",
-        "sweep_kind": "scale",
-    },
+    {"name": "gearing_ratio", "label": "Gearing ratio", "sweep_kind": "scale"},
     {
         "name": "time_step_boost",
         "label": "Boost-phase time step",
@@ -80,9 +75,29 @@ SENSITIVITY_SPECS = (
         "sweep_kind": "scale",
     },
     {
-        "name": "gnss_nav",
-        "label": "GNSS Navigation",
-        "sweep_kind": "binary",
+        "name": "cd_error_factor",
+        "label": "Drag coefficient error factor",
+        "sweep_kind": "scale",
+    },
+    {
+        "name": "cl_error_factor",
+        "label": "Lift coefficient error factor",
+        "sweep_kind": "scale",
+    },
+    {
+        "name": "cmq_error_factor",
+        "label": "Pitch damping moment coefficient error factor",
+        "sweep_kind": "scale",
+    },
+    {
+        "name": "cm_error_factor",
+        "label": "Pitching moment coefficient error factor",
+        "sweep_kind": "scale",
+    },
+    {
+        "name": "cm_delta_error_factor",
+        "label": "Flap deflection moment coefficient error factor",
+        "sweep_kind": "scale",
     },
 )
 

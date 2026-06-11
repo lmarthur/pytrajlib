@@ -93,7 +93,7 @@ static inline cartvec get_body_lift_direction(cartvec u_hat_B) {
 }
 
 static inline cartvec get_body_force(state *current_state, atm_cond *atm_cond,
-                                     vehicle *vehicle) {
+                                     vehicle *vehicle, runparams *run_params) {
   // Calculate dynamic pressure q_inf
   cartvec v_rel_E = get_relative_wind_eci(current_state, atm_cond);
   double v_rel = norm(v_rel_E);
@@ -119,6 +119,9 @@ static inline cartvec get_body_force(state *current_state, atm_cond *atm_cond,
     C_D = vehicle->rv.c_d_0 + vehicle->rv.c_d_alpha * alpha;
     C_L = vehicle->rv.c_l_alpha * alpha;
   }
+
+  C_D *= run_params->cd_error_factor;
+  C_L *= run_params->cl_error_factor;
 
   // Reference area for drag and lift coefficients
   double S_ref = vehicle->rv.rv_area;
@@ -434,7 +437,8 @@ static inline cartvec get_maneuverable_lift_drag(double t, state *current_state,
                                                  vehicle *vehicle,
                                                  runparams *run_params) {
   // Get body force + sum of incremental forces due to flaps
-  cartvec body_force = get_body_force(current_state, atm_cond, vehicle);
+  cartvec body_force =
+      get_body_force(current_state, atm_cond, vehicle, run_params);
   cartvec incremental_force =
       sum_incremental_forces(current_state, atm_cond, vehicle, run_params);
   cartvec total_force_body = add(body_force, incremental_force);

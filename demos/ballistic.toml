@@ -77,3 +77,8 @@ gyro_noise = 1e-8
 gnss_noise = 1e-1
 # GNSS update frequency in Hz
 gnss_freq = 1.0
+cd_error_factor = 1.0
+cl_error_factor = 1.0
+cmq_error_factor = 1.0
+cm_error_factor = 1.0
+cm_delta_error_factor = 1.0

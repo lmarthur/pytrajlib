@@ -42,7 +42,7 @@ static inline cartvec get_omega_perp_body(state *current_state) {
 }
 
 static inline cartvec get_body_moment(state *current_state, atm_cond *atm_cond,
-                                      vehicle *vehicle) {
+                                      vehicle *vehicle, runparams *run_params) {
   // There are two components to the body moment: the moment due to the angle of
   // attack, M_alpha, and the moment due to the pitching angular velocity, M_q
 
@@ -62,6 +62,9 @@ static inline cartvec get_body_moment(state *current_state, atm_cond *atm_cond,
     C_M = vehicle->rv.c_m_alpha * alpha;
     C_Mq = vehicle->rv.c_m_q;
   }
+
+  C_Mq *= run_params->cmq_error_factor;
+  C_M *= run_params->cmq_error_factor;
 
   // Calculate dynamic pressure
   double v_rel = norm(v_rel_E);
@@ -145,9 +148,12 @@ static inline cartvec get_angular_acceleration(double t, state *true_state,
     return zeros();
   }
   // Get body moment + sum incremental moments from the flaps
-  cartvec body_moment = get_body_moment(true_state, atm_cond, vehicle);
+  cartvec body_moment =
+      get_body_moment(true_state, atm_cond, vehicle, run_params);
   cartvec incremental_flap_moment =
       sum_incremental_moments(true_state, atm_cond, vehicle, run_params);
+  incremental_flap_moment =
+      smultiply(incremental_flap_moment, run_params->cm_delta_error_factor);
   cartvec total_moment = add(body_moment, incremental_flap_moment);
 
   // We neglect angular acceleration around the roll axis

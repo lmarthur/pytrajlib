@@ -68,6 +68,11 @@ ffibuilder.cdef(
         double gyro_noise;
         double gnss_noise;
         double gnss_freq;
+        double cd_error_factor;
+        double cl_error_factor;
+        double cmq_error_factor;
+        double cm_error_factor;
+        double cm_delta_error_factor;
 
         double rv_mass;
         double rv_length;
