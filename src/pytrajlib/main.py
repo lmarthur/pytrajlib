@@ -54,6 +54,7 @@ def run(
     plot_impact: bool = False,
     plot_path: str = None,
     num_processes: int = (os.cpu_count() * 5) // 8,
+    sensitivity: bool = False,
     return_config=False,
     **kwargs,
 ):
@@ -65,6 +66,7 @@ def run(
         plot_impact: whether to save impact plot
         plot_path: path to save plots
         num_processes: number of concurrent processes on which to run simulation. Default is 5/8 of the number of cores available so if you have 16 cores, the number of concurrent processes will be 10.
+        sensitivity: run error-parameter sensitivity sweep instead of a single simulation
         **kwargs: all other kwargs (see default TOML)
     """
     config_dict = _load_config_dict(config)
@@ -88,6 +90,29 @@ def run(
     config_dict.setdefault("optimize_reentry", 0)
     config_dict.setdefault("random_seed", -1)
     _set_aimpoint_from_range(config_dict)
+
+    if sensitivity:
+        config_dict["num_processes"] = int(num_processes)
+
+        run_name = str(config_dict.get("run_name", "sensitivity"))
+        output_dir = (
+            Path(plot_path) if plot_path is not None else Path("output") / run_name
+        )
+
+        sensitivity_results = run_sensitivity(
+            base_config=config_dict,
+            output_dir=output_dir,
+        )
+        print(sensitivity_results)
+
+        try:
+            save_atm_plots(output_dir)
+        except Exception as exc:
+            print(f"Warning: failed to generate atm plots: {exc}")
+
+        if return_config:
+            return sensitivity_results, config_dict
+        return sensitivity_results
 
     print("Running...")
 
@@ -212,32 +237,13 @@ def cli():
     plot_path = kwargs.pop("plot_path")
 
     if sensitivity:
-        base_config = _load_config_dict(config)
-        explicit_kwargs = {k: v for k, v in kwargs.items() if v is not _UNSET}
-        if explicit_kwargs:
-            base_config.update(explicit_kwargs)
-
-        base_config["num_processes"] = num_processes
-
-        # Decide output directory: prefer explicit --plot-path, otherwise
-        # place under `output/<run_name>` to match typical behavior.
-        run_name = str(base_config.get("run_name", "sensitivity"))
-        output_dir = (
-            Path(plot_path) if plot_path is not None else Path("output") / run_name
+        run(
+            config=config,
+            plot_path=plot_path,
+            num_processes=num_processes,
+            sensitivity=True,
+            **kwargs,
         )
-
-        sensitivity_results = run_sensitivity(
-            base_config=base_config,
-            output_dir=output_dir,
-        )
-        print(sensitivity_results)
-
-        # Also generate and save atmospheric plots into the same folder.
-        try:
-            save_atm_plots(output_dir)
-        except Exception as exc:
-            print(f"Warning: failed to generate atm plots: {exc}")
-
         return
 
     # Set default plot path to current directory if --plot is set but --plot-path is not

@@ -86,6 +86,10 @@ SENSITIVITY_SPECS = (
     },
 )
 
+BINARY_SENSITIVITY_PARAMS = {
+    spec["name"] for spec in SENSITIVITY_SPECS if spec["sweep_kind"] == "binary"
+}
+
 
 def pretty_parameter_name(parameter_name: str) -> str:
     return parameter_name.replace("_", " ").strip().capitalize()
@@ -126,7 +130,7 @@ def make_case_config(
         }
     )
 
-    if parameter_name == "grav_error":
+    if parameter_name in BINARY_SENSITIVITY_PARAMS:
         case_config[parameter_name] = int(parameter_value)
     else:
         case_config[parameter_name] = float(parameter_value)
@@ -280,7 +284,7 @@ def plot_panels(results: pd.DataFrame, output_dir: Path) -> tuple[Path, Path]:
             axis.set_xlabel("Scale factor")
         else:
             axis.set_xticks([0, 1], ["off", "on"])
-            axis.set_xlabel("Gravity error flag")
+            axis.set_xlabel(f"{spec['label']} flag")
 
         axis.set_yscale("log")
         axis.set_ylabel("CEP (m)")

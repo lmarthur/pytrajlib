@@ -2,6 +2,7 @@ import sys
 import tomllib
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from pytrajlib.utils import get_local_impact
@@ -183,6 +184,23 @@ def test_gnss_navigation_reduces_cep_with_ins_errors():
     cep_with_gnss = _get_cep_from_df(run(config=CONFIG_PATH, **params))
 
     assert cep_no_gnss > cep_with_gnss
+
+
+def test_sensitivity_runs(tmp_path):
+    """Sensitivity mode should run all configured sweeps with one sample per case."""
+
+    results = run(
+        config=CONFIG_PATH,
+        sensitivity=True,
+        num_runs=1,
+        num_processes=1,
+        random_seed=0,
+        plot_path=str(tmp_path),
+    )
+
+    assert results is not None
+    assert isinstance(results, pd.DataFrame)
+    assert not results.empty
 
 
 def test_no_impact_correlation():
