@@ -67,20 +67,16 @@ typedef struct runparams {
   double gnss_noise;          // GNSS error in meters
   double gnss_freq;           // GNSS update frequency in Hz
   double
-      cd_error_factor; // Multiplicative error factor for true, *not estimated*,
-                       // drag coefficient (for sensitivity analysis)
+      cd_error_factor; // Multiplicative error factor for true drag coefficient
   double
-      cl_error_factor; // Multiplicative error factor for true, *not estimated*,
-                       // lift coefficient (for sensitivity analysis)
-  double cmq_error_factor; // Multiplicative error factor for true, *not
-                           // estimated*, pitch damping moment coefficient (for
-                           // sensitivity analysis)
+      cl_error_factor; // Multiplicative error factor for true lift coefficient
+  double cmq_error_factor; // Multiplicative error factor for true C_Mq
+  double cm_error_factor;  // Multiplicative error factor for true C_M_alpha
   double
-      cm_error_factor; // Multiplicative error factor for true, *not estimated*,
-                       // pitching moment coefficient (for sensitivity analysis)
-  double cm_delta_error_factor; // Multiplicative error factor for true, *not
-                                // estimated*, flap deflection moment
-                                // coefficient (for sensitivity analysis)
+      cm_delta_error_factor; // Multiplicative error factor for true C_M_delta
+  double roll_gyro_bias_factor; // Multiplicative error factor for roll gyro
+                                // bias error
+
   // RV parameter overrides (-1 = use vehicle type default)
   double rv_mass;      // RV mass in kg
   double rv_length;    // RV length in m

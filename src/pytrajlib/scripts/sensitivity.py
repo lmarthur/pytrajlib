@@ -99,6 +99,11 @@ SENSITIVITY_SPECS = (
         "label": "Flap deflection moment coefficient error factor",
         "sweep_kind": "scale",
     },
+    {
+        "name": "roll_gyro_bias_factor",
+        "label": "Roll gyro bias error factor",
+        "sweep_kind": "scale",
+    },
 )
 
 BINARY_SENSITIVITY_PARAMS = {

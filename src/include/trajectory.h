@@ -453,7 +453,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     est_state.delta_1 = clipped_delta_1;
     est_state.delta_2 = clipped_delta_2;
 
-    // Simulate gyroscope measurements by adding noise to the true angular
+    // Simulate gyroscope measurements by adding noise to the angular
     // velocity
     est_state.angular_vel_B =
         add(true_state.angular_vel_B,
@@ -461,7 +461,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     est_state.angular_vel_B.z = 0;
 
     // Simulate roll control
-    true_state.angular_vel_B.z = imu.gyro_bias.z;
+    true_state.angular_vel_B.z =
+        run_params->roll_gyro_bias_factor * imu.gyro_bias.z;
 
     // Perform an integration step
     prev_true_state = true_state;
