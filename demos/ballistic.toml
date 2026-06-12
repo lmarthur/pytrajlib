@@ -39,7 +39,7 @@ perfect_boost = 0
 # If 1, optimize t_des_final/theta_long. If 0, use provided values directly.
 optimize_boost = 0
 # If 1, optimize the maneuver parameters with `rv_maneuv` forced to 1 during optimization:
-# `max_deflection_angle`, `nav_gain_0`, `nav_gain_1`, `tau_deflect`, `K_q`, and `K_pp`.
+# `max_deflection_angle`, `nav_gain_0`, `nav_gain_1`, `K_q`, `K_pp`, `K_delta_p`, and `K_delta_d`.
 optimize_reentry = 0
 t_des_final = 2384.729760125
 t_vert_boost = 10
@@ -54,7 +54,8 @@ actuator_resolution = 1e-2
 max_deflection_angle = 10
 nav_gain_0 = 2
 nav_gain_1 = 2
-tau_deflect = 0.5
+K_delta_p = 1.0
+K_delta_d = 1.0
 # Vehicle parameter defaults (Ballistic RV + MMIII booster)
 rv_mass = 400.0
 rv_length = 1.5

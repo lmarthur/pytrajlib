@@ -438,9 +438,23 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
       gnss.time_since_last_update = 0.0;
     }
 
-    double max_extent = run_params->max_deflection_angle * M_PI / 180;
+    // Flap rate limits
+    double max_deflection_angle =
+        run_params->max_deflection_angle * M_PI / 180.0;
+    double max_deflection_speed =
+        max_deflection_angle /
+        (run_params->deflection_time * run_params->gearing_ratio);
+
+    true_state.dot_delta_1 = clip(true_state.dot_delta_1, -max_deflection_speed,
+                                  max_deflection_speed);
+    true_state.dot_delta_2 = clip(true_state.dot_delta_2, -max_deflection_speed,
+                                  max_deflection_speed);
+
+    est_state.dot_delta_1 = true_state.dot_delta_1;
+    est_state.dot_delta_2 = true_state.dot_delta_2;
 
     // Set flap saturation limits
+    double max_extent = run_params->max_deflection_angle * M_PI / 180;
     double clipped_delta_1 =
         clip(fmod(true_state.delta_1, 2 * M_PI), -max_extent, max_extent);
     double clipped_delta_2 =

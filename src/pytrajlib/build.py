@@ -54,9 +54,10 @@ ffibuilder.cdef(
         double max_deflection_angle;
         double nav_gain_0;
         double nav_gain_1;
-        double tau_deflect;
         double K_q;
         double K_pp;
+        double K_delta_p;
+        double K_delta_d;
 
 
         double initial_x_error;
@@ -117,6 +118,8 @@ ffibuilder.cdef(
         cartvec orientation_angle_change;
         double delta_1;
         double delta_2;
+        double dot_delta_1;
+        double dot_delta_2;
     } state;
 
     typedef struct impact_data {

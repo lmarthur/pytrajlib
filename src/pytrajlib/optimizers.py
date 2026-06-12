@@ -91,7 +91,7 @@ def optimize_boost(config_dict):
 
 def optimize_reentry(config_dict):
     """
-    Tune tau_deflect and nav_gain for realistic RV maneuverability using Optuna.
+    Tune nav_gain and control gains for realistic RV maneuverability using Optuna.
     Returns the best parameter dictionary found by Optuna.
     """
     # Optuna should run with a prepared objective config that disables
@@ -114,33 +114,30 @@ def optimize_reentry(config_dict):
         max_deflection_angle = trial.suggest_float("max_deflection_angle", 1e-6, 10.0)
         nav_gain_0 = trial.suggest_float("nav_gain_0", 1e-6, 100.0, log=True)
         nav_gain_1 = trial.suggest_float("nav_gain_1", 1e-6, 100.0, log=True)
-        # Restrict tau_delta to always be greater than the simulation time step
-        tau_deflect = trial.suggest_float(
-            "tau_deflect",
-            config_dict["time_step_reentry"] + config_dict["time_step_reentry"] * 1e-6,
-            1.0,
-            log=True,
-        )
         # Include control gains in optimization
         K_q = trial.suggest_float("K_q", -50.0, 0.0)
         K_pp = trial.suggest_float("K_pp", 0.0, 50.0)
+        K_delta_p = trial.suggest_float("K_delta_p", 0.0, 50.0)
+        K_delta_d = trial.suggest_float("K_delta_d", 0.0, 50.0)
 
         parameter_names = (
             "max_deflection_angle",
             "nav_gain_0",
             "nav_gain_1",
-            "tau_deflect",
             "K_q",
             "K_pp",
+            "K_delta_p",
+            "K_delta_d",
         )
 
         parameter_values = (
             max_deflection_angle,
             nav_gain_0,
             nav_gain_1,
-            tau_deflect,
             K_q,
             K_pp,
+            K_delta_p,
+            K_delta_d,
         )
 
         miss_dist = _evaluate_candidate(
@@ -158,9 +155,10 @@ def optimize_reentry(config_dict):
             "max_deflection_angle": 5.0,
             "nav_gain_0": 10,
             "nav_gain_1": 1,
-            "tau_deflect": 0.1,
             "K_q": -10,
             "K_pp": 10,
+            "K_delta_p": 1.0,
+            "K_delta_d": 1.0,
         }
     )
 

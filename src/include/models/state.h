@@ -19,6 +19,8 @@ typedef struct state {
   cartvec orientation_angle_change; // incremental body orientation change
   double delta_1;                   // flap pair {1, 3} deflection extent
   double delta_2;                   // flap pair {2, 4} deflection extent
+  double dot_delta_1;               // flap pair {1, 3} deflection rate
+  double dot_delta_2;               // flap pair {2, 4} deflection rate
 
 } state;
 /**
@@ -57,6 +59,8 @@ state init_true_state(runparams *run_params) {
   state.theta_lat = run_params->theta_lat + initial_theta_lat_pert;
   state.delta_1 = 0;
   state.delta_2 = 0;
+  state.dot_delta_1 = 0;
+  state.dot_delta_2 = 0;
   state.orientation_angle_change =
       (cartvec){initial_theta_long_pert, initial_theta_lat_pert, 0};
 
@@ -85,6 +89,8 @@ state init_est_state(runparams *run_params) {
   state.theta_lat = run_params->theta_lat;
   state.delta_1 = 0;
   state.delta_2 = 0;
+  state.dot_delta_1 = 0;
+  state.dot_delta_2 = 0;
   state.orientation_angle_change = (cartvec){0};
 
   return state;
@@ -104,6 +110,8 @@ state add_state(state a, state b) {
   result.theta_lat = a.theta_lat + b.theta_lat;
   result.delta_1 = a.delta_1 + b.delta_1;
   result.delta_2 = a.delta_2 + b.delta_2;
+  result.dot_delta_1 = a.dot_delta_1 + b.dot_delta_1;
+  result.dot_delta_2 = a.dot_delta_2 + b.dot_delta_2;
   result.orientation_angle_change =
       add(a.orientation_angle_change, b.orientation_angle_change);
 
@@ -124,6 +132,8 @@ state smultiply_state(state a, double s) {
   result.theta_lat = a.theta_lat * s;
   result.delta_1 = a.delta_1 * s;
   result.delta_2 = a.delta_2 * s;
+  result.dot_delta_1 = a.dot_delta_1 * s;
+  result.dot_delta_2 = a.dot_delta_2 * s;
   result.orientation_angle_change = smultiply(a.orientation_angle_change, s);
 
   return result;

@@ -37,8 +37,8 @@ typedef struct runparams {
   int perfect_boost;    // 1 perfect boost, 0 realistic
   int optimize_boost;   // 1 optimize t_des_final/theta_long, 0 use provided
   int optimize_reentry; // 1 optimize maneuver params (max_deflection_angle,
-                        // nav_gain_0, nav_gain_1, tau_deflect, K_q, K_pp), 0
-                        // use provided
+                        // nav_gain_0, nav_gain_1, K_q, K_pp, K_delta_p,
+                        // K_delta_d), 0 use provided
   double t_des_final;   // desired flight time (optimized by code)
   double t_vert_boost;  // Duration of vertical boost (optimized by code)
 
@@ -53,9 +53,10 @@ typedef struct runparams {
   double max_deflection_angle; // maximum flap deflection angle in degrees
   double nav_gain_0;
   double nav_gain_1;
-  double tau_deflect;
   double K_q;
   double K_pp;
+  double K_delta_p;
+  double K_delta_d;
 
   double initial_x_error;     // initial x-error in meters
   double initial_pos_error;   // initial position error in meters

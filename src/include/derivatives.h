@@ -76,25 +76,31 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
   cartvec angular_acceleration_B = get_angular_acceleration(
       true_t, true_state, true_atm_cond, vehicle, run_params);
 
-  double dot_deflection[2] = {0, 0};
-  get_flap_angular_velocity(true_t, est_state, run_params, vehicle, est_grav,
-                            est_atm_cond, a_total_est, dot_deflection);
+  double ddot_deflection[2] = {0, 0};
+  get_flap_angular_acceleration(true_t, est_state, run_params, vehicle,
+                                est_grav, est_atm_cond, a_total_est,
+                                ddot_deflection);
 
   // Set true state derivatives
   true_state_drift->position = true_state->velocity;
   true_state_drift->velocity = a_total_true;
   true_state_drift->angular_vel_B = angular_acceleration_B;
   true_state_drift->orientation_angle_change = true_state->angular_vel_B;
-  true_state_drift->delta_1 = dot_deflection[0];
-  true_state_drift->delta_2 = dot_deflection[1];
+  true_state_drift->dot_delta_1 = ddot_deflection[0];
+  true_state_drift->dot_delta_2 = ddot_deflection[1];
+  true_state_drift->delta_1 = true_state_drift->dot_delta_1;
+  true_state_drift->delta_2 = true_state_drift->dot_delta_2;
 
   // Set estimated state derivatives
   est_state_drift->position = est_state->velocity;
   est_state_drift->velocity = a_total_est;
   est_state_drift->angular_vel_B = zeros();
   est_state_drift->orientation_angle_change = est_state->angular_vel_B;
-  est_state_drift->delta_1 = dot_deflection[0];
-  est_state_drift->delta_2 = dot_deflection[1];
+  est_state_drift->dot_delta_1 = ddot_deflection[0];
+  est_state_drift->dot_delta_2 = ddot_deflection[1];
+  est_state_drift->delta_1 = est_state_drift->dot_delta_1;
+  est_state_drift->delta_2 = est_state_drift->dot_delta_2;
+
   return 1;
 }
 

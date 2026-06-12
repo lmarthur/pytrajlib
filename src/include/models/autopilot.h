@@ -61,12 +61,12 @@ cartvec NDI(cartvec a_cmd_B, state *est_state, cartvec aoa_est,
  *
  * This function also logs to the guidance log file.
  */
-void get_flap_angular_velocity(double t, state *est_state,
-                               runparams *run_params, vehicle *vehicle,
-                               grav *est_grav, atm_cond *est_atm, cartvec a_imu,
-                               double *dot_deflection) {
-  dot_deflection[0] = 0;
-  dot_deflection[1] = 0;
+void get_flap_angular_acceleration(double t, state *est_state,
+                                   runparams *run_params, vehicle *vehicle,
+                                   grav *est_grav, atm_cond *est_atm,
+                                   cartvec a_imu, double *ddot_deflection) {
+  ddot_deflection[0] = 0;
+  ddot_deflection[1] = 0;
 
   cartvec vhat = sdivide(est_state->velocity, norm(est_state->velocity));
   cartvec a_est_transverse = subtract(a_imu, smultiply(vhat, dot(a_imu, vhat)));
@@ -96,24 +96,13 @@ void get_flap_angular_velocity(double t, state *est_state,
   cartvec desired_flap_deflection =
       NDI(a_cmd_B_no_grav, est_state, aoa_est, vehicle, q_inf, run_params);
 
-  // Set the deflection speed to be proportional to the difference between the
-  // current deflection angle and the desired deflection angle, subject to the
-  // pre-programmed deflection time constant tau
-  double dot_deflection_1 = (desired_flap_deflection.x - est_state->delta_1) /
-                            run_params->tau_deflect;
-  double dot_deflection_2 = (desired_flap_deflection.y - est_state->delta_2) /
-                            run_params->tau_deflect;
-
-  // Clip the deflection angular velocity to the maximum flap angular velocity
-  double max_deflection_angle = run_params->max_deflection_angle * M_PI / 180.0;
-  double max_deflection_speed =
-      max_deflection_angle /
-      (run_params->deflection_time * run_params->gearing_ratio);
-
-  dot_deflection[0] =
-      clip(dot_deflection_1, -max_deflection_speed, max_deflection_speed);
-  dot_deflection[1] =
-      clip(dot_deflection_2, -max_deflection_speed, max_deflection_speed);
+  // Use a PD controller to set the flap acceleration
+  ddot_deflection[0] =
+      run_params->K_delta_p * (desired_flap_deflection.x - est_state->delta_1) -
+      run_params->K_delta_d * est_state->dot_delta_1;
+  ddot_deflection[1] =
+      run_params->K_delta_p * (desired_flap_deflection.y - est_state->delta_2) -
+      run_params->K_delta_d * est_state->dot_delta_2;
 
   // Log acceleration command and transverse imu
   double des_aoa = norm(a_cmd_E) * vehicle->rv.rv_mass /

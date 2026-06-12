@@ -43,7 +43,7 @@ angle of attack and the desired angle of attack.
 | --- | --- |
 | `cartvec` |  |
 
-## `get_flap_angular_velocity`
+## `get_flap_angular_acceleration`
 
 Steer the vehicle by changing the flap angular velocity.
 
@@ -60,7 +60,7 @@ This function also logs to the guidance log file.
 | `est_grav` | `grav *` |  |
 | `est_atm` | `atm_cond *` |  |
 | `a_imu` | `cartvec` |  |
-| `dot_deflection` | `double *` |  |
+| `ddot_deflection` | `double *` |  |
 
 ### Returns
 
