@@ -51,6 +51,7 @@ typedef struct runparams {
                           // maneuverability
   double actuator_resolution;  // actuator angular resolution in degrees
   double max_deflection_angle; // maximum flap deflection angle in degrees
+                               // (optimized)
   double nav_gain_0;
   double nav_gain_1;
   double K_q;

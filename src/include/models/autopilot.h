@@ -44,7 +44,7 @@ cartvec NDI(cartvec a_cmd_B, state *est_state, cartvec aoa_est,
   // Derivative controller term
   cartvec omega_term =
       smultiply(est_state->angular_vel_B,
-                run_params->K_q * vehicle->rv.c_m_q * vehicle->rv.rv_length /
+                -run_params->K_q * vehicle->rv.c_m_q * vehicle->rv.rv_length /
                     (2.0 * norm(est_state->velocity)));
 
   // Calculate desired flap deflection

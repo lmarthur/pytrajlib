@@ -54,7 +54,7 @@ def optimize_boost(config_dict):
     flight using Optuna.
     """
     tf_des = 2000.0
-    theta_long = 0.8
+    theta_long = np.pi / 4
 
     extra_updates = {
         "gnss_nav": 0,
@@ -71,13 +71,13 @@ def optimize_boost(config_dict):
 
     def objective(xs):
         tf, theta = xs
-        miss_dist = _evaluate_candidate(
+        sq_miss_dist = _evaluate_candidate(
             objective_config,
             ("t_des_final", "theta_long"),
             (tf, theta),
         )
-        print(f"{tf=:.6f}, {theta=:.6f}, {miss_dist=:.6f}")
-        return miss_dist
+        print(f"{tf=:.6f}, {theta=:.6f}, {sq_miss_dist=:.6f}")
+        return sq_miss_dist
 
     result = minimize(
         fun=objective,
@@ -111,17 +111,19 @@ def optimize_reentry(config_dict):
 
     def optuna_objective(trial):
         # Suggest parameters to tune.
-        max_deflection_angle = trial.suggest_float("max_deflection_angle", 1e-6, 10.0)
-        nav_gain_0 = trial.suggest_float("nav_gain_0", 1e-6, 100.0, log=True)
-        nav_gain_1 = trial.suggest_float("nav_gain_1", 1e-6, 100.0, log=True)
+        max_deflection_angle = trial.suggest_float("max_deflection_angle", 0.0, 10.0)
+        gearing_ratio = trial.suggest_float("gearing_ratio", 1, 20)
+        nav_gain_0 = trial.suggest_float("nav_gain_0", 0.0, 100.0)
+        nav_gain_1 = trial.suggest_float("nav_gain_1", 0.0, 100.0)
         # Include control gains in optimization
-        K_q = trial.suggest_float("K_q", -50.0, 0.0)
+        K_q = trial.suggest_float("K_q", 0.0, 50.0)
         K_pp = trial.suggest_float("K_pp", 0.0, 50.0)
         K_delta_p = trial.suggest_float("K_delta_p", 0.0, 50.0)
         K_delta_d = trial.suggest_float("K_delta_d", 0.0, 50.0)
 
         parameter_names = (
             "max_deflection_angle",
+            "gearing_ratio",
             "nav_gain_0",
             "nav_gain_1",
             "K_q",
@@ -132,6 +134,7 @@ def optimize_reentry(config_dict):
 
         parameter_values = (
             max_deflection_angle,
+            gearing_ratio,
             nav_gain_0,
             nav_gain_1,
             K_q,
@@ -140,11 +143,11 @@ def optimize_reentry(config_dict):
             K_delta_d,
         )
 
-        miss_dist = _evaluate_candidate(
+        sq_miss_dist = _evaluate_candidate(
             objective_config, parameter_names, parameter_values
         )
 
-        return miss_dist
+        return sq_miss_dist
 
     sampler = optuna.samplers.TPESampler(seed=0)
     study = optuna.create_study(sampler=sampler, direction="minimize")
@@ -153,9 +156,10 @@ def optimize_reentry(config_dict):
     study.enqueue_trial(
         {
             "max_deflection_angle": 5.0,
+            "gearing_ratio": 1.0,
             "nav_gain_0": 10,
             "nav_gain_1": 1,
-            "K_q": -10,
+            "K_q": 10,
             "K_pp": 10,
             "K_delta_p": 1.0,
             "K_delta_d": 1.0,

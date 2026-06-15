@@ -439,10 +439,11 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     }
 
     // Flap rate limits
-    double max_deflection_angle =
-        run_params->max_deflection_angle * M_PI / 180.0;
+    // Engineering angular limit of the flaps, not the optimized value which is
+    // strictly less than 10 degrees
+    double FLAP_DEFLECTION_LIMIT_NOT_OPTIMIZED = 10;
     double max_deflection_speed =
-        max_deflection_angle /
+        FLAP_DEFLECTION_LIMIT_NOT_OPTIMIZED * M_PI / 180.0 /
         (run_params->deflection_time * run_params->gearing_ratio);
 
     true_state.dot_delta_1 = clip(true_state.dot_delta_1, -max_deflection_speed,

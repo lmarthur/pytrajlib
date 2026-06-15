@@ -1091,7 +1091,7 @@ def _plot_aoa_components(
     axes[0].set_title("Angle of Attack During Reentry")
     axes[0].grid(alpha=0.3)
     axes[0].legend()
-    axes[0].set_ylim(0, 11)
+    axes[0].set_ylim(0, 50)
 
     axes[1].plot(
         t_reentry,
@@ -1155,7 +1155,7 @@ def _plot_aoa_vs_altitude(
     axes[0].set_title("Angle of Attack vs Altitude (Reentry)")
     axes[0].grid(alpha=0.3)
     axes[0].legend()
-    axes[0].set_ylim(0, 11)
+    axes[0].set_ylim(0, 50)
 
     # Create a low-altitude view (< 1 km) by sorting and masking the sorted arrays.
     alt_sorted = alt_reentry[sort_idx]
