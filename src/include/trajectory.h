@@ -379,16 +379,16 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             gnss_measurement(&gnss, &new_true_state, &new_est_state, rng);
         }
 
-        if  (new_true_state.t == (vehicle->booster.total_burn_time) && run_params->run_type == 0){
-            // Perform a perfect maneuver if before burnout
-
-            new_true_state = perfect_maneuv(&new_true_state, &new_est_state, &new_des_state);
-        }
-    
         // Perform a Runge-Kutta step
         rk4step(&new_true_state, time_step);
         rk4step(&new_est_state, time_step);
         rk4step(&new_des_state, time_step);
+
+        // Apply the burnout maneuver when this step crosses the burnout boundary
+        if (run_params->run_type == 0 && old_true_state.t < vehicle->booster.total_burn_time && new_true_state.t >= vehicle->booster.total_burn_time){
+            new_true_state = perfect_maneuv(&new_true_state, &new_est_state, &new_des_state);
+        }
+
         // Update the mass of the vehicle
         update_mass(vehicle, new_true_state.t);
 
