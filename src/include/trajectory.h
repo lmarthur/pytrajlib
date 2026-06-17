@@ -396,9 +396,13 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             state des_final_state = impact_linterp(&old_des_state, &new_des_state);
 
             // Add coriolis effect based on the latitude and the impact time error
-            double lat = gsl_ran_flat(rng, -M_PI/2, M_PI/2);
-            double lon = gsl_ran_flat(rng, -M_PI, M_PI);
-            double time_error = true_final_state.t - est_final_state.t;
+            double lat = acos(gsl_ran_flat(rng, 0.0, 2.0) - 1.0) - M_PI_2;
+            double lon = 2 * M_PI * gsl_ran_flat(rng, 0.0, 1.0);
+
+            // If true impact time is later than estimated impact time, the Earth 
+            // has rotated towards the east, so the true impact will be further
+            // west
+            double time_error = est_final_state.t - true_final_state.t;
             double rot_speed = 464 * cos(lat);
             // printf("Impact time error: %f\n", time_error);
             double coriolis = rot_speed * time_error;
@@ -406,9 +410,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             // based on the coriolis effect, update the final state x and y
             // This might seem like a bug, but I promise it's just clever
             // This replicates flying in a random direction, not just along the equator
-            true_final_state.x = true_final_state.x - coriolis * sin(lon)*cos(lat);
-            true_final_state.y = true_final_state.y + coriolis * cos(lon)*cos(lat);
-            true_final_state.z = true_final_state.z + coriolis * sin(lat);
+            true_final_state.x = true_final_state.x - coriolis * sin(lon);
+            true_final_state.y = true_final_state.y + coriolis * cos(lon);
             if (run_params->rv_maneuv == 2){
                 // If perfect rv maneuver, update the final position
                 true_final_state.x = true_final_state.x - est_final_state.x;
