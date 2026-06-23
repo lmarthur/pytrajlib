@@ -42,8 +42,10 @@ static int physics_test_drift(runparams *run_params, imu *imu, vehicle *vehicle,
 // No stochastic diffusion term for this test: it is intended to validate only
 // the deterministic Euler-Maruyama update path.
 static void physics_test_diffusion(imu *imu, state *est_state_diffusion,
-                                   state *true_state_diffusion) {
+                                   state *true_state_diffusion,
+                                   runparams *run_params) {
   (void)imu;
+  (void)run_params;
   *est_state_diffusion = (state){0};
 }
 
@@ -77,8 +79,10 @@ static int physics_test_zero_drift(runparams *run_params, imu *imu,
 // directly.
 static void physics_test_constant_diffusion(imu *imu,
                                             state *est_state_diffusion,
-                                            state *true_state_diffusion) {
+                                            state *true_state_diffusion,
+                                            runparams *run_params) {
   (void)imu;
+  (void)run_params;
   *est_state_diffusion = (state){0};
   est_state_diffusion->orientation_angle_change.x = 2.0;
   est_state_diffusion->orientation_angle_change.y = -3.0;
@@ -113,8 +117,10 @@ static int exp_decay_drift(runparams *run_params, imu *imu, vehicle *vehicle,
 }
 
 static void exp_decay_zero_diffusion(imu *imu, state *est_state_diffusion,
-                                     state *true_state_diffusion) {
+                                     state *true_state_diffusion,
+                                     runparams *run_params) {
   (void)imu;
+  (void)run_params;
   *est_state_diffusion = (state){0};
 }
 

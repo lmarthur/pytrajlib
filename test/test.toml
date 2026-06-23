@@ -69,4 +69,4 @@ cl_error_factor = 1.0
 cmq_error_factor = 1.0
 cm_error_factor = 1.0
 cm_delta_error_factor = 1.0
-roll_gyro_bias_factor = 1.0
+roll_gyro_error_factor = 1.0

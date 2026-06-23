@@ -76,8 +76,8 @@ typedef struct runparams {
   double cm_error_factor;  // Multiplicative error factor for true C_M_alpha
   double
       cm_delta_error_factor; // Multiplicative error factor for true C_M_delta
-  double roll_gyro_bias_factor; // Multiplicative error factor for roll gyro
-                                // bias error
+  double roll_gyro_error_factor; // Multiplicative error factor for roll gyro
+                                 // bias error
 
   // RV parameter overrides (-1 = use vehicle type default)
   double rv_mass;      // RV mass in kg

@@ -22,7 +22,8 @@ typedef int (*drift_func)(runparams *run_params, imu *imu, vehicle *vehicle,
                           state *est_state_drift);
 
 typedef void (*diffusion_func)(imu *imu, state *est_state_diffusion,
-                               state *true_state_diffusion);
+                               state *true_state_diffusion,
+                               runparams *run_params);
 
 /**
  * Calculate deterministic drift component of the state update.
@@ -117,13 +118,14 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
  *                            initialize to `{0}` before passing.
  */
 void diffusion(imu *imu, state *est_state_diffusion,
-               state *true_state_diffusion) {
+               state *true_state_diffusion, runparams *run_params) {
   est_state_diffusion->orientation_angle_change.x = get_gyro_diffusion(imu);
   est_state_diffusion->orientation_angle_change.y = get_gyro_diffusion(imu);
 
   // Roll of the true state is assumed to be controlled. Control is limited by
   // the gyroscope noise
-  true_state_diffusion->orientation_angle_change.z = get_gyro_diffusion(imu);
+  true_state_diffusion->orientation_angle_change.z =
+      run_params->roll_gyro_error_factor * get_gyro_diffusion(imu);
 }
 
 #endif

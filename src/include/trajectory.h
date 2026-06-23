@@ -477,8 +477,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
 
     // Simulate roll control
     true_state.angular_vel_B.z =
-        run_params->roll_gyro_bias_factor * imu.gyro_bias.z;
-
+        run_params->roll_gyro_error_factor * imu.gyro_bias.z;
     // Perform an integration step
     prev_true_state = true_state;
     prev_est_state = est_state;

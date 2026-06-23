@@ -107,7 +107,7 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
   if (!success) {
     return 0;
   }
-  diffusion_fn(imu, &est_state_diffusion, &true_state_diffusion);
+  diffusion_fn(imu, &est_state_diffusion, &true_state_diffusion, run_params);
 
   *true_state =
       add_state(*true_state, smultiply_state(true_state_drift, time_step));
@@ -199,7 +199,7 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
 
   for (int i = 0; i < num_stages; i++) {
     diffusion_fn(imu, &est_state_diffusion_eval[i],
-                 &true_state_diffusion_eval[i]);
+                 &true_state_diffusion_eval[i], run_params);
   }
 
   for (int i = 0; i < num_stages; i++) {

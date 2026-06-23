@@ -100,8 +100,8 @@ SENSITIVITY_SPECS = (
         "sweep_kind": "scale",
     },
     {
-        "name": "roll_gyro_bias_factor",
-        "label": "Roll gyro bias error factor",
+        "name": "roll_gyro_error_factor",
+        "label": "Roll gyro error factor",
         "sweep_kind": "scale",
     },
 )
@@ -154,6 +154,10 @@ def make_case_config(
         case_config[parameter_name] = int(parameter_value)
     else:
         case_config[parameter_name] = float(parameter_value)
+
+    if parameter_name == "roll_gyro_error_factor":
+        case_config["gyro_bias_stability"] = base_config["gyro_bias_stability"]
+        case_config["gyro_noise"] = base_config["gyro_noise"]
 
     return case_config
 

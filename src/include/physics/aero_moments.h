@@ -64,7 +64,7 @@ static inline cartvec get_body_moment(state *current_state, atm_cond *atm_cond,
   }
 
   C_Mq *= run_params->cmq_error_factor;
-  C_M *= run_params->cmq_error_factor;
+  C_M *= run_params->cm_error_factor;
 
   // Calculate dynamic pressure
   double v_rel = norm(v_rel_E);
