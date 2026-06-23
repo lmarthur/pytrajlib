@@ -53,7 +53,6 @@ SENSITIVITY_SPECS = (
         "label": "Actuator resolution",
         "sweep_kind": "scale",
     },
-    {"name": "gearing_ratio", "label": "Gearing ratio", "sweep_kind": "scale"},
     {
         "name": "time_step_boost",
         "label": "Boost-phase time step",
@@ -76,27 +75,27 @@ SENSITIVITY_SPECS = (
     },
     {
         "name": "cd_error_factor",
-        "label": "Drag coefficient error factor",
+        "label": "$C_D$ error factor",
         "sweep_kind": "scale",
     },
     {
         "name": "cl_error_factor",
-        "label": "Lift coefficient error factor",
+        "label": "$C_L$ error factor",
         "sweep_kind": "scale",
     },
     {
         "name": "cmq_error_factor",
-        "label": "Pitch damping moment coefficient error factor",
+        "label": r"$C_{M_q}$ error factor",
         "sweep_kind": "scale",
     },
     {
         "name": "cm_error_factor",
-        "label": "Pitching moment coefficient error factor",
+        "label": r"$C_{M_\alpha}$ coefficient error factor",
         "sweep_kind": "scale",
     },
     {
         "name": "cm_delta_error_factor",
-        "label": "Flap deflection moment coefficient error factor",
+        "label": r"$C_{M_\delta}$ error factor",
         "sweep_kind": "scale",
     },
     {
@@ -130,25 +129,30 @@ def load_config(config_path: Path | None) -> dict:
 
 
 def make_case_config(
-    base_config: dict, parameter_name: str, parameter_value: float
+    base_config: dict,
+    parameter_name: str,
+    parameter_value: float,
+    use_zero_baseline: bool,
 ) -> dict:
     case_config = deepcopy(base_config)
-    case_config.update(
-        {
-            "traj_output": 0,
-            "optimize_boost": 0,
-            "optimize_reentry": 0,
-            "random_seed": 0,
-            "initial_pos_error": 0.0,
-            "initial_vel_error": 0.0,
-            "initial_angle_error": 0.0,
-            "acc_scale_stability": 0.0,
-            "gyro_bias_stability": 0.0,
-            "gyro_noise": 0.0,
-            "gnss_noise": 0.0,
-            "grav_error": 0,
-        }
-    )
+    if use_zero_baseline:
+        case_config.update(
+            {
+                "traj_output": 0,
+                "optimize_boost": 0,
+                "optimize_reentry": 0,
+                "random_seed": 0,
+                "initial_pos_error": 0.0,
+                "initial_vel_error": 0.0,
+                "initial_angle_error": 0.0,
+                "acc_scale_stability": 0.0,
+                "gyro_bias_stability": 0.0,
+                "gyro_noise": 0.0,
+                "gnss_noise": 0.0,
+                "grav_error": 0,
+                "roll_gyro_error_factor": 0,
+            }
+        )
 
     if parameter_name in BINARY_SENSITIVITY_PARAMS:
         case_config[parameter_name] = int(parameter_value)
@@ -181,8 +185,11 @@ def run_case(
     parameter_value: float,
     num_runs: int,
     num_processes: int,
+    use_zero_baseline: bool,
 ) -> dict:
-    case_config = make_case_config(base_config, parameter_name, parameter_value)
+    case_config = make_case_config(
+        base_config, parameter_name, parameter_value, use_zero_baseline
+    )
     case_config["num_runs"] = num_runs
     case_config.pop("num_processes", None)
 
@@ -196,21 +203,30 @@ def run_case(
 
     miss_distance = impact_df["miss_distance"].to_numpy()
     return {
-        "cep": float(np.quantile(miss_distance, 0.5)),
+        "mean_miss": float(np.mean(miss_distance)),
         "mean_miss_distance": float(np.mean(miss_distance)),
         "std_miss_distance": float(np.std(miss_distance)),
     }
 
 
 def sweep_parameter(
-    base_config: dict, spec: dict, num_runs: int, num_processes: int
+    base_config: dict,
+    spec: dict,
+    num_runs: int,
+    num_processes: int,
+    use_zero_baseline: bool,
 ) -> pd.DataFrame:
     factor_values, actual_values = build_sweep_values(spec, base_config)
     rows = []
 
     for factor, actual_value in zip(factor_values, actual_values):
         run_result = run_case(
-            base_config, spec["name"], actual_value, num_runs, num_processes
+            base_config,
+            spec["name"],
+            actual_value,
+            num_runs,
+            num_processes,
+            use_zero_baseline,
         )
         rows.append(
             {
@@ -224,10 +240,63 @@ def sweep_parameter(
             }
         )
         print(
-            f"{spec['name']} factor={factor:.6g} value={actual_value:.6g} cep={run_result['cep']:.6f}"
+            f"{spec['name']} factor={factor:.6g} value={actual_value:.6g} mean_miss={run_result['mean_miss']:.6f}"
         )
 
     return pd.DataFrame(rows)
+
+
+def _get_spec_by_name(parameter_name: str) -> dict:
+    """Look up a sensitivity spec by parameter name."""
+    return next(spec for spec in SENSITIVITY_SPECS if spec["name"] == parameter_name)
+
+
+def _save_figure(fig: plt.Figure, stem: str, output_dir: Path) -> tuple[Path, Path]:
+    """Save a figure as both PDF and PNG, returning both paths."""
+    pdf_path = output_dir / f"{stem}.pdf"
+    png_path = output_dir / f"{stem}.png"
+    fig.savefig(pdf_path, bbox_inches="tight")
+    fig.savefig(png_path, dpi=250, bbox_inches="tight")
+    return pdf_path, png_path
+
+
+def _setup_sensitivity_axis(
+    ax: plt.Axes, spec: dict, ylabel: str = "Mean miss distance (m)"
+) -> None:
+    """Configure an axis for sensitivity plotting based on parameter type."""
+    ax.set_yscale("log")
+    ax.set_ylabel(ylabel)
+    ax.set_title(spec["label"])
+    ax.grid(True, linestyle=":", linewidth=0.7, alpha=0.6)
+
+    if spec["sweep_kind"] == "scale":
+        ax.set_xscale("log")
+        ax.set_xlabel("Scale factor")
+    else:
+        ax.set_xticks([0, 1], ["off", "on"])
+        ax.set_xlabel(f"{spec['label']} flag")
+
+
+def _plot_sensitivity_panel(
+    ax: plt.Axes,
+    subset: pd.DataFrame,
+    spec: dict,
+    color: str = "#1f77b4",
+    label: str | None = None,
+) -> None:
+    """Plot sensitivity data (error bars) on the given axis."""
+    x_values = subset["factor"] if spec["sweep_kind"] == "scale" else subset["value"]
+    ax.errorbar(
+        x_values,
+        subset["mean_miss"],
+        yerr=subset["std_miss_distance"],
+        marker="o",
+        linewidth=1.4,
+        markersize=4,
+        capsize=2.5,
+        color=color,
+        label=label,
+    )
 
 
 def plot_combined(results: pd.DataFrame, output_dir: Path) -> tuple[Path, Path]:
@@ -239,31 +308,35 @@ def plot_combined(results: pd.DataFrame, output_dir: Path) -> tuple[Path, Path]:
         subset = scale_results[
             scale_results["parameter"] == parameter_name
         ].sort_values("factor")
-        ax.errorbar(
-            subset["factor"],
-            subset["cep"],
-            yerr=subset["std_miss_distance"],
-            marker="o",
-            linewidth=1.4,
-            markersize=4,
-            capsize=2.5,
-            color=color,
-            label=pretty_parameter_name(parameter_name),
+        spec = _get_spec_by_name(parameter_name)
+        _plot_sensitivity_panel(
+            ax, subset, spec, color=color, label=pretty_parameter_name(parameter_name)
         )
 
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel("Estimated parameter scale factor (E)")
-    ax.set_ylabel("CEP (m)")
-    ax.set_title("CEP sensitivity to error parameters")
+    ax.set_ylabel("Mean miss distance (m)")
+    ax.set_title("Miss distance sensitivity to error parameters")
     ax.grid(True, linestyle=":", linewidth=0.7, alpha=0.6)
     ax.legend(frameon=False, fontsize=8, ncols=2)
+
+    fig.tight_layout()
+    pdf_path, png_path = _save_figure(fig, "sensitivity_combined", output_dir)
+    plt.close(fig)
+    return pdf_path, png_path
+
+
+def save_panel_plot(
+    subset: pd.DataFrame, spec: dict, output_dir: Path
+) -> tuple[Path, Path]:
+    fig, ax = plt.subplots(figsize=(5.6, 4.2))
+    _plot_sensitivity_panel(ax, subset, spec)
+    _setup_sensitivity_axis(ax, spec)
     fig.tight_layout()
 
-    pdf_path = output_dir / "sensitivity_combined.pdf"
-    png_path = output_dir / "sensitivity_combined.png"
-    fig.savefig(pdf_path, bbox_inches="tight")
-    fig.savefig(png_path, dpi=250, bbox_inches="tight")
+    panel_stem = f"sensitivity_panel_{spec['name']}"
+    pdf_path, png_path = _save_figure(fig, panel_stem, output_dir)
     plt.close(fig)
     return pdf_path, png_path
 
@@ -283,48 +356,23 @@ def plot_panels(results: pd.DataFrame, output_dir: Path) -> tuple[Path, Path]:
     )
     axes_flat = axes.ravel()
 
+    saved_panel_paths: list[tuple[Path, Path]] = []
     for axis, parameter_name in zip(axes_flat, ordered_parameters):
         subset = results[results["parameter"] == parameter_name].sort_values("factor")
-        spec = next(
-            spec for spec in SENSITIVITY_SPECS if spec["name"] == parameter_name
-        )
+        spec = _get_spec_by_name(parameter_name)
 
-        x_values = (
-            subset["factor"] if spec["sweep_kind"] == "scale" else subset["value"]
-        )
-        axis.errorbar(
-            x_values,
-            subset["cep"],
-            yerr=subset["std_miss_distance"],
-            marker="o",
-            linewidth=1.4,
-            markersize=4,
-            capsize=2.5,
-            color="#1f77b4",
-        )
+        _plot_sensitivity_panel(axis, subset, spec)
+        _setup_sensitivity_axis(axis, spec)
 
-        if spec["sweep_kind"] == "scale":
-            axis.set_xscale("log")
-            axis.set_xlabel("Scale factor")
-        else:
-            axis.set_xticks([0, 1], ["off", "on"])
-            axis.set_xlabel(f"{spec['label']} flag")
-
-        axis.set_yscale("log")
-        axis.set_ylabel("CEP (m)")
-        axis.set_title(spec["label"])
-        axis.grid(True, linestyle=":", linewidth=0.7, alpha=0.6)
+        saved_panel_paths.append(save_panel_plot(subset, spec, output_dir))
 
     for axis in axes_flat[n_panels:]:
         axis.axis("off")
 
-    fig.suptitle("Sensitivity of CEP to error sources", y=1.01, fontsize=12)
+    fig.suptitle("Sensitivity of miss distance to error sources", y=1.01, fontsize=12)
     fig.tight_layout()
 
-    pdf_path = output_dir / "sensitivity_panels.pdf"
-    png_path = output_dir / "sensitivity_panels.png"
-    fig.savefig(pdf_path, bbox_inches="tight")
-    fig.savefig(png_path, dpi=250, bbox_inches="tight")
+    pdf_path, png_path = _save_figure(fig, "sensitivity_panels", output_dir)
     plt.close(fig)
     return pdf_path, png_path
 
@@ -332,6 +380,7 @@ def plot_panels(results: pd.DataFrame, output_dir: Path) -> tuple[Path, Path]:
 def run_sensitivity(
     base_config: dict | None = None,
     output_dir: Path | None = None,
+    use_zero_baseline: bool = True,
 ) -> pd.DataFrame:
     if base_config is None:
         base_config = load_config(None)
@@ -352,7 +401,11 @@ def run_sensitivity(
         ):
             print(f"Skipping {spec['name']}: baseline is zero in the selected config.")
             continue
-        frames.append(sweep_parameter(config_for_runs, spec, num_runs, num_processes))
+        frames.append(
+            sweep_parameter(
+                config_for_runs, spec, num_runs, num_processes, use_zero_baseline
+            )
+        )
 
     results = pd.concat(frames, ignore_index=True)
     csv_path = output_dir / "sensitivity_results.csv"

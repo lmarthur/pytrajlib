@@ -54,7 +54,7 @@ def run(
     plot_impact: bool = False,
     plot_path: str = None,
     num_processes: int = (os.cpu_count() * 5) // 8,
-    sensitivity: bool = False,
+    sensitivity: int = None,
     return_config=False,
     **kwargs,
 ):
@@ -91,7 +91,7 @@ def run(
     config_dict.setdefault("random_seed", -1)
     _set_aimpoint_from_range(config_dict)
 
-    if sensitivity:
+    if sensitivity is not None:
         config_dict["num_processes"] = int(num_processes)
 
         run_name = str(config_dict.get("run_name", "sensitivity"))
@@ -102,6 +102,7 @@ def run(
         sensitivity_results = run_sensitivity(
             base_config=config_dict,
             output_dir=output_dir,
+            use_zero_baseline=sensitivity == 0,
         )
         print(sensitivity_results)
 
@@ -208,8 +209,9 @@ def cli():
     )
     parser.add_argument(
         "--sensitivity",
-        action="store_true",
-        help="Run the error-parameter sensitivity sweep instead of a single simulation.",
+        type=int,
+        default=None,
+        help="Run the error-parameter sensitivity sweep instead of a single simulation. 0 indicates using zero error as baseline. 1 indicates using standard parameter values as baseline.",
     )
     parser.add_argument(
         "--num-processes",
@@ -236,12 +238,12 @@ def cli():
 
     plot_path = kwargs.pop("plot_path")
 
-    if sensitivity:
+    if sensitivity is not None:
         run(
             config=config,
             plot_path=plot_path,
             num_processes=num_processes,
-            sensitivity=True,
+            sensitivity=sensitivity,
             **kwargs,
         )
         return
