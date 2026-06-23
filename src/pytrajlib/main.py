@@ -1,4 +1,5 @@
 import argparse
+import importlib.metadata
 import importlib.resources
 import json
 import os
@@ -29,6 +30,14 @@ from pytrajlib.scripts.sensitivity import run_sensitivity
 from pytrajlib.utils import get_miss_distance
 
 np.random.seed(0)
+
+
+def _get_version() -> str:
+    """Get the version from package metadata."""
+    try:
+        return importlib.metadata.version("pytrajlib")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
 
 
 def _load_config_dict(config: str = None):
@@ -181,11 +190,17 @@ def run(
 
 
 def cli():
+    version = _get_version()
     parser = argparse.ArgumentParser(
-        description="Trajectory Simulation",
+        description=f"Trajectory Simulation (version {version})",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {version}",
+    )
     parser.add_argument(
         "--config", type=str, default=None, help="Path to TOML config file"
     )
