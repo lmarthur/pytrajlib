@@ -302,6 +302,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     // Variables for step function anomaly (only used for run_type = 1)
     double step_timer = 0; // time since step function was activated
 
+    int post_boost_phase = 0; // 1 if after boost phase
     // Begin the integration loop
     for (int i = 0; i < max_steps; i++){
         // Get the atmospheric conditions
@@ -310,6 +311,29 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
         atm_cond true_atm_cond = get_atm_cond(old_altitude, &exp_atm_model, run_params, &atm_profile);
         // printf("true_atm_cond: %f, %f, %f\n", true_atm_cond.density, true_atm_cond.meridional_wind, true_atm_cond.zonal_wind);
         atm_cond est_atm_cond = get_exp_atm_cond(old_altitude, &exp_atm_model);
+
+        // To avoid a poor estimate of the Coriolis error for ballistic reentry
+        // vehicles, stop accumulating guidance errors after boost phase
+        if(run_params->rv_maneuv == 0 && post_boost_phase) {
+            // Zero out guidance system errors
+            imu.acc_scale_x = 0;
+            imu.acc_scale_y = 0;
+            imu.acc_scale_z = 0;
+
+            imu.gyro_error_long = 0;
+            imu.gyro_error_lat = 0;
+
+            imu.gyro_noise = 0;
+            imu.gyro_bias_lat = 0;
+            imu.gyro_bias_long = 0;
+
+            // Zero out gravity model error
+            est_grav = true_grav;
+
+            // Zero out atmospheric model errors
+            est_atm_cond = true_atm_cond;
+        }
+
         // if during boost or reentry, dt = reentry time step, else dt = main time step
         // go a bit above 100km to 1e6 to ensure accuracy at very close to 100km
         int during_reentry_phase = (old_true_state.t > vehicle->booster.total_burn_time) && (old_altitude < 1e6);
@@ -387,8 +411,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
         // Apply the burnout maneuver when this step crosses the burnout boundary
         if (run_params->run_type == 0 && old_true_state.t < vehicle->booster.total_burn_time && new_true_state.t >= vehicle->booster.total_burn_time){
             new_true_state = perfect_maneuv(&new_true_state, &new_est_state, &new_des_state);
+            post_boost_phase = 1;
         }
-
         // Update the mass of the vehicle
         update_mass(vehicle, new_true_state.t);
 
