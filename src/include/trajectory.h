@@ -208,8 +208,8 @@ state impact_with_coriolis(state *old_true_state, state *true_state,
       impact_linterp(old_est_state, est_state, old_est_t, est_t, &est_final_t);
 
   // Add coriolis effect based on the latitude and the impact time error
-  double lat = ran_flat(-M_PI / 2, M_PI / 2);
-  double lon = ran_flat(-M_PI, M_PI);
+  double lat = acos(ran_flat(0.0, 2.0) - 1.0) - M_PI_2;
+  double lon = 2 * M_PI * ran_flat(0.0, 1.0);
   double time_error = est_final_t - *true_final_t;
   double rot_speed = 464 * cos(lat);
   double coriolis = rot_speed * time_error;
