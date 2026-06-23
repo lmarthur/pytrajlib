@@ -2,6 +2,6 @@ from setuptools import setup
 
 setup(
     name="pytrajlib",
-    version="1.0.0-alpha.23",
+    version="1.0.0-alpha.24",
     cffi_modules=["src/pytrajlib/build.py:ffibuilder"],
 )
