@@ -111,9 +111,11 @@ static inline void write_trajectory_log_row(double t, double current_mass,
       est_state->delta_2, run_params->actuator_resolution);
 
   fprintf(trajectory_log_file,
-          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-          "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, %g, "
-          "%g, %g, %g, %g, %g, %g\n",
+          "%.17g, %.17g, %.17g, %.17g, %.17g, %.17g, %.17g, %.17g, %.17g, "
+          "%.17g, %.17g, %.17g, %.17g, %.17g, %.17g, "
+          "%.17g, %.17g, %.17g, %.17g, %.17g, %.17g, %.17g, %.17g, %.17g, "
+          "%.17g, %.17g, %.17g, %.17g, %.17g, %.17g, "
+          "%.17g, %.17g, %.17g, %.17g, %.17g, %.17g\n",
           t, current_mass, true_state->position.x, true_state->position.y,
           true_state->position.z, true_state->velocity.x,
           true_state->velocity.y, true_state->velocity.z, 0.0,
