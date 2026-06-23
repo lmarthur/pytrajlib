@@ -14,7 +14,7 @@ range = 10000000
 x_aim = -1106312.539916013
 y_aim = 6274210.194440777
 z_aim = 0
-theta_long = 0.7938248075646784
+theta_long = 0.6715065960788051
 theta_lat = 0.0
 
 # 0 is modified Euler-Maruyama, 1 is SRA3
@@ -41,7 +41,7 @@ optimize_boost = 0
 # If 1, optimize the maneuver parameters with `rv_maneuv` forced to 1 during optimization:
 # `max_deflection_angle`, `nav_gain_0`, `nav_gain_1`, `K_q`, `K_pp`, `K_delta_p`, and `K_delta_d`.
 optimize_reentry = 0
-t_des_final = 2530.768046590356
+t_des_final = 2986.6467267274857
 t_vert_boost = 10
 
 [VEHICLE]
@@ -49,15 +49,15 @@ t_vert_boost = 10
 rv_type = 1
 deflection_time = 0.02
 actuator_force = 100
-gearing_ratio = 12.614837661714526
+gearing_ratio = 18.902565748694002
 actuator_resolution = 1e-2
-max_deflection_angle = 6.858833255374277
-nav_gain_0 = 22.002659646125625
-nav_gain_1 = 2.6759041742086762e-05
-K_q = 38.7532561056995
-K_pp = 27.852767608986486
-K_delta_p = 0.07944159283472657
-K_delta_d = 12.503829613318022
+max_deflection_angle = 5.005158800904358
+nav_gain_0 = 17.16392199274926
+nav_gain_1 = 1.8450079089106168
+K_q = 9.93839564932045
+K_pp = 12.011089458530302
+K_delta_p = 0.2397109503235244
+K_delta_d = 12.81326407331284
 
 
 # Vehicle parameter defaults (SWERVE RV + MMIII booster)
