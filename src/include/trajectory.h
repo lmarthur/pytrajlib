@@ -478,6 +478,21 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     // Simulate roll control
     true_state.angular_vel_B.z =
         run_params->roll_gyro_error_factor * imu.gyro_bias.z;
+
+    // To avoid a poor estimate of the Coriolis error for ballistic reentry
+    // vehicles, stop accumulating guidance errors after boost phase
+    if (run_params->rv_maneuv == 0 && burnout_captured) {
+      // Zero out guidance errors
+      imu.acc_scale = zeros();
+      imu.gyro_bias = zeros();
+      imu.gyro_noise = 0.0;
+
+      // Zero out atmosphere differences
+      est_atm_cond = true_atm_cond;
+
+      // Zero out grav model errors
+      est_grav = true_grav;
+    }
     // Perform an integration step
     prev_true_state = true_state;
     prev_est_state = est_state;
