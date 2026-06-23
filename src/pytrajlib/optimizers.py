@@ -32,7 +32,7 @@ def _prepare_optimizer_config(config_dict, extra_updates=None):
 
 
 def _evaluate_candidate(config_dict, parameter_names, parameter_values):
-    """Loss function is mean squared miss distance to penalize outliers."""
+    """Loss function is mean miss distance."""
     config = deepcopy(config_dict)
     for name, value in zip(parameter_names, parameter_values):
         config[name] = float(value)
@@ -45,7 +45,7 @@ def _evaluate_candidate(config_dict, parameter_names, parameter_values):
         impact_df=impact_df,
         aimpoint=(config["x_aim"], config["y_aim"], config["z_aim"]),
     )
-    return np.mean(dist**2)
+    return np.mean(dist)
 
 
 def optimize_boost(config_dict):
@@ -71,13 +71,13 @@ def optimize_boost(config_dict):
 
     def objective(xs):
         tf, theta = xs
-        sq_miss_dist = _evaluate_candidate(
+        miss_dist = _evaluate_candidate(
             objective_config,
             ("t_des_final", "theta_long"),
             (tf, theta),
         )
-        print(f"{tf=:.6f}, {theta=:.6f}, {sq_miss_dist=:.6f}")
-        return sq_miss_dist
+        print(f"{tf=:.6f}, {theta=:.6f}, {miss_dist=:.6f}")
+        return miss_dist
 
     result = minimize(
         fun=objective,
