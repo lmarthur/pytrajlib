@@ -413,7 +413,7 @@ double get_a_thrust_magnitude(state *state, vehicle *vehicle, double t) {
  * @return Commanded thrust acceleration vector.
  */
 cartvec get_thrust_vector(state *state, vehicle *vehicle, runparams *run_params,
-                          grav *grav_model, double t) {
+                          grav *grav_model, double t, double a_thrust_mag) {
   cartvec aimpoint = {run_params->x_aim, run_params->y_aim, run_params->z_aim};
 
   cartvec lambert_velocity = get_lambert_velocity_vector(
@@ -432,8 +432,6 @@ cartvec get_thrust_vector(state *state, vehicle *vehicle, runparams *run_params,
 
   // Unit vector in direction of thrust
   cartvec thrust_hat = rotate(v_to_gain_hat, uhat, -theta);
-
-  double a_thrust_mag = get_a_thrust_magnitude(state, vehicle, t);
 
   cartvec thrust = smultiply(thrust_hat, a_thrust_mag);
   return thrust;
@@ -505,7 +503,8 @@ cartvec get_thrust_acc(state *true_state, state *est_state, vehicle *vehicle,
     return a_thrust;
   }
 
-  a_thrust = get_thrust_vector(state, vehicle, run_params, grav_model, t);
+  a_thrust = get_thrust_vector(state, vehicle, run_params, grav_model, t,
+                               a_thrust_mag);
   return a_thrust;
 }
 #endif

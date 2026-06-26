@@ -308,6 +308,7 @@ $$
 | `run_params` | `runparams *` | Pointer to run configuration parameters. |
 | `grav_model` | `grav *` | Pointer to gravity model for Lambert calculations. |
 | `t` | `double` | Current simulation time in seconds. |
+| `a_thrust_mag` | `double` |  |
 
 ### Returns
 
