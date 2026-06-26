@@ -382,6 +382,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
         true_t > run_params->t_vert_boost) {
       reentry_captured = 1;
       time_step = run_params->time_step_reentry;
+      vehicle->rv.rv_mass *= run_params->rv_mass_scale_factor;
       *reentry_vel = norm(true_state.velocity);
       *reentry_ang =
           flight_path_angle(true_state.position, true_state.velocity);

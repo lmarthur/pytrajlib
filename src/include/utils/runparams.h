@@ -80,11 +80,13 @@ typedef struct runparams {
                                  // bias error
 
   // RV parameter overrides (-1 = use vehicle type default)
-  double rv_mass;      // RV mass in kg
-  double rv_length;    // RV length in m
-  double rv_radius;    // RV base radius in m
-  double rv_c_d_0;     // RV zero-lift drag coefficient
-  double rv_c_d_alpha; // RV drag coefficient derivative (per radian)
+  double rv_mass;              // RV mass in kg
+  double rv_mass_scale_factor; // Multiplicative RV mass factor applied at
+                               // reentry and inverted in guidance
+  double rv_length;            // RV length in m
+  double rv_radius;            // RV base radius in m
+  double rv_c_d_0;             // RV zero-lift drag coefficient
+  double rv_c_d_alpha;         // RV drag coefficient derivative (per radian)
   double rv_c_m_delta; // RV moment coefficient derivative per radian of flap
                        // deflection
 
@@ -93,6 +95,9 @@ typedef struct runparams {
   double booster_maxdiam;  // Booster maximum diameter in m
   double booster_c_d_0;    // Booster zero-lift drag coefficient
   double booster_bus_mass; // Bus/payload carrier mass in kg
+
+  // Booster burn time error standard deviation
+  double burn_time_error; // Applied independently to each stage in seconds
 
 } runparams;
 

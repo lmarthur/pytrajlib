@@ -88,4 +88,6 @@ cl_error_factor = 1.0
 cmq_error_factor = 1.0
 cm_error_factor = 1.0
 cm_delta_error_factor = 1.0
-roll_gyro_error_factor = 1.0
+roll_gyro_error_factor = 0.0
+rv_mass_scale_factor = 1.0
+burn_time_error = 1.0

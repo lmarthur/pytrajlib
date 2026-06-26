@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "../rng/rng.h"
 #include "../utils/runparams.h"
 
 #define SWERVE_AERO_TABLE_SIZE 51
@@ -259,6 +260,25 @@ void apply_vehicle_overrides(vehicle *vehicle, runparams *run_params) {
   double old_bus_mass = vehicle->booster.bus_mass;
   vehicle->booster.bus_mass = run_params->booster_bus_mass;
   vehicle->booster.total_mass += run_params->booster_bus_mass - old_bus_mass;
+
+  // Apply independent Gaussian burn time errors for each stage
+  for (int i = 0; i < vehicle->booster.num_stages; i++) {
+    double sampled_burn_time_error = ran_gaussian(run_params->burn_time_error);
+    double old_wet_mass = vehicle->booster.wet_mass[i];
+    vehicle->booster.burn_time[i] += sampled_burn_time_error;
+    double new_fuel_mass =
+        vehicle->booster.fuel_burn_rate[i] * vehicle->booster.burn_time[i];
+    double new_wet_mass = vehicle->booster.dry_mass[i] + new_fuel_mass;
+
+    vehicle->booster.fuel_mass[i] = new_fuel_mass;
+    vehicle->booster.wet_mass[i] = new_wet_mass;
+    vehicle->booster.total_mass += new_wet_mass - old_wet_mass;
+  }
+
+  vehicle->booster.total_burn_time = 0;
+  for (int i = 0; i < vehicle->booster.num_stages; i++) {
+    vehicle->booster.total_burn_time += vehicle->booster.burn_time[i];
+  }
 
   vehicle->total_mass = vehicle->booster.total_mass + vehicle->rv.rv_mass;
 }

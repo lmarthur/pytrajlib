@@ -17,6 +17,7 @@ _DISABLED_ERROR_KEYS = (
     "gyro_noise",
     "gnss_noise",
     "grav_error",
+    "burn_time_error",
 )
 
 
@@ -60,7 +61,6 @@ def optimize_boost(config_dict):
         "gnss_nav": 0,
         "perfect_boost": 0,
         "rv_maneuv": 0,
-        "ballistic_drag": 1,
         # Important to note that the optimizer uses the exponential atmosphere wtih gaussian perturbations,
         # not the EarthGram atmospheres which are reserved for the actual simulation.
         # This prevents overfitting.

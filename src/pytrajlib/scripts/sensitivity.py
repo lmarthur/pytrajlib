@@ -16,98 +16,101 @@ assert scienceplots
 
 plt.style.use(["science"])
 plt.style.use(["no-latex"])
+DEFAULT_SCALE_FACTORS = np.logspace(-1, 1, 7)
+TIME_STEP_SCALE_FACTORS = np.logspace(-1, 3, 9)
+GNSS_FREQ_SCALE_FACTORS = np.logspace(-3, 1, 9)
+RANGE_SCALE_FACTORS = np.linspace(0.5, 1.0, 11)
 
-
-SCALE_FACTORS = np.logspace(-1, 1, 7)
 SENSITIVITY_SPECS = (
     {
         "name": "initial_pos_error",
         "label": "Initial position error",
-        "sweep_kind": "scale",
+        "sweep_factors": DEFAULT_SCALE_FACTORS,
+    },
+    {
+        "name": "gnss_freq",
+        "label": "GNSS update frequency",
+        "sweep_factors": GNSS_FREQ_SCALE_FACTORS,
+    },
+    {
+        "name": "range",
+        "label": "Downrange distance",
+        "sweep_factors": RANGE_SCALE_FACTORS,
+        "optimize_boost": True,
+    },
+    {
+        "name": "burn_time_error",
+        "label": "Burn time error",
+        "sweep_factors": DEFAULT_SCALE_FACTORS,
     },
     {
         "name": "initial_vel_error",
         "label": "Initial velocity error",
-        "sweep_kind": "scale",
+        "sweep_factors": DEFAULT_SCALE_FACTORS,
     },
     {
         "name": "initial_angle_error",
         "label": "Initial angle error",
-        "sweep_kind": "scale",
+        "sweep_factors": DEFAULT_SCALE_FACTORS,
     },
     {
         "name": "acc_scale_stability",
         "label": "Accelerometer scale stability",
-        "sweep_kind": "scale",
+        "sweep_factors": DEFAULT_SCALE_FACTORS,
     },
     {
         "name": "gyro_bias_stability",
         "label": "Gyro bias stability",
-        "sweep_kind": "scale",
+        "sweep_factors": DEFAULT_SCALE_FACTORS,
     },
-    {"name": "gyro_noise", "label": "Gyroscope noise", "sweep_kind": "scale"},
-    {"name": "gnss_noise", "label": "GNSS noise", "sweep_kind": "scale"},
-    {"name": "grav_error", "label": "Gravity perturbation", "sweep_kind": "binary"},
+    {
+        "name": "gyro_noise",
+        "label": "Gyroscope noise",
+        "sweep_factors": DEFAULT_SCALE_FACTORS,
+    },
+    {
+        "name": "gnss_noise",
+        "label": "GNSS error",
+        "sweep_factors": DEFAULT_SCALE_FACTORS,
+    },
+    {
+        "name": "grav_error",
+        "label": "Gravity perturbation",
+        "sweep_factors": np.array([0.0, 1.0]),
+    },
     {
         "name": "actuator_resolution",
         "label": "Actuator resolution",
-        "sweep_kind": "scale",
+        "sweep_factors": DEFAULT_SCALE_FACTORS,
     },
     {
         "name": "time_step_boost",
         "label": "Boost-phase time step",
-        "sweep_kind": "scale",
+        "sweep_factors": TIME_STEP_SCALE_FACTORS,
     },
     {
         "name": "time_step_lambert",
         "label": "Lambert maneuver time step",
-        "sweep_kind": "scale",
+        "sweep_factors": TIME_STEP_SCALE_FACTORS,
     },
     {
         "name": "time_step_midcourse",
         "label": "Midcourse time step",
-        "sweep_kind": "scale",
+        "sweep_factors": TIME_STEP_SCALE_FACTORS,
     },
     {
         "name": "time_step_reentry",
         "label": "Reentry time step",
-        "sweep_kind": "scale",
-    },
-    {
-        "name": "cd_error_factor",
-        "label": "$C_D$ error factor",
-        "sweep_kind": "scale",
-    },
-    {
-        "name": "cl_error_factor",
-        "label": "$C_L$ error factor",
-        "sweep_kind": "scale",
-    },
-    {
-        "name": "cmq_error_factor",
-        "label": r"$C_{M_q}$ error factor",
-        "sweep_kind": "scale",
-    },
-    {
-        "name": "cm_error_factor",
-        "label": r"$C_{M_\alpha}$ coefficient error factor",
-        "sweep_kind": "scale",
-    },
-    {
-        "name": "cm_delta_error_factor",
-        "label": r"$C_{M_\delta}$ error factor",
-        "sweep_kind": "scale",
-    },
-    {
-        "name": "roll_gyro_error_factor",
-        "label": "Roll gyro error factor",
-        "sweep_kind": "scale",
+        "sweep_factors": TIME_STEP_SCALE_FACTORS,
     },
 )
 
-BINARY_SENSITIVITY_PARAMS = {
-    spec["name"] for spec in SENSITIVITY_SPECS if spec["sweep_kind"] == "binary"
-}
+
+def _is_binary_spec(spec: dict) -> bool:
+    sweep_values = (
+        spec["sweep_factors"] if "sweep_factors" in spec else spec["sweep_values"]
+    )
+    return np.array_equal(np.asarray(sweep_values), np.array([0.0, 1.0]))
 
 
 def pretty_parameter_name(parameter_name: str) -> str:
@@ -132,6 +135,7 @@ def make_case_config(
     base_config: dict,
     parameter_name: str,
     parameter_value: float,
+    is_binary: bool,
     use_zero_baseline: bool,
 ) -> dict:
     case_config = deepcopy(base_config)
@@ -154,7 +158,7 @@ def make_case_config(
             }
         )
 
-    if parameter_name in BINARY_SENSITIVITY_PARAMS:
+    if is_binary:
         case_config[parameter_name] = int(parameter_value)
     else:
         case_config[parameter_name] = float(parameter_value)
@@ -163,12 +167,20 @@ def make_case_config(
         case_config["gyro_bias_stability"] = base_config["gyro_bias_stability"]
         case_config["gyro_noise"] = base_config["gyro_noise"]
 
+    if next((s for s in SENSITIVITY_SPECS if s["name"] == parameter_name), {}).get(
+        "optimize_boost"
+    ):
+        case_config["optimize_boost"] = 1
+
     return case_config
 
 
 def build_sweep_values(spec: dict, base_config: dict) -> tuple[np.ndarray, np.ndarray]:
-    if spec["sweep_kind"] == "binary":
-        return np.array([0.0, 1.0]), np.array([0.0, 1.0])
+    sweep_factors = (
+        spec["sweep_factors"] if "sweep_factors" in spec else spec["sweep_values"]
+    )
+    if _is_binary_spec(spec):
+        return sweep_factors, sweep_factors
 
     baseline_value = float(base_config.get(spec["name"], 0.0))
     if baseline_value == 0.0:
@@ -176,7 +188,7 @@ def build_sweep_values(spec: dict, base_config: dict) -> tuple[np.ndarray, np.nd
             f"{spec['name']} has a zero baseline in the selected config, so a log sweep is not meaningful."
         )
 
-    return SCALE_FACTORS, baseline_value * SCALE_FACTORS
+    return sweep_factors, baseline_value * sweep_factors
 
 
 def run_case(
@@ -185,10 +197,11 @@ def run_case(
     parameter_value: float,
     num_runs: int,
     num_processes: int,
+    is_binary: bool,
     use_zero_baseline: bool,
 ) -> dict:
     case_config = make_case_config(
-        base_config, parameter_name, parameter_value, use_zero_baseline
+        base_config, parameter_name, parameter_value, is_binary, use_zero_baseline
     )
     case_config["num_runs"] = num_runs
     case_config.pop("num_processes", None)
@@ -216,6 +229,7 @@ def sweep_parameter(
     num_processes: int,
     use_zero_baseline: bool,
 ) -> pd.DataFrame:
+    is_binary = _is_binary_spec(spec)
     factor_values, actual_values = build_sweep_values(spec, base_config)
     rows = []
 
@@ -226,13 +240,13 @@ def sweep_parameter(
             actual_value,
             num_runs,
             num_processes,
+            is_binary,
             use_zero_baseline,
         )
         rows.append(
             {
                 "parameter": spec["name"],
                 "label": spec["label"],
-                "sweep_kind": spec["sweep_kind"],
                 "factor": float(factor),
                 "value": float(actual_value),
                 "baseline": float(base_config.get(spec["name"], 0.0)),
@@ -269,12 +283,12 @@ def _setup_sensitivity_axis(
     ax.set_title(spec["label"])
     ax.grid(True, linestyle=":", linewidth=0.7, alpha=0.6)
 
-    if spec["sweep_kind"] == "scale":
-        ax.set_xscale("log")
-        ax.set_xlabel("Scale factor")
-    else:
+    if _is_binary_spec(spec):
         ax.set_xticks([0, 1], ["off", "on"])
         ax.set_xlabel(f"{spec['label']} flag")
+    else:
+        ax.set_xscale("log")
+        ax.set_xlabel("Scale factor")
 
 
 def _plot_sensitivity_panel(
@@ -285,7 +299,7 @@ def _plot_sensitivity_panel(
     label: str | None = None,
 ) -> None:
     """Plot sensitivity data (error bars) on the given axis."""
-    x_values = subset["factor"] if spec["sweep_kind"] == "scale" else subset["value"]
+    x_values = subset["value"] if _is_binary_spec(spec) else subset["factor"]
     ax.errorbar(
         x_values,
         subset["mean_miss"],
@@ -300,7 +314,10 @@ def _plot_sensitivity_panel(
 
 
 def plot_combined(results: pd.DataFrame, output_dir: Path) -> tuple[Path, Path]:
-    scale_results = results[results["sweep_kind"] == "scale"].copy()
+    scale_parameters = [
+        spec["name"] for spec in SENSITIVITY_SPECS if not _is_binary_spec(spec)
+    ]
+    scale_results = results[results["parameter"].isin(scale_parameters)].copy()
     fig, ax = plt.subplots(figsize=(7.2, 5.0))
 
     colors = plt.cm.viridis(np.linspace(0, 1, len(scale_results["parameter"].unique())))
@@ -396,7 +413,7 @@ def run_sensitivity(
     frames = []
     for spec in SENSITIVITY_SPECS:
         if (
-            spec["sweep_kind"] == "scale"
+            not _is_binary_spec(spec)
             and float(base_config.get(spec["name"], 0.0)) == 0.0
         ):
             print(f"Skipping {spec['name']}: baseline is zero in the selected config.")
