@@ -18,8 +18,8 @@ plt.style.use(["science"])
 plt.style.use(["no-latex"])
 DEFAULT_SCALE_FACTORS = np.logspace(-1, 1, 7)
 TIME_STEP_SCALE_FACTORS = np.logspace(-1, 3, 9)
-GNSS_FREQ_SCALE_FACTORS = np.logspace(-3, 1, 9)
-RANGE_SCALE_FACTORS = np.linspace(0.5, 1.0, 11)
+GNSS_FREQ_SCALE_FACTORS = np.logspace(-3, 1, 5)
+RANGE_SCALE_FACTORS = np.linspace(0.5, 1.0, 6)
 
 SENSITIVITY_SPECS = (
     {
@@ -34,7 +34,7 @@ SENSITIVITY_SPECS = (
     },
     {
         "name": "range",
-        "label": "Downrange distance",
+        "label": "Trajectory range",
         "sweep_factors": RANGE_SCALE_FACTORS,
         "optimize_boost": True,
     },
@@ -154,7 +154,8 @@ def make_case_config(
                 "gyro_noise": 0.0,
                 "gnss_noise": 0.0,
                 "grav_error": 0,
-                "roll_gyro_error_factor": 0,
+                "roll_gyro_error_factor": 0.0,
+                "burn_time_error": 0.0,
             }
         )
 
@@ -216,7 +217,7 @@ def run_case(
 
     miss_distance = impact_df["miss_distance"].to_numpy()
     return {
-        "mean_miss": float(np.mean(miss_distance)),
+        "cep_miss": float(np.median(miss_distance)),
         "mean_miss_distance": float(np.mean(miss_distance)),
         "std_miss_distance": float(np.std(miss_distance)),
     }
@@ -234,6 +235,10 @@ def sweep_parameter(
     rows = []
 
     for factor, actual_value in zip(factor_values, actual_values):
+        display_value = float(actual_value)
+        if spec["name"] == "range":
+            display_value /= 1000.0
+
         run_result = run_case(
             base_config,
             spec["name"],
@@ -249,12 +254,14 @@ def sweep_parameter(
                 "label": spec["label"],
                 "factor": float(factor),
                 "value": float(actual_value),
+                "display_value": display_value,
                 "baseline": float(base_config.get(spec["name"], 0.0)),
                 **run_result,
             }
         )
         print(
-            f"{spec['name']} factor={factor:.6g} value={actual_value:.6g} mean_miss={run_result['mean_miss']:.6f}"
+            f"{spec['name']} factor={factor:.6g} value={display_value:.6g}"
+            f"{' km' if spec['name'] == 'range' else ''} cep_miss={run_result['cep_miss']:.6f}"
         )
 
     return pd.DataFrame(rows)
@@ -274,9 +281,7 @@ def _save_figure(fig: plt.Figure, stem: str, output_dir: Path) -> tuple[Path, Pa
     return pdf_path, png_path
 
 
-def _setup_sensitivity_axis(
-    ax: plt.Axes, spec: dict, ylabel: str = "Mean miss distance (m)"
-) -> None:
+def _setup_sensitivity_axis(ax: plt.Axes, spec: dict, ylabel: str = "CEP (m)") -> None:
     """Configure an axis for sensitivity plotting based on parameter type."""
     ax.set_yscale("log")
     ax.set_ylabel(ylabel)
@@ -286,6 +291,9 @@ def _setup_sensitivity_axis(
     if _is_binary_spec(spec):
         ax.set_xticks([0, 1], ["off", "on"])
         ax.set_xlabel(f"{spec['label']} flag")
+    elif spec["name"] == "range":
+        ax.set_xscale("linear")
+        ax.set_xlabel("Range (km)")
     else:
         ax.set_xscale("log")
         ax.set_xlabel("Scale factor")
@@ -299,10 +307,15 @@ def _plot_sensitivity_panel(
     label: str | None = None,
 ) -> None:
     """Plot sensitivity data (error bars) on the given axis."""
-    x_values = subset["value"] if _is_binary_spec(spec) else subset["factor"]
+    if _is_binary_spec(spec):
+        x_values = subset["value"]
+    elif spec["name"] == "range":
+        x_values = subset["display_value"]
+    else:
+        x_values = subset["factor"]
     ax.errorbar(
         x_values,
-        subset["mean_miss"],
+        subset["cep_miss"],
         yerr=subset["std_miss_distance"],
         marker="o",
         linewidth=1.4,
@@ -311,37 +324,6 @@ def _plot_sensitivity_panel(
         color=color,
         label=label,
     )
-
-
-def plot_combined(results: pd.DataFrame, output_dir: Path) -> tuple[Path, Path]:
-    scale_parameters = [
-        spec["name"] for spec in SENSITIVITY_SPECS if not _is_binary_spec(spec)
-    ]
-    scale_results = results[results["parameter"].isin(scale_parameters)].copy()
-    fig, ax = plt.subplots(figsize=(7.2, 5.0))
-
-    colors = plt.cm.viridis(np.linspace(0, 1, len(scale_results["parameter"].unique())))
-    for color, parameter_name in zip(colors, scale_results["parameter"].unique()):
-        subset = scale_results[
-            scale_results["parameter"] == parameter_name
-        ].sort_values("factor")
-        spec = _get_spec_by_name(parameter_name)
-        _plot_sensitivity_panel(
-            ax, subset, spec, color=color, label=pretty_parameter_name(parameter_name)
-        )
-
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_xlabel("Estimated parameter scale factor (E)")
-    ax.set_ylabel("Mean miss distance (m)")
-    ax.set_title("Miss distance sensitivity to error parameters")
-    ax.grid(True, linestyle=":", linewidth=0.7, alpha=0.6)
-    ax.legend(frameon=False, fontsize=8, ncols=2)
-
-    fig.tight_layout()
-    pdf_path, png_path = _save_figure(fig, "sensitivity_combined", output_dir)
-    plt.close(fig)
-    return pdf_path, png_path
 
 
 def save_panel_plot(
@@ -386,7 +368,7 @@ def plot_panels(results: pd.DataFrame, output_dir: Path) -> tuple[Path, Path]:
     for axis in axes_flat[n_panels:]:
         axis.axis("off")
 
-    fig.suptitle("Sensitivity of miss distance to error sources", y=1.01, fontsize=12)
+    fig.suptitle("Miss distance sensitivity", y=1.01, fontsize=12)
     fig.tight_layout()
 
     pdf_path, png_path = _save_figure(fig, "sensitivity_panels", output_dir)
@@ -428,12 +410,9 @@ def run_sensitivity(
     csv_path = output_dir / "sensitivity_results.csv"
     results.to_csv(csv_path, index=False)
 
-    combined_pdf, combined_png = plot_combined(results, output_dir)
     panels_pdf, panels_png = plot_panels(results, output_dir)
 
     print(f"Saved data to {csv_path}")
-    print(
-        f"Saved plots to {combined_pdf}, {combined_png}, {panels_pdf}, and {panels_png}"
-    )
+    print(f"Saved plots to {panels_pdf} and {panels_png}")
 
     return results
