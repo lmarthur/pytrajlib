@@ -364,7 +364,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
           (true_t > vehicle->booster.total_burn_time) &&
           (sampled_new_profile == 0)) {
         int atm_profile_num = (int)ran_flat(0, 100);
-        atm_profile = parse_atm("input/atmprofiles.txt", atm_profile_num);
+        atm_profile = parse_atm(run_params->atm_path, atm_profile_num);
         sampled_new_profile = 1;
       }
       // Post-boost attitude maneuver

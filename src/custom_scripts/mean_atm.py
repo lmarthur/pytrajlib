@@ -34,4 +34,4 @@ def save_mean_atm_profile(atm_profile_path):
 
 
 if __name__ == "__main__":
-    save_mean_atm_profile("input/atmprofiles.txt")
+    save_mean_atm_profile("input/atmprofiles.csv")

@@ -77,6 +77,10 @@ void init_atm_data(char *atmprofilepath) {
     return;
   }
 
+  // Skip the column-name header row if present.
+  char header_line[1024];
+  fgets(header_line, sizeof(header_line), fp);
+
   // read the atmospheric profile data delimited by spaces
   for (int i = 0; i < ATM_PROFILE_LEN * ATM_PROFILE_NUM; i++) {
     for (int j = 0; j < 6; j++) {

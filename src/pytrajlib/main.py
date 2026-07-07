@@ -34,6 +34,7 @@ np.random.seed(0)
 
 CLI_PARAM_HELP = {
     "run_name": "Run identifier used for output folders and artifacts.",
+    "atm_path": "Path to the atmospheric profiles file used by the simulation.",
     "num_runs": "Number of simulation runs to execute.",
     "num_runs_optimizer": "Number of Monte Carlo runs used by the boost and reentry optimizers.",
     "num_trials_optimizer": "Number of optimization trials per optimizer run.",
@@ -142,14 +143,16 @@ def run(
     if explicit_kwargs:
         config_dict.update(explicit_kwargs)
 
-    atm_path = str(
-        importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.txt")
+    default_atm_path = str(
+        importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.csv")
     )
-    mean_atm_path = str(
+    default_mean_atm_path = str(
         importlib.resources.files("pytrajlib.config").joinpath("mean_atm.txt")
     )
-    config_dict["atm_path"] = atm_path
-    config_dict["mean_atm_path"] = mean_atm_path
+    if not config_dict.get("atm_path"):
+        config_dict["atm_path"] = default_atm_path
+    if not config_dict.get("mean_atm_path"):
+        config_dict["mean_atm_path"] = default_mean_atm_path
     config_dict.setdefault("ballistic_drag", 0)
     config_dict.setdefault("optimize_boost", 1)
     config_dict.setdefault("optimize_reentry", 0)
@@ -195,8 +198,6 @@ def run(
         optimized_params = optimize_boost(config_dict)
         print(optimized_params)
         config_dict = {**config_dict, **optimized_params}
-    else:
-        print("Skipping boost optimization; using configured t_des_final/theta_long")
 
     if config_dict["optimize_reentry"]:
         if int(config_dict.get("rv_maneuv", 0)) == 1:

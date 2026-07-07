@@ -5,7 +5,7 @@ typedef struct runparams {
   char *run_name;           // name of the run
   char *output_path;        // path to the output directory
   char *trajectory_path;    // path to the trajectory data file
-  char *atm_path;           // path to "atmprofiles.txt"
+  char *atm_path;           // path to "atmprofiles.csv"
   char *mean_atm_path;      // path to "mean_atm.txt"
   int num_runs;             // number of Monte Carlo runs
   int num_runs_optimizer;   // number of runs to use during trajectory

@@ -43,7 +43,7 @@ def save_atm_plots(
         importlib.resources.files("pytrajlib.config").joinpath("mean_atm.txt")
     )
     atm_profiles_path = str(
-        importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.txt")
+        importlib.resources.files("pytrajlib.config").joinpath("atmprofiles.csv")
     )
 
     # Import mean atmosphere
