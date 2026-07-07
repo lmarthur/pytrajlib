@@ -39,14 +39,12 @@ ffibuilder.cdef(
         int atm_model;
         int gnss_nav;
         int rv_maneuv;
-        double reentry_vel;
         int perfect_boost;
         int optimize_boost;
         int optimize_reentry;
         double t_des_final;
         double t_vert_boost;
 
-        int rv_type;
         double deflection_time;
         double actuator_force;
         double gearing_ratio;
@@ -69,29 +67,59 @@ ffibuilder.cdef(
         double gyro_noise;
         double gnss_noise;
         double gnss_freq;
-        double cd_error_factor;
-        double cl_error_factor;
-        double cmq_error_factor;
-        double cm_error_factor;
-        double cm_delta_error_factor;
         double roll_gyro_error_factor;
 
 
-        double rv_mass;
-        double rv_mass_scale_factor;
-        double rv_length;
-        double rv_radius;
-        double rv_c_d_0;
-        double rv_c_d_alpha;
-        double rv_c_m_delta;
-
-        double booster_area;
-        double booster_maxdiam;
-        double booster_c_d_0;
-        double booster_bus_mass;
-
         double burn_time_error;
     } runparams;
+
+    typedef struct booster {
+        char name[32];
+        int num_stages;
+        double area;
+        double total_burn_time;
+        double bus_mass;
+        double total_mass;
+        double c_d_0;
+        double wet_mass[10];
+        double fuel_mass[10];
+        double dry_mass[10];
+        double isp0[10];
+        double burn_time[10];
+        double fuel_burn_rate[10];
+    } booster;
+
+    typedef struct rv {
+        char name[32];
+        int maneuverability_flag;
+        double rv_mass;
+        double rv_length;
+        double rv_radius;
+        double half_angle;
+        double rv_area;
+        double c_d_0;
+        double c_d_alpha;
+        double c_m_alpha;
+        double c_m_q;
+        double c_m_delta;
+        double c_l_alpha;
+        double flap_area;
+        double x_flap;
+        double x_com;
+        double Iyy;
+        int aero_table_size;
+        double aero_alpha_deg_table[51];
+        double c_d_table[51];
+        double c_l_table[51];
+        double c_m_table[51];
+        double c_m_q_table[51];
+    } rv;
+
+    typedef struct vehicle {
+        booster booster;
+        rv rv;
+        double total_mass;
+    } vehicle;
 
     typedef struct cartvec {
         double x;
@@ -136,7 +164,7 @@ ffibuilder.cdef(
         double reentry_angle[1000];
     } impact_data;
 
-    impact_data mc_run(runparams run_params);
+    impact_data mc_run(runparams run_params, vehicle vehicle);
     """
 )
 

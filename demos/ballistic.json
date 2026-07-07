@@ -1,0 +1,106 @@
+{
+  "run": {
+    "run_name": "run_4",
+    "num_runs": 1000,
+    "num_runs_optimizer": 25,
+    "num_trials_optimizer": 100,
+    "time_step_boost": 0.0001,
+    "time_step_lambert": 0.001,
+    "time_step_midcourse": 0.01,
+    "time_step_reentry": 0.0001,
+    "traj_output": 1,
+    "range": 10000000,
+    "x_aim": null,
+    "y_aim": null,
+    "z_aim": null,
+    "integrator": 1,
+    "random_seed": -1,
+    "optimize_boost": 0,
+    "optimize_reentry": 0
+  },
+  "flight": {
+    "grav_error": 1,
+    "ballistic_drag": 0,
+    "atm_model": 2,
+    "gnss_nav": 0,
+    "rv_maneuv": 0,
+    "perfect_boost": 0,
+    "t_vert_boost": 10,
+    "deflection_time": 0.02,
+    "actuator_force": 100,
+    "actuator_resolution": 0.01
+  },
+  "optimized": {
+    "theta_long": 0.981760631,
+    "theta_lat": 0.0,
+    "t_des_final": 2384.729760125,
+    "gearing_ratio": 1,
+    "max_deflection_angle": 10,
+    "nav_gain_0": 2,
+    "nav_gain_1": 2,
+    "K_q": 1.0,
+    "K_pp": 1.0,
+    "K_delta_p": 1.0,
+    "K_delta_d": 1.0
+  },
+  "error": {
+    "initial_x_error": 0.0,
+    "initial_pos_error": 0.1,
+    "initial_vel_error": 0.001,
+    "initial_angle_error": 1e-06,
+    "acc_scale_stability": 1e-06,
+    "gyro_bias_stability": 1e-08,
+    "gyro_noise": 1e-08,
+    "gnss_noise": 0.1,
+    "gnss_freq": 1.0,
+    "roll_gyro_error_factor": 1.0,
+    "burn_time_error": 0.0
+  },
+  "vehicle": {
+    "booster": {
+      "name": "MMIII",
+      "area": 2.2698,
+      "bus_mass": 100.0,
+      "c_d_0": 0.15,
+      "stages": [
+        {
+          "wet_mass": 23230.0,
+          "fuel_mass": 20780.0,
+          "isp0": 2619.27,
+          "burn_time": 61.0
+        },
+        {
+          "wet_mass": 7270.0,
+          "fuel_mass": 6240.0,
+          "isp0": 2815.47,
+          "burn_time": 66.0
+        },
+        {
+          "wet_mass": 3710.0,
+          "fuel_mass": 3306.0,
+          "isp0": 2795.85,
+          "burn_time": 61.0
+        }
+      ]
+    },
+    "rv": {
+      "name": "Ball",
+      "maneuverability_flag": 0,
+      "rv_mass": 400.0,
+      "rv_length": 1.5,
+      "rv_radius": 0.23,
+      "half_angle": 0.0916,
+      "flap_area": 0.0,
+      "x_flap": 0.0,
+      "x_com": 0.75,
+      "Iyy": 290.0,
+      "aerodynamics": {
+        "c_d_0": 0.1,
+        "c_d_alpha": 0.4,
+        "c_l_alpha": 1.5,
+        "c_m_alpha": -0.1,
+        "c_m_q": -0.1
+      }
+    }
+  }
+}

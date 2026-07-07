@@ -3,7 +3,7 @@ import importlib.metadata
 import importlib.resources
 import json
 import os
-import tomllib
+from collections.abc import Mapping
 from pathlib import Path
 
 import numpy as np
@@ -21,9 +21,10 @@ from pytrajlib.plotting import (
 from pytrajlib.runtime import (
     _TEMP_DIR,
     _UNSET,
-    _get_default_config,
+    _flatten_config_sections,
     _keep_alive,
     _set_aimpoint_from_range,
+    get_default_config,
 )
 from pytrajlib.scripts.atm_plot import save_atm_plots
 from pytrajlib.scripts.sensitivity import run_sensitivity
@@ -40,25 +41,26 @@ def _get_version() -> str:
         return "unknown"
 
 
-def _load_config_dict(config: str = None):
-    if config is not None:
-        print(f"Loading config from: {config}")
-        with open(config) as f:
-            config_dict = tomllib.loads(f.read())
-            config_dict = {
-                **config_dict.get("RUN", {}),
-                **config_dict.get("FLIGHT", {}),
-                **config_dict.get("VEHICLE", {}),
-                **config_dict.get("ERRORPARAMS", {}),
-            }
+def _load_config_dict(config: str | Mapping = None):
+    if config is None:
+        config_dict = get_default_config().copy()
+    elif isinstance(config, Mapping):
+        config_dict = _flatten_config_sections(dict(config))
     else:
-        config_dict = _get_default_config().copy()
+        print(f"Loading config from: {config}")
+        config_path = Path(config)
+        if config_path.suffix.lower() != ".json":
+            raise ValueError("Only JSON config files are supported")
+        with open(config_path) as f:
+            raw_config = json.load(f)
+
+        config_dict = _flatten_config_sections(raw_config)
 
     return config_dict
 
 
 def run(
-    config: str = None,
+    config: str | Mapping = None,
     plot_trajectory: bool = False,
     plot_impact: bool = False,
     plot_path: str = None,
@@ -70,13 +72,15 @@ def run(
     """Load config, override with kwargs, and run the C Monte Carlo code.
 
     Args
-        config: path to config file
+        config: path to a JSON config file, a config dictionary, or `None`
+            to use the default config
         plot_trajectory: whether to save trajectory plots
         plot_impact: whether to save impact plot
         plot_path: path to save plots
         num_processes: number of concurrent processes on which to run simulation. Default is 5/8 of the number of cores available so if you have 16 cores, the number of concurrent processes will be 10.
         sensitivity: run error-parameter sensitivity sweep instead of a single simulation
-        **kwargs: all other kwargs (see default TOML)
+        return_config: whether to return the config dict along with the impact DataFrame
+        **kwargs: overrides applied on top of the loaded config
     """
     config_dict = _load_config_dict(config)
 
@@ -202,7 +206,10 @@ def cli():
         version=f"%(prog)s {version}",
     )
     parser.add_argument(
-        "--config", type=str, default=None, help="Path to TOML config file"
+        "--config",
+        type=str,
+        default=None,
+        help="Path to JSON config file",
     )
     parser.add_argument(
         "--plot-impact",
@@ -235,7 +242,9 @@ def cli():
         help="Number of processes to run concurrently. Default 10",
     )
 
-    for param_name, default_value in _get_default_config().items():
+    for param_name, default_value in get_default_config().items():
+        if param_name == "vehicle":
+            continue
         parser.add_argument(
             f"--{param_name.replace('_', '-')}",
             type=type(default_value),
@@ -286,8 +295,9 @@ def cli():
     impact_x_local, impact_y_local = get_local_impact(
         impact_df, (config["x_aim"], config["y_aim"], config["z_aim"])
     )
-    r = np.corrcoef(impact_x_local, impact_y_local)[0][1]
-    print(f"{r=}")
+    if config["num_runs"] > 1:
+        r = np.corrcoef(impact_x_local, impact_y_local)[0][1]
+        print(f"Pearson's {r=}")
 
 
 if __name__ == "__main__":

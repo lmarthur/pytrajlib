@@ -6,9 +6,7 @@
 #include "integrator_test.h"
 #include "mass_test.h"
 #include "sensors_test.h"
-#include "trajectory_test.h"
 #include "utils_test.h"
-#include "vehicle_test.h"
 
 #include "physics/drag_test.h"
 #include "physics/gravity_test.h"

@@ -382,7 +382,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
         true_t > run_params->t_vert_boost) {
       reentry_captured = 1;
       time_step = run_params->time_step_reentry;
-      vehicle->rv.rv_mass *= run_params->rv_mass_scale_factor;
       *reentry_vel = norm(true_state.velocity);
       *reentry_ang =
           flight_path_angle(true_state.position, true_state.velocity);
@@ -540,7 +539,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
  * @param run_params Run configuration parameters
  * @return Impact states for a single run
  */
-impact_data mc_run(runparams run_params) {
+impact_data mc_run(runparams run_params, vehicle vehicle) {
   uint64_t seed;
   if (run_params.random_seed >= 0) {
     seed = (uint64_t)run_params.random_seed;
@@ -550,6 +549,7 @@ impact_data mc_run(runparams run_params) {
   }
   init_genrand64(seed);
   reset_ran_gaussian();
+  apply_burn_time_error(&run_params, &vehicle);
 
   // Initialize the variables
   int num_runs = run_params.num_runs;
@@ -560,17 +560,6 @@ impact_data mc_run(runparams run_params) {
     exit(1);
   }
   impact_data impact_data;
-
-  vehicle vehicle;
-
-  if (run_params.rv_type == 0) {
-    vehicle = init_mmiii_ballistic(&run_params);
-  } else if (run_params.rv_type == 1) {
-    vehicle = init_mmiii_swerve(&run_params);
-  } else {
-    printf("Error: Invalid RV type\n");
-    exit(1);
-  }
 
   state initial_true_state = init_true_state(&run_params);
 

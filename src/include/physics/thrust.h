@@ -18,15 +18,14 @@
  * @return Zero-based stage index.
  */
 int get_current_stage(double t, vehicle *vehicle) {
-  // Get the current stage
-  int stage = 0;
-  if (t > vehicle->booster.burn_time[0]) {
-    stage = 1;
+  double cumulative_burn_time = 0;
+  for (int i = 0; i < vehicle->booster.num_stages; i++) {
+    cumulative_burn_time += vehicle->booster.burn_time[i];
+    if (t <= cumulative_burn_time) {
+      return i;
+    }
   }
-  if (t > vehicle->booster.burn_time[0] + vehicle->booster.burn_time[1]) {
-    stage = 2;
-  }
-  return stage;
+  return vehicle->booster.num_stages;
 }
 
 /**
@@ -39,21 +38,17 @@ int get_current_stage(double t, vehicle *vehicle) {
  */
 double remaining_delta_v(state *state, vehicle *vehicle, double t) {
   double burn_time_in_stage;
-  // Burn time in third stage
-  if (t > vehicle->booster.burn_time[0] + vehicle->booster.burn_time[1]) {
-    burn_time_in_stage =
-        t - (vehicle->booster.burn_time[0] + vehicle->booster.burn_time[1]);
-  }
-  // Burn time in second stage
-  else if (t > vehicle->booster.burn_time[0]) {
-    burn_time_in_stage = t - vehicle->booster.burn_time[0];
-  }
-  // Burn time in first stage
-  else {
-    burn_time_in_stage = t;
+  double cumulative_burn_time = 0;
+  int current_stage = get_current_stage(t, vehicle);
+  if (current_stage >= vehicle->booster.num_stages) {
+    return 0.0;
   }
 
-  int current_stage = get_current_stage(t, vehicle);
+  for (int i = 0; i < current_stage; i++) {
+    cumulative_burn_time += vehicle->booster.burn_time[i];
+  }
+  burn_time_in_stage = t - cumulative_burn_time;
+
   double mass_start_of_stage = get_vehicle_mass(vehicle, t);
   double burned_mass =
       vehicle->booster.fuel_burn_rate[current_stage] * burn_time_in_stage;
@@ -68,8 +63,6 @@ double remaining_delta_v(state *state, vehicle *vehicle, double t) {
 
   // Remaining delta-v is the sum of each stage's delta v
   for (int i = current_stage + 1; i < vehicle->booster.num_stages; i++) {
-    // Each unburned stage's mass is the total mass - sum previous stage's wet
-    // mass
     double stage_initial_mass = vehicle->total_mass;
     for (int j = 0; j < i; j++) {
       stage_initial_mass -= vehicle->booster.wet_mass[j];

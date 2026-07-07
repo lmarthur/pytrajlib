@@ -33,7 +33,6 @@ typedef struct runparams {
   int atm_model;        // flag to select the atmospheric model
   int gnss_nav;         // flag to include GNSS navigation
   int rv_maneuv;        // flag to include guidance during the reentry phase
-  double reentry_vel;   // reentry velocity in meters per second
   int perfect_boost;    // 1 perfect boost, 0 realistic
   int optimize_boost;   // 1 optimize t_des_final/theta_long, 0 use provided
   int optimize_reentry; // 1 optimize maneuver params (max_deflection_angle,
@@ -42,7 +41,6 @@ typedef struct runparams {
   double t_des_final;   // desired flight time (optimized by code)
   double t_vert_boost;  // Duration of vertical boost (optimized by code)
 
-  int rv_type; // reentry vehicle type (0: ballistic, 1: maneuverable)
   double deflection_time; // time to make full flap deflection in seconds, used
                           // for maneuverability
   double actuator_force;  // actuator max force in kilonewtons, used for
@@ -59,42 +57,17 @@ typedef struct runparams {
   double K_delta_p;
   double K_delta_d;
 
-  double initial_x_error;     // initial x-error in meters
-  double initial_pos_error;   // initial position error in meters
-  double initial_vel_error;   // initial velocity error in meters per second
-  double initial_angle_error; // initial angle error in radians
-  double acc_scale_stability; // accelerometer scale stability in ppm
-  double gyro_bias_stability; // gyro bias stability in rad/s
-  double gyro_noise;          // gyro noise in rad/s/sqrt(s)
-  double gnss_noise;          // GNSS error in meters
-  double gnss_freq;           // GNSS update frequency in Hz
-  double
-      cd_error_factor; // Multiplicative error factor for true drag coefficient
-  double
-      cl_error_factor; // Multiplicative error factor for true lift coefficient
-  double cmq_error_factor; // Multiplicative error factor for true C_Mq
-  double cm_error_factor;  // Multiplicative error factor for true C_M_alpha
-  double
-      cm_delta_error_factor; // Multiplicative error factor for true C_M_delta
+  double initial_x_error;        // initial x-error in meters
+  double initial_pos_error;      // initial position error in meters
+  double initial_vel_error;      // initial velocity error in meters per second
+  double initial_angle_error;    // initial angle error in radians
+  double acc_scale_stability;    // accelerometer scale stability in ppm
+  double gyro_bias_stability;    // gyro bias stability in rad/s
+  double gyro_noise;             // gyro noise in rad/s/sqrt(s)
+  double gnss_noise;             // GNSS error in meters
+  double gnss_freq;              // GNSS update frequency in Hz
   double roll_gyro_error_factor; // Multiplicative error factor for roll gyro
                                  // bias error
-
-  // RV parameter overrides (-1 = use vehicle type default)
-  double rv_mass;              // RV mass in kg
-  double rv_mass_scale_factor; // Multiplicative RV mass factor applied at
-                               // reentry and inverted in guidance
-  double rv_length;            // RV length in m
-  double rv_radius;            // RV base radius in m
-  double rv_c_d_0;             // RV zero-lift drag coefficient
-  double rv_c_d_alpha;         // RV drag coefficient derivative (per radian)
-  double rv_c_m_delta; // RV moment coefficient derivative per radian of flap
-                       // deflection
-
-  // Booster parameter overrides (-1 = use vehicle type default)
-  double booster_area;     // Booster reference area in m^2
-  double booster_maxdiam;  // Booster maximum diameter in m
-  double booster_c_d_0;    // Booster zero-lift drag coefficient
-  double booster_bus_mass; // Bus/payload carrier mass in kg
 
   // Booster burn time error standard deviation
   double burn_time_error; // Applied independently to each stage in seconds

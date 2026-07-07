@@ -1,5 +1,5 @@
+import json
 import sys
-import tomllib
 
 import numpy as np
 import pandas as pd
@@ -10,7 +10,7 @@ from pytrajlib.utils import get_local_impact
 sys.path.append("./src")
 from pytrajlib.main import run
 
-CONFIG_PATH = "./test/test.toml"
+CONFIG_PATH = "./test/test.json"
 
 ERROR_FIELDS = (
     "initial_x_error",
@@ -39,11 +39,11 @@ def base_case():
 
 
 def test_read_config():
-    """Baseline test TOML has zero defaults for all error parameters."""
-    with open(CONFIG_PATH, "rb") as f:
-        cfg = tomllib.load(f)
+    """Baseline test JSON has zero defaults for all error parameters."""
+    with open(CONFIG_PATH) as f:
+        cfg = json.load(f)
 
-    err_cfg = cfg["ERRORPARAMS"]
+    err_cfg = cfg["error"]
     for field in ERROR_FIELDS:
         assert float(err_cfg[field]) == 0.0
 

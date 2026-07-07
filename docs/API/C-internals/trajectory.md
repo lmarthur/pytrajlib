@@ -164,6 +164,7 @@ Run a Monte Carlo trajectory simulation.
 | Name | Type | Description |
 | --- | --- | --- |
 | `run_params` | `runparams` | Run configuration parameters |
+| `vehicle` | `vehicle` |  |
 
 ### Returns
 

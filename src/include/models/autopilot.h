@@ -24,12 +24,6 @@ double get_da_ddelta(state *est_state, vehicle *vehicle, atm_cond *est_atm_cond,
   return da_ddelta;
 }
 
-static inline double get_guidance_rv_mass(vehicle *vehicle,
-                                          runparams *run_params) {
-  double scale_factor = run_params->rv_mass_scale_factor;
-  return vehicle->rv.rv_mass / scale_factor;
-}
-
 /**
  * Get the desired flap deflection angle using nonlinear dynamic inversion (NDI)
  * with a PD controller that reduces the error between the current estimated
@@ -38,10 +32,9 @@ static inline double get_guidance_rv_mass(vehicle *vehicle,
 cartvec NDI(cartvec a_cmd_B, state *est_state, cartvec aoa_est,
             vehicle *vehicle, double q_inf, runparams *run_params) {
   // Get desired angle of attack
-  double guidance_rv_mass = get_guidance_rv_mass(vehicle, run_params);
   cartvec aoa_des =
-      smultiply(a_cmd_B, guidance_rv_mass / (q_inf * vehicle->rv.rv_area *
-                                             vehicle->rv.c_l_alpha));
+      smultiply(a_cmd_B, vehicle->rv.rv_mass / (q_inf * vehicle->rv.rv_area *
+                                                vehicle->rv.c_l_alpha));
 
   // Proportional controller term
   cartvec aoa_term =
@@ -112,7 +105,7 @@ void get_flap_angular_acceleration(double t, state *est_state,
       run_params->K_delta_d * est_state->dot_delta_2;
 
   // Log acceleration command and transverse imu
-  double des_aoa = norm(a_cmd_E) * get_guidance_rv_mass(vehicle, run_params) /
+  double des_aoa = norm(a_cmd_E) * vehicle->rv.rv_mass /
                    (q_inf * vehicle->rv.rv_area * vehicle->rv.c_l_alpha);
   double desired_aoa_deg = des_aoa * 180 / M_PI;
   write_reentry_guidance_log_row(t, a_cmd_E, a_est_transverse, desired_aoa_deg,

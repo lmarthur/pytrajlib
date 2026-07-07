@@ -104,6 +104,26 @@ Performs linear interpolation on tabulated data.
 | --- | --- |
 | `double` | Interpolated y-value. |
 
+## `interpolate_table`
+
+Interpolate aerodynamic coefficient tables. Use a linear extrapolation at the
+ends 
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `x` | `double` |  |
+| `x_table` | `const double *` |  |
+| `y_table` | `const double *` |  |
+| `size` | `int` |  |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `static inline double` |  |
+
 ## `sign`
 
 Returns the sign of a value.

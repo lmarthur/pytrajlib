@@ -8,7 +8,7 @@ import pandas as pd
 import scienceplots
 
 import pytrajlib as ptl
-from pytrajlib.runtime import _get_default_config
+from pytrajlib.runtime import get_default_config
 
 # Avoid unused import warning by asserting scienceplots
 assert scienceplots
@@ -118,7 +118,7 @@ def pretty_parameter_name(parameter_name: str) -> str:
 
 
 def load_config(config_path: Path | None) -> dict:
-    base_config = _get_default_config().copy()
+    base_config = get_default_config().copy()
     if config_path is None:
         return base_config
 

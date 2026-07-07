@@ -36,27 +36,6 @@ static inline int is_reentry(state *state, double t) {
   return (angle_v_grav > 0) && (angle_v_grav < M_PI_2);
 }
 
-static inline double
-interpolate_swerve_coeff(double alpha_deg,
-                         const double coeff_table[SWERVE_AERO_TABLE_SIZE]) {
-  double alpha_min_deg = SWERVE_ALPHA_DEG_TABLE[0];
-  double alpha_max_deg = SWERVE_ALPHA_DEG_TABLE[SWERVE_AERO_TABLE_SIZE - 1];
-  double dx_all = alpha_max_deg - alpha_min_deg;
-
-  if (alpha_deg < alpha_min_deg || alpha_deg > alpha_max_deg) {
-    double slope =
-        (coeff_table[SWERVE_AERO_TABLE_SIZE - 1] - coeff_table[0]) / dx_all;
-    if (alpha_deg < alpha_min_deg) {
-      return coeff_table[0] + slope * (alpha_deg - alpha_min_deg);
-    }
-    return coeff_table[SWERVE_AERO_TABLE_SIZE - 1] +
-           slope * (alpha_deg - alpha_max_deg);
-  }
-
-  return linterp(alpha_deg, (double *)SWERVE_ALPHA_DEG_TABLE,
-                 (double *)coeff_table, SWERVE_AERO_TABLE_SIZE);
-}
-
 /**
  * Compute angle of attack from body-frame relative-wind direction.
  *
@@ -111,17 +90,16 @@ static inline cartvec get_body_force(state *current_state, atm_cond *atm_cond,
 
   // Get drag and lift coefficients based on the angle of attack
   double C_D, C_L;
-  if (strcmp(vehicle->rv.name, "SWERVE") == 0) {
+  if (vehicle->rv.aero_table_size > 0) {
     double alpha_deg = alpha * 180.0 / M_PI;
-    C_D = interpolate_swerve_coeff(alpha_deg, SWERVE_CD_TABLE);
-    C_L = interpolate_swerve_coeff(alpha_deg, SWERVE_CL_TABLE);
+    C_D = interpolate_table(alpha_deg, vehicle->rv.aero_alpha_deg_table,
+                            vehicle->rv.c_d_table, vehicle->rv.aero_table_size);
+    C_L = interpolate_table(alpha_deg, vehicle->rv.aero_alpha_deg_table,
+                            vehicle->rv.c_l_table, vehicle->rv.aero_table_size);
   } else {
     C_D = vehicle->rv.c_d_0 + vehicle->rv.c_d_alpha * alpha;
     C_L = vehicle->rv.c_l_alpha * alpha;
   }
-
-  C_D *= run_params->cd_error_factor;
-  C_L *= run_params->cl_error_factor;
 
   // Reference area for drag and lift coefficients
   double S_ref = vehicle->rv.rv_area;

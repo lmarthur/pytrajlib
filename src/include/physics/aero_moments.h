@@ -53,18 +53,18 @@ static inline cartvec get_body_moment(state *current_state, atm_cond *atm_cond,
 
   double alpha = get_aoa(u_hat_B);
   double C_M, C_Mq;
-  if (strcmp(vehicle->rv.name, "SWERVE") == 0) {
+  if (vehicle->rv.aero_table_size > 0) {
     // Interpolate the coefficient tables using the angle of attack
     double alpha_deg = alpha * 180.0 / M_PI;
-    C_Mq = interpolate_swerve_coeff(alpha_deg, SWERVE_CMQ_TABLE);
-    C_M = interpolate_swerve_coeff(alpha_deg, SWERVE_CM_TABLE);
+    C_Mq =
+        interpolate_table(alpha_deg, vehicle->rv.aero_alpha_deg_table,
+                          vehicle->rv.c_m_q_table, vehicle->rv.aero_table_size);
+    C_M = interpolate_table(alpha_deg, vehicle->rv.aero_alpha_deg_table,
+                            vehicle->rv.c_m_table, vehicle->rv.aero_table_size);
   } else {
     C_M = vehicle->rv.c_m_alpha * alpha;
     C_Mq = vehicle->rv.c_m_q;
   }
-
-  C_Mq *= run_params->cmq_error_factor;
-  C_M *= run_params->cm_error_factor;
 
   // Calculate dynamic pressure
   double v_rel = norm(v_rel_E);
@@ -153,8 +153,6 @@ static inline cartvec get_angular_acceleration(double t, state *true_state,
       get_body_moment(true_state, atm_cond, vehicle, run_params);
   cartvec incremental_flap_moment =
       sum_incremental_moments(true_state, atm_cond, vehicle, run_params);
-  incremental_flap_moment =
-      smultiply(incremental_flap_moment, run_params->cm_delta_error_factor);
   cartvec total_moment = add(body_moment, incremental_flap_moment);
 
   // We neglect angular acceleration around the roll axis

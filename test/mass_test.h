@@ -1,10 +1,35 @@
 #include "../src/include/models/vehicle.h"
 #include <tau/tau.h>
 
+static inline booster init_test_booster(void) {
+  booster booster = {0};
+  booster.num_stages = 3;
+  booster.wet_mass[0] = 100.0;
+  booster.wet_mass[1] = 80.0;
+  booster.wet_mass[2] = 60.0;
+  booster.burn_time[0] = 1.0;
+  booster.burn_time[1] = 2.0;
+  booster.burn_time[2] = 3.0;
+  booster.fuel_burn_rate[0] = booster.wet_mass[0] / booster.burn_time[0];
+  booster.fuel_burn_rate[1] = booster.wet_mass[1] / booster.burn_time[1];
+  booster.fuel_burn_rate[2] = booster.wet_mass[2] / booster.burn_time[2];
+  booster.total_burn_time =
+      booster.burn_time[0] + booster.burn_time[1] + booster.burn_time[2];
+  booster.total_mass =
+      booster.wet_mass[0] + booster.wet_mass[1] + booster.wet_mass[2];
+  return booster;
+}
+
+static inline rv init_test_rv(void) {
+  rv rv = {0};
+  rv.rv_mass = 50.0;
+  return rv;
+}
+
 TEST(mass, get_vehicle_mass) {
   vehicle vehicle;
-  vehicle.booster = init_mmiii_booster();
-  vehicle.rv = init_ballistic_rv();
+  vehicle.booster = init_test_booster();
+  vehicle.rv = init_test_rv();
   vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
 
   double time_step = 1;

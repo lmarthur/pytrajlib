@@ -111,9 +111,6 @@ void print_config(runparams *run_params) {
   printf("Atmospheric model: %d\n", run_params->atm_model);
   printf("GNSS navigation: %d\n", run_params->gnss_nav);
   printf("Reentry phase guidance: %d\n", run_params->rv_maneuv);
-  printf("Reentry velocity: %f\n", run_params->reentry_vel);
-
-  printf("Reentry vehicle type: %d\n", run_params->rv_type);
 
   printf("Initial x-error: %f\n", run_params->initial_x_error);
   printf("Initial position error: %f\n", run_params->initial_pos_error);
@@ -156,6 +153,31 @@ double linterp(double x, double xs[], double ys[], int n) {
   y = ys[i - 1] + (ys[i] - ys[i - 1]) * (x - xs[i - 1]) / (xs[i] - xs[i - 1]);
 
   return y;
+}
+
+/**Interpolate aerodynamic coefficient tables. Use a linear extrapolation at the
+ * ends */
+static inline double interpolate_table(double x, const double *x_table,
+                                       const double *y_table, int size) {
+  if (size <= 0) {
+    return NAN;
+  }
+  if (size == 1) {
+    return y_table[0];
+  }
+
+  if (x <= x_table[0]) {
+    double slope = (y_table[1] - y_table[0]) / (x_table[1] - x_table[0]);
+    return y_table[0] + slope * (x - x_table[0]);
+  }
+
+  if (x >= x_table[size - 1]) {
+    double slope = (y_table[size - 1] - y_table[size - 2]) /
+                   (x_table[size - 1] - x_table[size - 2]);
+    return y_table[size - 1] + slope * (x - x_table[size - 1]);
+  }
+
+  return linterp(x, (double *)x_table, (double *)y_table, size);
 }
 
 /**

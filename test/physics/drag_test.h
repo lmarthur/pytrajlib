@@ -1,10 +1,34 @@
 #include "../../src/include/physics/drag.h"
 #include <tau/tau.h>
 
+static inline rv init_simple_rv(void) {
+  rv simple_rv = {0};
+  simple_rv.rv_mass = 1000.0;
+  simple_rv.rv_area = 1.0;
+  simple_rv.c_d_0 = 0.5;
+  return simple_rv;
+}
+
+static inline booster init_simple_booster(void) {
+  booster simple_booster = {0};
+  simple_booster.num_stages = 1;
+  simple_booster.area = 1.0;
+  simple_booster.c_d_0 = 0.5;
+  simple_booster.wet_mass[0] = 1000.0;
+  simple_booster.fuel_mass[0] = 500.0;
+  simple_booster.dry_mass[0] = 500.0;
+  simple_booster.isp0[0] = 250.0;
+  simple_booster.burn_time[0] = 10.0;
+  simple_booster.fuel_burn_rate[0] = 50.0;
+  simple_booster.total_burn_time = 10.0;
+  simple_booster.total_mass = 1000.0;
+  return simple_booster;
+}
+
 TEST(drag, get_drag_acc) {
   vehicle vehicle;
-  vehicle.rv = init_ballistic_rv();
-  vehicle.booster = init_mmiii_booster();
+  vehicle.rv = init_simple_rv();
+  vehicle.booster = init_simple_booster();
   vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
   atm_cond atm_cond;
   state state = {0};
