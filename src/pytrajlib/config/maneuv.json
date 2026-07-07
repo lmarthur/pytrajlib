@@ -1,7 +1,7 @@
 {
   "run": {
     "run_name": "run_4",
-    "num_runs": 30,
+    "num_runs": 200,
     "num_runs_optimizer": 50,
     "num_trials_optimizer": 100,
     "time_step_boost": 0.001,

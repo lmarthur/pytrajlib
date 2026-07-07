@@ -195,7 +195,7 @@ def test_sensitivity_runs(tmp_path):
         num_runs=1,
         num_processes=1,
         random_seed=0,
-        plot_path=str(tmp_path),
+        output_dir=str(tmp_path),
     )
 
     assert results is not None

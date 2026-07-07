@@ -19,7 +19,6 @@ from pytrajlib.plotting import (
     create_traj_plots,
 )
 from pytrajlib.runtime import (
-    _TEMP_DIR,
     _UNSET,
     _flatten_config_sections,
     _keep_alive,
@@ -31,6 +30,60 @@ from pytrajlib.scripts.sensitivity import run_sensitivity
 from pytrajlib.utils import get_miss_distance
 
 np.random.seed(0)
+
+
+CLI_PARAM_HELP = {
+    "run_name": "Run identifier used for output folders and artifacts.",
+    "num_runs": "Number of simulation runs to execute.",
+    "num_runs_optimizer": "Number of Monte Carlo runs used by the boost and reentry optimizers.",
+    "num_trials_optimizer": "Number of optimization trials per optimizer run.",
+    "time_step_boost": "Time step used during the boost phase, in seconds.",
+    "time_step_lambert": "Time step used during Lambert maneuver, in seconds.",
+    "time_step_midcourse": "Time step used during the midcourse phase, in seconds.",
+    "time_step_reentry": "Time step used during the reentry phase, in seconds.",
+    "traj_output": "Write trajectory output logs for the first run with 1, and disable with 0.",
+    "range": "Downrange distance in meters; supersedes the aimpoint.",
+    "x_aim": "Target aimpoint x-coordinate in meters.",
+    "y_aim": "Target aimpoint y-coordinate in meters.",
+    "z_aim": "Target aimpoint z-coordinate in meters.",
+    "theta_long": "Thrust angle from x axis in x-y plane.",
+    "theta_lat": "Thrust angle above x-y plane.",
+    "integrator": "Integrator selection; 0 is modified Euler-Maruyama, 1 is SRA3.",
+    "random_seed": "Random seed used to initialize stochastic simulation inputs.",
+    "grav_error": "Enable the gravitational error model.",
+    "ballistic_drag": "Use simplified drag; 1 enables it and 0 disables it.",
+    "atm_model": "Atmospheric model selection; 0 is exponential, 1 adds perturbations, 2 is EarthGram, 3 is mean EarthGram.",
+    "gnss_nav": "Enable GNSS position updates during exoatmospheric flight.",
+    "rv_maneuv": "Reentry vehicle maneuverability mode; 1 uses realistic maneuverability, 2 uses idealized maneuverability.",
+    "reentry_vel": "Reentry velocity in meters per second.",
+    "perfect_boost": "Set to 1 for a perfect boost phase and 0 for a realistic boost phase.",
+    "optimize_boost": "Optimize t_des_final and theta_long when set to 1.",
+    "optimize_reentry": "Optimize reentry maneuver parameters (max_deflection_angle, gearing_ratio, nav_gain_0, nav_gain_1, K_q, K_pp, K_delta_p, K_delta_d) when set to 1.",
+    "t_des_final": "Desired final time for the boost phase, in seconds.",
+    "t_vert_boost": "Vertical boost time, in seconds.",
+    "deflection_time": "Actuator deflection time, in seconds.",
+    "actuator_force": "Maximum actuator force in kN.",
+    "gearing_ratio": "Actuator gearing ratio. Higher gearing ratios correspond to increased max force and decreased max speed.",
+    "actuator_resolution": "Actuator resolution in degrees.",
+    "max_deflection_angle": "Maximum deflection angle allowed for the reentry vehicle in degrees.",
+    "nav_gain_0": "Navigation gain at surface used by the reentry guidance law.",
+    "nav_gain_1": "Navigation gain at reentry used by the reentry guidance law.",
+    "K_q": "Pitch-rate feedback gain.",
+    "K_pp": "Proportional restoring angle of attack gain.",
+    "K_delta_p": "Proportional deflection gain.",
+    "K_delta_d": "Derivative deflection gain.",
+    "initial_x_error": "Initial x-position error.",
+    "initial_pos_error": "Initial position error magnitude.",
+    "initial_vel_error": "Initial velocity error magnitude.",
+    "initial_angle_error": "Initial angle error magnitude.",
+    "acc_scale_stability": "Accelerometer scale-factor stability.",
+    "gyro_bias_stability": "Gyroscope bias stability.",
+    "gyro_noise": "Gyroscope noise level.",
+    "gnss_noise": "GNSS measurement noise level.",
+    "gnss_freq": "GNSS update frequency in Hz.",
+    "roll_gyro_error_factor": "Roll gyroscope error scaling factor.",
+    "burn_time_error": "Burn time error magnitude in seconds.",
+}
 
 
 def _get_version() -> str:
@@ -63,8 +116,8 @@ def run(
     config: str | Mapping = None,
     plot_trajectory: bool = False,
     plot_impact: bool = False,
-    plot_path: str = None,
-    num_processes: int = (os.cpu_count() * 5) // 8,
+    output_dir: str = None,
+    num_processes: int = max((os.cpu_count() * 5) // 8, 1),
     sensitivity: int = None,
     return_config=False,
     **kwargs,
@@ -76,7 +129,7 @@ def run(
             to use the default config
         plot_trajectory: whether to save trajectory plots
         plot_impact: whether to save impact plot
-        plot_path: path to save plots
+        output_dir: path to save plots and run artifacts
         num_processes: number of concurrent processes on which to run simulation. Default is 5/8 of the number of cores available so if you have 16 cores, the number of concurrent processes will be 10.
         sensitivity: run error-parameter sensitivity sweep instead of a single simulation
         return_config: whether to return the config dict along with the impact DataFrame
@@ -97,7 +150,6 @@ def run(
     )
     config_dict["atm_path"] = atm_path
     config_dict["mean_atm_path"] = mean_atm_path
-    config_dict["trajectory_path"] = _TEMP_DIR + "/trajectory.txt"
     config_dict.setdefault("ballistic_drag", 0)
     config_dict.setdefault("optimize_boost", 1)
     config_dict.setdefault("optimize_reentry", 0)
@@ -108,19 +160,21 @@ def run(
         config_dict["num_processes"] = int(num_processes)
 
         run_name = str(config_dict.get("run_name", "sensitivity"))
-        output_dir = (
-            Path(plot_path) if plot_path is not None else Path("output") / run_name
+        output_dir_path = (
+            Path(output_dir) if output_dir is not None else Path("output") / run_name
         )
+        output_dir_path.mkdir(parents=True, exist_ok=True)
+        config_dict["trajectory_path"] = str(output_dir_path / "trajectory.csv")
 
         sensitivity_results = run_sensitivity(
             base_config=config_dict,
-            output_dir=output_dir,
+            output_dir=output_dir_path,
             use_zero_baseline=sensitivity == 0,
         )
         print(sensitivity_results)
 
         try:
-            save_atm_plots(output_dir)
+            save_atm_plots(output_dir_path)
         except Exception as exc:
             print(f"Warning: failed to generate atm plots: {exc}")
 
@@ -129,6 +183,13 @@ def run(
         return sensitivity_results
 
     print("Running...")
+
+    run_name = str(config_dict.get("run_name", "run"))
+    output_dir_path = (
+        Path(output_dir) if output_dir is not None else Path("output") / run_name
+    )
+    output_dir_path.mkdir(parents=True, exist_ok=True)
+    config_dict["trajectory_path"] = str(output_dir_path / "trajectory.csv")
 
     if config_dict["optimize_boost"]:
         optimized_params = optimize_boost(config_dict)
@@ -152,9 +213,8 @@ def run(
     miss_distance = get_miss_distance(impact_df=impact_df, aimpoint=aimpoint)
     impact_df["miss_distance"] = miss_distance
 
-    save_path = Path(plot_path) if plot_path else None
-    if plot_path:
-        save_path.mkdir(parents=True, exist_ok=True)
+    save_path = output_dir_path
+    if output_dir_path:
         with open(save_path / "config.json", "w") as f:
             f.write(json.dumps(config_dict))
 
@@ -209,13 +269,13 @@ def cli():
         "--config",
         type=str,
         default=None,
-        help="Path to JSON config file",
+        help="Path to JSON config file for simulation & vehicle specification ",
     )
     parser.add_argument(
         "--plot-impact",
+        action=argparse.BooleanOptionalAction,
         default=True,
-        action="store_true",
-        help="Create and save impact plot",
+        help="Create and save impact plot (default: enabled)",
     )
     parser.add_argument(
         "--plot-trajectory",
@@ -224,10 +284,10 @@ def cli():
         help="Generate and save trajectory plots",
     )
     parser.add_argument(
-        "--plot-path",
+        "--output-dir",
         type=str,
         default=None,
-        help="Path to save plots",
+        help="Directory to save plots and run artifacts",
     )
     parser.add_argument(
         "--sensitivity",
@@ -239,7 +299,7 @@ def cli():
         "--num-processes",
         type=int,
         default=10,
-        help="Number of processes to run concurrently. Default 10",
+        help="Number of processes to run concurrently. Default is 5/8 number of cores available, rounded down to a minimum of 1.",
     )
 
     for param_name, default_value in get_default_config().items():
@@ -249,7 +309,7 @@ def cli():
             f"--{param_name.replace('_', '-')}",
             type=type(default_value),
             default=_UNSET,
-            help=f"Default: {default_value}",
+            help=f"{CLI_PARAM_HELP.get(param_name, '')} (default: {default_value})",
         )
 
     args = parser.parse_args()
@@ -258,35 +318,37 @@ def cli():
     plot_trajectory = kwargs.pop("plot_trajectory")
     plot_impact = kwargs.pop("plot_impact")
     sensitivity = kwargs.pop("sensitivity")
-    num_processes = int(kwargs.pop("num_processes", 10))
+    num_processes = int(kwargs.pop("num_processes", max((os.cpu_count() * 5) // 8, 1)))
 
-    plot_path = kwargs.pop("plot_path")
+    output_dir = kwargs.pop("output_dir")
 
     if sensitivity is not None:
         run(
             config=config,
-            plot_path=plot_path,
+            output_dir=output_dir,
             num_processes=num_processes,
             sensitivity=sensitivity,
             **kwargs,
         )
         return
 
-    # Set default plot path to current directory if --plot is set but --plot-path is not
-    if (plot_trajectory or plot_impact) and plot_path is None:
-        plot_path = os.getcwd()
+    if output_dir is None:
+        run_name = kwargs.get("run_name")
+        if run_name is _UNSET:
+            run_name = get_default_config().get("run_name", "run_4")
+        output_dir = str(Path("output") / str(run_name))
 
     impact_df, config = run(
         config=config,
         plot_trajectory=plot_trajectory,
         plot_impact=plot_impact,
-        plot_path=plot_path,
+        output_dir=output_dir,
         num_processes=num_processes,
         return_config=True,
         **kwargs,
     )
     if plot_impact:
-        csv_path = Path(plot_path) / "impact.csv"
+        csv_path = Path(output_dir) / "impact.csv"
         impact_df.to_csv(csv_path, index=False)
         print(f"Saved: {csv_path}")
     print(impact_df)

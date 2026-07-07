@@ -1,8 +1,6 @@
 import importlib.resources
 import json
 import math
-import os
-import tempfile
 from copy import deepcopy
 from multiprocessing import Pool
 
@@ -12,9 +10,6 @@ from tqdm.auto import tqdm
 
 from pytrajlib._traj import ffi
 from pytrajlib._traj import lib as traj_lib
-
-_TEMP_DIR = os.path.join(tempfile.gettempdir(), "pytrajlib")
-os.makedirs(_TEMP_DIR, exist_ok=True)
 
 _keep_alive = {}
 EARTH_RADIUS_M = 6371e3
