@@ -117,15 +117,20 @@ def run(
     config: str | Mapping = None,
     plot_trajectory: bool = False,
     plot_impact: bool = False,
-    output_dir: str = None,
+    output_dir: str | None = "output",
     num_processes: int = max((os.cpu_count() * 5) // 8, 1),
     sensitivity: int = None,
     return_config=False,
+    return_trajectory=False,
+    return_guidance=False,
     **kwargs,
 ):
     """Load config, override with kwargs, and run the C Monte Carlo code.
 
-    Args
+    Optionally, return the config used to produce the results along with the detailed
+    trajectory data for the first flight.
+
+    Args:
         config: path to a JSON config file, a config dictionary, or `None`
             to use the default config
         plot_trajectory: whether to save trajectory plots
@@ -134,6 +139,8 @@ def run(
         num_processes: number of concurrent processes on which to run simulation. Default is 5/8 of the number of cores available so if you have 16 cores, the number of concurrent processes will be 10.
         sensitivity: run error-parameter sensitivity sweep instead of a single simulation
         return_config: whether to return the config dict along with the impact DataFrame
+        return_trajectory: whether to return the trajectory dataframe of the first run's mass, position, velocity, etc. over time.
+        return_guidance: whether to return the reentry guidance dataframe of the first run's desired and achieved accelerations in reentry.
         **kwargs: overrides applied on top of the loaded config
     """
     config_dict = _load_config_dict(config)
@@ -215,13 +222,19 @@ def run(
     impact_df["miss_distance"] = miss_distance
 
     save_path = output_dir_path
+    plot_path = save_path if output_dir is not None else None
     if output_dir_path:
         with open(save_path / "config.json", "w") as f:
             f.write(json.dumps(config_dict))
 
+    return_bundle = (impact_df,)
+
     if plot_impact:
         print("Generating impact plot...")
-        create_impact_plot(impact_df, save_path=save_path, aimpoint=aimpoint)
+        return_bundle = (
+            *return_bundle,
+            create_impact_plot(impact_df, save_path=plot_path, aimpoint=aimpoint),
+        )
 
     # Load trajectory data if plotting
     if plot_trajectory:
@@ -239,19 +252,37 @@ def run(
 
         # Pass guidance_df into create_traj_plots so reentry guidance is plotted
         # using the same phase masks as the other trajectory plots.
-        create_traj_plots(
-            trajectory_df,
-            save_path=save_path,
-            aimpoint=aimpoint,
-            guidance_df=guidance_df,
+        return_bundle = (
+            *return_bundle,
+            create_traj_plots(
+                trajectory_df,
+                save_path=plot_path,
+                aimpoint=aimpoint,
+                guidance_df=guidance_df,
+            ),
         )
     print(f"CEP={np.quantile(miss_distance, 0.5)}")
     print("Done!")
     _keep_alive.clear()
 
     if return_config:
-        return impact_df, config_dict
-    return impact_df
+        return_bundle = (*return_bundle, config_dict)
+    if return_trajectory:
+        return_bundle = (*return_bundle, pd.read_csv(config_dict["trajectory_path"]))
+    if return_guidance:
+        reentry_guidance_path = Path(config_dict["trajectory_path"]).with_name(
+            "reentry_guidance.csv"
+        )
+        if reentry_guidance_path.exists():
+            guidance_df = pd.read_csv(reentry_guidance_path, skipinitialspace=True)
+            return_bundle = (*return_bundle, guidance_df)
+        else:
+            print(
+                "Warning: reentry guidance data not found; returning None for guidance_df"
+            )
+            return_bundle = (*return_bundle, None)
+    return_bundle = return_bundle[0] if len(return_bundle) == 1 else return_bundle
+    return return_bundle
 
 
 def cli():

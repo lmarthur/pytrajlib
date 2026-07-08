@@ -9,12 +9,12 @@ def get_local_impact(
     aimpoint: Tuple[float, float, float],
 ) -> Tuple[np.ndarray, np.ndarray]:
     r"""
-    Get distance from aim point to local ENU where $\phi$ is the aimpoint longitude, $\theta$ is the aimpoint latitude, $x_\text{local}$ is the east component, $y_\text{local}$ is the north component, and the up component is discarded:
+    The distance between an impact point $(x, y, z)$ and the aimpoint $(x_\text{aim}, y_\text{aim}, z_\text{aim})$ in a local tangent plane is found by converting the miss distances to local East-North-Up coordinates where $\theta$ is the aimpoint longitude, $\phi$ is the aimpoint latitude, $x_\text{local}$ is the east component, $y_\text{local}$ is the north component, and the up component is discarded:
     
     $$
     \begin{aligned}
-    x_\text{local} &= -\sin\phi(x - x_\text{aim}) + \cos\phi(y - y_\text{aim}) \\\\
-    y_\text{local} &= -\sin\theta\cos\phi(x - x_\text{aim}) - \sin\theta\sin\phi(y - y_\text{aim}) + \cos\theta(z - z_\text{aim}).
+    x_\text{local} &= -(x - x_\text{aim})\sin\theta + (y - y_\text{aim})\cos\theta \\\\
+    y_\text{local} &= -(x - x_\text{aim})\sin\phi\cos\theta - (y - y_\text{aim})\sin\phi\sin\theta + (z - z_\text{aim})\cos\phi.
     \end{aligned}
     $$
 
@@ -60,11 +60,13 @@ def get_miss_distance(
     aimpoint: Tuple[float, float, float],
 ) -> np.ndarray:
     r"""
-    Compute scalar miss distance from local east/north impact offsets.
+    The miss distance as a function of the downrange and crossrange error is
 
     $$
     d = \sqrt{x_\text{local}^2 + y_\text{local}^2}
     $$
+
+    The circular error probable (CEP) is the median miss distance.
 
     Args:
         impact_df: DataFrame containing impact coordinates with columns ``x``, ``y``, and ``z``.

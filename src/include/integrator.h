@@ -9,11 +9,21 @@
 #include <stdlib.h>
 
 /**
- * Integrate body-to-ECI quaternion using the state's incremental orientation
- * angle change over the current step.
- *
- * Standard first-order kinematics:
- * q_{k+1} = normalize(q_k \otimes \delta q).
+The quaternion update step is implemented as a function of the incremental
+angular change across a single step size. The incremental angular change is
+calculated with the SRA3 algorithm. The quaternion rotation increment with
+$\theta = |\boldsymbol  \theta_B|$ is
+\begin{equation}
+  \Delta \mathbf q = \begin{bmatrix}
+    \cos(\theta/2) \\
+    \sin(\theta/2) \hat{\boldsymbol{\mathbf\theta}}\_B
+  \end{bmatrix},
+\end{equation}
+so the update is
+\begin{equation}
+  \mathbf q_{EB,t+1} = \mathbf q_{EB,t} \otimes \Delta \mathbf q
+\end{equation}
+where the $\otimes$ operator is the Hamilton product.
  */
 static inline quaternion integrate_quaternion_step(state current_state) {
   cartvec delta_angle_B = current_state.orientation_angle_change;
@@ -141,14 +151,26 @@ int euler_maruyama_step(runparams *run_params, imu *imu, vehicle *vehicle,
 }
 
 /**
- * Advance the state using SRA3 (Stochastic Runge-Kutta for Additive Noise).
- *
- * References:
- *
- * >Rößler, A. (2010). Runge–Kutta Methods for the Strong Approximation of
- * Solutions of Stochastic Differential Equations. SIAM Journal on Numerical
- * Analysis, 48(3), 922–952. https://doi.org/10.1137/09076636X
- *
+Stochastic differential equations admit two standard interpretations, Itô and
+Stratonovich, which correspond to left-endpoint and midpoint evaluation rules,
+respectively. These generally yield different solutions but are equivalent for
+stochastic differential equations with additive noise, as is the case in our
+simulation, where the gyroscope noise is assumed to be constant.
+
+We integrate the state using the Stochastic Runge-Kutta for Additive Noise
+(SRA3) method, as described by Rössler (2010). SRA3 is of strong order 3 for
+deterministic differential equations and strong order 1.5 for stochastic
+differential equations. This is a significant improvement over the standard
+Euler-Maruyama method, which is of strong order 1 for drift and diffusion with
+additive noise, as discussed by Higham and Kloeden (2021), especially because
+the deterministic components drive most of the dynamics. Higher-order numerical
+integrators allow using larger time steps without sacrificing integration
+accuracy.
+
+Solutions to stochastic differential equations are probability distributions
+over trajectories. We use a Monte Carlo approach to sample from both the initial
+error terms and the solution to the stochastic differential equation.
+
  * @param run_params Pointer to run configuration parameters.
  * @param imu Pointer to IMU model.
  * @param vehicle Pointer to vehicle model.

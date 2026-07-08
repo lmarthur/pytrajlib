@@ -59,36 +59,49 @@ Interpolate between two states to estimate impact crossing at altitude 0.
 
 ## `impact_with_coriolis`
 
-In an ECI frame, assuming boost and reentry guidance account for Earth
-rotation, the discrepancy between true and estimated trajectories due to
-Coriolis appears through the difference between true and estimated impact
-times. For random aimpoints with fixed great-circle range, rotation speed is
-adjusted from equatorial surface speed to local latitude:
+The Coriolis effect is accounted for at the end of the simulation. It accounts
+for miss distance at randomly selected aim points due to the Earth's rotation
+and differences between the vehicle's true and guidance-system-estimated states.
+
+The Coriolis correction algorithm is as follows:
+
+First, select a random aimpoint latitude ($\phi \in [-\frac{\pi}{2},
+\frac{\pi}{2}]$) and longitude ($\theta \in [0, 2\pi]$) angle by transforming
+independent samples from a uniform distribution, as described in Weisstein's
+Sphere Point Picking https://mathworld.wolfram.com/SpherePointPicking.html:
 $$
 \begin{align}
-v_\text{rot} = 464 \cos(\text{lat}).
+  u,v &\sim \text{Uniform}(0, 1)\\
+  \theta &= 2 \pi u\\
+  \phi &= \arccos(2 v - 1) - \frac{\pi}{2}.
 \end{align}
 $$
-With interpolated impact-time error
+
+Second, determine the Coriolis miss distance, denoted $c$ below, based on the
+Earth's rotation speed at the selected latitude and the time error between true
+and estimated impact times. The Earth's rotation speed at any latitude is the
+Earth's rotation at the equator, 464 m/s, multiplied by the cosine of the
+latitude. This correction ensures if the missile impacts later than expected,
+the impact point will be further west (and vice-versa):
+$$
+\begin{equation}
+c = 464 \cos(\phi) (t_\text{est} - t_\text{true}).
+\end{equation}
+$$
+
+Third, update the true impact position by projecting the additional miss
+distance onto the true impact location. $c$ is always in the local east
+direction, so there are only errors in the $x$ and $y$ components of the impact
+location, which also means the error depends only on a single $\sin$ or $\cos$
+of the longitude. The Coriolis-corrected impact position vector is
 $$
 \begin{align}
-\Delta t = t_\text{est} - t_\text{true},
+\mathbf{r} = \begin{bmatrix}
+  x - c \sin\theta \\\
+  y + c \cos\theta \\\
+  z\end{bmatrix}.
 \end{align}
 $$
-the Coriolis offset is
-$$
-\begin{align}
-c = v_\text{rot} \Delta t.
-\end{align}
-$$
-In the local east direction, Cartesian offsets are
-$$
-\begin{align}
-\Delta x &= -c \sin(\text{lon}) \\
-\Delta y &= c \cos(\text{lon}).
-\end{align}
-$$
-The corrected impact position is $(x + \Delta x, y + \Delta y, z)$.
 
 ### Parameters
 
@@ -157,7 +170,8 @@ Simulate a single trajectory until impact and return final impact state.
 
 ## `mc_run`
 
-Run a Monte Carlo trajectory simulation.
+Run a Monte Carlo trajectory simulation. This will be called by the Python
+wrapper.
 
 ### Parameters
 

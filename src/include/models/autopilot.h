@@ -13,18 +13,6 @@
 #include "vehicle.h"
 
 /**
- * Get the the derivative of lift acceleration with respect to flap deflection
- * angle, assuming the vehicle remains in static trim.
- */
-double get_da_ddelta(state *est_state, vehicle *vehicle, atm_cond *est_atm_cond,
-                     double q_inf) {
-  double da_ddelta = q_inf * vehicle->rv.rv_area * vehicle->rv.c_l_alpha *
-                     (-vehicle->rv.c_m_delta / vehicle->rv.c_m_alpha) /
-                     vehicle->rv.rv_mass;
-  return da_ddelta;
-}
-
-/**
  * Get the desired flap deflection angle using nonlinear dynamic inversion (NDI)
  * with a PD controller that reduces the error between the current estimated
  * angle of attack and the desired angle of attack.

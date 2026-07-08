@@ -43,7 +43,47 @@ imu imu_init(runparams *run_params, state *initial_state) {
 }
 
 /**
- *
+The missile's guidance system uses an inertial measurement unit to obtain a
+noisy reading of the current acceleration. An accelerometer in free fall
+measures no acceleration, so the measurable acceleration is the acceleration of
+the vehicle without gravity
+\begin{equation}
+\mathbf a_{\text{measurable},E} = \mathbf a_E - \mathbf a_{\text{grav},E}.
+\end{equation}
+
+The accelerometer measures along the body frame
+\begin{equation}
+\mathbf a_{\text{measurable},B} = \mathbf C_{BE} \mathbf
+a_{\text{measurable},E}.
+\end{equation}
+
+Constant Gaussian-distributed scale factor errors, $\varepsilon_i$, introduce
+discrepancies between the measured acceleration and the actual measurable
+acceleration of the vehicle:
+$$
+\mathbf a_\text{measured,B} =
+\begin{bmatrix}
+1 + \varepsilon_1 & 0 & 0 \\\
+0 & 1 + \varepsilon_2 & 0 \\\
+0 & 0 & 1 + \varepsilon_3
+\end{bmatrix}
+\mathbf a_{\text{measurable},B}.
+$$
+
+Transform the measured acceleration to the ECI basis:
+\begin{equation}
+\mathbf a_{\text{measured},E} = \mathbf C_{EB} \mathbf a_{\text{measured},B}.
+\end{equation}
+
+And add the estimated acceleration due to gravity based on the current estimated
+position
+\begin{equation}
+  \mathbf a_{\text{est},E} = \mathbf a_{\text{measured},E} + \mathbf
+a_{\text{grav,est},E}.
+\end{equation}
+
+
+The gyroscope model outputs a noisy measurement of the current angular velocity.
  * @param imu Pointer to IMU model/state
  * @param run_params Pointer to run configuration parameters
  * @param true_atm_cond Pointer to true atmospheric conditions

@@ -4,9 +4,6 @@
 #include "../rng/rng.h"
 #include "../utils/utils.h"
 
-// Note that the get_gravitational_acceleration function is in the physics.h
-// file
-
 // Define a grav struct to store gravity parameters
 typedef struct grav {
   double earth_mass;   // mass of the Earth in kg

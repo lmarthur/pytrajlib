@@ -1,6 +1,6 @@
 {
   "run": {
-    "run_name": "run_4",
+    "run_name": "rv-maneuv",
     "num_runs": 200,
     "num_runs_optimizer": 50,
     "num_trials_optimizer": 100,
@@ -18,7 +18,6 @@
     "atm_path": null,
     "optimize_boost": 0,
     "optimize_reentry": 0
-
   },
   "flight": {
     "grav_error": 1,

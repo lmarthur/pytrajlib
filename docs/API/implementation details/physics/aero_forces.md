@@ -43,8 +43,8 @@ $$\alpha = \cos^{-1}(u_3),\quad u_3 = \hat{\mathbf u}_B.z$$
 Compute body-lift direction by projecting body axis e3 onto the plane normal
 to freestream direction u_hat_B.
 
-$$\hat{\ell}_B = \frac{(I-\hat{u}_B\hat{u}_B^T)\hat{e}_{3,B}}
-{\|(I-\hat{u}_B\hat{u}_B^T)\hat{e}_{3,B}\|}$$
+$$\hat{\ell}\_B = \frac{(I-\hat{u}_B\hat{u}_B^T)\hat{e}\_{3,B}}
+{\|(I-\hat{u}\_B\hat{u}\_B^T)\hat{e}\_{3,B}\|}$$
 
 ### Parameters
 
@@ -108,17 +108,7 @@ For this model configuration, Mach is fixed at M_inf = 12.
 ## `get_undeflected_flap_normals`
 
 Compute the four inward-pointing undeflected flap normals in body coordinates
-for a conical reentry vehicle geometry (Equation 55).
-
-For a cone with half-angle theta_c, the normals are:
-$$\hat{\mathbf{n}}_{10,B} = -\cos\theta_c \hat{\mathbf{e}}_{1,B} +
-\sin\theta_c \hat{\mathbf{e}}_{3,B}$$
-$$\hat{\mathbf{n}}_{20,B} = -\cos\theta_c \hat{\mathbf{e}}_{2,B} +
-\sin\theta_c \hat{\mathbf{e}}_{3,B}$$
-$$\hat{\mathbf{n}}_{30,B} = +\cos\theta_c \hat{\mathbf{e}}_{1,B} +
-\sin\theta_c \hat{\mathbf{e}}_{3,B}$$
-$$\hat{\mathbf{n}}_{40,B} = +\cos\theta_c \hat{\mathbf{e}}_{2,B} +
-\sin\theta_c \hat{\mathbf{e}}_{3,B}$$
+for a conical reentry vehicle geometry.
 
 ### Parameters
 
@@ -136,15 +126,6 @@ $$\hat{\mathbf{n}}_{40,B} = +\cos\theta_c \hat{\mathbf{e}}_{2,B} +
 ## `get_deflected_flap_normals`
 
 Compute the four deflected flap normals in body coordinates.
-
-The deflected normal of flap i is
-$$\hat{\mathbf n}_{i,B}(\delta_{f,i}) = R(\hat{\mathbf
-h}_{i,B},\delta_{f,i})\hat{\mathbf n}_{i0,B}$$ with hinge axes and pair
-mapping
-$$\hat{\mathbf h}_{1,B}=\hat{\mathbf h}_{3,B}=\hat{\mathbf
-e}_{2,B},\;\hat{\mathbf h}_{2,B}=\hat{\mathbf h}_{4,B}=-\hat{\mathbf
-e}_{1,B}$$
-$$\delta_{f,1}=\delta_{f,3}=\delta_1,\;\delta_{f,2}=\delta_{f,4}=\delta_2.$$
 
 ### Parameters
 
@@ -182,13 +163,7 @@ Compute per-flap incremental force and apply flap-force magnitude limiting.
 
 ## `get_incidence_factors`
 
-Compute loaded-side incidence factors for all flaps (Equation 61).
-
-$$\lambda_i(\delta_{f,i}) = \max\left(0,\hat{\mathbf u}_B \cdot \hat{\mathbf
-n}_{i,B}(\delta_{f,i})\right),\; i\in\{1,2,3,4\}$$
-
-Flap indexing in output array is zero-based:
-0 -> flap 1, 1 -> flap 2, 2 -> flap 3, 3 -> flap 4.
+Compute loaded-side incidence factors for all flaps.
 
 ### Parameters
 
@@ -233,9 +208,6 @@ Compute absolute force magnitudes for all four flaps.
 Compute absolute flap force vectors for all four flaps in body coordinates.
 
 Quantize the flaps according to the actuator resolution.
-
-Each force is oriented along its deflected inward-pointing flap normal:
-$$\mathbf F_{f,i,B} = F_i\hat{\mathbf n}_{i,B}(\delta_{f,i})$$
 
 ### Parameters
 

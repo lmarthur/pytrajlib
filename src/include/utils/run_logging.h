@@ -40,16 +40,15 @@ static inline void init_run_logging(const char *trajectory_path) {
   if (trajectory_log_file == NULL) {
     printf("Warning: could not open trajectory log at %s\n", trajectory_path);
   } else {
-    fprintf(trajectory_log_file,
-            "t, current_mass, x, y, z, vx, vy, vz, "
-            "a_lift, est_x, est_y, est_z, est_vx, "
-            "est_vy, est_vz, "
-            "true_delta_1, true_delta_2, "
-            "est_delta_1, est_delta_2, u1, u2, u3, "
-            "true_q_w, true_q_x, true_q_y, true_q_z, "
-            "est_q_w, est_q_x, est_q_y, est_q_z, "
-            "true_omega_B_1, true_omega_B_2, true_omega_B_3, "
-            "est_omega_B_1, est_omega_B_2, est_omega_B_3 \n");
+    fprintf(trajectory_log_file, "t,current_mass,x,y,z,vx,vy,vz,"
+                                 "a_lift,est_x,est_y,est_z,est_vx,"
+                                 "est_vy,est_vz, "
+                                 "true_delta_1,true_delta_2,"
+                                 "est_delta_1,est_delta_2,u1,u2,u3,"
+                                 "true_q_w,true_q_x,true_q_y,true_q_z,"
+                                 "est_q_w,est_q_x,est_q_y,est_q_z,"
+                                 "true_omega_B_1,true_omega_B_2,true_omega_B_3,"
+                                 "est_omega_B_1,est_omega_B_2,est_omega_B_3\n");
   }
 
   char guidance_path[4096];
@@ -61,9 +60,9 @@ static inline void init_run_logging(const char *trajectory_path) {
            guidance_path);
   } else {
     fprintf(reentry_guidance_log_file,
-            "t, a_cmd_x, a_cmd_y, a_cmd_z, "
-            "a_total_est_x, a_total_est_y, a_total_est_z, "
-            "desired_aoa_deg, desired_delta_1, desired_delta_2\n");
+            "t,a_cmd_x,a_cmd_y,a_cmd_z,"
+            "a_total_est_x,a_total_est_y,a_total_est_z,"
+            "desired_aoa_deg,desired_delta_1,desired_delta_2\n");
   }
 }
 

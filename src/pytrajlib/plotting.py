@@ -3,7 +3,7 @@ Plotting utilities for trajectory and impact analysis.
 """
 
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,11 +28,10 @@ def _setup_pyplot():
     plt.rcParams.update(PLOT_PARAMS)
 
 
-def _save_figure(fig_path: Optional[Path], fig_name: str) -> None:
-    """Save figure if path is provided."""
+def _save_figure(fig: plt.Figure, fig_path: Optional[Path], fig_name: str) -> None:
+    """Save figure to disk if a path is provided."""
     if fig_path is not None:
-        output_path = fig_path / f"{fig_name}"
-        fig = plt.gcf()
+        output_path = fig_path / fig_name
         fig.savefig(output_path, dpi=150, bbox_inches="tight")
         print(f"Saved: {output_path}")
 
@@ -51,7 +50,8 @@ def create_impact_plot(
         aimpoint: Tuple of (x_aim, y_aim, z_aim) in ECEF coordinates
 
     Returns:
-        Dictionary with computed statistics (cep, miss_distance, etc.)
+        Dictionary with computed statistics (cep, miss_distance, etc.) and
+        a ``fig`` key holding the matplotlib Figure (None when saved to disk).
     """
     _setup_pyplot()
 
@@ -117,13 +117,12 @@ def create_impact_plot(
 
     # Renormalize PDF
     nakagami_pdf_norm = nakagami_pdf * len(miss_distance) * 5 * cep / bins
-
     ax_hist.plot(
         x_fit,
         nakagami_pdf_norm,
         "k-",
         linewidth=1.5,
-        label="Nakagami(" + str(round(shape, 2)) + ", " + str(round(scale, 2)) + ")",
+        label=("Nakagami(" + str(round(shape, 2)) + ", " + str(round(scale, 2)) + ")"),
     )
     ax_hist.axvline(x=cep, color="k", linestyle="--", linewidth=1.5)
 
@@ -135,17 +134,16 @@ def create_impact_plot(
     ax_hist.legend(frameon=False, loc="upper right")
 
     if save_path:
-        _save_figure(Path(save_path), "impact_plot.png")
-    else:
-        plt.show()
-
-    plt.close()
+        _save_figure(fig, Path(save_path), "impact_plot.png")
+        plt.close(fig)
+        fig = None
 
     return {
         "cep": cep,
         "miss_distance": miss_distance,
         "shape": shape,
         "scale": scale,
+        "fig": fig,  # None when saved to disk; Figure otherwise
     }
 
 
@@ -154,7 +152,7 @@ def create_traj_plots(
     save_path: Optional[Path] = None,
     aimpoint: Optional[Tuple[float, float, float]] = None,
     guidance_df: Optional[pd.DataFrame] = None,
-) -> None:
+) -> Dict[str, plt.Figure]:
     """
     Generate trajectory analysis plots.
 
@@ -162,6 +160,10 @@ def create_traj_plots(
         trajectory_df: DataFrame with trajectory data
         save_path: Optional path to save figures
         aimpoint: Optional aim point tuple of (x_aim, y_aim, z_aim) in ECEF
+
+    Returns:
+        Dictionary mapping plot name to Figure. Values are None for plots that
+        were saved to disk (save_path provided).
     """
     _setup_pyplot()
 
@@ -171,6 +173,7 @@ def create_traj_plots(
 
     # Speed up plot generation by subsampling
     trajectory_df = trajectory_df[::10]
+
     # Extract columns
     t = trajectory_df["t"].values
     x, y, z = (
@@ -279,7 +282,6 @@ def create_traj_plots(
                         desired_aoa_deg = desired_aoa_raw
                         desired_delta_1 = desired_delta_1_raw
                         desired_delta_2 = desired_delta_2_raw
-                        pass
                     else:
                         sample_idx = np.linspace(
                             0,
@@ -290,7 +292,6 @@ def create_traj_plots(
                             desired_aoa_deg = desired_aoa_raw[sample_idx]
                         desired_delta_1 = desired_delta_1_raw[sample_idx]
                         desired_delta_2 = desired_delta_2_raw[sample_idx]
-                        pass
 
     plots = {
         "position": lambda: _plot_position(t, x, y, z, est_x, est_y, est_z, save_path),
@@ -414,14 +415,17 @@ def create_traj_plots(
     else:
         print("Skipping aoa_components plot (u1/u2/u3 not found).")
 
+    # Execute every plot function and collect the returned figures.
+    figures: Dict[str, plt.Figure] = {}
     for plot_name, plot_func in plots.items():
         print(f"Generating {plot_name}...")
-        plot_func()
+        fig = plot_func()
+        if fig is not None:
+            figures[plot_name] = fig
 
-    # If reentry guidance data was provided, plot it using the reentry time window
+    # Optional reentry guidance plot
     if guidance_df is not None:
         try:
-            # Compute reentry time window from trajectory reentry mask (aligned to trajectory_df)
             t_reentry = t[reentry_mask]
             if t_reentry.size > 0:
                 reentry_window = (float(t_reentry.min()), float(t_reentry.max()))
@@ -432,16 +436,20 @@ def create_traj_plots(
                         (guidance_reentry_df["t"] >= reentry_window[0])
                         & (guidance_reentry_df["t"] <= reentry_window[1])
                     ]
-                plot_reentry_guidance(
+                fig = plot_reentry_guidance(
                     guidance_df, save_path=save_path, reentry_window=reentry_window
                 )
-                guidance_df = guidance_reentry_df
+                if fig is not None:
+                    figures["reentry_guidance"] = fig
             else:
                 print(
-                    "No reentry interval found in trajectory; skipping reentry guidance plot."
+                    "No reentry interval found in trajectory; "
+                    "skipping reentry guidance plot."
                 )
         except Exception as e:
             print(f"Failed to plot reentry guidance: {e}")
+
+    return figures
 
 
 def _plot_flap_vs_altitude(
@@ -452,7 +460,7 @@ def _plot_flap_vs_altitude(
     desired_delta_2,
     reentry_mask,
     save_path,
-):
+) -> Optional[plt.Figure]:
     """Plot flap pair deflections vs altitude during reentry."""
     alt_reentry = altitude[reentry_mask] / 1000.0
     delta_1_reentry = np.degrees(delta_1[reentry_mask])
@@ -466,7 +474,7 @@ def _plot_flap_vs_altitude(
 
     if alt_reentry.size == 0:
         print("No reentry data for flap deflection vs altitude; skipping.")
-        return
+        return None
 
     sort_idx = np.argsort(alt_reentry)
 
@@ -503,7 +511,6 @@ def _plot_flap_vs_altitude(
             linestyle="--",
             label="Desired Delta 2",
         )
-
     axes[0].set_ylabel("Deflection (deg)")
     axes[0].set_title("Flap Deflection vs Altitude (Reentry)")
     axes[0].grid(alpha=0.3)
@@ -547,7 +554,6 @@ def _plot_flap_vs_altitude(
             linestyle="--",
             label="Desired Delta 2",
         )
-
     axes[1].set_xlabel("Altitude (km)")
     axes[1].set_ylabel("Deflection (deg)")
     axes[1].set_title("Flap Deflection vs Altitude (Reentry < 1km)")
@@ -555,26 +561,20 @@ def _plot_flap_vs_altitude(
     axes[1].legend()
     axes[1].set_ylim(-11, 11)
 
+    fig.tight_layout()
     if save_path:
-        _save_figure(Path(save_path), "flap_vs_altitude.png")
-    else:
-        plt.show()
-    plt.tight_layout()
-    plt.close()
+        _save_figure(fig, Path(save_path), "flap_vs_altitude.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
 def plot_reentry_guidance(
     guidance_df: pd.DataFrame,
     save_path: Optional[Path] = None,
     reentry_window: Optional[Tuple[float, float]] = None,
-) -> None:
-    """Plot commanded and estimated acceleration vectors during reentry.
-
-    `reentry_window` is a simple (t_start, t_end) tuple that specifies the
-    time interval to plot. This keeps alignment simple: the caller computes
-    the reentry interval from the trajectory data and `plot_reentry_guidance`
-    filters `guidance_df` by `t`.
-    """
+) -> Optional[plt.Figure]:
+    """Plot commanded and estimated acceleration vectors during reentry."""
     _setup_pyplot()
 
     guidance_df = guidance_df.copy()
@@ -582,15 +582,14 @@ def plot_reentry_guidance(
 
     if "t" not in guidance_df.columns:
         print("plot_reentry_guidance: 't' column missing; skipping plot.")
-        return
+        return None
 
     t0, t1 = reentry_window
     guidance_df = guidance_df[(guidance_df["t"] >= t0) & (guidance_df["t"] <= t1)]
     if guidance_df.empty:
         print("No reentry guidance data in the specified window; skipping plot.")
-        return
+        return None
 
-    # Subsample for plotting
     guidance_df = guidance_df[::10]
 
     t = guidance_df["t"].values
@@ -628,45 +627,29 @@ def plot_reentry_guidance(
         ax.set_ylim((-100, 100))
 
     axes[-1].set_xlabel("Time (s)")
-
-    plt.tight_layout()
+    fig.tight_layout()
 
     if save_path:
-        _save_figure(Path(save_path), "reentry_guidance.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "reentry_guidance.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
-def _plot_position(t, x, y, z, est_x, est_y, est_z, save_path):
+def _plot_position(t, x, y, z, est_x, est_y, est_z, save_path) -> Optional[plt.Figure]:
     """Position vs time."""
-    plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(10, 6))
     (line_x,) = plt.plot(t, x, label="x", linewidth=2)
     (line_y,) = plt.plot(t, y, label="y", linewidth=2)
     (line_z,) = plt.plot(t, z, label="z", linewidth=2)
     plt.plot(
-        t,
-        est_x,
-        label="est x",
-        linewidth=2,
-        linestyle="--",
-        color=line_x.get_color(),
+        t, est_x, label="est x", linewidth=2, linestyle="--", color=line_x.get_color()
     )
     plt.plot(
-        t,
-        est_y,
-        label="est y",
-        linewidth=2,
-        linestyle="--",
-        color=line_y.get_color(),
+        t, est_y, label="est y", linewidth=2, linestyle="--", color=line_y.get_color()
     )
     plt.plot(
-        t,
-        est_z,
-        label="est z",
-        linewidth=2,
-        linestyle="--",
-        color=line_z.get_color(),
+        t, est_z, label="est z", linewidth=2, linestyle="--", color=line_z.get_color()
     )
     plt.xlabel("Time (s)")
     plt.ylabel("Position (m)")
@@ -674,15 +657,17 @@ def _plot_position(t, x, y, z, est_x, est_y, est_z, save_path):
     plt.legend()
     plt.grid(alpha=0.3)
     if save_path:
-        _save_figure(Path(save_path), "position.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "position.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
-def _plot_position_error(t, x, y, z, est_x, est_y, est_z, save_path):
+def _plot_position_error(
+    t, x, y, z, est_x, est_y, est_z, save_path
+) -> Optional[plt.Figure]:
     """Position error vs time."""
-    plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(10, 6))
     plt.plot(t, x - est_x, label="x error", linewidth=2)
     plt.plot(t, y - est_y, label="y error", linewidth=2)
     plt.plot(t, z - est_z, label="z error", linewidth=2)
@@ -692,10 +677,10 @@ def _plot_position_error(t, x, y, z, est_x, est_y, est_z, save_path):
     plt.legend()
     plt.grid(alpha=0.3)
     if save_path:
-        _save_figure(Path(save_path), "position_error.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "position_error.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
 def _plot_position_phases(
@@ -710,7 +695,7 @@ def _plot_position_phases(
     midcourse_mask,
     reentry_mask,
     save_path,
-):
+) -> Optional[plt.Figure]:
     """Position during different flight phases with components on separate axes."""
     fig, axes = plt.subplots(3, 3, figsize=(12, 10))
 
@@ -719,7 +704,6 @@ def _plot_position_phases(
         ("Midcourse", midcourse_mask),
         ("Reentry", reentry_mask),
     ]
-
     components = [
         (x, est_x, "x"),
         (y, est_y, "y"),
@@ -740,31 +724,26 @@ def _plot_position_phases(
                 linestyle="--",
                 color=line_comp.get_color(),
             )
-
-            # Labels and titles
             if col == 0:
                 ax.set_ylabel("Position (m)")
             if row == 0:
                 ax.set_title(f"Position {comp_name.upper()} Component")
             if row == 2:
                 ax.set_xlabel(f"Time (s) - {phase_name} Phase")
-            else:
-                ax.set_xlabel("")
-
             ax.legend()
             ax.grid(alpha=0.3)
 
-    plt.tight_layout()
+    fig.tight_layout()
     if save_path:
-        _save_figure(Path(save_path), "position_phases.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "position_phases.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
-def _plot_position_est(t, est_x, est_y, est_z, save_path):
+def _plot_position_est(t, est_x, est_y, est_z, save_path) -> Optional[plt.Figure]:
     """Estimated position vs time."""
-    plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(10, 6))
     plt.plot(t, est_x, label="est x", linewidth=2)
     plt.plot(t, est_y, label="est y", linewidth=2)
     plt.plot(t, est_z, label="est z", linewidth=2)
@@ -774,15 +753,15 @@ def _plot_position_est(t, est_x, est_y, est_z, save_path):
     plt.legend()
     plt.grid(alpha=0.3)
     if save_path:
-        _save_figure(Path(save_path), "position_est.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "position_est.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
-def _plot_altitude(t, altitude, est_altitude, save_path):
+def _plot_altitude(t, altitude, est_altitude, save_path) -> Optional[plt.Figure]:
     """Altitude vs time."""
-    plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(10, 6))
     (line_alt,) = plt.plot(t, altitude / 1000, linewidth=2, label="true")
     plt.plot(
         t,
@@ -801,40 +780,40 @@ def _plot_altitude(t, altitude, est_altitude, save_path):
     plt.gca().spines["top"].set_visible(False)
     plt.gca().spines["right"].set_visible(False)
     if save_path:
-        _save_figure(Path(save_path), "altitude.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "altitude.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
-def _plot_altitude_error(t, altitude, est_altitude, save_path):
+def _plot_altitude_error(t, altitude, est_altitude, save_path) -> Optional[plt.Figure]:
     """Altitude error vs time."""
-    plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(10, 6))
     plt.plot(t, altitude - est_altitude, linewidth=2)
     plt.xlabel("Time (s)")
     plt.ylabel("Altitude Error (m)")
     plt.title("Altitude Error vs Time")
     plt.grid(alpha=0.3)
     if save_path:
-        _save_figure(Path(save_path), "altitude_error.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "altitude_error.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
-def _plot_mass(t, current_mass, save_path):
+def _plot_mass(t, current_mass, save_path) -> Optional[plt.Figure]:
     """Mass vs time."""
-    plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(10, 6))
     plt.plot(t, current_mass, linewidth=2)
     plt.xlabel("Time (s)")
     plt.ylabel("Mass (kg)")
     plt.title("Mass vs Time")
     plt.grid(alpha=0.3)
     if save_path:
-        _save_figure(Path(save_path), "mass.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "mass.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
 def _plot_velocity_phases(
@@ -849,16 +828,14 @@ def _plot_velocity_phases(
     midcourse_mask,
     reentry_mask,
     save_path,
-):
+) -> Optional[plt.Figure]:
     """Velocity during different flight phases."""
     fig, axes = plt.subplots(3, 1, figsize=(10, 10))
-
     phases = [
         ("Boost", boost_mask),
         ("Midcourse", midcourse_mask),
         ("Reentry", reentry_mask),
     ]
-
     for ax, (phase_name, mask) in zip(axes, phases):
         (line_vx,) = ax.plot(t[mask], vx[mask], label="vx", linewidth=2)
         (line_vy,) = ax.plot(t[mask], vy[mask], label="vy", linewidth=2)
@@ -891,13 +868,12 @@ def _plot_velocity_phases(
         ax.set_title(f"Velocity ({phase_name} Phase)")
         ax.legend()
         ax.grid(alpha=0.3)
-
     axes[-1].set_xlabel("Time (s)")
     if save_path:
-        _save_figure(Path(save_path), "velocity_phases.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "velocity_phases.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
 def _plot_velocity_error_phases(
@@ -912,16 +888,14 @@ def _plot_velocity_error_phases(
     midcourse_mask,
     reentry_mask,
     save_path,
-):
+) -> Optional[plt.Figure]:
     """Velocity error during different flight phases."""
     fig, axes = plt.subplots(3, 1, figsize=(10, 10))
-
     phases = [
         ("Boost", boost_mask),
         ("Midcourse", midcourse_mask),
         ("Reentry", reentry_mask),
     ]
-
     for ax, (phase_name, mask) in zip(axes, phases):
         ax.plot(t[mask], (vx - est_vx)[mask], label="vx error", linewidth=2)
         ax.plot(t[mask], (vy - est_vy)[mask], label="vy error", linewidth=2)
@@ -930,26 +904,22 @@ def _plot_velocity_error_phases(
         ax.set_title(f"Velocity Error ({phase_name} Phase)")
         ax.legend()
         ax.grid(alpha=0.3)
-
     axes[-1].set_xlabel("Time (s)")
     if save_path:
-        _save_figure(Path(save_path), "velocity_error_phases.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "velocity_error_phases.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
-def _plot_orbit(x, y, est_x, est_y, save_path, aimpoint=None):
+def _plot_orbit(x, y, est_x, est_y, save_path, aimpoint=None) -> Optional[plt.Figure]:
     """Orbital trajectory in x-y plane."""
-    plt.figure(figsize=(10, 10))
-
+    fig = plt.figure(figsize=(10, 10))
     earth_radius = 6.371e6
     earth = plt.Circle((0, 0), earth_radius, color="blue", alpha=0.5, label="Earth")
     atmosphere = plt.Circle((0, 0), earth_radius + 200e3, color="lightblue", alpha=0.3)
-
     plt.gca().add_artist(atmosphere)
     plt.gca().add_artist(earth)
-
     (line_true,) = plt.plot(x, y, "r-", linewidth=2, label="True Trajectory")
     plt.plot(
         est_x,
@@ -959,29 +929,20 @@ def _plot_orbit(x, y, est_x, est_y, save_path, aimpoint=None):
         linestyle="--",
         label="Estimated Trajectory",
     )
-
     if aimpoint is not None:
         x_aim, y_aim, _ = aimpoint
         plt.scatter(
-            x_aim,
-            y_aim,
-            s=50,
-            c="black",
-            marker="x",
-            label="Aim Point",
-            zorder=5,
+            x_aim, y_aim, s=50, c="black", marker="x", label="Aim Point", zorder=5
         )
-
     plt.xlim(-1.2 * earth_radius, 1.5 * earth_radius)
     plt.ylim(-1.2 * earth_radius, 1.5 * earth_radius)
     plt.axis("off")
     plt.legend(loc="upper right")
-
     if save_path:
-        _save_figure(Path(save_path), "orbit.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "orbit.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
 def _plot_flap_deltas(
@@ -992,7 +953,7 @@ def _plot_flap_deltas(
     desired_delta_2,
     reentry_mask,
     save_path,
-):
+) -> Optional[plt.Figure]:
     """True and desired flap-pair deflections over time during reentry."""
     t_reentry = t[reentry_mask]
     delta_1_reentry = delta_1[reentry_mask]
@@ -1001,11 +962,7 @@ def _plot_flap_deltas(
     fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
     axes[0].plot(
-        t_reentry,
-        np.degrees(delta_1_reentry),
-        label="Delta 1",
-        linewidth=2,
-        alpha=0.75,
+        t_reentry, np.degrees(delta_1_reentry), label="Delta 1", linewidth=2, alpha=0.75
     )
     if desired_delta_1 is not None:
         axes[0].plot(
@@ -1023,11 +980,7 @@ def _plot_flap_deltas(
     axes[0].set_ylim(-11, 11)
 
     axes[1].plot(
-        t_reentry,
-        np.degrees(delta_2_reentry),
-        label="Delta 2",
-        linewidth=2,
-        alpha=0.75,
+        t_reentry, np.degrees(delta_2_reentry), label="Delta 2", linewidth=2, alpha=0.75
     )
     if desired_delta_2 is not None:
         axes[1].plot(
@@ -1046,33 +999,33 @@ def _plot_flap_deltas(
     axes[1].set_ylim(-11, 11)
 
     if save_path:
-        _save_figure(Path(save_path), "flap_deltas.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "flap_deltas.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
 def _compute_aoa_angles(u1, u2, u3):
     """Compute AoA alpha=acos(u3) and azimuth chi=atan2(u2, u1) in degrees."""
-    # Clip u3 to avoid invalid acos values from small floating-point drift.
     clipped_u3 = np.clip(u3, -1.0, 1.0)
     aoa_alpha_deg = np.degrees(np.arccos(clipped_u3))
     aoa_azimuth_deg = np.degrees(np.arctan2(u2, u1))
-    # aoa_azimuth_deg[np.sqrt(u1**2 + u2**2) < 1e-2] = 0
     return aoa_alpha_deg, aoa_azimuth_deg
 
 
 def _plot_aoa_components(
-    t, aoa_alpha_deg, aoa_azimuth_deg, desired_aoa_deg, reentry_mask, save_path
-):
-    """Plot AoA alpha and azimuth during reentry phase from alpha=acos(u3), chi=atan2(u2, u1)."""
-    # Filter for reentry phase only
+    t,
+    aoa_alpha_deg,
+    aoa_azimuth_deg,
+    desired_aoa_deg,
+    reentry_mask,
+    save_path,
+) -> Optional[plt.Figure]:
+    """Plot AoA alpha and azimuth during reentry phase."""
     t_reentry = t[reentry_mask]
     aoa_alpha_reentry = aoa_alpha_deg[reentry_mask]
     aoa_azimuth_reentry = aoa_azimuth_deg[reentry_mask]
-    desired_aoa_reentry = None
-    if desired_aoa_deg is not None:
-        desired_aoa_reentry = desired_aoa_deg
+    desired_aoa_reentry = desired_aoa_deg if desired_aoa_deg is not None else None
 
     fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
@@ -1104,34 +1057,26 @@ def _plot_aoa_components(
     axes[1].set_title("AoA Azimuth During Reentry")
     axes[1].grid(alpha=0.3)
     axes[1].legend()
-    # axes[1].set_ylim(0, 11)
 
     if save_path:
-        _save_figure(Path(save_path), "aoa_components.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "aoa_components.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
 def _plot_aoa_vs_altitude(
     altitude, aoa_alpha_deg, desired_aoa_deg, reentry_mask, save_path
-):
-    """Plot AoA alpha vs altitude during reentry phase.
-
-    Altitude is plotted in kilometers on the x-axis; AoA in degrees on the y-axis.
-    """
-    # Filter for reentry phase only
+) -> Optional[plt.Figure]:
+    """Plot AoA alpha vs altitude during reentry phase."""
     alt_reentry = altitude[reentry_mask] / 1000.0
     aoa_reentry = aoa_alpha_deg[reentry_mask]
-    desired_aoa_reentry = None
-    if desired_aoa_deg is not None:
-        desired_aoa_reentry = desired_aoa_deg
+    desired_aoa_reentry = desired_aoa_deg if desired_aoa_deg is not None else None
 
     if alt_reentry.size == 0:
         print("No reentry data for AoA vs altitude; skipping.")
-        return
+        return None
 
-    # Sort by altitude so the line plot is monotonic in x
     sort_idx = np.argsort(alt_reentry)
 
     fig, axes = plt.subplots(2, 1, figsize=(8, 6))
@@ -1149,15 +1094,12 @@ def _plot_aoa_vs_altitude(
             linestyle="--",
             label="Desired AoA",
         )
-
-    # axes[0].set_xticks([])
     axes[0].set_ylabel(r"$\alpha$ (deg)")
     axes[0].set_title("Angle of Attack vs Altitude (Reentry)")
     axes[0].grid(alpha=0.3)
     axes[0].legend()
     axes[0].set_ylim(0, 50)
 
-    # Create a low-altitude view (< 1 km) by sorting and masking the sorted arrays.
     alt_sorted = alt_reentry[sort_idx]
     aoa_sorted = aoa_reentry[sort_idx]
     low_mask_sorted = alt_sorted < 1.0
@@ -1177,7 +1119,6 @@ def _plot_aoa_vs_altitude(
             linestyle="--",
             label="Desired AoA",
         )
-
     axes[1].set_xlabel("Altitude (km)")
     axes[1].set_ylabel(r"$\alpha$ (deg)")
     axes[1].set_title("Angle of Attack vs Altitude (Reentry < 1km)")
@@ -1185,12 +1126,12 @@ def _plot_aoa_vs_altitude(
     axes[1].legend()
     axes[1].set_ylim(0, 20)
 
+    fig.tight_layout()  # ← before save/return (was after plt.show() before)
     if save_path:
-        _save_figure(Path(save_path), "aoa_vs_altitude.png")
-    else:
-        plt.show()
-    plt.tight_layout()
-    plt.close()
+        _save_figure(fig, Path(save_path), "aoa_vs_altitude.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
 def _plot_omega_body_components(
@@ -1203,7 +1144,7 @@ def _plot_omega_body_components(
     est_omega_B_2,
     est_omega_B_3,
     save_path,
-):
+) -> Optional[plt.Figure]:
     """Plot body angular velocity components during reentry."""
     t_reentry = t[reentry_mask]
     true_omega_reentry = [
@@ -1220,8 +1161,8 @@ def _plot_omega_body_components(
     fig, axes = plt.subplots(3, 1, figsize=(10, 9), sharex=True)
     component_labels = [r"$\omega_{B,1}$", r"$\omega_{B,2}$", r"$\omega_{B,3}$"]
 
-    for idx, (ax, label, true_values, est_values) in enumerate(
-        zip(axes, component_labels, true_omega_reentry, est_omega_reentry)
+    for ax, label, true_values, est_values in zip(
+        axes, component_labels, true_omega_reentry, est_omega_reentry
     ):
         ax.plot(t_reentry, true_values, linewidth=2, label="true")
         ax.plot(t_reentry, est_values, linewidth=2, linestyle="--", label="est")
@@ -1229,21 +1170,21 @@ def _plot_omega_body_components(
         ax.set_title(f"{label} During Reentry")
         ax.grid(alpha=0.3)
         ax.legend(frameon=False)
-        # ax.set_ylim(-360, 360)
 
     axes[-1].set_xlabel("Time (s)")
-
     fig.suptitle("Body Angular Velocity Components During Reentry")
-    plt.tight_layout()
+    fig.tight_layout()
 
     if save_path:
-        _save_figure(Path(save_path), "omega_body.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "omega_body.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
-def _plot_rel_wind_components(t, reentry_mask, u1, u2, u3, save_path):
+def _plot_rel_wind_components(
+    t, reentry_mask, u1, u2, u3, save_path
+) -> Optional[plt.Figure]:
     """Plot u1, u2, u3 components during reentry."""
     t_reentry = t[reentry_mask]
     u1_re = u1[reentry_mask]
@@ -1252,9 +1193,9 @@ def _plot_rel_wind_components(t, reentry_mask, u1, u2, u3, save_path):
 
     if t_reentry.size == 0:
         print("No reentry data for wind components; skipping.")
-        return
+        return None
 
-    plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(10, 6))
     plt.plot(t_reentry, u1_re, label="u1", alpha=0.5)
     plt.plot(t_reentry, u2_re, label="u2", alpha=0.5)
     plt.plot(t_reentry, u3_re, label="u3", alpha=0.5)
@@ -1265,10 +1206,10 @@ def _plot_rel_wind_components(t, reentry_mask, u1, u2, u3, save_path):
     plt.grid(alpha=0.3)
 
     if save_path:
-        _save_figure(Path(save_path), "rel_wind_components.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "rel_wind_components.png")
+        plt.close(fig)
+        return None
+    return fig
 
 
 def _plot_quaternion(
@@ -1285,7 +1226,7 @@ def _plot_quaternion(
     est_q_y,
     est_q_z,
     save_path,
-):
+) -> Optional[plt.Figure]:
     """True and estimated quaternion components vs time, split by phase."""
     fig, axes = plt.subplots(3, 1, figsize=(11, 10), sharey=True)
     components = [
@@ -1299,7 +1240,6 @@ def _plot_quaternion(
         ("Midcourse", midcourse_mask),
         ("Reentry", reentry_mask),
     ]
-
     component_colors = ["C0", "C1", "C2", "C3"]
 
     for ax, (phase_name, mask) in zip(axes, phases):
@@ -1319,21 +1259,18 @@ def _plot_quaternion(
                 linestyle="--",
                 label=f"{name} est",
             )
-
         ax.set_title(f"Quaternion Components ({phase_name} Phase)")
         ax.set_ylabel("Value")
         ax.grid(alpha=0.3)
         ax.set_ylim((-1.1, 1.1))
 
     axes[0].legend(frameon=False, ncol=4, fontsize=9)
-
     axes[-1].set_xlabel("Time (s)")
-
     fig.suptitle("True vs Estimated Quaternion Components by Phase")
-    plt.tight_layout()
+    fig.tight_layout()
 
     if save_path:
-        _save_figure(Path(save_path), "quaternion.png")
-    else:
-        plt.show()
-    plt.close()
+        _save_figure(fig, Path(save_path), "quaternion.png")
+        plt.close(fig)
+        return None
+    return fig

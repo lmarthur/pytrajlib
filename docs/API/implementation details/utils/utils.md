@@ -152,7 +152,7 @@ $$
 The actuator rate limit used by lift control is modeled as
 $$
 \begin{align}
-\dot\delta_\text{max} = \frac{\delta_\text{max}}{t_\text{deflect}}.
+\dot\delta_\text{max} = \frac{\delta_\text{max}}{t_\text{deflect} G}.
 \end{align}
 $$
 

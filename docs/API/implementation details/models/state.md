@@ -2,7 +2,7 @@
 
 ## `init_true_state`
 
-Initialize the true vehicle state at launch/reentry with stochastic
+Initialize the true vehicle state at launch with stochastic
 position, velocity, and attitude perturbations.
 
 ### Parameters

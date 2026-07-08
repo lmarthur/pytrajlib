@@ -24,7 +24,7 @@ typedef struct state {
 
 } state;
 /**
- * Initialize the true vehicle state at launch/reentry with stochastic
+ * Initialize the true vehicle state at launch with stochastic
  * position, velocity, and attitude perturbations.
  *
  * @param run_params Pointer to run configuration parameters

@@ -51,8 +51,7 @@ def _evaluate_candidate(config_dict, parameter_names, parameter_values):
 
 def optimize_boost(config_dict):
     """
-    Tune initial thrust angle and desired flight time for an optimally lofted
-    flight using Optuna.
+    Lambert Guidance assumes there is no drag upon reentry to the atmosphere. To overcome this limitation, we tune the initial thrust angle and the desired flight time for an optimally lofted flight, as described in the boost optimization section.
     """
     tf_des = 2000.0
     theta_long = np.pi / 4

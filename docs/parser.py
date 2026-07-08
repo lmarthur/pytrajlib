@@ -54,6 +54,41 @@ def _markdown_cell(text: str) -> str:
     return "<br>".join(rendered_lines)
 
 
+def _wrap_math_environments(text: str) -> str:
+    wrapped_lines: list[str] = []
+    block_depth = 0
+    display_math_depth = 0
+
+    for line in text.splitlines():
+        if line.strip() == "$$":
+            if display_math_depth == 0:
+                display_math_depth = 1
+            else:
+                display_math_depth = 0
+            wrapped_lines.append(line)
+            continue
+
+        begin_match = re.match(r"^(\s*)\\begin\{([^}]+)\}(\s*)$", line)
+        if begin_match and display_math_depth == 0:
+            if block_depth == 0:
+                wrapped_lines.append(f"{begin_match.group(1)}$$")
+            wrapped_lines.append(line)
+            block_depth += 1
+            continue
+
+        end_match = re.match(r"^(\s*)\\end\{([^}]+)\}(\s*)$", line)
+        if end_match and display_math_depth == 0:
+            wrapped_lines.append(line)
+            block_depth = max(block_depth - 1, 0)
+            if block_depth == 0:
+                wrapped_lines.append(f"{end_match.group(1)}$$")
+            continue
+
+        wrapped_lines.append(line)
+
+    return "\n".join(wrapped_lines)
+
+
 def _split_params(raw_params: str) -> list[str]:
     parts: list[str] = []
     depth = 0
@@ -314,7 +349,7 @@ def build_markdown(
         lines.append(_format_function_markdown(function_doc).rstrip())
         lines.append("")
 
-    return "\n".join(lines)
+    return _wrap_math_environments("\n".join(lines))
 
 
 def generate_docs(include_root: Path, docs_root: Path) -> tuple[int, list[Path]]:
@@ -358,11 +393,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
             "Generate markdown docs for all .h files under src/include and "
-            "overwrite mirrored files under docs/API/C-internals."
+            "overwrite mirrored files under docs/API/implementation details."
         )
     )
     parser.add_argument("--include-root", default="src/include", type=str)
-    parser.add_argument("--docs-root", default="docs/API/C-internals", type=str)
+    parser.add_argument(
+        "--docs-root", default="docs/API/implementation details", type=str
+    )
     args = parser.parse_args()
 
     include_root = Path(args.include_root)

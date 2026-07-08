@@ -1,25 +1,5 @@
 # Autopilot
 
-## `get_da_ddelta`
-
-Get the the derivative of lift acceleration with respect to flap deflection
-angle, assuming the vehicle remains in static trim.
-
-### Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `est_state` | `state *` |  |
-| `vehicle` | `vehicle *` |  |
-| `est_atm_cond` | `atm_cond *` |  |
-| `q_inf` | `double` |  |
-
-### Returns
-
-| Type | Description |
-| --- | --- |
-| `double` |  |
-
 ## `NDI`
 
 Get the desired flap deflection angle using nonlinear dynamic inversion (NDI)

@@ -10,9 +10,6 @@
 /**
  * Compute body pitching-moment axis in body coordinates.
  *
- * For nontrivial AoA (s = sqrt(u1^2 + u2^2) > 0), Eq. 29 form is used:
- * $$\hat{\mathbf m}_B = \frac{1}{s}[u_2, -u_1, 0]^T.$$
- *
  * @param u_hat_B Unit relative-wind vector in body coordinates.
  * @return Unit body pitching-moment axis, or zero vector if near singular.
  */
@@ -41,6 +38,18 @@ static inline cartvec get_omega_perp_body(state *current_state) {
   return omega_perp_B;
 }
 
+/**
+ * Compute the body aerodynamic moment from angle-of-attack and damping terms.
+ *
+ * The body moment is the sum of the static moment contribution and the
+ * pitching-damping contribution, both expressed in body coordinates.
+ *
+ * @param current_state Current vehicle state.
+ * @param atm_cond Atmospheric conditions.
+ * @param vehicle Vehicle model containing aerodynamic moment tables.
+ * @param run_params Simulation run parameters.
+ * @return Body aerodynamic moment in body coordinates.
+ */
 static inline cartvec get_body_moment(state *current_state, atm_cond *atm_cond,
                                       vehicle *vehicle, runparams *run_params) {
   // There are two components to the body moment: the moment due to the angle of
@@ -108,6 +117,18 @@ static inline void get_flap_displacements_body(vehicle *vehicle,
   flap_r_B[3] = (cartvec){0.0, -r_f_perp, c_f};
 }
 
+/**
+ * Sum the incremental flap moments about the body axes.
+ *
+ * The incremental moment from each flap is the cross product of flap
+ * displacement and clipped flap force.
+ *
+ * @param current_state Current vehicle state.
+ * @param atm_cond Atmospheric conditions.
+ * @param vehicle Vehicle model.
+ * @param run_params Simulation run parameters.
+ * @return Total incremental flap moment in body coordinates.
+ */
 static inline cartvec sum_incremental_moments(state *current_state,
                                               atm_cond *atm_cond,
                                               vehicle *vehicle,
@@ -140,6 +161,19 @@ static inline cartvec sum_incremental_moments(state *current_state,
   return sum_moments;
 }
 
+/**
+ * Compute the angular acceleration induced by the aerodynamic moments.
+ *
+ * Roll-axis angular acceleration is suppressed and the remaining moment is
+ * divided by the pitch/yaw moment of inertia.
+ *
+ * @param t Current simulation time in seconds.
+ * @param true_state True vehicle state.
+ * @param atm_cond Atmospheric conditions.
+ * @param vehicle Vehicle model.
+ * @param run_params Simulation run parameters.
+ * @return Angular acceleration in body coordinates.
+ */
 static inline cartvec get_angular_acceleration(double t, state *true_state,
                                                atm_cond *atm_cond,
                                                vehicle *vehicle,
