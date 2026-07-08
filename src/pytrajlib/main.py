@@ -123,6 +123,7 @@ def run(
     return_config=False,
     return_trajectory=False,
     return_guidance=False,
+    is_cli=False,
     **kwargs,
 ):
     """Load config, override with kwargs, and run the C Monte Carlo code.
@@ -282,6 +283,8 @@ def run(
             )
             return_bundle = (*return_bundle, None)
     return_bundle = return_bundle[0] if len(return_bundle) == 1 else return_bundle
+    if is_cli:
+        return impact_df, config_dict
     return return_bundle
 
 
@@ -377,6 +380,7 @@ def cli():
         output_dir=output_dir,
         num_processes=num_processes,
         return_config=True,
+        is_cli=True,
         **kwargs,
     )
     if plot_impact:
