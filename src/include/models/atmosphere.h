@@ -81,10 +81,10 @@ void init_atm_data(char *atmprofilepath) {
   char header_line[1024];
   fgets(header_line, sizeof(header_line), fp);
 
-  // read the atmospheric profile data delimited by spaces
+  // Read the atmospheric profile data, where each value is followed by a comma.
   for (int i = 0; i < ATM_PROFILE_LEN * ATM_PROFILE_NUM; i++) {
     for (int j = 0; j < 6; j++) {
-      fscanf(fp, "%lfe", &atm_data[i][j]);
+      fscanf(fp, "%lf,", &atm_data[i][j]);
     }
   }
   atm_data_is_filled = 1;
@@ -109,10 +109,10 @@ void init_mean_atm_data(char *atmprofilepath) {
     return;
   }
 
-  // read the atmospheric profile data delimited by spaces
+  // Read the atmospheric profile data delimited by spaces.
   for (int i = 0; i < ATM_PROFILE_LEN; i++) {
     for (int j = 0; j < 5; j++) {
-      fscanf(fp, "%lfe", &mean_atm_data[i][j]);
+      fscanf(fp, "%lf", &mean_atm_data[i][j]);
     }
   }
   mean_atm_data_is_filled = 1;

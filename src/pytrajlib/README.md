@@ -26,24 +26,3 @@ Now pytrajlib should be built:
 ```bash
 uv run pytrajlib --version
 ```
-
-
-## Basic usage
-
-After you have installed it, you can see all available command line arguments with 
-
-```bash
-uv run pytrajlib --help
-```
-
-To run 200 simulation runs (the default) run 
-
-```bash
-uv run pytrajlib
-```
-
-If you want only 10 runs (faster), run 
-
-```bash 
-uv run pytrajlib --num-runs 10
-```
