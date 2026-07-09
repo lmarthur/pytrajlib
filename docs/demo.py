@@ -6,9 +6,11 @@ app = marimo.App()
 
 @app.cell
 def _():
+    import marimo as mo
+
     import pytrajlib as ptl
 
-    return (ptl,)
+    return mo, ptl
 
 
 @app.cell(hide_code=True)
