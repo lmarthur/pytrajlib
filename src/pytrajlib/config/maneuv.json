@@ -55,7 +55,7 @@
     "gnss_noise": 0.1,
     "gnss_freq": 1.0,
     "roll_gyro_error_factor": 0.0,
-    "burn_time_error": 0.1
+    "burn_time_error": 0.0
   },
   "vehicle": {
     "booster": {

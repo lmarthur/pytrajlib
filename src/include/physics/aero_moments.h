@@ -108,8 +108,8 @@ static inline cartvec get_body_moment(state *current_state, atm_cond *atm_cond,
  */
 static inline void get_flap_displacements_body(vehicle *vehicle,
                                                cartvec flap_r_B[4]) {
-  double r_f_perp = vehicle->rv.rv_radius + 0.01;
-  double c_f = fabs(vehicle->rv.x_com - vehicle->rv.x_flap) + 0.01;
+  double r_f_perp = vehicle->rv.rv_radius;
+  double c_f = fabs(vehicle->rv.x_com - vehicle->rv.x_flap);
 
   flap_r_B[0] = (cartvec){r_f_perp, 0.0, c_f};
   flap_r_B[1] = (cartvec){0.0, r_f_perp, c_f};
