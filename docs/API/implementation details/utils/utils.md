@@ -124,6 +124,27 @@ ends
 | --- | --- |
 | `static inline double` |  |
 
+## `interpolate_table_derivative`
+
+Compute local derivative (dy/dx) from a tabulated function at query x.
+Uses the slope of the containing interval or the end interval for
+extrapolation. Returns NAN for invalid sizes.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `x` | `double` | Query value (same units as x_table). |
+| `x_table` | `const double *` | Monotonic x-value array. |
+| `y_table` | `const double *` | Corresponding y-value array. |
+| `size` | `int` | Number of data points. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `static inline double` | Local derivative dy/dx (units of y per unit x). |
+
 ## `sign`
 
 Returns the sign of a value.

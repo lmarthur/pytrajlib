@@ -16,6 +16,9 @@ angle of attack and the desired angle of attack.
 | `vehicle` | `vehicle *` |  |
 | `q_inf` | `double` |  |
 | `run_params` | `runparams *` |  |
+| `c_l_alpha` | `double` |  |
+| `c_m_alpha` | `double` |  |
+| `c_m_q` | `double` |  |
 
 ### Returns
 

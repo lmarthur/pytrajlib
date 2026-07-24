@@ -181,6 +181,56 @@ static inline double interpolate_table(double x, const double *x_table,
 }
 
 /**
+ * Compute local derivative (dy/dx) from a tabulated function at query x.
+ * Uses the slope of the containing interval or the end interval for
+ * extrapolation. Returns NAN for invalid sizes.
+ *
+ * @param x Query value (same units as x_table).
+ * @param x_table Monotonic x-value array.
+ * @param y_table Corresponding y-value array.
+ * @param size Number of data points.
+ * @return Local derivative dy/dx (units of y per unit x).
+ */
+static inline double interpolate_table_derivative(double x,
+                                                  const double *x_table,
+                                                  const double *y_table,
+                                                  int size) {
+  if (size <= 0) {
+    return NAN;
+  }
+  if (size == 1) {
+    return 0.0;
+  }
+
+  // Extrapolate to the left
+  if (x <= x_table[0]) {
+    double dx = x_table[1] - x_table[0];
+    if (fabs(dx) < 1e-12)
+      return 0.0;
+    return (y_table[1] - y_table[0]) / dx;
+  }
+
+  // Extrapolate to the right
+  if (x >= x_table[size - 1]) {
+    double dx = x_table[size - 1] - x_table[size - 2];
+    if (fabs(dx) < 1e-12)
+      return 0.0;
+    return (y_table[size - 1] - y_table[size - 2]) / dx;
+  }
+
+  // Find interval
+  int i = 1;
+  while (i < size && x > x_table[i]) {
+    i++;
+  }
+  // interval is between i-1 and i
+  double dx = x_table[i] - x_table[i - 1];
+  if (fabs(dx) < 1e-12)
+    return 0.0;
+  return (y_table[i] - y_table[i - 1]) / dx;
+}
+
+/**
  * Returns the sign of a value.
  *
  * @param x Input value.
