@@ -10,7 +10,7 @@ TEST(gravity, get_gravity_acc) {
   run_params.grav_error = 0;
 
   // Initialize the grav struct
-  grav = init_grav(&run_params);
+  grav = init_grav(&run_params, 1);
 
   // Initialize the state struct with the vehicle at one earth radius
   state.position.x = grav.earth_radius;

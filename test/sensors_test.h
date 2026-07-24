@@ -31,7 +31,7 @@ TEST(sensors, imu_meas) {
   cartvec a_total_true = {10, 10, 10};
   cartvec a_grav_true = zeros();
   cartvec a_grav_est = zeros();
-  grav est_grav = init_grav(&run_params);
+  grav est_grav = init_grav(&run_params, 1);
 
   cartvec a_total_est = imu_measurement(&imu, &run_params, NULL, NULL, 0.0, 0.0,
                                         &true_state, &est_state, a_total_true,

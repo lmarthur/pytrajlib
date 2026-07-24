@@ -35,7 +35,7 @@ TEST(drag, get_drag_acc) {
   runparams run_params = {0};
   run_params.grav_error = 0;
 
-  grav grav = init_grav(&run_params);
+  grav grav = init_grav(&run_params, 1);
   atm_model atm_model = init_exp_atm(&run_params);
 
   atm_cond = get_exp_atm_cond(0, &atm_model);

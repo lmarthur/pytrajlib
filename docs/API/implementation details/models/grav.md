@@ -9,6 +9,7 @@ Initializes gravity parameters.
 | Name | Type | Description |
 | --- | --- | --- |
 | `run_params` | `runparams *` | Pointer to run parameters. |
+| `include_grav_error` | `int` |  |
 
 ### Returns
 

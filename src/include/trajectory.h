@@ -285,8 +285,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
   double time_step = run_params->time_step_boost;
 
   // Init structs
-  grav true_grav = init_grav(run_params);
-  grav est_grav = init_grav(run_params);
+  grav true_grav = init_grav(run_params, run_params->grav_error);
+  grav est_grav = init_grav(run_params, 0);
   atm_model exp_atm_model = init_exp_atm(run_params);
   imu imu = imu_init(run_params, initial_state);
   gnss gnss = gnss_init(run_params);

@@ -67,7 +67,9 @@ typedef struct runparams {
   double gnss_noise;             // GNSS error in meters
   double gnss_freq;              // GNSS update frequency in Hz
   double roll_gyro_error_factor; // Multiplicative error factor for roll gyro
-                                 // bias error
+  // bias error
+  double
+      geoid_height_error; // standard deviation of geoid height error in meters
 
   // Booster burn time error standard deviation
   double burn_time_error; // Applied independently to each stage in seconds

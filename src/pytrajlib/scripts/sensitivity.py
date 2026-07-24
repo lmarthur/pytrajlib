@@ -20,7 +20,7 @@ DEFAULT_SCALE_FACTORS = np.logspace(-1, 1, 7)
 TIME_STEP_SCALE_FACTORS = np.logspace(-1, 3, 9)
 GNSS_FREQ_SCALE_FACTORS = np.logspace(-3, 1, 5)
 RANGE_SCALE_FACTORS = np.linspace(0.5, 1.0, 6)
-COMBINED_PLOT_PARAMETERS = (
+GUIDANCE_COMBINED_PLOT_PARAMETERS = (
     "initial_pos_error",
     "initial_vel_error",
     "initial_angle_error",
@@ -28,6 +28,10 @@ COMBINED_PLOT_PARAMETERS = (
     "gyro_bias_stability",
     "gyro_noise",
     "gnss_noise",
+    "geoid_height_error",
+)
+
+CONTROL_COMBINED_PLOT_PARAMETERS = (
     "actuator_force",
     "deflection_time",
     "actuator_resolution",
@@ -49,11 +53,6 @@ SENSITIVITY_SPECS = (
         "label": "Trajectory range",
         "sweep_factors": RANGE_SCALE_FACTORS,
         "optimize_boost": True,
-    },
-    {
-        "name": "burn_time_error",
-        "label": "Burn time error",
-        "sweep_factors": DEFAULT_SCALE_FACTORS,
     },
     {
         "name": "initial_vel_error",
@@ -83,6 +82,11 @@ SENSITIVITY_SPECS = (
     {
         "name": "gnss_noise",
         "label": "GNSS error",
+        "sweep_factors": DEFAULT_SCALE_FACTORS,
+    },
+    {
+        "name": "geoid_height_error",
+        "label": "Geoid height error",
         "sweep_factors": DEFAULT_SCALE_FACTORS,
     },
     {
@@ -175,6 +179,7 @@ def make_case_config(
                 "gyro_bias_stability": 0.0,
                 "gyro_noise": 0.0,
                 "gnss_noise": 0.0,
+                "geoid_height_error": 0.0,
                 "grav_error": 0,
                 "roll_gyro_error_factor": 0.0,
                 "burn_time_error": 0.0,
@@ -241,7 +246,8 @@ def run_case(
     return {
         "cep_miss": float(np.median(miss_distance)),
         "mean_miss_distance": float(np.mean(miss_distance)),
-        "std_miss_distance": float(np.std(miss_distance)),
+        "q25_miss_distance": float(np.percentile(miss_distance, 25)),
+        "q75_miss_distance": float(np.percentile(miss_distance, 75)),
     }
 
 
@@ -303,6 +309,28 @@ def _save_figure(fig: plt.Figure, stem: str, output_dir: Path) -> tuple[Path, Pa
     return pdf_path, png_path
 
 
+def _get_sensitivity_x_label(spec: dict) -> str:
+    """Return the appropriate x-axis label for a sensitivity parameter."""
+    if _is_binary_spec(spec):
+        return f"{spec['label']} flag"
+    if spec["name"] == "range":
+        return "Range (km)"
+    if spec["name"] == "gnss_freq":
+        return "GNSS frequency (Hz)"
+    return "Scale factor"
+
+
+def _get_sensitivity_x_values(subset: pd.DataFrame, spec: dict) -> np.ndarray:
+    """Return the x-values to plot for a sensitivity parameter."""
+    if _is_binary_spec(spec):
+        return subset["value"]
+    if spec["name"] == "range":
+        return subset["display_value"]
+    if spec["name"] == "gnss_freq":
+        return subset["value"]
+    return subset["factor"]
+
+
 def _setup_sensitivity_axis(ax: plt.Axes, spec: dict, ylabel: str = "CEP (m)") -> None:
     """Configure an axis for sensitivity plotting based on parameter type."""
     ax.set_yscale("log")
@@ -312,13 +340,13 @@ def _setup_sensitivity_axis(ax: plt.Axes, spec: dict, ylabel: str = "CEP (m)") -
 
     if _is_binary_spec(spec):
         ax.set_xticks([0, 1], ["off", "on"])
-        ax.set_xlabel(f"{spec['label']} flag")
+        ax.set_xlabel(_get_sensitivity_x_label(spec))
     elif spec["name"] == "range":
         ax.set_xscale("linear")
-        ax.set_xlabel("Range (km)")
+        ax.set_xlabel(_get_sensitivity_x_label(spec))
     else:
         ax.set_xscale("log")
-        ax.set_xlabel("Scale factor")
+        ax.set_xlabel(_get_sensitivity_x_label(spec))
 
 
 def _plot_sensitivity_panel(
@@ -329,16 +357,13 @@ def _plot_sensitivity_panel(
     label: str | None = None,
 ) -> None:
     """Plot sensitivity data (error bars) on the given axis."""
-    if _is_binary_spec(spec):
-        x_values = subset["value"]
-    elif spec["name"] == "range":
-        x_values = subset["display_value"]
-    else:
-        x_values = subset["factor"]
+    x_values = _get_sensitivity_x_values(subset, spec)
+    lower_err = np.maximum(subset["cep_miss"] - subset["q25_miss_distance"], 0.0)
+    upper_err = np.maximum(subset["q75_miss_distance"] - subset["cep_miss"], 0.0)
     ax.errorbar(
         x_values,
         subset["cep_miss"],
-        yerr=subset["std_miss_distance"],
+        yerr=np.vstack([lower_err, upper_err]),
         marker="o",
         linewidth=1.4,
         markersize=4,
@@ -362,18 +387,27 @@ def save_panel_plot(
     return pdf_path, png_path
 
 
-def plot_combined_sensitivity(
-    results: pd.DataFrame, output_dir: Path
+def _plot_combined_sensitivity_category(
+    results: pd.DataFrame,
+    output_dir: Path,
+    parameters: tuple[str, ...],
+    stem: str,
+    title: str,
 ) -> tuple[Path, Path]:
     combined_parameters = [
         spec["name"]
         for spec in SENSITIVITY_SPECS
-        if spec["name"] in results["parameter"].unique()
-        and spec["name"] in COMBINED_PLOT_PARAMETERS
+        if spec["name"] in results["parameter"].unique() and spec["name"] in parameters
     ]
 
     fig, ax = plt.subplots(figsize=(6, 5))
     cmap = plt.get_cmap("tab10")
+
+    ax.set_xscale("log")
+    ax.set_xticks(
+        [1e-1, 1.0, 1e1],
+        [r"$10^{-1}$", r"$10^{0}$", r"$10^{1}$"],
+    )
 
     for index, parameter_name in enumerate(combined_parameters):
         subset = results[results["parameter"] == parameter_name].sort_values("factor")
@@ -383,34 +417,55 @@ def plot_combined_sensitivity(
         if _is_binary_spec(spec):
             x_values = subset["value"]
             ax.set_xticks([0, 1], ["off", "on"])
-            ax.set_xlabel(f"{spec['label']} flag")
+            ax.set_xlabel(_get_sensitivity_x_label(spec))
         elif spec["name"] == "range":
             x_values = subset["display_value"]
-            ax.set_xlabel("Range (km)")
+            ax.set_xlabel(_get_sensitivity_x_label(spec))
         else:
-            x_values = np.log10(subset["factor"])
-            ax.set_xlabel("Scale factor")
+            x_values = _get_sensitivity_x_values(subset, spec)
+            ax.set_xlabel(_get_sensitivity_x_label(spec))
 
-        ax.errorbar(
+        ax.plot(
             x_values,
             subset["cep_miss"],
-            yerr=subset["std_miss_distance"],
             marker="o",
             linewidth=1.4,
             markersize=4,
-            capsize=2.5,
             color=color,
             label=spec["label"],
         )
 
     ax.set_yscale("log")
     ax.set_ylabel("CEP (m)")
-    ax.set_title("Miss distance sensitivity")
+    ax.set_title(title)
     ax.grid(True, linestyle=":", linewidth=0.7, alpha=0.6)
     ax.legend(frameon=False, fontsize=8, ncol=2)
+    ax.set_ylim(10**-2, 3)
     fig.tight_layout()
 
-    return _save_figure(fig, "sensitivity_combined", output_dir)
+    pdf_path, png_path = _save_figure(fig, stem, output_dir)
+    plt.close(fig)
+    return pdf_path, png_path
+
+
+def plot_combined_sensitivity(
+    results: pd.DataFrame, output_dir: Path
+) -> tuple[tuple[Path, Path], tuple[Path, Path]]:
+    guidance_plot = _plot_combined_sensitivity_category(
+        results,
+        output_dir,
+        GUIDANCE_COMBINED_PLOT_PARAMETERS,
+        "sensitivity_combined_guidance",
+        "Guidance sensitivity",
+    )
+    control_plot = _plot_combined_sensitivity_category(
+        results,
+        output_dir,
+        CONTROL_COMBINED_PLOT_PARAMETERS,
+        "sensitivity_combined_control",
+        "Control sensitivity",
+    )
+    return guidance_plot, control_plot
 
 
 def plot_panels(results: pd.DataFrame, output_dir: Path) -> tuple[Path, Path]:
@@ -484,10 +539,11 @@ def run_sensitivity(
     results.to_csv(csv_path, index=False)
 
     panels_pdf, panels_png = plot_panels(results, output_dir)
-    combined_pdf, combined_png = plot_combined_sensitivity(results, output_dir)
+    guidance_plot, control_plot = plot_combined_sensitivity(results, output_dir)
 
     print(f"Saved data to {csv_path}")
     print(f"Saved panel plots to {panels_pdf} and {panels_png}")
-    print(f"Saved combined plot to {combined_pdf} and {combined_png}")
+    print(f"Saved guidance combined plot to {guidance_plot[0]} and {guidance_plot[1]}")
+    print(f"Saved control combined plot to {control_plot[0]} and {control_plot[1]}")
 
     return results

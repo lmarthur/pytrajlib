@@ -3,6 +3,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import scienceplots
 
 # Avoid unused import warning by asserting scienceplots
@@ -50,7 +51,7 @@ def save_atm_plots(
     mean_atm = np.loadtxt(mean_atm_path)
 
     # Import batch of atmospheric profiles
-    atm_profiles = np.loadtxt(atm_profiles_path)
+    atm_profiles = pd.read_csv(atm_profiles_path).to_numpy()
 
     altitudes = np.unique(atm_profiles[:, 1])
     num_altitudes = len(altitudes)

@@ -68,7 +68,7 @@ ffibuilder.cdef(
         double gnss_noise;
         double gnss_freq;
         double roll_gyro_error_factor;
-
+        double geoid_height_error;
 
         double burn_time_error;
     } runparams;

@@ -129,6 +129,11 @@ def create_impact_plot(
     # Style histogram
     for spine in ["top", "right", "left"]:
         ax_hist.spines[spine].set_visible(False)
+    ax_hist.xaxis.set_ticks_position("bottom")
+    ax_hist.xaxis.set_label_position("bottom")
+    ax_hist.tick_params(
+        axis="x", which="both", top=False, bottom=True, labeltop=False, labelbottom=True
+    )
     ax_hist.yaxis.set_visible(False)
     ax_hist.set_xlabel("Miss Distance (m)")
     ax_hist.legend(frameon=False, loc="upper right")

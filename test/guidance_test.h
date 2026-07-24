@@ -9,7 +9,7 @@
 TEST(guidance, prop_nav_radial_velocity_zero) {
   runparams run_params = {0};
   state estimated_state = init_true_state(&run_params);
-  grav grav_model = init_grav(&run_params);
+  grav grav_model = init_grav(&run_params, 1);
 
   run_params.x_aim = EARTH_RADIUS_M;
   run_params.y_aim = 0;
@@ -36,7 +36,7 @@ TEST(guidance, prop_nav_radial_velocity_zero) {
 TEST(guidance, prop_nav_perp_velocity_magnitude_and_direction) {
   runparams run_params = {0};
   state estimated_state = init_true_state(&run_params);
-  grav grav_model = init_grav(&run_params);
+  grav grav_model = init_grav(&run_params, 1);
 
   run_params.x_aim = EARTH_RADIUS_M;
   run_params.y_aim = 0;
