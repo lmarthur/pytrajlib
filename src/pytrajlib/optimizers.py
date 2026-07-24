@@ -35,11 +35,12 @@ def _prepare_optimizer_config(config_dict, extra_updates=None):
 def _evaluate_candidate(config_dict, parameter_names, parameter_values):
     """Loss function is mean miss distance."""
     config = deepcopy(config_dict)
+    # num_processes is not part of runparams, so remove it from the config
+    num_processes = config.pop("num_processes")
     for name, value in zip(parameter_names, parameter_values):
         config[name] = float(value)
-
     impact_df = runtime.run(
-        config, min(config["num_runs"], 16), show_progress_bar=False
+        config, min(config["num_runs"], num_processes), show_progress_bar=False
     )
 
     dist = get_miss_distance(
@@ -49,12 +50,13 @@ def _evaluate_candidate(config_dict, parameter_names, parameter_values):
     return np.mean(dist)
 
 
-def optimize_boost(config_dict):
+def optimize_boost(config_dict, num_processes):
     """
-    Lambert Guidance assumes there is no drag upon reentry to the atmosphere. To overcome this limitation, we tune the initial thrust angle and the desired flight time for an optimally lofted flight, as described in the boost optimization section.
+    Lambert Guidance assumes there is no drag upon reentry to the atmosphere. To overcome this limitation, we tune the initial thrust angle, the desired flight time, and the Lambert velocity offset (drag loss budget) for an optimally lofted flight, as described in the boost optimization section.
     """
-    tf_des = 2000.0
-    theta_long = np.pi / 4
+    tf_des = 2100.0
+    theta_long = 1.0
+    lambert_v_offset = 0.01
 
     extra_updates = {
         "gnss_nav": 0,
@@ -64,31 +66,36 @@ def optimize_boost(config_dict):
         # not the EarthGram atmospheres which are reserved for the actual simulation.
         # This prevents overfitting.
         "atm_model": 1 if config_dict["atm_model"] > 0 else 0,
+        "num_processes": num_processes,
     }
 
     objective_config = _prepare_optimizer_config(config_dict, extra_updates)
 
     def objective(xs):
-        tf, theta = xs
+        tf, theta, lv = xs
         miss_dist = _evaluate_candidate(
             objective_config,
-            ("t_des_final", "theta_long"),
-            (tf, theta),
+            ("t_des_final", "theta_long", "lambert_v_offset"),
+            (tf, theta, lv),
         )
-        print(f"{tf=:.6f}, {theta=:.6f}, {miss_dist=:.6f}")
+        print(f"{tf=:.6f}, {theta=:.6f}, {lv=:.6f}, {miss_dist=:.6f}")
         return miss_dist
 
     result = minimize(
         fun=objective,
-        x0=[tf_des, theta_long],
+        x0=[tf_des, theta_long, lambert_v_offset],
         method="Nelder-Mead",
         options=dict(maxfev=objective_config["num_trials_optimizer"]),
     )
     print(result)
-    return {"t_des_final": result.x[0], "theta_long": result.x[1]}
+    return {
+        "t_des_final": result.x[0],
+        "theta_long": result.x[1],
+        "lambert_v_offset": result.x[2],
+    }
 
 
-def optimize_reentry(config_dict):
+def optimize_reentry(config_dict, num_processes):
     """
     Tune nav_gain and control gains for realistic RV maneuverability using Optuna.
     Returns the best parameter dictionary found by Optuna.
@@ -104,6 +111,7 @@ def optimize_reentry(config_dict):
         # not the EarthGram atmospheres which are reserved for the actual simulation.
         # This prevents overfitting.
         "atm_model": 1 if config_dict["atm_model"] > 0 else 0,
+        "num_processes": num_processes,
     }
 
     objective_config = _prepare_optimizer_config(config_dict, extra_updates)

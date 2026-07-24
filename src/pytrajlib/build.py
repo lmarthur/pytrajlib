@@ -42,9 +42,10 @@ ffibuilder.cdef(
         int perfect_boost;
         int optimize_boost;
         int optimize_reentry;
-        double t_des_final;
-        double t_vert_boost;
 
+        double t_des_final;
+        double lambert_v_offset;
+        double t_vert_boost;
         double deflection_time;
         double actuator_force;
         double gearing_ratio;
@@ -56,7 +57,6 @@ ffibuilder.cdef(
         double K_pp;
         double K_delta_p;
         double K_delta_d;
-
 
         double initial_x_error;
         double initial_pos_error;

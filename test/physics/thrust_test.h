@@ -36,7 +36,7 @@ TEST(thrust, get_lambert_velocity_vector) {
   grav grav_model = init_grav(&rp, 1);
 
   cartvec v_lambert =
-      get_lambert_velocity_vector(position, aimpoint, tf_des, &grav_model);
+      get_lambert_velocity_vector(position, aimpoint, tf_des, &grav_model, &rp);
   double expected_vx = 7549.722571 * 0.3048;
   double expected_vy = 18391.612895 * 0.3048;
 
@@ -56,7 +56,7 @@ TEST(thrust, get_lambert_velocity_vector_altitude) {
   grav grav_model = init_grav(&rp, 1);
 
   cartvec v_lambert =
-      get_lambert_velocity_vector(position, aimpoint, tf_des, &grav_model);
+      get_lambert_velocity_vector(position, aimpoint, tf_des, &grav_model, &rp);
   double expected_vx = 6993.352308 * 0.3048;
   double expected_vy = 18322.670437 * 0.3048;
   printf("Lambert velocity at altitude x %f y %f z %f\n", v_lambert.x,

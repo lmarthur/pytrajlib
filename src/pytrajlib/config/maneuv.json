@@ -9,7 +9,7 @@
     "time_step_midcourse": 1.0,
     "time_step_reentry": 0.0001,
     "traj_output": 1,
-    "range": 10000000,
+    "range": 13000000,
     "x_aim": null,
     "y_aim": null,
     "z_aim": null,
@@ -32,9 +32,10 @@
     "actuator_resolution": 0.01
   },
   "optimized": {
-    "theta_long": 0.6715065960788051,
+    "theta_long": 1.1769455082973188,
     "theta_lat": 0.0,
-    "t_des_final": 2986.6467267274857,
+    "t_des_final": 2373.376305606937,
+    "lambert_v_offset": 0.014650460879527438,
     "gearing_ratio": 18.902565748694002,
     "max_deflection_angle": 5.005158800904358,
     "nav_gain_0": 17.16392199274926,

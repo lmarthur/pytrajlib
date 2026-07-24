@@ -61,6 +61,7 @@ CLI_PARAM_HELP = {
     "optimize_boost": "Optimize t_des_final and theta_long when set to 1.",
     "optimize_reentry": "Optimize reentry maneuver parameters (max_deflection_angle, gearing_ratio, nav_gain_0, nav_gain_1, K_q, K_pp, K_delta_p, K_delta_d) when set to 1.",
     "t_des_final": "Desired final time for the boost phase, in seconds.",
+    "lambert_v_offset": "Lambert velocity offset, in meters per second.",
     "t_vert_boost": "Vertical boost time, in seconds.",
     "deflection_time": "Actuator deflection time, in seconds.",
     "actuator_force": "Maximum actuator force in kN.",
@@ -203,13 +204,15 @@ def run(
     config_dict["trajectory_path"] = str(output_dir_path / "trajectory.csv")
 
     if config_dict["optimize_boost"]:
-        optimized_params = optimize_boost(config_dict)
+        optimized_params = optimize_boost(config_dict, num_processes=num_processes)
         print(optimized_params)
         config_dict = {**config_dict, **optimized_params}
 
     if config_dict["optimize_reentry"]:
         if int(config_dict.get("rv_maneuv", 0)) == 1:
-            optimized_params = optimize_reentry(config_dict)
+            optimized_params = optimize_reentry(
+                config_dict, num_processes=num_processes
+            )
             print(optimized_params)
             config_dict = {**config_dict, **optimized_params}
         else:

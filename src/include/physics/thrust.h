@@ -227,7 +227,7 @@ double get_flight_angle(double r0, double rf, double phi, double t_f_des,
   double t_f_prev = t_f_current;
   int icount = 0;
 
-  while ((fabs(t_f_current - t_f_des) > tol * t_f_des) && icount < 1000) {
+  while ((fabs(t_f_current - t_f_des) > tol) && icount < 1000) {
     // Update bisection bounds
     if (t_f_current > t_f_des) {
       gmax = gamma_current;
@@ -292,14 +292,20 @@ So the desired final velocity vector is
  * @param tf_des Desired remaining flight time in seconds.
  * @param grav_model Pointer to gravity model.
  * @return Lambert guidance velocity vector.
+ * @param run_params Pointer to run parameters.
  */
 cartvec get_lambert_velocity_vector(cartvec position, cartvec aimpoint,
-                                    double tf_des, grav *grav_model) {
+                                    double tf_des, grav *grav_model,
+                                    runparams *run_params) {
   double r0 = norm(position);
   double rf = norm(aimpoint);
   double phi = get_central_angle(position, aimpoint);
   double gamma = get_flight_angle(r0, rf, phi, tf_des, grav_model);
   double v = get_lambert_velocity(r0, rf, phi, gamma, grav_model);
+
+  // Add small offset to account for reentry drag
+  v += run_params->lambert_v_offset;
+
   cartvec lambert_velocity;
 
   double mag_pos = norm(position);
@@ -403,7 +409,8 @@ cartvec get_thrust_vector(state *state, vehicle *vehicle, runparams *run_params,
   cartvec aimpoint = {run_params->x_aim, run_params->y_aim, run_params->z_aim};
 
   cartvec lambert_velocity = get_lambert_velocity_vector(
-      state->position, aimpoint, run_params->t_des_final - t, grav_model);
+      state->position, aimpoint, run_params->t_des_final - t, grav_model,
+      run_params);
   cartvec v_to_gain = subtract(lambert_velocity, state->velocity);
   // unit vector in direction of v to gain
   cartvec v_to_gain_hat = sdivide(v_to_gain, norm(v_to_gain));

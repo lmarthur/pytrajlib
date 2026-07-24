@@ -215,6 +215,7 @@ $$
 | `aimpoint` | `cartvec` | Desired impact aimpoint vector. |
 | `tf_des` | `double` | Desired remaining flight time in seconds. |
 | `grav_model` | `grav *` | Pointer to gravity model. |
+| `run_params` | `runparams *` | Pointer to run parameters. |
 
 ### Returns
 
