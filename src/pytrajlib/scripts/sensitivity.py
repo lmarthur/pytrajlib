@@ -53,6 +53,7 @@ SENSITIVITY_SPECS = (
         "label": "Trajectory range",
         "sweep_factors": RANGE_SCALE_FACTORS,
         "optimize_boost": True,
+        "optimize_reentry": True,
     },
     {
         "name": "initial_vel_error",
@@ -199,6 +200,10 @@ def make_case_config(
         "optimize_boost"
     ):
         case_config["optimize_boost"] = 1
+    if next((s for s in SENSITIVITY_SPECS if s["name"] == parameter_name), {}).get(
+        "optimize_reentry"
+    ):
+        case_config["optimize_reentry"] = 1
 
     return case_config
 
