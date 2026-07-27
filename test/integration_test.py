@@ -1,5 +1,6 @@
 import json
 import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -133,6 +134,7 @@ def test_error_sensitivity_increases_cep(
         maneuv_configs = dict(
             ballistic_drag=rv_maneuv - 1,
             num_runs=10,
+            gnss_nav=0,
             **{e: 0 for e in ERROR_FIELDS if e != error_field},
         )
         small = dict()
@@ -210,5 +212,8 @@ def test_no_impact_correlation():
         impact_df, (config["x_aim"], config["y_aim"], config["z_aim"])
     )
     r = np.corrcoef(impact_x_local, impact_y_local)[0][1]
+
+    output_dir = Path("/tmp/pytrajlib/")
+    output_dir.mkdir(parents=True, exist_ok=True)
     impact_df.to_csv("/tmp/pytrajlib/correlation-test-impact.csv")
     assert np.abs(r) < 1e-1

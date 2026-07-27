@@ -487,18 +487,25 @@ cartvec get_thrust_acc(state *true_state, state *est_state, vehicle *vehicle,
                  sin(vert_state.theta_long - run_params->theta_long);
     a_thrust.z =
         a_thrust_mag * sin(vert_state.theta_lat - run_params->theta_lat);
-    return a_thrust;
-  }
-  if (get_altitude(state->position) < 100e3) {
+  } else if (get_altitude(state->position) < 100e3) {
     a_thrust.x = a_thrust_mag * cos(state->theta_long) * cos(state->theta_lat);
     a_thrust.y = a_thrust_mag * sin(state->theta_long) * cos(state->theta_lat);
     a_thrust.z = a_thrust_mag * sin(state->theta_lat);
-
-    return a_thrust;
+  } else {
+    a_thrust = get_thrust_vector(state, vehicle, run_params, grav_model, t,
+                                 a_thrust_mag);
   }
 
-  a_thrust = get_thrust_vector(state, vehicle, run_params, grav_model, t,
-                               a_thrust_mag);
+  if (!run_params->perfect_boost) {
+    // Model the thrust as being relative to the estimated body frame to account
+    // for orientation errors
+    cartvec a_thrust_B = eci_to_body(a_thrust, est_state->q_EB);
+
+    // Convert thrust back to ECI frame using the true mapping
+    cartvec a_thrust_E = body_to_eci(a_thrust_B, true_state->q_EB);
+
+    return a_thrust_E;
+  }
   return a_thrust;
 }
 #endif
