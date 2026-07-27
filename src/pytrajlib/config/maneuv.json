@@ -3,7 +3,7 @@
     "run_name": "rv-maneuv",
     "num_runs": 200,
     "num_runs_optimizer": 50,
-    "num_trials_optimizer": 100,
+    "num_trials_optimizer": 200,
     "time_step_boost": 0.001,
     "time_step_lambert": 0.0001,
     "time_step_midcourse": 1.0,
