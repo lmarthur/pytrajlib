@@ -445,7 +445,6 @@ def _plot_combined_sensitivity_category(
     ax.set_title(title)
     ax.grid(True, linestyle=":", linewidth=0.7, alpha=0.6)
     ax.legend(frameon=False, fontsize=8, ncol=2)
-    ax.set_ylim(10**-2, 3)
     fig.tight_layout()
 
     pdf_path, png_path = _save_figure(fig, stem, output_dir)
@@ -532,6 +531,10 @@ def run_sensitivity(
             and float(base_config.get(spec["name"], 0.0)) == 0.0
         ):
             print(f"Skipping {spec['name']}: baseline is zero in the selected config.")
+            continue
+        if (
+            base_config["rv_maneuv"] == 0 and spec in CONTROL_COMBINED_PLOT_PARAMETERS
+        ) or (base_config["gnss_nav"] == 0 and spec in ("gnss_noise", "gnss_freq")):
             continue
         frames.append(
             sweep_parameter(
