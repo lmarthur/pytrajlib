@@ -54,9 +54,9 @@ def optimize_boost(config_dict, num_processes):
     """
     Lambert Guidance assumes there is no drag upon reentry to the atmosphere. To overcome this limitation, we tune the initial thrust angle, the desired flight time, and the Lambert velocity offset (drag loss budget) for an optimally lofted flight, as described in the boost optimization section.
     """
-    tf_des = 2100.0
-    theta_long = 1.0
-    lambert_v_offset = 0.01
+    tf_des = 2000.0
+    theta_long = np.pi / 4
+    lambert_v_offset = 0.0
 
     extra_updates = {
         "gnss_nav": 0,
