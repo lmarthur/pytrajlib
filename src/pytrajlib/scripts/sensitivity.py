@@ -19,7 +19,7 @@ plt.style.use(["no-latex"])
 DEFAULT_SCALE_FACTORS = np.logspace(-1, 1, 7)
 TIME_STEP_SCALE_FACTORS = np.logspace(-1, 3, 9)
 GNSS_FREQ_SCALE_FACTORS = np.logspace(-3, 1, 5)
-RANGE_SCALE_FACTORS = np.linspace(0.5, 1.0, 6)
+RANGE_SCALE_FACTORS = np.linspace(0.5, 1.3, 9)
 GUIDANCE_COMBINED_PLOT_PARAMETERS = (
     "initial_pos_error",
     "initial_vel_error",
@@ -53,7 +53,7 @@ SENSITIVITY_SPECS = (
         "label": "Trajectory range",
         "sweep_factors": RANGE_SCALE_FACTORS,
         "optimize_boost": True,
-        "optimize_reentry": True,
+        # "optimize_reentry": True,
     },
     {
         "name": "initial_vel_error",
@@ -430,12 +430,17 @@ def _plot_combined_sensitivity_category(
             x_values = _get_sensitivity_x_values(subset, spec)
             ax.set_xlabel(_get_sensitivity_x_label(spec))
 
-        ax.plot(
+        lower_err = np.maximum(subset["cep_miss"] - subset["q25_miss_distance"], 0.0)
+        upper_err = np.maximum(subset["q75_miss_distance"] - subset["cep_miss"], 0.0)
+
+        ax.errorbar(
             x_values,
             subset["cep_miss"],
+            yerr=np.vstack([lower_err, upper_err]),
             marker="o",
             linewidth=1.4,
             markersize=4,
+            capsize=2.5,
             color=color,
             label=spec["label"],
         )

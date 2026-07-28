@@ -407,12 +407,11 @@ def create_traj_plots(
             t,
             aoa_alpha_deg,
             aoa_azimuth_deg,
-            desired_aoa_deg,
             reentry_mask,
             save_path,
         )
         plots["aoa_vs_altitude"] = lambda: _plot_aoa_vs_altitude(
-            altitude, aoa_alpha_deg, desired_aoa_deg, reentry_mask, save_path
+            altitude, aoa_alpha_deg, reentry_mask, save_path
         )
         plots["wind_components"] = lambda: _plot_rel_wind_components(
             t, reentry_mask, u1, u2, u3, save_path
@@ -1022,7 +1021,6 @@ def _plot_aoa_components(
     t,
     aoa_alpha_deg,
     aoa_azimuth_deg,
-    desired_aoa_deg,
     reentry_mask,
     save_path,
 ) -> Optional[plt.Figure]:
@@ -1030,26 +1028,16 @@ def _plot_aoa_components(
     t_reentry = t[reentry_mask]
     aoa_alpha_reentry = aoa_alpha_deg[reentry_mask]
     aoa_azimuth_reentry = aoa_azimuth_deg[reentry_mask]
-    desired_aoa_reentry = desired_aoa_deg if desired_aoa_deg is not None else None
 
     fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
     axes[0].plot(
         t_reentry, aoa_alpha_reentry, linewidth=2, label=r"$\alpha=\arccos(u_3)$"
     )
-    if desired_aoa_reentry is not None:
-        axes[0].plot(
-            t_reentry,
-            desired_aoa_reentry,
-            linewidth=2,
-            linestyle="--",
-            label="Desired AoA",
-        )
     axes[0].set_ylabel(r"$\alpha$ (deg)")
     axes[0].set_title("Angle of Attack During Reentry")
     axes[0].grid(alpha=0.3)
     axes[0].legend()
-    axes[0].set_ylim(0, 50)
 
     axes[1].plot(
         t_reentry,
@@ -1071,12 +1059,11 @@ def _plot_aoa_components(
 
 
 def _plot_aoa_vs_altitude(
-    altitude, aoa_alpha_deg, desired_aoa_deg, reentry_mask, save_path
+    altitude, aoa_alpha_deg, reentry_mask, save_path
 ) -> Optional[plt.Figure]:
     """Plot AoA alpha vs altitude during reentry phase."""
     alt_reentry = altitude[reentry_mask] / 1000.0
     aoa_reentry = aoa_alpha_deg[reentry_mask]
-    desired_aoa_reentry = desired_aoa_deg if desired_aoa_deg is not None else None
 
     if alt_reentry.size == 0:
         print("No reentry data for AoA vs altitude; skipping.")
@@ -1091,14 +1078,6 @@ def _plot_aoa_vs_altitude(
         linewidth=2,
         label=r"$\alpha=\arccos(u_3)$",
     )
-    if desired_aoa_reentry is not None:
-        axes[0].plot(
-            alt_reentry[sort_idx],
-            desired_aoa_reentry[sort_idx],
-            linewidth=2,
-            linestyle="--",
-            label="Desired AoA",
-        )
     axes[0].set_ylabel(r"$\alpha$ (deg)")
     axes[0].set_title("Angle of Attack vs Altitude (Reentry)")
     axes[0].grid(alpha=0.3)
@@ -1115,15 +1094,6 @@ def _plot_aoa_vs_altitude(
         linewidth=2,
         label=r"$\alpha=\arccos(u_3)$",
     )
-    if desired_aoa_reentry is not None:
-        desired_sorted = desired_aoa_reentry[sort_idx]
-        axes[1].plot(
-            alt_sorted[low_mask_sorted],
-            desired_sorted[low_mask_sorted],
-            linewidth=2,
-            linestyle="--",
-            label="Desired AoA",
-        )
     axes[1].set_xlabel("Altitude (km)")
     axes[1].set_ylabel(r"$\alpha$ (deg)")
     axes[1].set_title("Angle of Attack vs Altitude (Reentry < 1km)")
