@@ -10,7 +10,7 @@ r_cone = 0.277
 l_cone = 2.75
 V_cone = np.pi * r_cone**2 * l_cone / 3
 
-density_cyl = 17.6 / 1000 * 100**3  # g/cm^2 * 1kg/1000g * (100cm)^3/1m^3
+density_cyl = 17.6 / 1000 * 100**3  # g/cm^3 * 1kg/1000g * (100cm)^3/1m^3
 m_cyl = density_cyl * V_cyl
 
 # Assume total mass is 450kg
