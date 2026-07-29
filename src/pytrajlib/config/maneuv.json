@@ -32,9 +32,9 @@
     "actuator_resolution": 0.01
   },
   "optimized": {
-    "theta_long": 1.1740961028498713,
+    "theta_long": 0.6733197813012477,
     "theta_lat": 0.0,
-    "t_des_final": 2373.7843767157283,
+    "t_des_final": 2988.301717210561,
     "lambert_v_offset": 0.0,
     "gearing_ratio": 19.71137150426407,
     "max_deflection_angle": 1.4009360023539916,
