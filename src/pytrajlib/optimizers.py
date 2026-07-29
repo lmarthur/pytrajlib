@@ -56,7 +56,6 @@ def optimize_boost(config_dict, num_processes):
     """
     tf_des = 2000.0
     theta_long = np.pi / 4
-    lambert_v_offset = 0.0
 
     extra_updates = {
         "gnss_nav": 0,
@@ -72,18 +71,18 @@ def optimize_boost(config_dict, num_processes):
     objective_config = _prepare_optimizer_config(config_dict, extra_updates)
 
     def objective(xs):
-        tf, theta, lv = xs
+        tf, theta = xs
         miss_dist = _evaluate_candidate(
             objective_config,
-            ("t_des_final", "theta_long", "lambert_v_offset"),
-            (tf, theta, lv),
+            ("t_des_final", "theta_long"),
+            (tf, theta),
         )
-        print(f"{tf=:.6f}, {theta=:.6f}, {lv=:.6f}, {miss_dist=:.6f}")
+        print(f"{tf=:.6f}, {theta=:.6f}, {miss_dist=:.6f}")
         return miss_dist
 
     result = minimize(
         fun=objective,
-        x0=[tf_des, theta_long, lambert_v_offset],
+        x0=[tf_des, theta_long],
         method="Nelder-Mead",
         options=dict(maxfev=objective_config["num_trials_optimizer"]),
     )
@@ -91,7 +90,6 @@ def optimize_boost(config_dict, num_processes):
     return {
         "t_des_final": result.x[0],
         "theta_long": result.x[1],
-        "lambert_v_offset": result.x[2],
     }
 
 

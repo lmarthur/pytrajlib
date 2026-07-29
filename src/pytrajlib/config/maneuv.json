@@ -35,7 +35,7 @@
     "theta_long": 1.1740961028498713,
     "theta_lat": 0.0,
     "t_des_final": 2373.7843767157283,
-    "lambert_v_offset": 0.014533953647907296,
+    "lambert_v_offset": 0.0,
     "gearing_ratio": 19.71137150426407,
     "max_deflection_angle": 1.4009360023539916,
     "nav_gain_0": 30.357841065499073,
