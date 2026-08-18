@@ -1,0 +1,13 @@
+[project]
+name = "pytrajlib"
+version = "0.1.0"
+description = "Monte Carlo ICBM trajectory simulations"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "matplotlib>=3.10.8",
+    "pandas>=3.0.3",
+    "scienceplots>=2.2.1",
+    "scipy>=1.17.1",
+    "tqdm>=4.67.1",
+]

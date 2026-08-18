@@ -302,6 +302,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     // Variables for step function anomaly (only used for run_type = 1)
     double step_timer = 0; // time since step function was activated
 
+    int post_boost_phase = 0; // 1 if after boost phase
     // Begin the integration loop
     for (int i = 0; i < max_steps; i++){
         // Get the atmospheric conditions
@@ -310,13 +311,40 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
         atm_cond true_atm_cond = get_atm_cond(old_altitude, &exp_atm_model, run_params, &atm_profile);
         // printf("true_atm_cond: %f, %f, %f\n", true_atm_cond.density, true_atm_cond.meridional_wind, true_atm_cond.zonal_wind);
         atm_cond est_atm_cond = get_exp_atm_cond(old_altitude, &exp_atm_model);
-        // if during boost or outside atmosphere, dt = main time step, else dt = reentry time step
-        if (old_true_state.t < vehicle->booster.total_burn_time || old_altitude > 1e6){
-            time_step = run_params->time_step_main;
+
+        // To avoid a poor estimate of the Coriolis error for ballistic reentry
+        // vehicles, stop accumulating guidance errors after boost phase
+        if(run_params->rv_maneuv == 0 && post_boost_phase) {
+            // Zero out guidance system errors
+            imu.acc_scale_x = 0;
+            imu.acc_scale_y = 0;
+            imu.acc_scale_z = 0;
+
+            imu.gyro_error_long = 0;
+            imu.gyro_error_lat = 0;
+
+            imu.gyro_noise = 0;
+            imu.gyro_bias_lat = 0;
+            imu.gyro_bias_long = 0;
+
+            // Zero out gravity model error
+            est_grav = true_grav;
+
+            // Zero out atmospheric model errors
+            est_atm_cond = true_atm_cond;
         }
-        else{
+
+        // if during boost or reentry, dt = reentry time step, else dt = main time step
+        // go a bit above 100km to 1e6 to ensure accuracy at very close to 100km
+        int during_reentry_phase = (old_true_state.t > vehicle->booster.total_burn_time) && (old_altitude < 1e6);
+
+        if (old_true_state.t < vehicle->booster.total_burn_time || during_reentry_phase) {
             time_step = run_params->time_step_reentry;
         }
+        else {
+            time_step = run_params->time_step_main;
+        }
+
         // Update the thrust of the vehicle
         update_thrust(vehicle, &new_true_state);
         update_thrust(vehicle, &new_est_state);
@@ -363,32 +391,28 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             // INS Measurement
             imu_measurement(&imu, &new_true_state, &new_est_state, vehicle, rng);
 
-            if (run_params->rv_maneuv == 0 ){ 
-                update_imu(&imu, time_step, rng);
-            }
-            else if (a_drag > 1e-3 || old_true_state.t < vehicle->booster.total_burn_time){
+            // There are no net torques on the vehicle during midcourse, so we can
+            // calibrate out the midcourse gyro errors
+            if (a_drag > 1e-3 || old_true_state.t < vehicle->booster.total_burn_time){
                 update_imu(&imu, time_step, rng);
             }
         }
 
-        if (run_params->gnss_nav == 1){
+        if ((run_params->gnss_nav == 1) && (old_altitude > 100e3)){
             // GNSS Measurement
             gnss_measurement(&gnss, &new_true_state, &new_est_state, rng);
         }
 
-        if  (new_true_state.t == (vehicle->booster.total_burn_time) && run_params->run_type == 0){
-            // Perform a perfect maneuver if before burnout
-
-            new_true_state = perfect_maneuv(&new_true_state, &new_est_state, &new_des_state);
-            imu.gyro_error_lat = 0;
-            imu.gyro_error_long = 0;
-
-        }
-    
         // Perform a Runge-Kutta step
         rk4step(&new_true_state, time_step);
         rk4step(&new_est_state, time_step);
         rk4step(&new_des_state, time_step);
+
+        // Apply the burnout maneuver when this step crosses the burnout boundary
+        if (run_params->run_type == 0 && old_true_state.t < vehicle->booster.total_burn_time && new_true_state.t >= vehicle->booster.total_burn_time){
+            new_true_state = perfect_maneuv(&new_true_state, &new_est_state, &new_des_state);
+            post_boost_phase = 1;
+        }
         // Update the mass of the vehicle
         update_mass(vehicle, new_true_state.t);
 
@@ -400,9 +424,13 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             state des_final_state = impact_linterp(&old_des_state, &new_des_state);
 
             // Add coriolis effect based on the latitude and the impact time error
-            double lat = gsl_ran_flat(rng, -M_PI/2, M_PI/2);
-            double lon = gsl_ran_flat(rng, -M_PI, M_PI);
-            double time_error = true_final_state.t - est_final_state.t;
+            double lat = acos(gsl_ran_flat(rng, 0.0, 2.0) - 1.0) - M_PI_2;
+            double lon = 2 * M_PI * gsl_ran_flat(rng, 0.0, 1.0);
+
+            // If true impact time is later than estimated impact time, the Earth 
+            // has rotated towards the east, so the true impact will be further
+            // west
+            double time_error = est_final_state.t - true_final_state.t;
             double rot_speed = 464 * cos(lat);
             // printf("Impact time error: %f\n", time_error);
             double coriolis = rot_speed * time_error;
@@ -410,9 +438,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
             // based on the coriolis effect, update the final state x and y
             // This might seem like a bug, but I promise it's just clever
             // This replicates flying in a random direction, not just along the equator
-            true_final_state.x = true_final_state.x - coriolis * sin(lon)*cos(lat);
-            true_final_state.y = true_final_state.y + coriolis * cos(lon)*cos(lat);
-            true_final_state.z = true_final_state.z + coriolis * sin(lat);
+            true_final_state.x = true_final_state.x - coriolis * sin(lon);
+            true_final_state.y = true_final_state.y + coriolis * cos(lon);
             if (run_params->rv_maneuv == 2){
                 // If perfect rv maneuver, update the final position
                 true_final_state.x = true_final_state.x - est_final_state.x;
