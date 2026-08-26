@@ -1,6 +1,6 @@
 [project]
 name = "pytrajlib"
-version = "1.0.0-alpha.39"
+version = "1.0.0-alpha.40"
 description = "Simulate the flight of a ballistic or maneuverable missile"
 readme = "README.md"
 authors = [
@@ -17,6 +17,7 @@ dependencies = [
     "cffi>=2.0.0",
     "optuna>=4.9.0",
     "scienceplots>=2.2.1",
+    "sympy>=1.14.0",
 ]
 
 [dependency-groups]
