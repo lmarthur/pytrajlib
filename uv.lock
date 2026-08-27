@@ -1173,7 +1173,7 @@ wheels = [
 
 [[package]]
 name = "pytrajlib"
-version = "1.0.0a40"
+version = "1.0.0a41"
 source = { editable = "." }
 dependencies = [
     { name = "cffi" },

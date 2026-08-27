@@ -118,8 +118,8 @@ def optimize_reentry(config_dict, num_processes):
         # Suggest parameters to tune.
         max_deflection_angle = trial.suggest_float("max_deflection_angle", 0.0, 10.0)
         gearing_ratio = trial.suggest_float("gearing_ratio", 1, 20)
-        nav_gain_0 = trial.suggest_float("nav_gain_0", 0.0, 100.0)
-        nav_gain_1 = trial.suggest_float("nav_gain_1", 0.0, 100.0)
+        nav_gain_0 = trial.suggest_float("nav_gain_0", 0.0, 20.0)
+        nav_gain_1 = trial.suggest_float("nav_gain_1", 0.0, 20.0)
         # Include control gains in optimization
         K_q = trial.suggest_float("K_q", 0.0, 50.0)
         K_pp = trial.suggest_float("K_pp", 0.0, 50.0)
