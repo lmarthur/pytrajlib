@@ -66,3 +66,76 @@ TEST(thrust, get_lambert_velocity_vector_altitude) {
   REQUIRE_LT(fabs(v_lambert.y - expected_vy), 1.0);
   REQUIRE_LT(fabs(v_lambert.z), 1e-9);
 }
+
+TEST(thrust, time_to_fly_positive_across_bracket) {
+  /* Flight time must stay positive over the whole feasible flight-path-angle
+     bracket that get_min/get_max_flight_angle declare. If it goes negative the
+     bracket and the function disagree about the valid domain, and
+     get_flight_angle's bisection will drive its bounds into the bad region. */
+  double r0 = EARTH_RADIUS_M + 200e3;
+  double rf = EARTH_RADIUS_M;
+  double phi = 85.4 * M_PI / 180.0; /* ~10,000 km of downrange */
+  runparams rp;
+  rp.grav_error = 0;
+  grav grav_model = init_grav(&rp, 1);
+
+  double gmin = get_min_flight_angle(r0, rf, phi);
+  double gmax = get_max_flight_angle(r0, rf, phi);
+
+  int negative_samples = 0;
+  for (int i = 1; i < 200; i++) {
+    double gamma = gmin + (gmax - gmin) * i / 200.0;
+    double v = get_lambert_velocity(r0, rf, phi, gamma, &grav_model);
+    double t = time_to_fly(r0, phi, gamma, v, &grav_model);
+    if (t < 0.0) {
+      negative_samples++;
+    }
+  }
+  REQUIRE_EQ(negative_samples, 0);
+}
+
+TEST(thrust, time_to_fly_monotonic_across_bracket) {
+  /* Flight time must increase monotonically with flight-path angle: a steeper
+     lob takes longer. get_flight_angle's bracket update assumes exactly this,
+     so any reversal breaks the search. */
+  double r0 = EARTH_RADIUS_M + 200e3;
+  double rf = EARTH_RADIUS_M;
+  double phi = 85.4 * M_PI / 180.0;
+  runparams rp;
+  rp.grav_error = 0;
+  grav grav_model = init_grav(&rp, 1);
+
+  double gmin = get_min_flight_angle(r0, rf, phi);
+  double gmax = get_max_flight_angle(r0, rf, phi);
+
+  int reversals = 0;
+  double prev = -1.0;
+  for (int i = 1; i < 200; i++) {
+    double gamma = gmin + (gmax - gmin) * i / 200.0;
+    double v = get_lambert_velocity(r0, rf, phi, gamma, &grav_model);
+    double t = time_to_fly(r0, phi, gamma, v, &grav_model);
+    if (prev > 0.0 && t < prev) {
+      reversals++;
+    }
+    prev = t;
+  }
+  REQUIRE_EQ(reversals, 0);
+}
+
+TEST(thrust, get_flight_angle_converges_for_long_flight_times) {
+  /* A desired flight time inside the achievable range must produce a finite
+     flight-path angle. Returning NAN here poisons the Lambert velocity vector,
+     which then propagates into the integrator and aborts the run. */
+  double r0 = EARTH_RADIUS_M + 200e3;
+  double rf = EARTH_RADIUS_M;
+  double phi = 85.4 * M_PI / 180.0;
+  runparams rp;
+  rp.grav_error = 0;
+  grav grav_model = init_grav(&rp, 1);
+
+  double t_des[] = {1500.0, 2500.0, 3500.0, 4500.0, 6000.0};
+  for (int i = 0; i < 5; i++) {
+    double gamma = get_flight_angle(r0, rf, phi, t_des[i], &grav_model);
+    REQUIRE(!isnan(gamma));
+  }
+}

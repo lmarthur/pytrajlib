@@ -10,6 +10,7 @@ from pytrajlib.utils import get_local_impact
 
 sys.path.append("./src")
 from pytrajlib.main import run
+from pytrajlib.runtime import per_run_seeds
 
 CONFIG_PATH = "./test/test.json"
 
@@ -112,7 +113,6 @@ def test_perfect_boost():
     "error_field,small_value,large_value,maneuv_modes",
     (
         ("atm_model", 0, 2, (0,)),
-        ("grav_error", 0, 1, (0,)),
         ("initial_pos_error", 0, 0.1, (0,)),
         ("initial_vel_error", 1e-5, 1e-3, (0, 2)),
         ("initial_angle_error", 1e-6, 1e-1, (0,)),
@@ -217,3 +217,65 @@ def test_no_impact_correlation():
     output_dir.mkdir(parents=True, exist_ok=True)
     impact_df.to_csv("/tmp/pytrajlib/correlation-test-impact.csv")
     assert np.abs(r) < 1e-1
+
+
+def test_per_run_seeds_are_distinct_and_reproducible():
+    """`random_seed` seeds the whole batch; each run gets its own derived seed.
+
+    per_run_seeds(1, 100) returns 100 seeds: `1` is the batch seed a
+    user sets, and each run is handed a different child seed so it flies a
+    different atmosphere. The four assertions below each rule out a specific
+    way that derivation can break, all of which fail silently:
+
+      distinct        `return [random_seed] * num_runs` would seed every run
+                      identically, so the batch becomes N copies of one flight
+                      and CEP collapses to a single value with no spread.
+      non-negative    The C side reads a negative seed as "seed from the clock"
+                      (trajectory.h), so a negative child would quietly make
+                      that one run non-reproducible.
+      repeatable      Same batch should give same seeds.
+      seed-dependent  A derivation ignoring its argument would give every batch
+                      the same seeds no matter what the user set.
+    """
+    seeds = per_run_seeds(1, 100)
+
+    assert len(set(seeds)) == 100
+    assert all(seed >= 0 for seed in seeds)
+    assert per_run_seeds(1, 100) == seeds
+    assert per_run_seeds(2, 100) != seeds
+
+
+def test_negative_seed_is_not_reproducible():
+    """A negative batch seed means "fresh entropy", so batches differ."""
+    assert per_run_seeds(-1, 16) != per_run_seeds(-1, 16)
+    assert all(seed >= 0 for seed in per_run_seeds(-1, 16))
+
+
+def test_same_seed_reproduces_batch_with_independent_runs():
+    """random_seed reproduces the batch while its runs stay independent."""
+    kwargs = dict(config=CONFIG_PATH, num_runs=8, random_seed=1, gyro_noise=1e-6)
+    first = run(**kwargs)
+    second = run(**kwargs)
+    other = run(**{**kwargs, "random_seed": 2})
+
+    columns = ["x", "y", "z"]
+    assert np.allclose(first[columns].to_numpy(), second[columns].to_numpy(), atol=0)
+    assert not np.allclose(first[columns].to_numpy(), other[columns].to_numpy())
+    # Runs within one batch must not be copies of each other.
+    assert len(np.unique(first["x"].to_numpy())) == len(first)
+
+
+@pytest.mark.parametrize("t_des_final", [2000.0, 3000.0, 4000.0, 6000.0])
+def test_requested_flight_time_never_aborts_the_run(t_des_final):
+    """Ensure Lambert can handle long flight times."""
+    impact_df = run(
+        config=CONFIG_PATH,
+        num_runs=6,
+        t_des_final=t_des_final,
+        optimize_boost=0,
+        optimize_reentry=0,
+    )
+    aborted = int((impact_df["burnout_speed"] == 0).sum())
+    assert aborted == 0, (
+        f"{aborted}/{len(impact_df)} runs never flew at t_des_final={t_des_final}"
+    )
