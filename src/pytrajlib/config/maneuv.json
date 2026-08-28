@@ -32,9 +32,9 @@
     "actuator_resolution": 0.01
   },
   "optimized": {
-    "theta_long": 0.6715065960788051,
+    "theta_long": 0.7181259363028905,
     "theta_lat": 0.0,
-    "t_des_final": 2986.6467267274857,
+    "t_des_final": 2749.2710977806637,
     "lambert_v_offset": 0.0,
     "gearing_ratio": 18.902565748694002,
     "max_deflection_angle": 5.005158800904358,
@@ -95,7 +95,7 @@
       "half_angle": 0.0916,
       "flap_area": 0.04,
       "x_flap": -2.65,
-      "x_com": -1.76206340016836,
+      "x_com": -1.79931,
       "Iyy": 204.103351123687,
       "aerodynamics": {
         "c_d_0": 0.007073135022624424,

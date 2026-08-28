@@ -23,25 +23,38 @@ LAMBERT_V_OFFSET_STEP = 0.01
 LAMBERT_V_OFFSET_XATOL = 1e-4
 LAMBERT_V_OFFSET_FATOL = 1e-2
 
+# Moves the optimizer onto its own seed stream so that the optimizer and the runs
+# are not using the same random seeds
+OPTIMIZER_SEED_OFFSET = 1_000_000
+
+# Zeroed for both boost and reentry
 _DISABLED_ERROR_KEYS = (
     "initial_pos_error",
     "initial_vel_error",
     "initial_angle_error",
-    "acc_scale_stability",
-    "gyro_bias_stability",
-    "gyro_noise",
-    "gnss_noise",
     "grav_error",
     "burn_time_error",
 )
 
+# Zeroed for the boost stage only. The reentry optimizer should be exposed to errors
+# so that it actually attempts to maneuver --- without these errors the reentry
+# maneuvering would not help much because the ballistic maneuver is already optimized.
+_BOOST_ONLY_DISABLED_ERROR_KEYS = (
+    "acc_scale_stability",
+    "gyro_bias_stability",
+    "gyro_noise",
+    "gnss_noise",
+)
 
-def _prepare_optimizer_config(config_dict, extra_updates=None):
+
+def _prepare_optimizer_config(config_dict, extra_updates=None, disabled_keys=()):
     params = deepcopy(config_dict)
     params["traj_output"] = 0
     params["num_runs"] = params["num_runs_optimizer"]
-    for key in _DISABLED_ERROR_KEYS:
+    for key in (*_DISABLED_ERROR_KEYS, *disabled_keys):
         params[key] = 0
+    if int(params["random_seed"]) >= 0:
+        params["random_seed"] = int(params["random_seed"]) + OPTIMIZER_SEED_OFFSET
     if extra_updates:
         params.update(extra_updates)
     return params
@@ -133,7 +146,9 @@ def optimize_boost(config_dict, num_processes):
         "num_processes": num_processes,
     }
 
-    objective_config = _prepare_optimizer_config(config_dict, extra_updates)
+    objective_config = _prepare_optimizer_config(
+        config_dict, extra_updates, disabled_keys=_BOOST_ONLY_DISABLED_ERROR_KEYS
+    )
 
     def objective(xs):
         tf, theta = np.asarray(xs) * LOFT_SCALES
@@ -174,8 +189,6 @@ def optimize_reentry(config_dict, num_processes):
     Tune nav_gain and control gains for realistic RV maneuverability using Optuna.
     Returns the best parameter dictionary found by Optuna.
     """
-    # Optuna should run with a prepared objective config that disables
-    # non-deterministic error sources and limits output.
     extra_updates = {
         "gnss_nav": 1,
         "perfect_boost": 0,
