@@ -8,6 +8,21 @@ from pytrajlib import runtime
 from pytrajlib.runtime import _keep_alive
 from pytrajlib.utils import get_miss_distance
 
+# The loft stage's two decision variables are rescaled to order 1 before being
+# handed to Nelder-Mead: t_des_final is ~2400 s while theta_long is ~1 rad, and
+# xatol is a single absolute number applied as a max over all coordinates, so
+# without rescaling no one value suits both. Nelder-Mead builds its simplex by
+# perturbing each coordinate 5% and all its moves are affine, so rescaling
+# visits exactly the same physical points -- it only makes xatol interpretable.
+LOFT_SCALES = np.array([1000.0, 1.0])  # (t_des_final [s], theta_long [rad])
+LOFT_XATOL = 1e-3
+LOFT_FATOL = 1e-1
+LAMBERT_V_OFFSET_BOUNDS = (-0.1, 0.1)
+LAMBERT_V_OFFSET_X0 = 0.0
+LAMBERT_V_OFFSET_STEP = 0.01
+LAMBERT_V_OFFSET_XATOL = 1e-4
+LAMBERT_V_OFFSET_FATOL = 1e-2
+
 _DISABLED_ERROR_KEYS = (
     "initial_pos_error",
     "initial_vel_error",
@@ -50,9 +65,59 @@ def _evaluate_candidate(config_dict, parameter_names, parameter_values):
     return np.mean(dist)
 
 
+def _optimize_lambert_offset(objective_config, loft_params):
+    """Second boost stage: trim the Lambert drag-loss budget.
+
+    Runs with the loft solution from the first stage held fixed, so this is a
+    one-dimensional Nelder-Mead search. `lambert_v_offset` is
+    added straight to the Lambert velocity magnitude, so it shifts the impact
+    downrange without reshaping the trajectory.
+
+    Args:
+        objective_config: optimizer config from `_prepare_optimizer_config`.
+        loft_params: `t_des_final` and `theta_long` found by the first stage.
+
+    Returns:
+        float: the offset in m/s.
+    """
+    config = {**objective_config, **loft_params}
+
+    def objective(xs):
+        (lambert_v_offset,) = xs
+        miss_dist = _evaluate_candidate(
+            config,
+            ("lambert_v_offset",),
+            (lambert_v_offset,),
+        )
+        print(f"{lambert_v_offset=:.6f}, {miss_dist=:.6f}")
+        return miss_dist
+
+    result = minimize(
+        fun=objective,
+        x0=[LAMBERT_V_OFFSET_X0],
+        method="Nelder-Mead",
+        bounds=[LAMBERT_V_OFFSET_BOUNDS],
+        options=dict(
+            initial_simplex=[
+                [LAMBERT_V_OFFSET_X0],
+                [LAMBERT_V_OFFSET_X0 + LAMBERT_V_OFFSET_STEP],
+            ],
+            xatol=LAMBERT_V_OFFSET_XATOL,
+            fatol=LAMBERT_V_OFFSET_FATOL,
+            maxfev=objective_config["num_trials_optimizer"],
+        ),
+    )
+    print(result)
+    return float(result.x[0])
+
+
 def optimize_boost(config_dict, num_processes):
     """
     Lambert Guidance assumes there is no drag upon reentry to the atmosphere. To overcome this limitation, we tune the initial thrust angle, the desired flight time, and the Lambert velocity offset (drag loss budget) for an optimally lofted flight, as described in the boost optimization section.
+
+    The two are tuned in sequence rather than jointly: the loft search fixes how
+    the trajectory is shaped, then the Lambert offset trims the leftover energy
+    shortfall on that shape.
     """
     tf_des = 2000.0
     theta_long = np.pi / 4
@@ -71,7 +136,7 @@ def optimize_boost(config_dict, num_processes):
     objective_config = _prepare_optimizer_config(config_dict, extra_updates)
 
     def objective(xs):
-        tf, theta = xs
+        tf, theta = np.asarray(xs) * LOFT_SCALES
         miss_dist = _evaluate_candidate(
             objective_config,
             ("t_des_final", "theta_long"),
@@ -80,17 +145,28 @@ def optimize_boost(config_dict, num_processes):
         print(f"{tf=:.6f}, {theta=:.6f}, {miss_dist=:.6f}")
         return miss_dist
 
+    print("Boost stage 1/2: loft (t_des_final, theta_long)")
     result = minimize(
         fun=objective,
-        x0=[tf_des, theta_long],
+        x0=np.array([tf_des, theta_long]) / LOFT_SCALES,
         method="Nelder-Mead",
-        options=dict(maxfev=objective_config["num_trials_optimizer"]),
+        options=dict(
+            xatol=LOFT_XATOL,
+            fatol=LOFT_FATOL,
+            maxfev=objective_config["num_trials_optimizer"],
+        ),
     )
     print(result)
-    return {
-        "t_des_final": result.x[0],
-        "theta_long": result.x[1],
+    tf_opt, theta_opt = result.x * LOFT_SCALES
+    loft_params = {
+        "t_des_final": tf_opt,
+        "theta_long": theta_opt,
     }
+
+    print("Boost stage 2/2: Lambert drag-loss budget (lambert_v_offset)")
+    lambert_v_offset = _optimize_lambert_offset(objective_config, loft_params)
+
+    return {**loft_params, "lambert_v_offset": lambert_v_offset}
 
 
 def optimize_reentry(config_dict, num_processes):

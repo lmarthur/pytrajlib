@@ -243,18 +243,51 @@ def impact_data_to_df(impact_data, config):
     return impact_df
 
 
-def _mc_run_wrapper(config_dict):
+def _mc_run_wrapper(indexed_config):
     """Wrapper function for multiprocessing.
 
     This function is pickled and executed in worker processes.
     It imports the CFFI library, runs mc_run, and converts the result to a
     picklable format to avoid CFFI serialization issues.
+
+    Args:
+        indexed_config: ``(run_index, config_dict)``. The index is carried
+            through untouched so the caller can restore submission order after
+            collecting results out of order.
+
+    Returns:
+        tuple[int, pd.DataFrame]: the same index, and that run's impact row.
     """
+    run_index, config_dict = indexed_config
     rp = create_runparams_struct(config_dict)
     vehicle = create_vehicle_struct(config_dict)
     impact_data = traj_lib.mc_run(rp[0], vehicle[0])
     df = impact_data_to_df(impact_data, config_dict)
-    return df
+    return run_index, df
+
+
+def per_run_seeds(random_seed, num_runs):
+    """Derive one independent RNG seed per Monte Carlo run from a single root seed.
+
+    ``random_seed`` is the seed for the *batch*, not for an individual run. Each
+    run needs its own seed, or every run would draw the same atmosphere and the
+    batch would collapse to ``num_runs`` copies of one flight. ``SeedSequence``
+    does the mixing, so the children are well separated and collision-free.
+
+    Args:
+        random_seed: batch seed. Negative means "not reproducible": fresh OS
+            entropy is drawn, so each call gives a different batch. Any value
+            >= 0 reproduces the identical batch every time, in any process.
+        num_runs: number of per-run seeds to derive.
+
+    Returns:
+        list[int]: ``num_runs`` distinct non-negative seeds. They are uint32, so
+        they fit the C ``long random_seed`` field and stay clear of the negative
+        sentinel that means auto-seed.
+    """
+    entropy = None if int(random_seed) < 0 else int(random_seed)
+    state = np.random.SeedSequence(entropy).generate_state(num_runs, dtype=np.uint32)
+    return [int(seed) for seed in state]
 
 
 def run(config_dict, num_processes, show_progress_bar=True):
@@ -273,30 +306,34 @@ def run(config_dict, num_processes, show_progress_bar=True):
         pd.DataFrame: concatenated impact results for all runs.
     """
     # Prepare config for multiprocessing
-    random_seed = config_dict["random_seed"]
     N_processes = min(num_processes, config_dict["num_runs"])
     traj_output = config_dict["traj_output"]
     config_dict["traj_output"] = 0
+    # Give every run its own seed, derived from the batch seed so that a given
+    # random_seed >= 0 reproduces the whole batch exactly while the runs within
+    # it stay independent.
+    seeds = per_run_seeds(config_dict["random_seed"], config_dict["num_runs"])
     configs = []
-    for i in range(config_dict["num_runs"]):
+    for seed in seeds:
         configs.append(deepcopy(config_dict))
-        # Give each processes a different random seed
-        if random_seed >= 0:
-            configs[-1]["random_seed"] = random_seed + np.random.randint(0, 10000)
+        configs[-1]["random_seed"] = seed
     configs[0]["traj_output"] = traj_output
 
     # Run simulation across multiple processes unless the number of processes is 1.
     # Nested multiprocessing is not permitted, so if a higher level runner wants
-    # to do their own multiprocessing, they can set the number of proccesses to 1.
+    # to do their own multiprocessing, they can set the number of processes to 1.
     if N_processes == 1:
         res = []
         for i in tqdm(range(config_dict["num_runs"]), disable=not show_progress_bar):
-            res.append(_mc_run_wrapper(configs[i]))
+            res.append(_mc_run_wrapper((i, configs[i])))
     else:
         with Pool(processes=N_processes) as p:
+            # imap_unordered keeps the progress bar advancing as runs finish
+            # rather than stalling on a slow early one. Each result carries its
+            # submission index so the order is restored below.
             res = list(
                 tqdm(
-                    p.imap_unordered(_mc_run_wrapper, configs),
+                    p.imap_unordered(_mc_run_wrapper, enumerate(configs)),
                     total=config_dict["num_runs"],
                     desc="Progress",
                     disable=not show_progress_bar,
@@ -306,7 +343,12 @@ def run(config_dict, num_processes, show_progress_bar=True):
     # Restore original params
     config_dict["traj_output"] = traj_output
 
+    # Restore submission order, so a given random_seed returns the same rows in
+    # the same order and row 0 is the run whose trajectory was written to
+    # trajectory_path.
+    res.sort(key=lambda indexed_df: indexed_df[0])
+
     # Concatenate results and reset index to ascending
-    impact_df = pd.concat(res)
+    impact_df = pd.concat([df for _, df in res])
     impact_df = impact_df.reset_index().drop(columns="index")
     return impact_df

@@ -167,8 +167,8 @@ double time_to_fly(double r0, double phi, double gamma, double lambert_velocity,
         ((2 - lambda) * ((1 - cos(phi)) / (lambda * cos(gamma) * cos(gamma)) +
                          cos(gamma + phi) / cos(gamma)))) +
        (2 * cos(gamma) / (lambda * pow(2 / lambda - 1, 1.5)) *
-        atan(sqrt(2 / lambda - 1) /
-             (cos(gamma) * cos(phi / 2) / sin(phi / 2) - sin(gamma)))));
+        atan2(sqrt(2 / lambda - 1),
+              cos(gamma) * cos(phi / 2) / sin(phi / 2) - sin(gamma))));
   return t;
 }
 
