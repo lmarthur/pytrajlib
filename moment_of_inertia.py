@@ -61,8 +61,8 @@ total_mass = m_cone + m_cyl
 
 # center of mass
 x_cm_cone = 3 / 4 * l_cone
-x_cm_cyl = 1.5  # place the cylinder 0.5m from the start of the cone. It ends at 2.5m
-x_cm = (x_cm_cyl * m_cyl + x_cm_cone * m_cone) / total_mass
+x_cm = 1.79931  # From MC-NEW optimization
+x_cm_cyl = (x_cm * total_mass - x_cm_cone * m_cone) / m_cyl
 f_cm = x_cm / l_cone
 
 # moment of inertia (each term uses its own effective mass, so they add directly)
@@ -72,10 +72,12 @@ I_cone_cm = I_cone + m_cone * (x_cm - x_cm_cone) ** 2
 I_cyl_cm = I_cyl + m_cyl * (x_cm - x_cm_cyl) ** 2
 
 print(f"{pershing_radar_density=}")
-print(f"{density_tungsten=}, {density_cyl=}")
+print(
+    f"{density_tungsten=}, {density_cyl=} (additional beyond uniform density of cone) "
+)
 print(f"{V_cone=}")
-print("cm fraction of length", f_cm, "cm location", x_cm)
-print(f"{m_cone=}, {m_cyl=}")
+print(f"{m_cone=}, {m_cyl=} (additional beyond cone density of that volume)")
 print(f"mass total = {m_cone + m_cyl}")
 print(f"{r_cyl=}, {x_cm_cyl=}")
+print("cm fraction of length", f_cm, "cm location (from MC-NEW optimization)", x_cm)
 print(f"I_total = {I_cone_cm + I_cyl_cm}")
