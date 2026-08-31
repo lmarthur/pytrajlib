@@ -10,8 +10,9 @@
 
 /**
 The quaternion update step is implemented as a function of the incremental
-angular change across a single step size. The incremental angular change is
-calculated with the SRA3 algorithm. The quaternion rotation increment with
+angular change. The incremental angular change is
+calculated with the SRA3 algorithm and takes a rotating angular rate into
+account. The quaternion rotation increment with
 $\theta = |\boldsymbol  \theta_B|$ is
 \begin{equation}
   \Delta \mathbf q = \begin{bmatrix}
@@ -52,12 +53,28 @@ static inline quaternion integrate_quaternion_step(state current_state) {
   return qsmultiply(q_next, 1.0 / q_norm);
 }
 
+/**
+ * Following Bortz (1971) and Titterton & Weston (2004) we compute the time
+ * derivative of the incremental orientation change and take into account the
+ * changing orientation of the vehicle.
+ */
+static inline cartvec rotation_vector_rate(cartvec phi, cartvec omega) {
+  cartvec phi_cross_omega = cross(phi, omega);
+  cartvec phi_cross_phi_cross_omega = cross(phi, phi_cross_omega);
+  return add(add(omega, smultiply(phi_cross_omega, 0.5)),
+             sdivide(phi_cross_phi_cross_omega, 12.0));
+}
+
 state sra3_H(state drift_evals[3], state diffusion_evals[3], state Y, int i,
              cartvec I0, double time_step) {
   const double A0[3][3] = {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.25, 0.25, 0.0}};
   const double B0[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {1.0, 0.5, 0.0}};
 
   state H = Y;
+
+  // Clear the previous step's angle increment
+  H.orientation_angle_change = zeros();
+
   for (int j = 0; j < i; j++) {
     H = add_state(H, smultiply_state(drift_evals[j], A0[i][j] * time_step));
 
@@ -69,6 +86,9 @@ state sra3_H(state drift_evals[3], state diffusion_evals[3], state Y, int i,
 
     H = add_state(H, diffusion_update);
   }
+
+  // Rotate the stage attitude by the angle increment accumulated above
+  H.q_EB = integrate_quaternion_step(H);
 
   return H;
 }
@@ -199,7 +219,8 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
   const double c0[3] = {0.0, 1.0, 0.5};
   const double alpha[3] = {1.0 / 6.0, 1.0 / 6.0, 2.0 / 3.0};
   const double beta1[3] = {1.0, 0.0, 0.0};
-  const double beta2[3] = {1.0, -1.0, 0.0};
+  const double beta2[3] = {-1.0, 1.0,
+                           0.0}; // Modified to match StochasticDiffEq.jl
 
   state true_state_initial = *true_state;
   state est_state_initial = *est_state;
@@ -239,6 +260,13 @@ int sra3_step(runparams *run_params, imu *imu, vehicle *vehicle,
     if (!success) {
       return 0;
     }
+
+    // The current step's rotation rate depends on the previous accumulated
+    // orientation angle change
+    true_drift.orientation_angle_change = rotation_vector_rate(
+        H_true.orientation_angle_change, true_drift.orientation_angle_change);
+    est_drift.orientation_angle_change = rotation_vector_rate(
+        H_est.orientation_angle_change, est_drift.orientation_angle_change);
 
     true_state_drift_eval[i] = true_drift;
     est_state_drift_eval[i] = est_drift;

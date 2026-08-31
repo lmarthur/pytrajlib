@@ -3,8 +3,9 @@
 ## `integrate_quaternion_step`
 
 The quaternion update step is implemented as a function of the incremental
-angular change across a single step size. The incremental angular change is
-calculated with the SRA3 algorithm. The quaternion rotation increment with
+angular change. The incremental angular change is
+calculated with the SRA3 algorithm and takes a rotating angular rate into
+account. The quaternion rotation increment with
 $\theta = |\boldsymbol  \theta_B|$ is
 $$
 \begin{equation}
@@ -33,6 +34,25 @@ where the $\otimes$ operator is the Hamilton product.
 | Type | Description |
 | --- | --- |
 | `static inline quaternion` |  |
+
+## `rotation_vector_rate`
+
+Following Bortz (1971) and Titterton & Weston (2004) we compute the time
+derivative of the incremental orientation change and take into account the
+changing orientation of the vehicle.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `phi` | `cartvec` |  |
+| `omega` | `cartvec` |  |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `static inline cartvec` |  |
 
 ## `euler_maruyama_step`
 

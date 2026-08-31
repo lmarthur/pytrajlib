@@ -89,8 +89,8 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
   true_state_drift->orientation_angle_change = true_state->angular_vel_B;
   true_state_drift->dot_delta_1 = ddot_deflection[0];
   true_state_drift->dot_delta_2 = ddot_deflection[1];
-  true_state_drift->delta_1 = true_state_drift->dot_delta_1;
-  true_state_drift->delta_2 = true_state_drift->dot_delta_2;
+  true_state_drift->delta_1 = true_state->dot_delta_1;
+  true_state_drift->delta_2 = true_state->dot_delta_2;
 
   // Set estimated state derivatives
   est_state_drift->position = est_state->velocity;
@@ -99,8 +99,8 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
   est_state_drift->orientation_angle_change = est_state->angular_vel_B;
   est_state_drift->dot_delta_1 = ddot_deflection[0];
   est_state_drift->dot_delta_2 = ddot_deflection[1];
-  est_state_drift->delta_1 = est_state_drift->dot_delta_1;
-  est_state_drift->delta_2 = est_state_drift->dot_delta_2;
+  est_state_drift->delta_1 = est_state->dot_delta_1;
+  est_state_drift->delta_2 = est_state->dot_delta_2;
 
   return 1;
 }
