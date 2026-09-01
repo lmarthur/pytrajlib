@@ -19,7 +19,7 @@ plt.style.use(["no-latex"])
 DEFAULT_SCALE_FACTORS = np.logspace(-1, 1, 7)
 TIME_STEP_SCALE_FACTORS = np.logspace(-1, 3, 9)
 GNSS_FREQ_SCALE_FACTORS = np.logspace(-3, 1, 5)
-RANGE_SCALE_FACTORS = np.linspace(0.5, 1.3, 9)
+RANGE_SCALE_FACTORS = np.linspace(5 / 13, 1.0, 9)
 GUIDANCE_COMBINED_PLOT_PARAMETERS = (
     "initial_pos_error",
     "initial_vel_error",

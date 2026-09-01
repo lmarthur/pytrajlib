@@ -9,7 +9,7 @@
     "time_step_midcourse": 1.0,
     "time_step_reentry": 0.0001,
     "traj_output": 1,
-    "range": 10000000,
+    "range": 13000000,
     "x_aim": null,
     "y_aim": null,
     "z_aim": null,
@@ -32,18 +32,18 @@
     "actuator_resolution": 0.01
   },
   "optimized": {
-    "theta_long": 0.7181259363028905,
+    "theta_long": 0.9320122849463917,
     "theta_lat": 0.0,
-    "t_des_final": 2749.2710977806637,
-    "lambert_v_offset": 0.0,
-    "gearing_ratio": 18.902565748694002,
-    "max_deflection_angle": 5.005158800904358,
-    "nav_gain_0": 17.16392199274926,
-    "nav_gain_1": 1.8450079089106168,
-    "K_q": 9.93839564932045,
-    "K_pp": 12.011089458530302,
-    "K_delta_p": 0.2397109503235244,
-    "K_delta_d": 12.81326407331284
+    "t_des_final": 2758.643227815626,
+    "lambert_v_offset": 0.009174804687500003,
+    "gearing_ratio": 16.122525949561293,
+    "max_deflection_angle": 0.07401323517784478,
+    "nav_gain_0": 15.303355005785473,
+    "nav_gain_1": 16.83468605676508,
+    "K_q": 37.453436783686556,
+    "K_pp": 37.84434373487999,
+    "K_delta_p": 24.51340943798552,
+    "K_delta_d": 38.3042690477909
   },
   "error": {
     "initial_x_error": 0.0,
