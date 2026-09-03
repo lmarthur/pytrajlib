@@ -305,12 +305,19 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
     int post_boost_phase = 0; // 1 if after boost phase
     // Begin the integration loop
     for (int i = 0; i < max_steps; i++){
-        // Get the atmospheric conditions
+        // Get the atmospheric conditions. Each trajectory must be evaluated at
+        // its own altitude: sharing the true vehicle's altitude makes the
+        // estimated and desired trajectories depend on the true one, which
+        // turns the desired trajectory into a stochastic reference and lets
+        // atmospheric dispersion leak through the burnout maneuver.
         double old_altitude = get_altitude(old_true_state.x, old_true_state.y, old_true_state.z);
+        double old_est_altitude = get_altitude(old_est_state.x, old_est_state.y, old_est_state.z);
+        double old_des_altitude = get_altitude(old_des_state.x, old_des_state.y, old_des_state.z);
         
         atm_cond true_atm_cond = get_atm_cond(old_altitude, &exp_atm_model, run_params, &atm_profile);
         // printf("true_atm_cond: %f, %f, %f\n", true_atm_cond.density, true_atm_cond.meridional_wind, true_atm_cond.zonal_wind);
-        atm_cond est_atm_cond = get_exp_atm_cond(old_altitude, &exp_atm_model);
+        atm_cond est_atm_cond = get_exp_atm_cond(old_est_altitude, &exp_atm_model);
+        atm_cond des_atm_cond = get_exp_atm_cond(old_des_altitude, &exp_atm_model);
 
         // To avoid a poor estimate of the Coriolis error for ballistic reentry
         // vehicles, stop accumulating guidance errors after boost phase
@@ -357,7 +364,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle, gsl_rng
         // Update the drag acceleration components
         update_drag(run_params, vehicle, &true_atm_cond, &new_true_state, &step_timer);
         update_drag(run_params, vehicle, &est_atm_cond, &new_est_state, &step_timer);
-        update_drag(run_params, vehicle, &est_atm_cond, &new_des_state, &step_timer);
+        update_drag(run_params, vehicle, &des_atm_cond, &new_des_state, &step_timer);
 
         // If maneuverable RV, use proportional navigation during reentry
         if (run_params->rv_maneuv == 1 && old_true_state.t >= vehicle->booster.total_burn_time && get_altitude(new_true_state.x, new_true_state.y, new_true_state.z) < 1e6){
