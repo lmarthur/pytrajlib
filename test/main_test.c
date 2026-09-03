@@ -1,6 +1,7 @@
 // Include all test files here
 
 #include "atmosphere_test.h"
+#include "entry_angle_test.h"
 #include "grav_test.h"
 #include "guidance_test.h"
 #include "integrator_test.h"

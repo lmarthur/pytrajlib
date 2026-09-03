@@ -78,7 +78,7 @@ The default configuration is
     "integrator": 1, # Integrator selection; 0 is modified Euler-Maruyama, 1 is SRA3.
     "random_seed": -1, # Random seed used to initialize stochastic simulation inputs.
     "atm_path": null, # Path to the atmospheric profiles file used by the simulation.
-    "optimize_boost": 0, # Optimize t_des_final and theta_long when set to 1.
+    "optimize_boost": 0, # Optimize t_des_final, theta_long, and lambert_v_offset when set to 1.
     "optimize_reentry": 0 # Optimize reentry maneuver parameters (max_deflection_angle, gearing_ratio, nav_gain_0, nav_gain_1, K_q, K_pp, K_delta_p, K_delta_d) when set to 1.
   },
   # flight parameters

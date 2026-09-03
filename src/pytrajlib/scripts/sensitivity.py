@@ -181,7 +181,7 @@ def make_case_config(
                 "gyro_noise": 0.0,
                 "gnss_noise": 0.0,
                 "geoid_height_error": 0.0,
-                "grav_error": 0,
+                "grav_error": 0 if parameter_name != "geoid_height_error" else 1,
                 "roll_gyro_error_factor": 0.0,
                 "burn_time_error": 0.0,
             }
@@ -398,12 +398,14 @@ def _plot_combined_sensitivity_category(
     parameters: tuple[str, ...],
     stem: str,
     title: str,
-) -> tuple[Path, Path]:
+) -> tuple[Path, Path] | None:
     combined_parameters = [
         spec["name"]
         for spec in SENSITIVITY_SPECS
         if spec["name"] in results["parameter"].unique() and spec["name"] in parameters
     ]
+    if not combined_parameters:
+        return None
 
     fig, ax = plt.subplots(figsize=(6, 5))
     cmap = plt.get_cmap("tab10")
@@ -458,21 +460,22 @@ def _plot_combined_sensitivity_category(
 
 
 def plot_combined_sensitivity(
-    results: pd.DataFrame, output_dir: Path
-) -> tuple[tuple[Path, Path], tuple[Path, Path]]:
+    results: pd.DataFrame, output_dir: Path, rv_maneuv: int = 0
+) -> tuple[tuple[Path, Path] | None, tuple[Path, Path] | None]:
+    rv_label = "Ballistic" if int(rv_maneuv) == 0 else "Maneuvering"
     guidance_plot = _plot_combined_sensitivity_category(
         results,
         output_dir,
         GUIDANCE_COMBINED_PLOT_PARAMETERS,
         "sensitivity_combined_guidance",
-        "Guidance sensitivity",
+        f"{rv_label} RV Guidance System Errors",
     )
     control_plot = _plot_combined_sensitivity_category(
         results,
         output_dir,
         CONTROL_COMBINED_PLOT_PARAMETERS,
         "sensitivity_combined_control",
-        "Control sensitivity",
+        f"{rv_label} RV Control System Limitations",
     )
     return guidance_plot, control_plot
 
@@ -538,8 +541,11 @@ def run_sensitivity(
             print(f"Skipping {spec['name']}: baseline is zero in the selected config.")
             continue
         if (
-            base_config["rv_maneuv"] == 0 and spec in CONTROL_COMBINED_PLOT_PARAMETERS
-        ) or (base_config["gnss_nav"] == 0 and spec in ("gnss_noise", "gnss_freq")):
+            base_config["rv_maneuv"] == 0
+            and spec["name"] in CONTROL_COMBINED_PLOT_PARAMETERS
+        ) or (
+            base_config["gnss_nav"] == 0 and spec["name"] in ("gnss_noise", "gnss_freq")
+        ):
             continue
         frames.append(
             sweep_parameter(
@@ -552,11 +558,16 @@ def run_sensitivity(
     results.to_csv(csv_path, index=False)
 
     panels_pdf, panels_png = plot_panels(results, output_dir)
-    guidance_plot, control_plot = plot_combined_sensitivity(results, output_dir)
+    guidance_plot, control_plot = plot_combined_sensitivity(
+        results, output_dir, int(base_config.get("rv_maneuv", 0))
+    )
 
     print(f"Saved data to {csv_path}")
     print(f"Saved panel plots to {panels_pdf} and {panels_png}")
-    print(f"Saved guidance combined plot to {guidance_plot[0]} and {guidance_plot[1]}")
-    print(f"Saved control combined plot to {control_plot[0]} and {control_plot[1]}")
+    for name, plot in (("guidance", guidance_plot), ("control", control_plot)):
+        if plot is None:
+            print(f"Skipping {name} combined plot: no swept parameters in this run.")
+        else:
+            print(f"Saved {name} combined plot to {plot[0]} and {plot[1]}")
 
     return results

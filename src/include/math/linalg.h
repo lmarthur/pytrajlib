@@ -394,4 +394,38 @@ void gram_schmidt_orthonorm(cartvec v0, cartvec v1, cartvec *e0, cartvec *e1) {
   *e1 = sdivide(u1, norm(u1));
 }
 
+/**
+ * Build the quaternion corresponding to a body-frame rotation vector.
+ *
+ * For a rotation vector with magnitude $\theta = |\boldsymbol\theta_B|$ the
+ * quaternion is
+ * \begin{equation}
+ *   \mathbf q = \begin{bmatrix}
+ *     \cos(\theta / 2) \\
+ *     \sin(\theta / 2) \hat{\boldsymbol\theta}_B
+ *   \end{bmatrix}.
+ * \end{equation}
+ * The half-angle sinc is set to one below 1e-8 rad to avoid dividing by zero.
+ *
+ * @param rotation_vector_B Body-frame rotation vector in radians.
+ * @return Unit quaternion representing the rotation.
+ */
+quaternion quaternion_from_rotation_vector(cartvec rotation_vector_B) {
+  double theta = norm(rotation_vector_B);
+  double half_theta = 0.5 * theta;
+
+  double sinc_half_theta;
+  if (fabs(half_theta) < 1e-8) {
+    sinc_half_theta = 1.0;
+  } else {
+    sinc_half_theta = sin(half_theta) / half_theta;
+  }
+
+  double vec_scale = 0.5 * sinc_half_theta;
+  quaternion q = {cos(half_theta), vec_scale * rotation_vector_B.x,
+                  vec_scale * rotation_vector_B.y,
+                  vec_scale * rotation_vector_B.z};
+  return q;
+}
+
 #endif

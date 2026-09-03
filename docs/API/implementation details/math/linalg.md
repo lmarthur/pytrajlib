@@ -431,3 +431,31 @@ v0, v1 where e0 = v0 / norm(v0).
 | Type | Description |
 | --- | --- |
 | `void` | None. |
+
+## `quaternion_from_rotation_vector`
+
+Build the quaternion corresponding to a body-frame rotation vector.
+
+For a rotation vector with magnitude $\theta = |\boldsymbol\theta_B|$ the
+quaternion is
+$$
+\begin{equation}
+  \mathbf q = \begin{bmatrix}
+    \cos(\theta / 2) \\
+    \sin(\theta / 2) \hat{\boldsymbol\theta}_B
+  \end{bmatrix}.
+\end{equation}
+$$
+The half-angle sinc is set to one below 1e-8 rad to avoid dividing by zero.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `rotation_vector_B` | `cartvec` | Body-frame rotation vector in radians. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `quaternion` | Unit quaternion representing the rotation. |

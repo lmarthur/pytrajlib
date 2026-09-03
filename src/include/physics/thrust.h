@@ -459,34 +459,27 @@ cartvec get_thrust_acc(state *true_state, state *est_state, vehicle *vehicle,
     return zeros();
   }
 
-  state vert_state;
+  // Under perfect boost the guidance steers on the true state and the true
+  // gravity model, so it carries no navigation error. Otherwise it steers on
+  // the estimated state, which is all the vehicle actually knows.
   state *state;
   grav *grav_model;
-  // To simulate perfect boost, use the estimated state for vertical thrust
-  // because it has no angle error and use the true state for the remaining
-  // calculations because it has the true position & velocity
   if (run_params->perfect_boost) {
-    vert_state = *est_state;
     state = true_state;
     grav_model = true_grav;
   } else {
-    vert_state = *true_state;
     state = est_state;
     grav_model = est_grav;
   }
 
   double a_thrust_mag = get_a_thrust_magnitude(state, vehicle, t);
 
-  // Vertical thrust for the beginning of the flight
+  // Vertical thrust for the beginning of the flight. The launch point is on
+  // the +x axis, so this is straight up. A launch attitude error reaches the
+  // thrust through the frame round trip below rather than through the
+  // commanded direction, which is what keeps it unobservable to the navigator.
   if (t < run_params->t_vert_boost) {
-    a_thrust.x = a_thrust_mag *
-                 cos(vert_state.theta_long - run_params->theta_long) *
-                 cos(vert_state.theta_lat - run_params->theta_lat);
-    a_thrust.y = a_thrust_mag *
-                 cos(vert_state.theta_lat - run_params->theta_lat) *
-                 sin(vert_state.theta_long - run_params->theta_long);
-    a_thrust.z =
-        a_thrust_mag * sin(vert_state.theta_lat - run_params->theta_lat);
+    a_thrust = (cartvec){a_thrust_mag, 0.0, 0.0};
   } else if (get_altitude(state->position) < 100e3) {
     a_thrust.x = a_thrust_mag * cos(state->theta_long) * cos(state->theta_lat);
     a_thrust.y = a_thrust_mag * sin(state->theta_long) * cos(state->theta_lat);

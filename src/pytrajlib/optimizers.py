@@ -17,6 +17,8 @@ from pytrajlib.utils import get_miss_distance
 LOFT_SCALES = np.array([1000.0, 1.0])  # (t_des_final [s], theta_long [rad])
 LOFT_XATOL = 1e-3
 LOFT_FATOL = 1e-1
+T_DES_FINAL_BOUNDS = (1000.0, 6000.0)  # s
+THETA_LONG_BOUNDS = (0.0, np.pi / 2)  # rad
 LAMBERT_V_OFFSET_BOUNDS = (-0.1, 0.1)
 LAMBERT_V_OFFSET_X0 = 0.0
 LAMBERT_V_OFFSET_STEP = 0.01
@@ -165,6 +167,11 @@ def optimize_boost(config_dict, num_processes):
         fun=objective,
         x0=np.array([tf_des, theta_long]) / LOFT_SCALES,
         method="Nelder-Mead",
+        # Bounds are applied in the rescaled coordinates Nelder-Mead sees.
+        bounds=[
+            tuple(np.array(T_DES_FINAL_BOUNDS) / LOFT_SCALES[0]),
+            tuple(np.array(THETA_LONG_BOUNDS) / LOFT_SCALES[1]),
+        ],
         options=dict(
             xatol=LOFT_XATOL,
             fatol=LOFT_FATOL,

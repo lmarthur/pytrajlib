@@ -27,21 +27,8 @@ so the update is
 where the $\otimes$ operator is the Hamilton product.
  */
 static inline quaternion integrate_quaternion_step(state current_state) {
-  cartvec delta_angle_B = current_state.orientation_angle_change;
-  double theta = norm(delta_angle_B);
-  double half_theta = 0.5 * theta;
-
-  double sinc_half_theta;
-  if (fabs(half_theta) < 1e-8) {
-    sinc_half_theta = 1.0;
-  } else {
-    sinc_half_theta = sin(half_theta) / half_theta;
-  }
-
-  double vec_scale = 0.5 * sinc_half_theta;
-  quaternion delta_q = {cos(half_theta), vec_scale * delta_angle_B.x,
-                        vec_scale * delta_angle_B.y,
-                        vec_scale * delta_angle_B.z};
+  quaternion delta_q =
+      quaternion_from_rotation_vector(current_state.orientation_angle_change);
 
   quaternion q_next = qmultiply(current_state.q_EB, delta_q);
 

@@ -139,3 +139,61 @@ TEST(thrust, get_flight_angle_converges_for_long_flight_times) {
     REQUIRE(!isnan(gamma));
   }
 }
+
+TEST(thrust,
+     initial_alignment_error_tips_the_vehicle_by_exactly_the_parameter) {
+  // At launch the vehicle stands vertically. The guidance system believes that
+  // exactly; the vehicle is really tipped from it by initial_angle_error.
+  runparams rp = {0};
+  rp.theta_long = 0.9320122849463917;
+  rp.theta_lat = 0.0;
+  rp.initial_angle_error = 1e-3;
+
+  cartvec launch_vertical = {1.0, 0.0, 0.0};
+
+  for (int trial = 0; trial < 25; trial++) {
+    state true_state = init_true_state(&rp);
+    state est_state = init_est_state(&rp);
+
+    // Angle between the true and estimated body frames.
+    quaternion est_conj = {est_state.q_EB.w, -est_state.q_EB.x,
+                           -est_state.q_EB.y, -est_state.q_EB.z};
+    quaternion rel = qmultiply(true_state.q_EB, est_conj);
+    double misalignment = 2.0 * acos(fmin(1.0, fabs(rel.w)));
+    REQUIRE_LT(fabs(misalignment - rp.initial_angle_error), 1e-9);
+
+    // A vertical thrust command, which is what the vehicle flies for the first
+    // t_vert_boost seconds, is tipped by that same angle. This is the transform
+    // get_thrust_acc performs.
+    cartvec applied = body_to_eci(eci_to_body(launch_vertical, est_state.q_EB),
+                                  true_state.q_EB);
+    double deflection =
+        acos(fmin(1.0, fmax(-1.0, dot(applied, launch_vertical))));
+    REQUIRE_LT(fabs(deflection - rp.initial_angle_error), 1e-9);
+    REQUIRE_LT(fabs(norm(applied) - 1.0), 1e-12);
+
+    // The commanded thrust angles carry no perturbation of their own, so the
+    // lean reaches the thrust only once, through the frames.
+    REQUIRE_LT(fabs(true_state.theta_long - rp.theta_long), 1e-15);
+    REQUIRE_LT(fabs(true_state.theta_lat - rp.theta_lat), 1e-15);
+    REQUIRE_LT(fabs(true_state.theta_long - est_state.theta_long), 1e-15);
+    REQUIRE_LT(fabs(true_state.theta_lat - est_state.theta_lat), 1e-15);
+  }
+}
+
+TEST(thrust, zero_alignment_error_leaves_frames_identical) {
+  runparams rp = {0};
+  rp.theta_long = 0.9320122849463917;
+  rp.theta_lat = 0.0;
+  rp.initial_angle_error = 0.0;
+
+  state true_state = init_true_state(&rp);
+  state est_state = init_est_state(&rp);
+
+  REQUIRE_LT(fabs(true_state.theta_long - rp.theta_long), 1e-12);
+  REQUIRE_LT(fabs(true_state.theta_lat - rp.theta_lat), 1e-12);
+  REQUIRE_LT(fabs(true_state.q_EB.w - est_state.q_EB.w), 1e-15);
+  REQUIRE_LT(fabs(true_state.q_EB.x - est_state.q_EB.x), 1e-15);
+  REQUIRE_LT(fabs(true_state.q_EB.y - est_state.q_EB.y), 1e-15);
+  REQUIRE_LT(fabs(true_state.q_EB.z - est_state.q_EB.z), 1e-15);
+}

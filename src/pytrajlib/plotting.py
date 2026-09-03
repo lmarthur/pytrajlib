@@ -40,6 +40,7 @@ def create_impact_plot(
     impact_df: pd.DataFrame,
     save_path: Optional[Path] = None,
     aimpoint: Optional[Tuple[float, float, float]] = None,
+    rv_maneuv: int = 0,
 ) -> dict:
     """
     Generate impact scatter plot and miss distance histogram.
@@ -48,6 +49,8 @@ def create_impact_plot(
         impact_df: DataFrame with columns [t, x, y, z] in ECEF coordinates
         save_path: Optional path to save figures
         aimpoint: Tuple of (x_aim, y_aim, z_aim) in ECEF coordinates
+        rv_maneuv: Reentry vehicle maneuverability mode; 0 is ballistic, 1 and 2
+            are maneuvering. Selects the plot title.
 
     Returns:
         Dictionary with computed statistics (cep, miss_distance, etc.) and
@@ -88,6 +91,11 @@ def create_impact_plot(
     t = np.linspace(0, 2 * np.pi, 400)
     ax_scatter.plot(cep * np.cos(t), cep * np.sin(t), "k--", linewidth=1.5, label="CEP")
 
+    ax_scatter.set_title(
+        "Ballistic Reentry Vehicle"
+        if int(rv_maneuv) == 0
+        else "Maneuvering Reentry Vehicle"
+    )
     ax_scatter.set_xlim(-plotrange, plotrange)
     ax_scatter.set_ylim(-plotrange, plotrange)
     ax_scatter.set_aspect("equal")
@@ -1038,6 +1046,7 @@ def _plot_aoa_components(
     axes[0].set_title("Angle of Attack During Reentry")
     axes[0].grid(alpha=0.3)
     axes[0].legend()
+    axes[0].set_ylim(0, 10)
 
     axes[1].plot(
         t_reentry,
@@ -1082,7 +1091,7 @@ def _plot_aoa_vs_altitude(
     axes[0].set_title("Angle of Attack vs Altitude (Reentry)")
     axes[0].grid(alpha=0.3)
     axes[0].legend()
-    axes[0].set_ylim(0, 50)
+    axes[0].set_ylim(0, 10)
 
     alt_sorted = alt_reentry[sort_idx]
     aoa_sorted = aoa_reentry[sort_idx]
@@ -1099,7 +1108,7 @@ def _plot_aoa_vs_altitude(
     axes[1].set_title("Angle of Attack vs Altitude (Reentry < 1km)")
     axes[1].grid(alpha=0.3)
     axes[1].legend()
-    axes[1].set_ylim(0, 20)
+    axes[1].set_ylim(0, 10)
 
     fig.tight_layout()  # ← before save/return (was after plt.show() before)
     if save_path:

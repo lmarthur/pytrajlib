@@ -42,27 +42,55 @@ state init_true_state(runparams *run_params) {
   state.position.z = run_params->initial_pos_error * position_noise.z;
 
   state.velocity = smultiply(velocity_noise, run_params->initial_vel_error);
-  state.q_EB = identity_quaternion();
   state.angular_vel_B = zeros();
 
-  double initial_rot_pert = run_params->initial_angle_error * ran_gaussian(1);
-  double initial_theta_lat_pert =
-      run_params->initial_angle_error * ran_gaussian(1) +
-      run_params->theta_long * initial_rot_pert -
-      fabs(run_params->theta_lat * initial_rot_pert);
-  double initial_theta_long_pert =
-      run_params->initial_angle_error * ran_gaussian(1) -
-      run_params->theta_lat * initial_rot_pert -
-      fabs(run_params->theta_long * initial_rot_pert);
-
-  state.theta_long = run_params->theta_long + initial_theta_long_pert;
-  state.theta_lat = run_params->theta_lat + initial_theta_lat_pert;
   state.delta_1 = 0;
   state.delta_2 = 0;
   state.dot_delta_1 = 0;
   state.dot_delta_2 = 0;
-  state.orientation_angle_change =
-      (cartvec){initial_theta_long_pert, initial_theta_lat_pert, 0};
+
+  // At launch the vehicle stands vertically on the pad, so the guidance system
+  // believes the roll axis points along the local vertical. The launch point
+  // sits on the +x axis, so that is the vertical here.
+  cartvec launch_vertical = {1.0, 0.0, 0.0};
+
+  // The vehicle is really misaligned from that belief by initial_angle_error
+  // radians, tipped a random way around the vertical. The rotation axis is
+  // taken perpendicular to the vertical so the whole angle appears as a
+  // pointing error; a rotation about the vehicle's own axis is pure roll and
+  // would not tip the nose at all.
+  cartvec axis_noise = gaussian_cartvec();
+  cartvec axis = subtract(axis_noise, project(axis_noise, launch_vertical));
+  double axis_norm = norm(axis);
+  if (axis_norm < 1e-12) {
+    // Degenerate draw parallel to the vertical; any horizontal axis will do.
+    axis = (cartvec){0.0, 1.0, 0.0};
+    axis_norm = 1.0;
+  }
+  cartvec tilt_axis = sdivide(axis, axis_norm);
+  cartvec attitude_error =
+      smultiply(tilt_axis, run_params->initial_angle_error);
+
+  // The true attitude is the believed attitude carrying that rotation. It
+  // composes on the left because the tilt axis is given in inertial
+  // components; a body-frame increment, like the gyro's in the integrator,
+  // composes on the right instead.
+  state.q_EB = qmultiply(quaternion_from_rotation_vector(attitude_error),
+                         align_roll_axis_with_vector(launch_vertical));
+
+  // The commanded thrust angles carry no perturbation of their own. The lean
+  // reaches the thrust through the frames instead: get_thrust_acc resolves the
+  // command into the body frame with the estimated attitude and back out with
+  // the true one. That same round trip is applied to the acceleration in
+  // imu_measurement, so the two rotations cancel inside the navigator and the
+  // lean stays unobservable, which is what makes it an alignment error rather
+  // than a thrust deflection the guidance could simply steer out.
+  state.theta_long = run_params->theta_long;
+  state.theta_lat = run_params->theta_lat;
+
+  // The incremental angle change is cleared at the start of every integrator
+  // step, so it carries no initial condition.
+  state.orientation_angle_change = (cartvec){0};
 
   return state;
 }
@@ -82,7 +110,11 @@ state init_est_state(runparams *run_params) {
   state.position.z = 0;
 
   state.velocity = zeros();
-  state.q_EB = identity_quaternion();
+  // At launch the vehicle stands vertically and the guidance system has no
+  // attitude error of its own. align_roll_axis_with_vector points the roll
+  // axis, body -z, along the vector it is given, so this puts the nose up.
+  cartvec launch_vertical = {1.0, 0.0, 0.0};
+  state.q_EB = align_roll_axis_with_vector(launch_vertical);
   state.angular_vel_B = zeros();
 
   state.theta_long = run_params->theta_long;

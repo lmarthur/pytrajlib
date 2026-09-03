@@ -58,7 +58,7 @@ CLI_PARAM_HELP = {
     "rv_maneuv": "Reentry vehicle maneuverability mode; 1 uses realistic maneuverability, 2 uses idealized maneuverability.",
     "reentry_vel": "Reentry velocity in meters per second.",
     "perfect_boost": "Set to 1 for a perfect boost phase and 0 for a realistic boost phase.",
-    "optimize_boost": "Optimize t_des_final and theta_long when set to 1.",
+    "optimize_boost": "Optimize t_des_final, theta_long, and lambert_v_offset when set to 1.",
     "optimize_reentry": "Optimize reentry maneuver parameters (max_deflection_angle, gearing_ratio, nav_gain_0, nav_gain_1, K_q, K_pp, K_delta_p, K_delta_d) when set to 1.",
     "t_des_final": "Desired final time for the boost phase, in seconds.",
     "lambert_v_offset": "Lambert velocity offset, in meters per second.",
@@ -237,7 +237,12 @@ def run(
         print("Generating impact plot...")
         return_bundle = (
             *return_bundle,
-            create_impact_plot(impact_df, save_path=plot_path, aimpoint=aimpoint),
+            create_impact_plot(
+                impact_df,
+                save_path=plot_path,
+                aimpoint=aimpoint,
+                rv_maneuv=int(config_dict.get("rv_maneuv", 0)),
+            ),
         )
 
     # Load trajectory data if plotting

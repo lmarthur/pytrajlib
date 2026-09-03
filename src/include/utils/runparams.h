@@ -28,17 +28,18 @@ typedef struct runparams {
                     // modified Euler-Maruyama, 1 for SRA3)
   long random_seed; // RNG seed (-1 = auto-seed)
 
-  int grav_error;          // flag to include gravitational perturbations
-  int ballistic_drag;      // flag to use simplified reentry drag calculation
-  int atm_model;           // flag to select the atmospheric model
-  int gnss_nav;            // flag to include GNSS navigation
-  int rv_maneuv;           // flag to include guidance during the reentry phase
-  int perfect_boost;       // 1 perfect boost, 0 realistic
-  int optimize_boost;      // 1 optimize t_des_final/theta_long, 0 use provided
-  int optimize_reentry;    // 1 optimize maneuver params (max_deflection_angle,
-                           // nav_gain_0, nav_gain_1, K_q, K_pp, K_delta_p,
-                           // K_delta_d), 0 use provided
-  double t_des_final;      // desired flight time (optimized)
+  int grav_error;       // flag to include gravitational perturbations
+  int ballistic_drag;   // flag to use simplified reentry drag calculation
+  int atm_model;        // flag to select the atmospheric model
+  int gnss_nav;         // flag to include GNSS navigation
+  int rv_maneuv;        // flag to include guidance during the reentry phase
+  int perfect_boost;    // 1 perfect boost, 0 realistic
+  int optimize_boost;   // 1 optimize t_des_final/theta_long/lambert_v_offset,
+                        // 0 use provided
+  int optimize_reentry; // 1 optimize maneuver params (max_deflection_angle,
+                        // nav_gain_0, nav_gain_1, K_q, K_pp, K_delta_p,
+                        // K_delta_d), 0 use provided
+  double t_des_final;   // desired flight time (optimized)
   double lambert_v_offset; // Lambert velocity offset (optimized)
   double t_vert_boost;     // Duration of vertical boost
 

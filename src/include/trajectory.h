@@ -109,13 +109,16 @@ static inline void set_entry_angle(state *true_state, state *est_state,
   est_goal_entry_vector =
       sdivide(est_goal_entry_vector, norm(est_goal_entry_vector));
 
-  cartvec true_goal_entry_vector =
-      rotate(true_state->velocity, hat_rot_axis_E, rot_angle);
-  true_goal_entry_vector =
-      sdivide(true_goal_entry_vector, norm(true_goal_entry_vector));
+  cartvec goal_entry_vector_B =
+      eci_to_body(est_goal_entry_vector, est_state->q_EB);
+  quaternion maneuver_B = align_roll_axis_with_vector(goal_entry_vector_B);
 
-  true_state->q_EB = align_roll_axis_with_vector(true_goal_entry_vector);
-  est_state->q_EB = align_roll_axis_with_vector(est_goal_entry_vector);
+  true_state->q_EB = qmultiply(true_state->q_EB, maneuver_B);
+  est_state->q_EB = qmultiply(est_state->q_EB, maneuver_B);
+
+  true_state->q_EB =
+      qsmultiply(true_state->q_EB, 1.0 / qnorm(true_state->q_EB));
+  est_state->q_EB = qsmultiply(est_state->q_EB, 1.0 / qnorm(est_state->q_EB));
 }
 
 /**
