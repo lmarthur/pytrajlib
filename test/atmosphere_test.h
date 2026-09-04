@@ -362,55 +362,57 @@ TEST(atmosphere, parse_atm) {
 }
 
 TEST(atmosphere, get_eg_atm_cond) {
-  // Test the get_eg_atm_cond function
+  // Test the get_eg_atm_cond function. atm_cond.altitude is reported in meters
+  // for every atmosphere model; only the EarthGRAM table lookup is in
+  // kilometers, so alt_data is compared against altitude / 1000.
 
   int profilenum = 0;
   char *atmprofile = "src/pytrajlib/config/atmprofiles.csv";
 
   eg16_profile atm_data = parse_atm(atmprofile, profilenum);
 
-  // Test for altitude = -1
+  // Test for altitude = -1 m
   double altitude = -1;
   atm_cond atm_conditions = get_eg_atm_cond(altitude, &atm_data);
 
   REQUIRE_EQ(atm_conditions.altitude, 0);
   REQUIRE_LT(fabs(atm_conditions.density - atm_data.density_data[0]), 1e-6);
 
-  // Test for altitude = 0
+  // Test for altitude = 0 m
   altitude = 0;
   atm_conditions = get_eg_atm_cond(altitude, &atm_data);
 
   REQUIRE_EQ(atm_conditions.altitude, 0);
   REQUIRE_LT(fabs(atm_conditions.density - atm_data.density_data[0]), 1e-6);
 
-  // Test for altitude = 0.5
+  // Test for altitude = 500 m
   altitude = 500;
   atm_conditions = get_eg_atm_cond(altitude, &atm_data);
 
-  REQUIRE_EQ(atm_conditions.altitude, 0.5);
-  REQUIRE_LT(atm_data.alt_data[0], atm_conditions.altitude);
-  REQUIRE_GT(atm_data.alt_data[1], atm_conditions.altitude);
+  REQUIRE_EQ(atm_conditions.altitude, 500);
+  REQUIRE_LT(atm_data.alt_data[0], atm_conditions.altitude / 1000);
+  REQUIRE_GT(atm_data.alt_data[1], atm_conditions.altitude / 1000);
   REQUIRE_LT(atm_data.density_data[1], atm_conditions.density);
   REQUIRE_GT(atm_data.density_data[0], atm_conditions.density);
 
-  // Test for altitude = 1
+  // Test for altitude = 1000 m
   altitude = 1000;
   atm_conditions = get_eg_atm_cond(altitude, &atm_data);
 
-  REQUIRE_EQ(atm_conditions.altitude, 1);
+  REQUIRE_EQ(atm_conditions.altitude, 1000);
   REQUIRE_LT(fabs(atm_conditions.density - atm_data.density_data[1]), 1e-6);
 
-  // Test for altitude = 99
+  // Test for altitude = 99000 m
   altitude = 99000;
   atm_conditions = get_eg_atm_cond(altitude, &atm_data);
 
-  REQUIRE_EQ(atm_conditions.altitude, 99);
+  REQUIRE_EQ(atm_conditions.altitude, 99000);
   REQUIRE_LT(fabs(atm_conditions.density - atm_data.density_data[99]), 1e-6);
 
-  // Test for altitude = 100
+  // Test for altitude = 100000 m, above the top of the table
   altitude = 100000;
   atm_conditions = get_eg_atm_cond(altitude, &atm_data);
 
-  REQUIRE_EQ(atm_conditions.altitude, 100);
+  REQUIRE_EQ(atm_conditions.altitude, 100000);
   REQUIRE_GT(atm_data.density_data[99], atm_conditions.density);
 }

@@ -12,6 +12,20 @@
 static FILE *trajectory_log_file = NULL;
 static FILE *reentry_guidance_log_file = NULL;
 
+// One row of the reentry guidance log
+typedef struct reentry_guidance_sample {
+  double t;
+  cartvec a_cmd_E;
+  cartvec a_total_est;
+  double desired_aoa_deg;
+  cartvec desired_flap_deflection;
+} reentry_guidance_sample;
+
+static reentry_guidance_sample pending_reentry_guidance = {0};
+static int reentry_guidance_sample_pending = 0;
+
+static inline void flush_reentry_guidance_log_row(void);
+
 static inline void build_reentry_guidance_path(const char *trajectory_path,
                                                char *guidance_path,
                                                size_t guidance_path_size) {
@@ -36,13 +50,15 @@ static inline void init_run_logging(const char *trajectory_path) {
     reentry_guidance_log_file = NULL;
   }
 
+  reentry_guidance_sample_pending = 0;
+
   trajectory_log_file = fopen(trajectory_path, "w");
   if (trajectory_log_file == NULL) {
     printf("Warning: could not open trajectory log at %s\n", trajectory_path);
   } else {
     fprintf(trajectory_log_file, "t,current_mass,x,y,z,vx,vy,vz,"
                                  "a_lift,est_x,est_y,est_z,est_vx,"
-                                 "est_vy,est_vz, "
+                                 "est_vy,est_vz,"
                                  "true_delta_1,true_delta_2,"
                                  "est_delta_1,est_delta_2,u1,u2,u3,"
                                  "true_q_w,true_q_x,true_q_y,true_q_z,"
@@ -67,6 +83,7 @@ static inline void init_run_logging(const char *trajectory_path) {
 }
 
 static inline void close_run_logging(void) {
+  flush_reentry_guidance_log_row();
   if (trajectory_log_file != NULL) {
     fclose(trajectory_log_file);
     trajectory_log_file = NULL;
@@ -129,18 +146,46 @@ static inline void write_trajectory_log_row(double t, double current_mass,
           est_state->angular_vel_B.y, est_state->angular_vel_B.z);
 }
 
+/**
+ * Record the guidance sample for the current integration step.
+ *
+ * Called from the drift evaluation, which runs several times per step. Only
+ * the first call after each flush is kept, so the retained sample is the one
+ * taken at the step's own start time.
+ */
 static inline void
-write_reentry_guidance_log_row(double t, cartvec a_cmd_E, cartvec a_total_est,
+record_reentry_guidance_sample(double t, cartvec a_cmd_E, cartvec a_total_est,
                                double desired_aoa_deg,
                                cartvec desired_flap_deflection) {
-  if (reentry_guidance_log_file == NULL) {
+  if (reentry_guidance_log_file == NULL || reentry_guidance_sample_pending) {
     return;
   }
 
+  pending_reentry_guidance.t = t;
+  pending_reentry_guidance.a_cmd_E = a_cmd_E;
+  pending_reentry_guidance.a_total_est = a_total_est;
+  pending_reentry_guidance.desired_aoa_deg = desired_aoa_deg;
+  pending_reentry_guidance.desired_flap_deflection = desired_flap_deflection;
+  reentry_guidance_sample_pending = 1;
+}
+
+/**
+ * Write the recorded guidance sample, if there is one, and clear it.
+ *
+ * Called once per integration step, so the log holds one row per step with
+ * strictly increasing timestamps.
+ */
+static inline void flush_reentry_guidance_log_row(void) {
+  if (reentry_guidance_log_file == NULL || !reentry_guidance_sample_pending) {
+    return;
+  }
+
+  const reentry_guidance_sample *s = &pending_reentry_guidance;
   fprintf(reentry_guidance_log_file, "%g, %g, %g, %g, %g, %g, %g, %g, %g, %g\n",
-          t, a_cmd_E.x, a_cmd_E.y, a_cmd_E.z, a_total_est.x, a_total_est.y,
-          a_total_est.z, desired_aoa_deg, desired_flap_deflection.x,
-          desired_flap_deflection.y);
+          s->t, s->a_cmd_E.x, s->a_cmd_E.y, s->a_cmd_E.z, s->a_total_est.x,
+          s->a_total_est.y, s->a_total_est.z, s->desired_aoa_deg,
+          s->desired_flap_deflection.x, s->desired_flap_deflection.y);
+  reentry_guidance_sample_pending = 0;
 }
 
 #endif

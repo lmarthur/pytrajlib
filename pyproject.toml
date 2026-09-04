@@ -17,6 +17,7 @@ dependencies = [
     "cffi>=2.0.0",
     "optuna>=4.9.0",
     "scienceplots>=2.2.1",
+    "cmaes>=0.13.1",
 ]
 
 [dependency-groups]

@@ -98,12 +98,9 @@ The gyroscope model outputs a noisy measurement of the current angular velocity.
  * @param est_grav Pointer to estimated gravity model.
  * @return Measured total estimated acceleration in ECI coordinates in m/s^2.
  */
-cartvec imu_measurement(imu *imu, runparams *run_params,
-                        atm_cond *true_atm_cond, atm_cond *est_atm_cond,
-                        double true_t, double est_t, state *true_state,
+cartvec imu_measurement(imu *imu, runparams *run_params, state *true_state,
                         state *est_state, cartvec a_total_true,
-                        cartvec a_grav_true, cartvec a_grav_est,
-                        grav *est_grav) {
+                        cartvec a_grav_true, cartvec a_grav_est) {
   // IMU measures total acceleration minus gravity
   cartvec a_measurable_E = subtract(a_total_true, a_grav_true);
 
@@ -174,17 +171,6 @@ void gnss_measurement(gnss *gnss, state *true_state, state *est_state) {
       true_state->position.y + gnss->noise * ran_gaussian(1);
   est_state->position.z =
       true_state->position.z + gnss->noise * ran_gaussian(1);
-}
-
-/**
- * Set estimated state equal to true state (ideal measurement).
- *
- * @param true_state Pointer to true vehicle state
- * @param est_state Pointer to estimated vehicle state
- */
-void perfect_measurement(state *true_state, state *est_state) {
-
-  est_state = true_state;
 }
 
 #endif

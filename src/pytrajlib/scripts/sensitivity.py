@@ -17,6 +17,7 @@ assert scienceplots
 plt.style.use(["science"])
 plt.style.use(["no-latex"])
 DEFAULT_SCALE_FACTORS = np.logspace(-1, 1, 7)
+CONTROL_SCALE_FACTORS = np.logspace(-2, 2, 5)
 TIME_STEP_SCALE_FACTORS = np.logspace(-1, 3, 9)
 GNSS_FREQ_SCALE_FACTORS = np.logspace(-3, 1, 5)
 RANGE_SCALE_FACTORS = np.linspace(5 / 13, 1.0, 9)
@@ -98,17 +99,20 @@ SENSITIVITY_SPECS = (
     {
         "name": "actuator_force",
         "label": "Actuator force",
-        "sweep_factors": DEFAULT_SCALE_FACTORS,
+        "sweep_factors": CONTROL_SCALE_FACTORS,
+        "optimize_reentry": True,
     },
     {
         "name": "deflection_time",
         "label": "Actuator deflection time",
-        "sweep_factors": DEFAULT_SCALE_FACTORS,
+        "sweep_factors": CONTROL_SCALE_FACTORS,
+        "optimize_reentry": True,
     },
     {
         "name": "actuator_resolution",
         "label": "Actuator resolution",
-        "sweep_factors": DEFAULT_SCALE_FACTORS,
+        "sweep_factors": CONTROL_SCALE_FACTORS,
+        "optimize_reentry": True,
     },
     {
         "name": "time_step_boost",
@@ -166,10 +170,12 @@ def make_case_config(
     use_zero_baseline: bool,
 ) -> dict:
     case_config = deepcopy(base_config)
+    # Every case would otherwise rewrite the full trajectory and guidance logs
+    # (hundreds of MB each) only to overwrite them on the next case.
+    case_config["traj_output"] = 0
     if use_zero_baseline:
         case_config.update(
             {
-                "traj_output": 0,
                 "optimize_boost": 0,
                 "optimize_reentry": 0,
                 "random_seed": 0,

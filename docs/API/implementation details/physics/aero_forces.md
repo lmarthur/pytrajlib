@@ -13,6 +13,7 @@ generally toward Earth center.
 | --- | --- | --- |
 | `state` | `state *` | Pointer to current state |
 | `t` | `double` | Current simulation time in seconds |
+| `run_params` | `runparams *` | Pointer to run configuration parameters |
 
 ### Returns
 
@@ -38,13 +39,34 @@ $$\alpha = \cos^{-1}(u_3),\quad u_3 = \hat{\mathbf u}_B.z$$
 | --- | --- |
 | `static inline double` | Angle of attack in radians. |
 
+## `get_max_modeled_aoa`
+
+Largest angle of attack the vehicle's aerodynamic model is defined for based
+on the aerodynamic table.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `vehicle` | `vehicle *` | Vehicle model holding the aerodynamic tables. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `static inline double` | Maximum modeled angle of attack in radians. |
+
 ## `get_body_lift_direction`
 
-Compute body-lift direction by projecting body axis e3 onto the plane normal
+Compute body-lift direction by projecting the roll axis onto the plane normal
 to freestream direction u_hat_B.
 
-$$\hat{\ell}\_B = \frac{(I-\hat{u}_B\hat{u}_B^T)\hat{e}\_{3,B}}
-{\|(I-\hat{u}\_B\hat{u}\_B^T)\hat{e}\_{3,B}\|}$$
+Lift acts perpendicular to the freestream, in the plane spanned by the
+freestream and the vehicle's roll axis, on the side the nose is pitched
+toward. The roll axis is body $-\hat{e}\_{3,B}$.
+
+$$\hat{\ell}\_B = \frac{(I-\hat{u}_B\hat{u}_B^T)(-\hat{e}\_{3,B})}
+{\|(I-\hat{u}\_B\hat{u}\_B^T)(-\hat{e}\_{3,B})\|}$$
 
 ### Parameters
 

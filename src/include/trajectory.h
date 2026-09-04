@@ -90,19 +90,27 @@ static inline void set_entry_angle(state *true_state, state *est_state,
   double reentry_potential = -vehicle->rv.rv_mass * reentry_r *
                              norm(get_gravity_acc(grav, &reentry_est_state));
 
+  double reentry_kinetic =
+      current_kinetic + current_potential - reentry_potential;
   double reentry_est_speed =
-      sqrt((current_kinetic + current_potential - reentry_potential) * 2 /
-           vehicle->rv.rv_mass);
-  double reentry_angle =
-      acos(current_r * current_est_speed * cos(est_burnout_angle) /
-           (reentry_r * reentry_est_speed));
+      sqrt(fmax(reentry_kinetic, 0.0) * 2 / vehicle->rv.rv_mass);
+
+  double reentry_angle_arg = current_r * current_est_speed *
+                             cos(est_burnout_angle) /
+                             (reentry_r * reentry_est_speed);
+  double reentry_angle = acos(clip(reentry_angle_arg, -1.0, 1.0));
   double entry_angle = -reentry_angle;
-  double central_angle = acos(dot(aimpoint, est_state->position) /
-                              (norm(aimpoint) * norm(est_state->position)));
+  double central_angle_arg = dot(aimpoint, est_state->position) /
+                             (norm(aimpoint) * norm(est_state->position));
+  double central_angle = acos(clip(central_angle_arg, -1.0, 1.0));
   double rot_angle = est_burnout_angle - (entry_angle - central_angle);
 
   cartvec rot_axis_E = cross(est_state->position, aimpoint);
-  cartvec hat_rot_axis_E = sdivide(rot_axis_E, norm(rot_axis_E));
+  double rot_axis_norm = norm(rot_axis_E);
+  if (rot_axis_norm < 1e-12) {
+    return;
+  }
+  cartvec hat_rot_axis_E = sdivide(rot_axis_E, rot_axis_norm);
 
   cartvec est_goal_entry_vector =
       rotate(est_state->velocity, hat_rot_axis_E, rot_angle);
@@ -119,6 +127,23 @@ static inline void set_entry_angle(state *true_state, state *est_state,
   true_state->q_EB =
       qsmultiply(true_state->q_EB, 1.0 / qnorm(true_state->q_EB));
   est_state->q_EB = qsmultiply(est_state->q_EB, 1.0 / qnorm(est_state->q_EB));
+}
+
+/**
+ * Report whether every integrated quantity of a state is finite.
+ *
+ * @param s Pointer to the state to check.
+ * @return 1 if all components are finite, else 0.
+ */
+static inline int state_is_finite(state *s) {
+  return isfinite(s->position.x) && isfinite(s->position.y) &&
+         isfinite(s->position.z) && isfinite(s->velocity.x) &&
+         isfinite(s->velocity.y) && isfinite(s->velocity.z) &&
+         isfinite(s->q_EB.w) && isfinite(s->q_EB.x) && isfinite(s->q_EB.y) &&
+         isfinite(s->q_EB.z) && isfinite(s->angular_vel_B.x) &&
+         isfinite(s->angular_vel_B.y) && isfinite(s->angular_vel_B.z) &&
+         isfinite(s->delta_1) && isfinite(s->delta_2) &&
+         isfinite(s->dot_delta_1) && isfinite(s->dot_delta_2);
 }
 
 /**
@@ -319,13 +344,6 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
   // Initialize run logging files.
   if (run_params->traj_output == 1) {
     init_run_logging(run_params->trajectory_path);
-    double initial_altitude = get_altitude(true_state.position);
-    atm_cond initial_true_atm_cond = get_atm_cond(
-        initial_altitude, &exp_atm_model, run_params, &atm_profile);
-    // Write the initial state to the trajectory file
-    write_trajectory_log_row(true_t, get_vehicle_mass(vehicle, true_t),
-                             &true_state, &est_state, &initial_true_atm_cond,
-                             run_params);
   }
 
   int sampled_new_profile = 0; // flag to indicate whether a new profile has
@@ -346,13 +364,15 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
   // Begin the integration loop
   for (int i = 0; i < max_steps; i++) {
     // Track apogee
-    double altitude = get_altitude(true_state.position);
-    if (altitude > max_altitude) {
-      max_altitude = altitude;
+    double true_altitude = get_altitude(true_state.position);
+    double est_altitude = get_altitude(est_state.position);
+
+    if (true_altitude > max_altitude) {
+      max_altitude = true_altitude;
     }
 
     // Check exit atmosphere event
-    if (!exit_atmosphere_captured && altitude > 100e3) {
+    if (!exit_atmosphere_captured && true_altitude > 100e3) {
       exit_atmosphere_captured = 1;
       time_step = run_params->time_step_lambert;
     }
@@ -363,7 +383,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
       time_step = run_params->time_step_midcourse;
 
       *burnout_vel_mag = norm(true_state.velocity);
-      *burnout_alt = altitude;
+      *burnout_alt = true_altitude;
       *burnout_ang =
           flight_path_angle(true_state.position, true_state.velocity);
 
@@ -386,8 +406,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
 
     // Check reentry event. Use altitude of 120km rather than 100km so the
     // smaller time step captures all atmospheric events below 100km
-    int descending = altitude < max_altitude;
-    if (!reentry_captured && descending && altitude < 1.2e5 &&
+    int descending = true_altitude < max_altitude;
+    if (!reentry_captured && descending && true_altitude < 1.2e5 &&
         true_t > run_params->t_vert_boost) {
       reentry_captured = 1;
       time_step = run_params->time_step_reentry;
@@ -428,8 +448,8 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
 
     // Get the atmospheric conditions
     atm_cond true_atm_cond =
-        get_atm_cond(altitude, &exp_atm_model, run_params, &atm_profile);
-    atm_cond est_atm_cond = get_exp_atm_cond(altitude, &exp_atm_model);
+        get_atm_cond(true_altitude, &exp_atm_model, run_params, &atm_profile);
+    atm_cond est_atm_cond = get_exp_atm_cond(est_altitude, &exp_atm_model);
 
     // Write trajectory data to file
     if (run_params->traj_output == 1) {
@@ -464,7 +484,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     est_state.dot_delta_2 = true_state.dot_delta_2;
 
     // Set flap saturation limits
-    double max_extent = run_params->max_deflection_angle * M_PI / 180;
+    double max_extent = get_max_deflection_extent(run_params);
     double clipped_delta_1 =
         clip(fmod(true_state.delta_1, 2 * M_PI), -max_extent, max_extent);
     double clipped_delta_2 =
@@ -525,6 +545,24 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
       if (run_params->traj_output == 1) {
         close_run_logging();
       }
+      return true_state;
+    }
+
+    // One guidance row per completed step, taken from the stage evaluation at
+    // this step's start time.
+    if (run_params->traj_output == 1) {
+      flush_reentry_guidance_log_row();
+    }
+
+    // Exit NaN integration early
+    if (!state_is_finite(&true_state) || !state_is_finite(&est_state)) {
+      printf("WARNING: non-finite state at t=%f, returning early\n", true_t);
+      if (run_params->traj_output == 1) {
+        close_run_logging();
+      }
+      *apogee_alt = max_altitude;
+      *impact_time = true_t;
+      run_params->traj_output = 0;
       return true_state;
     }
   }

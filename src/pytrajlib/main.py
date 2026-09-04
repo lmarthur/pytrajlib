@@ -88,6 +88,24 @@ CLI_PARAM_HELP = {
 }
 
 
+CLI_PARAM_TYPES = {
+    "x_aim": float,
+    "y_aim": float,
+    "z_aim": float,
+    "atm_path": str,
+    "mean_atm_path": str,
+}
+
+
+def _cli_param_type(param_name, default_value):
+    """Pick the argparse converter for a config key."""
+    if param_name in CLI_PARAM_TYPES:
+        return CLI_PARAM_TYPES[param_name]
+    if default_value is None:
+        return str
+    return type(default_value)
+
+
 def _get_version() -> str:
     """Get the version from package metadata."""
     try:
@@ -277,7 +295,12 @@ def run(
     if return_config:
         return_bundle = (*return_bundle, config_dict)
     if return_trajectory:
-        return_bundle = (*return_bundle, pd.read_csv(config_dict["trajectory_path"]))
+        # skipinitialspace matches how the plotting path reads the same file,
+        # so callers get the column names the log header declares.
+        return_bundle = (
+            *return_bundle,
+            pd.read_csv(config_dict["trajectory_path"], skipinitialspace=True),
+        )
     if return_guidance:
         reentry_guidance_path = Path(config_dict["trajectory_path"]).with_name(
             "reentry_guidance.csv"
@@ -350,7 +373,7 @@ def cli():
             continue
         parser.add_argument(
             f"--{param_name.replace('_', '-')}",
-            type=type(default_value),
+            type=_cli_param_type(param_name, default_value),
             default=_UNSET,
             help=f"{CLI_PARAM_HELP.get(param_name, '')} (default: {default_value})",
         )

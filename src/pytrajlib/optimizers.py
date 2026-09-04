@@ -29,6 +29,18 @@ LAMBERT_V_OFFSET_FATOL = 1e-2
 # are not using the same random seeds
 OPTIMIZER_SEED_OFFSET = 1_000_000
 
+# Starting point for the reentry search
+REENTRY_START_POINT = {
+    "max_deflection_angle": 5.0,
+    "gearing_ratio": 1.0,
+    "nav_gain_0": 10.0,
+    "nav_gain_1": 1.0,
+    "K_q": 10.0,
+    "K_pp": 10.0,
+    "K_delta_p": 1.0,
+    "K_delta_d": 1.0,
+}
+
 # Zeroed for both boost and reentry
 _DISABLED_ERROR_KEYS = (
     "initial_pos_error",
@@ -213,14 +225,14 @@ def optimize_reentry(config_dict, num_processes):
     def optuna_objective(trial):
         # Suggest parameters to tune.
         max_deflection_angle = trial.suggest_float("max_deflection_angle", 0.0, 10.0)
-        gearing_ratio = trial.suggest_float("gearing_ratio", 1, 20)
-        nav_gain_0 = trial.suggest_float("nav_gain_0", 0.0, 20.0)
-        nav_gain_1 = trial.suggest_float("nav_gain_1", 0.0, 20.0)
+        gearing_ratio = trial.suggest_float("gearing_ratio", 1, 100)
+        nav_gain_0 = trial.suggest_float("nav_gain_0", 0.0, 100.0)
+        nav_gain_1 = trial.suggest_float("nav_gain_1", 0.0, 100.0)
         # Include control gains in optimization
-        K_q = trial.suggest_float("K_q", 0.0, 50.0)
-        K_pp = trial.suggest_float("K_pp", 0.0, 50.0)
-        K_delta_p = trial.suggest_float("K_delta_p", 0.0, 50.0)
-        K_delta_d = trial.suggest_float("K_delta_d", 0.0, 50.0)
+        K_q = trial.suggest_float("K_q", 0.0, 100.0)
+        K_pp = trial.suggest_float("K_pp", 0.0, 100.0)
+        K_delta_p = trial.suggest_float("K_delta_p", 0.0, 100.0)
+        K_delta_d = trial.suggest_float("K_delta_d", 0.0, 100.0)
 
         parameter_names = (
             "max_deflection_angle",
@@ -250,22 +262,12 @@ def optimize_reentry(config_dict, num_processes):
 
         return sq_miss_dist
 
-    sampler = optuna.samplers.TPESampler(seed=0)
+    # Best to have the run config random seed > 0 for the optimizer to be deterministic
+    sampler = optuna.samplers.CmaEsSampler(seed=0)
     study = optuna.create_study(sampler=sampler, direction="minimize")
 
     # Seed the first trial with reasonably good values
-    study.enqueue_trial(
-        {
-            "max_deflection_angle": 5.0,
-            "gearing_ratio": 1.0,
-            "nav_gain_0": 10,
-            "nav_gain_1": 1,
-            "K_q": 10,
-            "K_pp": 10,
-            "K_delta_p": 1.0,
-            "K_delta_d": 1.0,
-        }
-    )
+    study.enqueue_trial(dict(REENTRY_START_POINT))
 
     study.optimize(optuna_objective, n_trials=config_dict["num_trials_optimizer"])
     return study.best_params

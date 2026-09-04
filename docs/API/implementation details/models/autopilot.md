@@ -1,5 +1,49 @@
 # Autopilot
 
+## `clamp_aoa_channels`
+
+Bound the two flap-channel angle-of-attack components to the range the
+aerodynamic model covers.
+
+Only the x and y components drive the flap pairs, so the pair is rescaled
+together. Clamping each channel on its own would rotate the commanded
+direction rather than shorten it.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `aoa` | `cartvec` | Angle-of-attack components in radians, indexed by flap pair. |
+| `max_aoa` | `double` | Maximum modeled angle of attack in radians. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `static inline cartvec` | The input, rescaled if its transverse magnitude exceeded max_aoa. |
+
+## `get_max_trimmable_aoa`
+
+Largest angle of attack the flaps can hold in trim.
+
+Commanding more than this asks the inversion for a deflection the actuator
+cannot reach, which leaves the tracking error dominated by the unreachable
+setpoint rather than by the vehicle's actual state, so the feedback gains
+have nothing left to regulate.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `vehicle` | `vehicle *` | Pointer to vehicle model. |
+| `run_params` | `runparams *` | Pointer to run configuration parameters. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `static inline double` | Maximum trimmable angle of attack in radians. |
+
 ## `NDI`
 
 Get the desired flap deflection angle using nonlinear dynamic inversion (NDI)

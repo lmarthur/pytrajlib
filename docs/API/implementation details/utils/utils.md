@@ -169,6 +169,22 @@ $$
 | --- | --- |
 | `double` |  |
 
+## `get_max_deflection_extent`
+
+Maximum flap deflection extent in radians.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `run_params` | `runparams *` | Pointer to run configuration parameters. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `static inline double` | Maximum flap deflection extent in radians. |
+
 ## `clip`
 
 Clip a value to a specified range

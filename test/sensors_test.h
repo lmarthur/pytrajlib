@@ -33,18 +33,17 @@ TEST(sensors, imu_meas) {
   cartvec a_grav_est = zeros();
   grav est_grav = init_grav(&run_params, 1);
 
-  cartvec a_total_est = imu_measurement(&imu, &run_params, NULL, NULL, 0.0, 0.0,
-                                        &true_state, &est_state, a_total_true,
-                                        a_grav_true, a_grav_est, &est_grav);
+  cartvec a_total_est =
+      imu_measurement(&imu, &run_params, &true_state, &est_state, a_total_true,
+                      a_grav_true, a_grav_est);
 
   REQUIRE_EQ(fabs(a_total_est.x - a_total_true.x), 0);
   REQUIRE_EQ(fabs(a_total_est.y - a_total_true.y), 0);
   REQUIRE_EQ(fabs(a_total_est.z - a_total_true.z), 0);
 
   a_total_true = zeros();
-  a_total_est = imu_measurement(&imu, &run_params, NULL, NULL, 0.0, 0.0,
-                                &true_state, &est_state, a_total_true,
-                                a_grav_true, a_grav_est, &est_grav);
+  a_total_est = imu_measurement(&imu, &run_params, &true_state, &est_state,
+                                a_total_true, a_grav_true, a_grav_est);
   REQUIRE_EQ(a_total_est.x, 0);
   REQUIRE_EQ(a_total_est.y, 0);
   REQUIRE_EQ(a_total_est.z, 0);
@@ -54,9 +53,8 @@ TEST(sensors, imu_meas) {
   a_total_true.x = 10;
   a_total_true.y = 10;
   a_total_true.z = 10;
-  a_total_est = imu_measurement(&imu, &run_params, NULL, NULL, 0.0, 0.0,
-                                &true_state, &est_state, a_total_true,
-                                a_grav_true, a_grav_est, &est_grav);
+  a_total_est = imu_measurement(&imu, &run_params, &true_state, &est_state,
+                                a_total_true, a_grav_true, a_grav_est);
   REQUIRE_GT(norm(subtract(a_total_est, a_total_true)), 0);
 }
 

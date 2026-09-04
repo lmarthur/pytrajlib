@@ -279,15 +279,16 @@ atm_cond get_pert_atm_cond(double altitude, atm_model *atm_model) {
 atm_cond get_eg_atm_cond(double altitude, eg16_profile *atm_profile) {
 
   atm_cond atm_conditions;
-  altitude = altitude / 1000;
-
   if (altitude < 0) {
     altitude = 0;
   }
 
+  // atm_cond.altitude is in meters for every model. The EarthGRAM tables are
+  // tabulated in kilometers, so convert only for the lookup.
   atm_conditions.altitude = altitude;
+  double altitude_km = altitude / 1000;
 
-  if (altitude > 99) {
+  if (altitude_km > 99) {
     atm_conditions.density = 0;
     atm_conditions.meridional_wind = 0;
     atm_conditions.zonal_wind = 0;
@@ -296,17 +297,17 @@ atm_cond get_eg_atm_cond(double altitude, eg16_profile *atm_profile) {
   }
   int num_heights = ATM_PROFILE_LEN;
   // Use linear interpolation to get the atmospheric conditions
-  atm_conditions.density = linterp(altitude, atm_profile->alt_data,
+  atm_conditions.density = linterp(altitude_km, atm_profile->alt_data,
                                    atm_profile->density_data, num_heights);
   atm_conditions.meridional_wind =
-      linterp(altitude, atm_profile->alt_data,
+      linterp(altitude_km, atm_profile->alt_data,
               atm_profile->meridional_wind_data, num_heights);
   atm_conditions.zonal_wind =
-      linterp(altitude, atm_profile->alt_data, atm_profile->zonal_wind_data,
+      linterp(altitude_km, atm_profile->alt_data, atm_profile->zonal_wind_data,
               num_heights);
   atm_conditions.vertical_wind =
-      linterp(altitude, atm_profile->alt_data, atm_profile->vertical_wind_data,
-              num_heights);
+      linterp(altitude_km, atm_profile->alt_data,
+              atm_profile->vertical_wind_data, num_heights);
 
   return atm_conditions;
 }
@@ -367,15 +368,15 @@ eg16_profile parse_atm(char *atmprofilepath, int profilenum) {
     // Update the atmospheric profile struct by iterating over only the
     // requested profile
     for (int i = 0; i < ATM_PROFILE_LEN; i++) {
-      atm_profile.alt_data[i] = atm_data[ATM_PROFILE_NUM * profilenum + i][1];
+      atm_profile.alt_data[i] = atm_data[ATM_PROFILE_LEN * profilenum + i][1];
       atm_profile.density_data[i] =
-          atm_data[ATM_PROFILE_NUM * profilenum + i][2];
+          atm_data[ATM_PROFILE_LEN * profilenum + i][2];
       atm_profile.meridional_wind_data[i] =
-          atm_data[ATM_PROFILE_NUM * profilenum + i][3];
+          atm_data[ATM_PROFILE_LEN * profilenum + i][3];
       atm_profile.zonal_wind_data[i] =
-          atm_data[ATM_PROFILE_NUM * profilenum + i][4];
+          atm_data[ATM_PROFILE_LEN * profilenum + i][4];
       atm_profile.vertical_wind_data[i] =
-          atm_data[ATM_PROFILE_NUM * profilenum + i][5];
+          atm_data[ATM_PROFILE_LEN * profilenum + i][5];
     }
   }
 

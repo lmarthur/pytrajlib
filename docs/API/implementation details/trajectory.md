@@ -37,6 +37,22 @@ See Regan 6.7 "Deployment Attitudes"
 | --- | --- |
 | `static inline void` |  |
 
+## `state_is_finite`
+
+Report whether every integrated quantity of a state is finite.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `s` | `state *` | Pointer to the state to check. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `static inline int` | 1 if all components are finite, else 0. |
+
 ## `impact_linterp`
 
 Interpolate between two states to estimate impact crossing at altitude 0.

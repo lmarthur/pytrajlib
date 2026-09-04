@@ -70,17 +70,15 @@ int drift(runparams *run_params, imu *imu, vehicle *vehicle, grav *true_grav,
                                             vehicle, run_params);
 
   cartvec a_total_true = add(add(a_thrust_true, a_aero_true), a_grav_true);
-  cartvec a_total_est = imu_measurement(
-      imu, run_params, true_atm_cond, est_atm_cond, true_t, est_t, true_state,
-      est_state, a_total_true, a_grav_true, a_grav_est, est_grav);
+  cartvec a_total_est = imu_measurement(imu, run_params, true_state, est_state,
+                                        a_total_true, a_grav_true, a_grav_est);
 
   cartvec angular_acceleration_B = get_angular_acceleration(
       true_t, true_state, true_atm_cond, vehicle, run_params);
 
   double ddot_deflection[2] = {0, 0};
-  get_flap_angular_acceleration(true_t, est_state, run_params, vehicle,
-                                est_grav, est_atm_cond, a_total_est,
-                                ddot_deflection);
+  get_flap_angular_acceleration(est_t, est_state, run_params, vehicle, est_grav,
+                                est_atm_cond, a_total_est, ddot_deflection);
 
   // Set true state derivatives
   true_state_drift->position = true_state->velocity;

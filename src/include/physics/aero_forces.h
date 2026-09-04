@@ -15,12 +15,13 @@
  *
  * @param state Pointer to current state
  * @param t Current simulation time in seconds
+ * @param run_params Pointer to run configuration parameters
  * @return 1 if in reentry, else 0
  */
-static inline int is_reentry(state *state, double t) {
-  // Check for small t to account for initial velocity error that might make the
+static inline int is_reentry(state *state, double t, runparams *run_params) {
+  // Ignore the vertical boost, when an initial velocity error might make the
   // vehicle appear to be below altitude 0 after a single step
-  if (t < 10)
+  if (t < run_params->t_vert_boost)
     return 0;
   double v_mag = norm(state->velocity);
   if (v_mag < 1e-6)
@@ -49,18 +50,40 @@ static inline double get_aoa(cartvec u_hat_B) {
 }
 
 /**
- * Compute body-lift direction by projecting body axis e3 onto the plane normal
+ * Largest angle of attack the vehicle's aerodynamic model is defined for based
+ * on the aerodynamic table.
+ *
+ * @param vehicle Vehicle model holding the aerodynamic tables.
+ * @return Maximum modeled angle of attack in radians.
+ */
+static inline double get_max_modeled_aoa(vehicle *vehicle) {
+  if (vehicle->rv.aero_table_size > 0) {
+    return vehicle->rv.aero_alpha_deg_table[vehicle->rv.aero_table_size - 1] *
+           M_PI / 180.0;
+  }
+  // Without tables the analytic coefficients are used instead, and c_l_alpha
+  // is documented as valid for small angles only. Ten degrees matches the
+  // span the tabulated vehicles cover.
+  return 10.0 * M_PI / 180.0;
+}
+
+/**
+ * Compute body-lift direction by projecting the roll axis onto the plane normal
  * to freestream direction u_hat_B.
  *
- * $$\hat{\ell}\_B = \frac{(I-\hat{u}_B\hat{u}_B^T)\hat{e}\_{3,B}}
- * {\|(I-\hat{u}\_B\hat{u}\_B^T)\hat{e}\_{3,B}\|}$$
+ * Lift acts perpendicular to the freestream, in the plane spanned by the
+ * freestream and the vehicle's roll axis, on the side the nose is pitched
+ * toward. The roll axis is body $-\hat{e}\_{3,B}$.
+ *
+ * $$\hat{\ell}\_B = \frac{(I-\hat{u}_B\hat{u}_B^T)(-\hat{e}\_{3,B})}
+ * {\|(I-\hat{u}\_B\hat{u}\_B^T)(-\hat{e}\_{3,B})\|}$$
  *
  * @param u_hat_B Unit relative-wind vector in body coordinates.
  * @return Unit body-lift direction; zero vector if near singular.
  */
 static inline cartvec get_body_lift_direction(cartvec u_hat_B) {
-  cartvec e3_B = {0.0, 0.0, 1.0};
-  cartvec lift_raw = subtract(e3_B, smultiply(u_hat_B, dot(u_hat_B, e3_B)));
+  cartvec nose_B = {0.0, 0.0, -1.0};
+  cartvec lift_raw = subtract(nose_B, smultiply(u_hat_B, dot(u_hat_B, nose_B)));
   double lift_raw_norm = norm(lift_raw);
   if (lift_raw_norm < 1e-10) {
     printf(
@@ -413,7 +436,7 @@ static inline cartvec get_aerodynamic_acc(double t, state *current_state,
 
   // After boost phase, the vehicle should be outside the atmosphere where there
   // are no aerodynamic forces
-  if (!is_reentry(current_state, t)) {
+  if (!is_reentry(current_state, t, run_params)) {
     return zeros();
   }
 

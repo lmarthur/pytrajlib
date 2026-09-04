@@ -1,6 +1,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#define _USE_MATH_DEFINES
+
 #include <math.h>
 #include <stdio.h>
 
@@ -138,9 +140,18 @@ double linterp(double x, double xs[], double ys[], int n) {
   // Initialize the output value
   double y = 0;
 
-  // Find the two points to interpolate between
+  if (n <= 0) {
+    return NAN;
+  }
+  if (n == 1) {
+    return ys[0];
+  }
+
+  // Find the two points to interpolate between. The scan stops at the last
+  // interval so a query above the table's range extrapolates from it rather
+  // than walking off the end of the array.
   int i = 0;
-  while (x > xs[i]) {
+  while (i < n - 1 && x > xs[i]) {
     i++;
   }
 
@@ -216,6 +227,16 @@ double get_max_flap_force(runparams *run_params, vehicle *vehicle) {
   double max_flap_force =
       run_params->actuator_force * run_params->gearing_ratio * 1000;
   return max_flap_force;
+}
+
+/**
+ * Maximum flap deflection extent in radians.
+ *
+ * @param run_params Pointer to run configuration parameters.
+ * @return Maximum flap deflection extent in radians.
+ */
+static inline double get_max_deflection_extent(runparams *run_params) {
+  return run_params->max_deflection_angle * M_PI / 180.0;
 }
 
 /**

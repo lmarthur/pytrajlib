@@ -110,8 +110,10 @@ def create_runparams_struct(config_dict):
 
 def _set_fixed_string(field, value: str):
     """Write a Python string into a fixed-size C char buffer (UTF-8)."""
-    encoded = value.encode("utf-8")
+    capacity = ffi.sizeof(field)
+    encoded = value.encode("utf-8")[: capacity - 1]
     ffi.memmove(field, encoded, len(encoded))
+    field[len(encoded)] = b"\0"
 
 
 def create_vehicle_struct(config_dict):

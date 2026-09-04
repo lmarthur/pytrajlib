@@ -179,7 +179,7 @@ static inline cartvec get_angular_acceleration(double t, state *true_state,
                                                vehicle *vehicle,
                                                runparams *run_params) {
   if ((run_params->rv_maneuv != 1 && run_params->ballistic_drag) ||
-      !is_reentry(true_state, t)) {
+      !is_reentry(true_state, t, run_params)) {
     return zeros();
   }
   // Get body moment + sum incremental moments from the flaps
