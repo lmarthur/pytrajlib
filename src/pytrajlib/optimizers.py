@@ -22,8 +22,8 @@ THETA_LONG_BOUNDS = (0.0, np.pi / 2)  # rad
 LAMBERT_V_OFFSET_BOUNDS = (-0.1, 0.1)
 LAMBERT_V_OFFSET_X0 = 0.0
 LAMBERT_V_OFFSET_STEP = 0.01
-LAMBERT_V_OFFSET_XATOL = 1e-4
-LAMBERT_V_OFFSET_FATOL = 1e-2
+LAMBERT_V_OFFSET_XATOL = 1e-6
+LAMBERT_V_OFFSET_FATOL = 1e-3
 
 # Moves the optimizer onto its own seed stream so that the optimizer and the runs
 # are not using the same random seeds
