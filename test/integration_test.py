@@ -9,10 +9,12 @@ import pytest
 from pytrajlib.utils import get_local_impact
 
 sys.path.append("./src")
+from custom_scripts.mean_atm import save_mean_atm_profile
 from pytrajlib.main import run
 from pytrajlib.runtime import per_run_seeds
 
 CONFIG_PATH = "./test/test.json"
+ATM_PROFILES_PATH = "./src/pytrajlib/config/atmprofiles.csv"
 
 ERROR_FIELDS = (
     "initial_x_error",
@@ -28,6 +30,12 @@ ERROR_FIELDS = (
 
 def _get_cep_from_df(impact_df):
     return float(np.quantile(impact_df["miss_distance"], 0.5))
+
+
+@pytest.fixture(scope="session", autouse=True)
+def mean_atm_up_to_date():
+    """Regenerate mean_atm.txt from atmprofiles.csv so atm_model 3 never uses a stale mean."""
+    save_mean_atm_profile(ATM_PROFILES_PATH, overwrite=True)
 
 
 @pytest.fixture(scope="session")

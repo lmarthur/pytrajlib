@@ -323,7 +323,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
   // EarthGRAM profile
   eg16_profile atm_profile;
   if (run_params->atm_model == 2) {
-    int atm_profile_num = (int)ran_flat(0, 100);
+    int atm_profile_num = sample_atm_profile_num(run_params->atm_path);
     atm_profile = parse_atm(run_params->atm_path, atm_profile_num);
   } else if (run_params->atm_model == 3) {
     atm_profile = parse_atm(run_params->mean_atm_path, -1);
@@ -392,7 +392,7 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
       if ((run_params->atm_model == 2) &&
           (true_t > vehicle->booster.total_burn_time) &&
           (sampled_new_profile == 0)) {
-        int atm_profile_num = (int)ran_flat(0, 100);
+        int atm_profile_num = sample_atm_profile_num(run_params->atm_path);
         atm_profile = parse_atm(run_params->atm_path, atm_profile_num);
         sampled_new_profile = 1;
       }

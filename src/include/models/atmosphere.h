@@ -8,8 +8,12 @@
 #include "../utils/utils.h"
 #include "state.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
+// Number of altitude rows per EarthGRAM profile (0-99 km at 1 km spacing). The
+// number of profiles is determined at runtime from the profile file.
 #define ATM_PROFILE_LEN 100
-#define ATM_PROFILE_NUM 100
 
 // Define an atm_cond struct to store local atmospheric conditions
 typedef struct atm_cond {
@@ -52,7 +56,9 @@ typedef struct eg16_profile {
 
 } eg16_profile;
 
-double atm_data[ATM_PROFILE_LEN * ATM_PROFILE_NUM][6];
+// Heap-allocated table of all EarthGRAM profiles, ATM_PROFILE_LEN rows each
+double (*atm_data)[6] = NULL;
+int atm_profile_count = 0;
 // The mean atmospheric profile data has 5 columns, not 6, because there is no
 // profile number column
 double mean_atm_data[ATM_PROFILE_LEN][5];
@@ -61,6 +67,9 @@ int mean_atm_data_is_filled = 0;
 
 /**
  * Initializes atmospheric profile data so the file is read only once.
+ *
+ * The number of profiles is inferred from the number of data rows, which must
+ * be a multiple of `ATM_PROFILE_LEN`.
  *
  * @param atmprofilepath Path to the atmospheric profile file.
  */
@@ -74,21 +83,52 @@ void init_atm_data(char *atmprofilepath) {
   FILE *fp = fopen(atmprofilepath, "r");
   if (fp == NULL) {
     printf("Error opening atmospheric profile file %s\n", atmprofilepath);
-    return;
+    exit(1);
   }
 
   // Skip the column-name header row if present.
   char header_line[1024];
   fgets(header_line, sizeof(header_line), fp);
 
-  // Read the atmospheric profile data, where each value is followed by a comma.
-  for (int i = 0; i < ATM_PROFILE_LEN * ATM_PROFILE_NUM; i++) {
-    for (int j = 0; j < 6; j++) {
-      fscanf(fp, "%lf,", &atm_data[i][j]);
+  // Read rows until EOF, growing the table as needed. Each value is followed
+  // by a comma.
+  int capacity = ATM_PROFILE_LEN * 100;
+  int num_rows = 0;
+  atm_data = (double (*)[6])malloc(capacity * sizeof(*atm_data));
+  double row[6];
+  while (fscanf(fp, "%lf,%lf,%lf,%lf,%lf,%lf,", &row[0], &row[1], &row[2],
+                &row[3], &row[4], &row[5]) == 6) {
+    if (num_rows == capacity) {
+      capacity *= 2;
+      atm_data = (double (*)[6])realloc(atm_data, capacity * sizeof(*atm_data));
     }
+    for (int j = 0; j < 6; j++) {
+      atm_data[num_rows][j] = row[j];
+    }
+    num_rows++;
   }
-  atm_data_is_filled = 1;
   fclose(fp);
+
+  if (num_rows == 0 || num_rows % ATM_PROFILE_LEN != 0) {
+    printf("Error: %s has %d data rows, expected a nonzero multiple of %d\n",
+           atmprofilepath, num_rows, ATM_PROFILE_LEN);
+    exit(1);
+  }
+  atm_profile_count = num_rows / ATM_PROFILE_LEN;
+  atm_data_is_filled = 1;
+}
+
+/**
+ * Draws a uniformly random EarthGRAM profile index.
+ *
+ * @param atmprofilepath Path to the atmospheric profile file.
+ * @return Profile index in `[0, atm_profile_count)`.
+ */
+int sample_atm_profile_num(char *atmprofilepath) {
+  init_atm_data(atmprofilepath);
+  int profilenum = (int)ran_flat(0, atm_profile_count);
+  // ran_flat can return its upper bound exactly
+  return profilenum < atm_profile_count ? profilenum : atm_profile_count - 1;
 }
 
 /**
@@ -365,15 +405,20 @@ eg16_profile parse_atm(char *atmprofilepath, int profilenum) {
     }
   } else {
     init_atm_data(atmprofilepath);
+    if (profilenum >= atm_profile_count) {
+      printf("Error: atmospheric profile %d requested, but only %d exist\n",
+             profilenum, atm_profile_count);
+      exit(1);
+    }
     // Update the atmospheric profile struct by iterating over only the
     // requested profile
     for (int i = 0; i < ATM_PROFILE_LEN; i++) {
       atm_profile.alt_data[i] = atm_data[ATM_PROFILE_LEN * profilenum + i][1];
       atm_profile.density_data[i] =
           atm_data[ATM_PROFILE_LEN * profilenum + i][2];
-      atm_profile.meridional_wind_data[i] =
-          atm_data[ATM_PROFILE_LEN * profilenum + i][3];
       atm_profile.zonal_wind_data[i] =
+          atm_data[ATM_PROFILE_LEN * profilenum + i][3];
+      atm_profile.meridional_wind_data[i] =
           atm_data[ATM_PROFILE_LEN * profilenum + i][4];
       atm_profile.vertical_wind_data[i] =
           atm_data[ATM_PROFILE_LEN * profilenum + i][5];

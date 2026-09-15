@@ -203,11 +203,6 @@ def run(
         )
         print(sensitivity_results)
 
-        try:
-            save_atm_plots(output_dir_path)
-        except Exception as exc:
-            print(f"Warning: failed to generate atm plots: {exc}")
-
         if return_config:
             return sensitivity_results, config_dict
         return sensitivity_results
@@ -362,6 +357,12 @@ def cli():
         help="Run the error-parameter sensitivity sweep instead of a single simulation. 0 indicates using zero error as baseline. 1 indicates using standard parameter values as baseline.",
     )
     parser.add_argument(
+        "--save-atm-plots",
+        default=False,
+        action="store_true",
+        help="Save mean atmospheric density and wind plots to the output directory without running the simulation",
+    )
+    parser.add_argument(
         "--num-processes",
         type=int,
         default=10,
@@ -384,9 +385,19 @@ def cli():
     plot_trajectory = kwargs.pop("plot_trajectory")
     plot_impact = kwargs.pop("plot_impact")
     sensitivity = kwargs.pop("sensitivity")
+    atm_plots = kwargs.pop("save_atm_plots")
     num_processes = int(kwargs.pop("num_processes", max((os.cpu_count() * 5) // 8, 1)))
 
     output_dir = kwargs.pop("output_dir")
+
+    if atm_plots:
+        if output_dir is None:
+            run_name = kwargs.get("run_name")
+            if run_name is _UNSET:
+                run_name = get_default_config().get("run_name", "run")
+            output_dir = str(Path("output") / str(run_name))
+        save_atm_plots(output_dir)
+        return
 
     if sensitivity is not None:
         run(

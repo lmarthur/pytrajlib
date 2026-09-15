@@ -4,6 +4,9 @@
 
 Initializes atmospheric profile data so the file is read only once.
 
+The number of profiles is inferred from the number of data rows, which must
+be a multiple of `ATM_PROFILE_LEN`.
+
 ### Parameters
 
 | Name | Type | Description |
@@ -15,6 +18,22 @@ Initializes atmospheric profile data so the file is read only once.
 | Type | Description |
 | --- | --- |
 | `void` | None. |
+
+## `sample_atm_profile_num`
+
+Draws a uniformly random EarthGRAM profile index.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `atmprofilepath` | `char *` | Path to the atmospheric profile file. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `int` | Profile index in `[0, atm_profile_count)`. |
 
 ## `init_mean_atm_data`
 

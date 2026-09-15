@@ -359,6 +359,17 @@ TEST(atmosphere, parse_atm) {
   REQUIRE_LT(atm_data.density_data[0], 1.35);
 
   REQUIRE_NE(density_0, density_1);
+
+  // The last profile in the file is readable, and sampled indices stay in range
+  REQUIRE_GT(atm_profile_count, 1);
+  atm_data = parse_atm(atmprofile, atm_profile_count - 1);
+  REQUIRE_EQ(atm_data.profile_num, atm_profile_count - 1);
+  REQUIRE_EQ(atm_data.alt_data[ATM_PROFILE_LEN - 1], ATM_PROFILE_LEN - 1.0);
+  for (int i = 0; i < 1000; i++) {
+    int sampled = sample_atm_profile_num(atmprofile);
+    REQUIRE_GE(sampled, 0);
+    REQUIRE_LT(sampled, atm_profile_count);
+  }
 }
 
 TEST(atmosphere, get_eg_atm_cond) {
