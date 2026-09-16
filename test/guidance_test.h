@@ -61,7 +61,7 @@ TEST(guidance, prop_nav_perp_velocity_magnitude_and_direction) {
   double r_norm = norm(r_target);
   double v_norm = norm(estimated_state.velocity);
   double gain = run_params.nav_gain_0 +
-                (run_params.nav_gain_1 - run_params.nav_gain_0) / 120e3 *
+                (run_params.nav_gain_1 - run_params.nav_gain_0) / 100e3 *
                     get_altitude(estimated_state.position);
 
   cartvec rot = sdivide(cross(r_target, v_rel), dot(r_target, r_target));

@@ -59,7 +59,7 @@ cartvec prop_nav(state *estimated_state, runparams *run_params,
   // Calculate the acceleration command by taking the cross product of the
   // relative velocity and the rotation vector, scaled by the navigation gain
   double gain = run_params->nav_gain_0 +
-                (run_params->nav_gain_1 - run_params->nav_gain_0) / 120e3 *
+                (run_params->nav_gain_1 - run_params->nav_gain_0) / 100e3 *
                     get_altitude(estimated_state->position);
 
   cartvec cross_v_rot = cross(v_rel, rot);
