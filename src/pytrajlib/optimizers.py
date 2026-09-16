@@ -17,13 +17,27 @@ from pytrajlib.utils import get_miss_distance
 LOFT_SCALES = np.array([1000.0, 1.0])  # (t_des_final [s], theta_long [rad])
 LOFT_XATOL = 1e-3
 LOFT_FATOL = 1e-1
+T_DES_FINAL_X0 = 2000.0  # s
 T_DES_FINAL_BOUNDS = (1000.0, 6000.0)  # s
+THETA_LONG_X0 = np.pi / 4  # rad
 THETA_LONG_BOUNDS = (0.0, np.pi / 2)  # rad
 LAMBERT_V_OFFSET_BOUNDS = (-0.1, 0.1)
 LAMBERT_V_OFFSET_X0 = 0.0
 LAMBERT_V_OFFSET_STEP = 0.01
 LAMBERT_V_OFFSET_XATOL = 1e-6
 LAMBERT_V_OFFSET_FATOL = 1e-3
+
+# Optimization methods, named for documentation (e.g. the paper). Asserts in
+# optimize_boost and optimize_reentry keep these in sync with the methods used.
+BOOST_OPTIMIZER = {"name": "Nelder-Mead", "short_name": "NM"}
+REENTRY_OPTIMIZER = {
+    "name": "Covariance Matrix Adaptation Evolution Strategy",
+    "short_name": "CMA-ES",
+}
+_OPTUNA_SAMPLER_SHORT_NAMES = {
+    optuna.samplers.CmaEsSampler: "CMA-ES",
+    optuna.samplers.TPESampler: "TPE",
+}
 
 # Moves the optimizer onto its own seed stream so that the optimizer and the runs
 # are not using the same random seeds
@@ -39,6 +53,18 @@ REENTRY_START_POINT = {
     "K_pp": 10.0,
     "K_delta_p": 1.0,
     "K_delta_d": 1.0,
+}
+
+# Search bounds for the reentry parameters
+REENTRY_BOUNDS = {
+    "max_deflection_angle": (0.0, 10.0),
+    "gearing_ratio": (1.0, 100.0),
+    "nav_gain_0": (0.0, 100.0),
+    "nav_gain_1": (0.0, 100.0),
+    "K_q": (0.0, 100.0),
+    "K_pp": (0.0, 100.0),
+    "K_delta_p": (0.0, 100.0),
+    "K_delta_d": (0.0, 100.0),
 }
 
 # Zeroed for both boost and reentry
@@ -92,7 +118,7 @@ def _evaluate_candidate(config_dict, parameter_names, parameter_values):
     return np.mean(dist)
 
 
-def _optimize_lambert_offset(objective_config, loft_params):
+def _optimize_lambert_offset(objective_config, loft_params, method):
     """Second boost stage: trim the Lambert drag-loss budget.
 
     Runs with the loft solution from the first stage held fixed, so this is a
@@ -103,6 +129,7 @@ def _optimize_lambert_offset(objective_config, loft_params):
     Args:
         objective_config: optimizer config from `_prepare_optimizer_config`.
         loft_params: `t_des_final` and `theta_long` found by the first stage.
+        method: scipy.optimize.minimize method.
 
     Returns:
         float: the offset in m/s.
@@ -122,7 +149,7 @@ def _optimize_lambert_offset(objective_config, loft_params):
     result = minimize(
         fun=objective,
         x0=[LAMBERT_V_OFFSET_X0],
-        method="Nelder-Mead",
+        method=method,
         bounds=[LAMBERT_V_OFFSET_BOUNDS],
         options=dict(
             initial_simplex=[
@@ -146,8 +173,8 @@ def optimize_boost(config_dict, num_processes):
     the trajectory is shaped, then the Lambert offset trims the leftover energy
     shortfall on that shape.
     """
-    tf_des = 2000.0
-    theta_long = np.pi / 4
+    method = "Nelder-Mead"
+    assert method == BOOST_OPTIMIZER["name"], "Update BOOST_OPTIMIZER to match method"
 
     extra_updates = {
         "gnss_nav": 0,
@@ -157,6 +184,9 @@ def optimize_boost(config_dict, num_processes):
         # not the EarthGram atmospheres which are reserved for the actual simulation.
         # This prevents overfitting.
         "atm_model": 1 if config_dict["atm_model"] > 0 else 0,
+        # Fit the loft without a drag-loss budget so it does not depend on the
+        # offset already in the config; stage 2 then starts from this exact point.
+        "lambert_v_offset": LAMBERT_V_OFFSET_X0,
         "num_processes": num_processes,
     }
 
@@ -177,8 +207,8 @@ def optimize_boost(config_dict, num_processes):
     print("Boost stage 1/2: loft (t_des_final, theta_long)")
     result = minimize(
         fun=objective,
-        x0=np.array([tf_des, theta_long]) / LOFT_SCALES,
-        method="Nelder-Mead",
+        x0=np.array([T_DES_FINAL_X0, THETA_LONG_X0]) / LOFT_SCALES,
+        method=method,
         # Bounds are applied in the rescaled coordinates Nelder-Mead sees.
         bounds=[
             tuple(np.array(T_DES_FINAL_BOUNDS) / LOFT_SCALES[0]),
@@ -198,7 +228,7 @@ def optimize_boost(config_dict, num_processes):
     }
 
     print("Boost stage 2/2: Lambert drag-loss budget (lambert_v_offset)")
-    lambert_v_offset = _optimize_lambert_offset(objective_config, loft_params)
+    lambert_v_offset = _optimize_lambert_offset(objective_config, loft_params, method)
 
     return {**loft_params, "lambert_v_offset": lambert_v_offset}
 
@@ -223,37 +253,11 @@ def optimize_reentry(config_dict, num_processes):
     objective_config = _prepare_optimizer_config(config_dict, extra_updates)
 
     def optuna_objective(trial):
-        # Suggest parameters to tune.
-        max_deflection_angle = trial.suggest_float("max_deflection_angle", 0.0, 10.0)
-        gearing_ratio = trial.suggest_float("gearing_ratio", 1, 100)
-        nav_gain_0 = trial.suggest_float("nav_gain_0", 0.0, 100.0)
-        nav_gain_1 = trial.suggest_float("nav_gain_1", 0.0, 100.0)
-        # Include control gains in optimization
-        K_q = trial.suggest_float("K_q", 0.0, 100.0)
-        K_pp = trial.suggest_float("K_pp", 0.0, 100.0)
-        K_delta_p = trial.suggest_float("K_delta_p", 0.0, 100.0)
-        K_delta_d = trial.suggest_float("K_delta_d", 0.0, 100.0)
-
-        parameter_names = (
-            "max_deflection_angle",
-            "gearing_ratio",
-            "nav_gain_0",
-            "nav_gain_1",
-            "K_q",
-            "K_pp",
-            "K_delta_p",
-            "K_delta_d",
-        )
-
-        parameter_values = (
-            max_deflection_angle,
-            gearing_ratio,
-            nav_gain_0,
-            nav_gain_1,
-            K_q,
-            K_pp,
-            K_delta_p,
-            K_delta_d,
+        # Suggest parameters to tune (navigation gains, flap limits, control gains).
+        parameter_names = tuple(REENTRY_BOUNDS)
+        parameter_values = tuple(
+            trial.suggest_float(name, low, high)
+            for name, (low, high) in REENTRY_BOUNDS.items()
         )
 
         sq_miss_dist = _evaluate_candidate(
@@ -264,6 +268,10 @@ def optimize_reentry(config_dict, num_processes):
 
     # Best to have the run config random seed > 0 for the optimizer to be deterministic
     sampler = optuna.samplers.CmaEsSampler(seed=0)
+    assert (
+        _OPTUNA_SAMPLER_SHORT_NAMES.get(type(sampler))
+        == REENTRY_OPTIMIZER["short_name"]
+    ), "Update REENTRY_OPTIMIZER to match sampler"
     study = optuna.create_study(sampler=sampler, direction="minimize")
 
     # Seed the first trial with reasonably good values
