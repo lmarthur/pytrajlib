@@ -32,19 +32,13 @@
     "actuator_resolution": 0.01
   },
   "optimized": {
-    "theta_long": 0.9320122849463917,
+    "theta_long": 0.9326963322008481,
     "theta_lat": 0.0,
-    "t_des_final": 2758.643227815626,
-    "lambert_v_offset": 0.009174804687500003,
-    "gearing_ratio": 16.122525949561293,
-    "max_deflection_angle": 0.07401323517784478,
-    "nav_gain_0": 15.303355005785473,
-    "nav_gain_1": 16.83468605676508,
-    "K_q": 37.453436783686556,
-    "K_pp": 37.84434373487999,
-    "K_delta_p": 24.51340943798552,
-    "K_delta_d": 38.3042690477909
+    "t_des_final": 2758.563016727565,
+    "lambert_v_offset": 0.008859863281250002,
+"max_deflection_angle": 0.7145913317285137, "gearing_ratio": 34.3758496097325, "nav_gain_0": 8.177064436210424, "nav_gain_1": 48.25260938380288, "K_q": 65.00036333671855, "K_pp": 31.37924665767575, "K_delta_p": 57.18036545705733, "K_delta_d": 73.38692844443942
   },
+  
   "error": {
     "initial_x_error": 0.0,
     "initial_pos_error": 0.1,
