@@ -173,4 +173,37 @@ void gnss_measurement(gnss *gnss, state *true_state, state *est_state) {
       true_state->position.z + gnss->noise * ran_gaussian(1);
 }
 
+/**
+ * Apply a star-tracker attitude fix, overwriting the estimated attitude with a
+ * noisy measurement of the true attitude.
+ *
+ * Above the atmosphere the vehicle can sight known stars and solve for its
+ * inertial attitude directly, which resets the attitude error the gyros have
+ * accumulated since launch. The tracker does not recover the attitude exactly:
+ * centroiding error, catalogue error and boresight misalignment leave a small
+ * residual, modelled here as a random body-frame rotation with a per-axis
+ * standard deviation of `noise` radians,
+ * \begin{equation}
+ *   \mathbf q_{EB,\text{est}} = \mathbf q_{EB,\text{true}} \otimes
+ *   \mathbf q(\boldsymbol\varepsilon_B), \qquad
+ *   \varepsilon_{B,i} \sim \mathcal N(0, \sigma^2).
+ * \end{equation}
+ * The error vector is given in body components, so it composes on the right,
+ * the same way the gyro's increment does in the integrator. It is taken
+ * isotropic for simplicity; a real tracker is several times more accurate
+ * about the two cross-boresight axes than about the boresight itself.
+ *
+ * The gyro bias is left untouched, so the attitude error starts growing again
+ * from this residual immediately after the fix.
+ *
+ * @param true_state Pointer to true vehicle state
+ * @param est_state Pointer to estimated state to update
+ * @param noise Per-axis attitude measurement standard deviation in radians
+ */
+void stellar_measurement(state *true_state, state *est_state, double noise) {
+  cartvec attitude_error_B = smultiply(gaussian_cartvec(), noise);
+  est_state->q_EB = qmultiply(
+      true_state->q_EB, quaternion_from_rotation_vector(attitude_error_B));
+}
+
 #endif

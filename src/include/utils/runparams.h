@@ -32,6 +32,7 @@ typedef struct runparams {
   int ballistic_drag;   // flag to use simplified reentry drag calculation
   int atm_model;        // flag to select the atmospheric model
   int gnss_nav;         // flag to include GNSS navigation
+  int stellar_nav;      // flag to include a stellar attitude fix at 100 km
   int rv_maneuv;        // flag to include guidance during the reentry phase
   int perfect_boost;    // 1 perfect boost, 0 realistic
   int optimize_boost;   // 1 optimize t_des_final/theta_long/lambert_v_offset,
@@ -68,6 +69,8 @@ typedef struct runparams {
   double gyro_noise;             // gyro noise in rad/s/sqrt(s)
   double gnss_noise;             // GNSS error in meters
   double gnss_freq;              // GNSS update frequency in Hz
+  double stellar_noise;          // star tracker per-axis attitude error
+                                 // standard deviation in radians
   double roll_gyro_error_factor; // Multiplicative error factor for roll gyro
   // bias error
   double

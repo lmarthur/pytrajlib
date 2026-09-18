@@ -152,3 +152,43 @@ Apply GNSS position measurement model to update estimated state position.
 | Type | Description |
 | --- | --- |
 | `void` | None. |
+
+## `stellar_measurement`
+
+Apply a star-tracker attitude fix, overwriting the estimated attitude with a
+noisy measurement of the true attitude.
+
+Above the atmosphere the vehicle can sight known stars and solve for its
+inertial attitude directly, which resets the attitude error the gyros have
+accumulated since launch. The tracker does not recover the attitude exactly:
+centroiding error, catalogue error and boresight misalignment leave a small
+residual, modelled here as a random body-frame rotation with a per-axis
+standard deviation of `noise` radians,
+$$
+\begin{equation}
+  \mathbf q_{EB,\text{est}} = \mathbf q_{EB,\text{true}} \otimes
+  \mathbf q(\boldsymbol\varepsilon_B), \qquad
+  \varepsilon_{B,i} \sim \mathcal N(0, \sigma^2).
+\end{equation}
+$$
+The error vector is given in body components, so it composes on the right,
+the same way the gyro's increment does in the integrator. It is taken
+isotropic for simplicity; a real tracker is several times more accurate
+about the two cross-boresight axes than about the boresight itself.
+
+The gyro bias is left untouched, so the attitude error starts growing again
+from this residual immediately after the fix.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `true_state` | `state *` | Pointer to true vehicle state |
+| `est_state` | `state *` | Pointer to estimated state to update |
+| `noise` | `double` | Per-axis attitude measurement standard deviation in radians |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `void` | None. |

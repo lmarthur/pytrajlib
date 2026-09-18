@@ -112,6 +112,7 @@ void print_config(runparams *run_params) {
   printf("Ballistic drag: %d\n", run_params->ballistic_drag);
   printf("Atmospheric model: %d\n", run_params->atm_model);
   printf("GNSS navigation: %d\n", run_params->gnss_nav);
+  printf("Stellar navigation: %d\n", run_params->stellar_nav);
   printf("Reentry phase guidance: %d\n", run_params->rv_maneuv);
 
   printf("Initial x-error: %f\n", run_params->initial_x_error);
@@ -124,6 +125,7 @@ void print_config(runparams *run_params) {
   printf("Gyro noise: %f\n", run_params->gyro_noise);
   printf("GNSS noise: %f\n", run_params->gnss_noise);
   printf("GNSS frequency: %f Hz\n", run_params->gnss_freq);
+  printf("Stellar noise: %e rad\n", run_params->stellar_noise);
 }
 
 /**

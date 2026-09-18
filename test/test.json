@@ -23,6 +23,7 @@
     "ballistic_drag": 1,
     "atm_model": 0,
     "gnss_nav": 0,
+    "stellar_nav": 0,
     "rv_maneuv": 0,
     "perfect_boost": 0,
     "t_vert_boost": 10,
@@ -52,6 +53,7 @@
     "gyro_noise": 0.0,
     "gnss_noise": 0.0,
     "gnss_freq": 1.0,
+    "stellar_noise": 0.0,
     "roll_gyro_error_factor": 1.0,
     "burn_time_error": 0.0
   },

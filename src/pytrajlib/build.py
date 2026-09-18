@@ -38,6 +38,7 @@ ffibuilder.cdef(
         int ballistic_drag;
         int atm_model;
         int gnss_nav;
+        int stellar_nav;
         int rv_maneuv;
         int perfect_boost;
         int optimize_boost;
@@ -67,6 +68,7 @@ ffibuilder.cdef(
         double gyro_noise;
         double gnss_noise;
         double gnss_freq;
+        double stellar_noise;
         double roll_gyro_error_factor;
         double geoid_height_error;
 

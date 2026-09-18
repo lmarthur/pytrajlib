@@ -55,6 +55,7 @@ CLI_PARAM_HELP = {
     "ballistic_drag": "Use simplified drag; 1 enables it and 0 disables it.",
     "atm_model": "Atmospheric model selection; 0 is exponential, 1 adds perturbations, 2 is EarthGram, 3 is mean EarthGram.",
     "gnss_nav": "Enable GNSS position updates during exoatmospheric flight.",
+    "stellar_nav": "Enable a star-tracker attitude fix when the vehicle first passes 100 km.",
     "rv_maneuv": "Reentry vehicle maneuverability mode; 1 uses realistic maneuverability, 2 uses idealized maneuverability.",
     "reentry_vel": "Reentry velocity in meters per second.",
     "perfect_boost": "Set to 1 for a perfect boost phase and 0 for a realistic boost phase.",
@@ -83,6 +84,7 @@ CLI_PARAM_HELP = {
     "gyro_noise": "Gyroscope noise level.",
     "gnss_noise": "GNSS measurement noise level.",
     "gnss_freq": "GNSS update frequency in Hz.",
+    "stellar_noise": "Star tracker per-axis attitude error standard deviation, in radians.",
     "roll_gyro_error_factor": "Roll gyroscope error scaling factor.",
     "burn_time_error": "Burn time error magnitude in seconds.",
 }

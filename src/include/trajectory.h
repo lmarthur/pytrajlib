@@ -375,6 +375,13 @@ state fly(runparams *run_params, state *initial_state, vehicle *vehicle,
     if (!exit_atmosphere_captured && true_altitude > 100e3) {
       exit_atmosphere_captured = 1;
       time_step = run_params->time_step_lambert;
+
+      // Clear of the atmosphere the star tracker gets its first sighting, so
+      // take a single attitude fix here and discard the attitude error the
+      // gyros have built up through boost.
+      if (run_params->stellar_nav == 1) {
+        stellar_measurement(&true_state, &est_state, run_params->stellar_noise);
+      }
     }
 
     // Check burnout event
