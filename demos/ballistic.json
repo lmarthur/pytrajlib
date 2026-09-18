@@ -4,6 +4,8 @@
     "num_runs": 1000,
     "num_runs_optimizer": 25,
     "num_trials_optimizer": 100,
+    "t_des_final_min": 1000.0,
+    "t_des_final_max": 6000.0,
     "time_step_boost": 0.0001,
     "time_step_lambert": 0.001,
     "time_step_midcourse": 0.01,

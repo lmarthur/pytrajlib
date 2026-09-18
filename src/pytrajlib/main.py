@@ -20,10 +20,12 @@ from pytrajlib.plotting import (
 )
 from pytrajlib.runtime import (
     _UNSET,
+    DEFAULT_VEHICLE,
+    VEHICLE_CONFIGS,
     _flatten_config_sections,
     _keep_alive,
     _set_aimpoint_from_range,
-    get_default_config,
+    get_config,
 )
 from pytrajlib.scripts.atm_plot import save_atm_plots
 from pytrajlib.scripts.sensitivity import run_sensitivity
@@ -38,6 +40,8 @@ CLI_PARAM_HELP = {
     "num_runs": "Number of simulation runs to execute.",
     "num_runs_optimizer": "Number of Monte Carlo runs used by the boost and reentry optimizers.",
     "num_trials_optimizer": "Number of optimization trials per optimizer run.",
+    "t_des_final_min": "Lower bound on the desired flight time during boost optimization, in seconds.",
+    "t_des_final_max": "Upper bound on the desired flight time during boost optimization, in seconds.",
     "time_step_boost": "Time step used during the boost phase, in seconds.",
     "time_step_lambert": "Time step used during Lambert maneuver, in seconds.",
     "time_step_midcourse": "Time step used during the midcourse phase, in seconds.",
@@ -116,9 +120,11 @@ def _get_version() -> str:
         return "unknown"
 
 
-def _load_config_dict(config: str | Mapping = None):
+def _load_config_dict(config: str | Mapping = None, vehicle: str | None = None):
+    if config is not None and vehicle is not None:
+        raise ValueError("pass either config or vehicle, not both")
     if config is None:
-        config_dict = get_default_config().copy()
+        config_dict = get_config(vehicle or DEFAULT_VEHICLE).copy()
     elif isinstance(config, Mapping):
         config_dict = _flatten_config_sections(dict(config))
     else:
@@ -136,6 +142,7 @@ def _load_config_dict(config: str | Mapping = None):
 
 def run(
     config: str | Mapping = None,
+    vehicle: str | None = None,
     plot_trajectory: bool = False,
     plot_impact: bool = False,
     output_dir: str | None = "output",
@@ -154,7 +161,9 @@ def run(
 
     Args:
         config: path to a JSON config file, a config dictionary, or `None`
-            to use the default config
+            to use the bundled config for `vehicle`
+        vehicle: name of a bundled vehicle config (e.g. "scud"); defaults to the
+            maneuvering RV config. Cannot be combined with `config`.
         plot_trajectory: whether to save trajectory plots
         plot_impact: whether to save impact plot
         output_dir: path to save plots and run artifacts
@@ -165,7 +174,7 @@ def run(
         return_guidance: whether to return the reentry guidance dataframe of the first run's desired and achieved accelerations in reentry.
         **kwargs: overrides applied on top of the loaded config
     """
-    config_dict = _load_config_dict(config)
+    config_dict = _load_config_dict(config, vehicle)
 
     explicit_kwargs = {k: v for k, v in kwargs.items() if v is not _UNSET}
 
@@ -335,6 +344,12 @@ def cli():
         help="Path to JSON config file for simulation & vehicle specification ",
     )
     parser.add_argument(
+        "--vehicle",
+        choices=sorted(VEHICLE_CONFIGS),
+        default=None,
+        help=f"Use a bundled vehicle config instead of --config (default: {DEFAULT_VEHICLE})",
+    )
+    parser.add_argument(
         "--plot-impact",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -371,7 +386,7 @@ def cli():
         help="Number of processes to run concurrently. Default is 5/8 number of cores available, rounded down to a minimum of 1.",
     )
 
-    for param_name, default_value in get_default_config().items():
+    for param_name, default_value in get_config().items():
         if param_name == "vehicle":
             continue
         parser.add_argument(
@@ -384,6 +399,9 @@ def cli():
     args = parser.parse_args()
     kwargs = vars(args)
     config = kwargs.pop("config")
+    vehicle = kwargs.pop("vehicle")
+    if config is not None and vehicle is not None:
+        parser.error("--config and --vehicle cannot be used together")
     plot_trajectory = kwargs.pop("plot_trajectory")
     plot_impact = kwargs.pop("plot_impact")
     sensitivity = kwargs.pop("sensitivity")
@@ -396,7 +414,7 @@ def cli():
         if output_dir is None:
             run_name = kwargs.get("run_name")
             if run_name is _UNSET:
-                run_name = get_default_config().get("run_name", "run")
+                run_name = get_config(vehicle or DEFAULT_VEHICLE).get("run_name", "run")
             output_dir = str(Path("output") / str(run_name))
         save_atm_plots(output_dir)
         return
@@ -404,6 +422,7 @@ def cli():
     if sensitivity is not None:
         run(
             config=config,
+            vehicle=vehicle,
             output_dir=output_dir,
             num_processes=num_processes,
             sensitivity=sensitivity,
@@ -414,11 +433,12 @@ def cli():
     if output_dir is None:
         run_name = kwargs.get("run_name")
         if run_name is _UNSET:
-            run_name = get_default_config().get("run_name", "run_4")
+            run_name = get_config(vehicle or DEFAULT_VEHICLE).get("run_name", "run_4")
         output_dir = str(Path("output") / str(run_name))
 
     impact_df, config = run(
         config=config,
+        vehicle=vehicle,
         plot_trajectory=plot_trajectory,
         plot_impact=plot_impact,
         output_dir=output_dir,

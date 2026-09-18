@@ -4,12 +4,14 @@
     "num_runs": 200,
     "num_runs_optimizer": 50,
     "num_trials_optimizer": 200,
+    "t_des_final_min": 1000.0,
+    "t_des_final_max": 6000.0,
     "time_step_boost": 0.001,
     "time_step_lambert": 0.0001,
     "time_step_midcourse": 1.0,
     "time_step_reentry": 0.0001,
     "traj_output": 1,
-    "range": 13000000,
+    "range": 10000000,
     "x_aim": null,
     "y_aim": null,
     "z_aim": null,
@@ -24,6 +26,7 @@
     "ballistic_drag": 0,
     "atm_model": 2,
     "gnss_nav": 1,
+    "stellar_nav": 0,
     "rv_maneuv": 1,
     "perfect_boost": 0,
     "t_vert_boost": 10,
@@ -32,13 +35,19 @@
     "actuator_resolution": 0.01
   },
   "optimized": {
-    "theta_long": 0.9326963322008481,
+    "theta_long": 0.7244013168968135,
     "theta_lat": 0.0,
-    "t_des_final": 2758.563016727565,
-    "lambert_v_offset": 0.008859863281250002,
-"max_deflection_angle": 0.7145913317285137, "gearing_ratio": 34.3758496097325, "nav_gain_0": 8.177064436210424, "nav_gain_1": 48.25260938380288, "K_q": 65.00036333671855, "K_pp": 31.37924665767575, "K_delta_p": 57.18036545705733, "K_delta_d": 73.38692844443942
+    "t_des_final": 2750.0448224600414,
+    "lambert_v_offset": 0.00478515625,
+    "gearing_ratio": 15.09681740667756,
+    "max_deflection_angle": 0.0541926405791428,
+    "nav_gain_0": 17.449813322073908,
+    "nav_gain_1": 17.97110870646422,
+    "K_q": 10.570292567974946,
+    "K_pp": 39.64608646286289,
+    "K_delta_p": 46.13428958589412,
+    "K_delta_d": 20.035793925718757
   },
-  
   "error": {
     "initial_x_error": 0.0,
     "initial_pos_error": 0.1,
@@ -49,6 +58,7 @@
     "gyro_noise": 1e-08,
     "gnss_noise": 0.1,
     "gnss_freq": 1.0,
+    "stellar_noise": 2e-5,
     "roll_gyro_error_factor": 0.0,
     "burn_time_error": 0.0,
     "geoid_height_error": 0.05
@@ -83,6 +93,7 @@
     "rv": {
       "name": "SWERVE",
       "maneuverability_flag": 1,
+      "is_detached": true,
       "rv_mass": 517.609493782838,
       "rv_length": 2.75,
       "rv_radius": 0.269927849185708,

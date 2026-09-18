@@ -1,0 +1,95 @@
+{
+  "run": {
+    "run_name": "scud-er",
+    "num_runs": 200,
+    "num_runs_optimizer": 50,
+    "num_trials_optimizer": 200,
+    "t_des_final_min": 150.0,
+    "t_des_final_max": 600.0,
+    "time_step_boost": 0.001,
+    "time_step_lambert": 0.0001,
+    "time_step_midcourse": 1.0,
+    "time_step_reentry": 0.0001,
+    "traj_output": 1,
+    "range": 758779.0814072156,
+    "x_aim": null,
+    "y_aim": null,
+    "z_aim": null,
+    "integrator": 1,
+    "random_seed": -1,
+    "atm_path": null,
+    "optimize_boost": 0,
+    "optimize_reentry": 0
+  },
+  "flight": {
+    "grav_error": 1,
+    "ballistic_drag": 1,
+    "atm_model": 2,
+    "gnss_nav": 0,
+    "stellar_nav": 0,
+    "rv_maneuv": 0,
+    "perfect_boost": 0,
+    "t_vert_boost": 3,
+    "deflection_time": 0.02,
+    "actuator_force": 10,
+    "actuator_resolution": 0.01
+  },
+  "optimized": {
+    "theta_long": 0.5861348135548763,
+    "theta_lat": 0.0,
+    "t_des_final": 300.0,
+    "lambert_v_offset": 0.0,
+    "max_deflection_angle": 0.7145913317285137,
+    "gearing_ratio": 34.3758496097325,
+    "nav_gain_0": 8.177064436210424,
+    "nav_gain_1": 48.25260938380288,
+    "K_q": 65.00036333671855,
+    "K_pp": 31.37924665767575,
+    "K_delta_p": 57.18036545705733,
+    "K_delta_d": 73.38692844443942
+  },
+  "error": {
+    "initial_x_error": 0.0,
+    "initial_pos_error": 0.1,
+    "initial_vel_error": 0.001,
+    "initial_angle_error": 1e-06,
+    "acc_scale_stability": 1e-06,
+    "gyro_bias_stability": 1e-08,
+    "gyro_noise": 1e-08,
+    "gnss_noise": 0.1,
+    "gnss_freq": 1.0,
+    "stellar_noise": 2e-5,
+    "roll_gyro_error_factor": 0.0,
+    "burn_time_error": 0.0,
+    "geoid_height_error": 0.05
+  },
+  "vehicle": {
+    "booster": {
+      "name": "SCUD-ER",
+      "area": 0.7853981633974483,
+      "bus_mass": 0.0,
+      "c_d_0": 0.3191024771996637,
+      "stages": [
+        {
+          "wet_mass": 8730.0,
+          "fuel_mass": 7390.674,
+          "isp0": 2256.3,
+          "burn_time": 127.8
+        }
+      ]
+    },
+    "rv": {
+      "name": "SCUD-ER",
+      "maneuverability_flag": 0,
+      "is_detached": false,
+      "rv_mass": 500.0,
+      "rv_length": 2.1587715714730953,
+      "rv_radius": 0.5,
+      "half_angle": 0.2276,
+      "aerodynamics": {
+        "c_d_0": 0.3191024771996637,
+        "c_d_alpha": 0.0
+      }
+    }
+  }
+}

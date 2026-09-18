@@ -56,6 +56,10 @@ Run the modified simulation with
 ```bash
 pytrajlib --config path-to-your-config.json
 ```
+or switch to another bundled vehicle config (`maneuv`, the default, or `scud`) with
+```bash
+pytrajlib --vehicle scud
+```
 
 The default configuration is
 ```json
@@ -66,6 +70,8 @@ The default configuration is
     "num_runs": 200, # Number of simulation runs to execute.
     "num_runs_optimizer": 50, # Number of Monte Carlo runs used by the boost and reentry optimizers.
     "num_trials_optimizer": 100, # Number of optimization trials per optimizer run.
+    "t_des_final_min": 1000.0, # Lower bound on the desired flight time during boost optimization, in seconds.
+    "t_des_final_max": 6000.0, # Upper bound on the desired flight time during boost optimization, in seconds.
     "time_step_boost": 0.001, # Time step used during the boost phase, in seconds.
     "time_step_lambert": 0.0001, # Time step used during Lambert maneuver, in seconds.
     "time_step_midcourse": 1.0, # Time step used during the midcourse phase, in seconds.

@@ -45,6 +45,8 @@ ffibuilder.cdef(
         int optimize_reentry;
 
         double t_des_final;
+        double t_des_final_min;
+        double t_des_final_max;
         double lambert_v_offset;
         double t_vert_boost;
         double deflection_time;

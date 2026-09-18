@@ -18,7 +18,6 @@ LOFT_SCALES = np.array([1000.0, 1.0])  # (t_des_final [s], theta_long [rad])
 LOFT_XATOL = 1e-3
 LOFT_FATOL = 1e-1
 T_DES_FINAL_X0 = 2000.0  # s
-T_DES_FINAL_BOUNDS = (1000.0, 6000.0)  # s
 THETA_LONG_X0 = np.pi / 4  # rad
 THETA_LONG_BOUNDS = (0.0, np.pi / 2)  # rad
 LAMBERT_V_OFFSET_BOUNDS = (-0.1, 0.1)
@@ -204,14 +203,20 @@ def optimize_boost(config_dict, num_processes):
         print(f"{tf=:.6f}, {theta=:.6f}, {miss_dist=:.6f}")
         return miss_dist
 
+    t_des_final_bounds = (
+        float(config_dict["t_des_final_min"]),
+        float(config_dict["t_des_final_max"]),
+    )
+    t_des_final_x0 = np.clip(T_DES_FINAL_X0, *t_des_final_bounds)
+
     print("Boost stage 1/2: loft (t_des_final, theta_long)")
     result = minimize(
         fun=objective,
-        x0=np.array([T_DES_FINAL_X0, THETA_LONG_X0]) / LOFT_SCALES,
+        x0=np.array([t_des_final_x0, THETA_LONG_X0]) / LOFT_SCALES,
         method=method,
         # Bounds are applied in the rescaled coordinates Nelder-Mead sees.
         bounds=[
-            tuple(np.array(T_DES_FINAL_BOUNDS) / LOFT_SCALES[0]),
+            tuple(np.array(t_des_final_bounds) / LOFT_SCALES[0]),
             tuple(np.array(THETA_LONG_BOUNDS) / LOFT_SCALES[1]),
         ],
         options=dict(

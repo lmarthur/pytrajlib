@@ -14,6 +14,14 @@ from pytrajlib._traj import lib as traj_lib
 _keep_alive = {}
 EARTH_RADIUS_M = 6371e3
 MAX_BOOSTER_STAGES = 10
+# Vehicle name: bundled config file in pytrajlib/config
+VEHICLE_CONFIGS = {
+    "swerve": "swerve.json",
+    "scud": "scud.json",
+    "scud-er": "scud-er.json",
+    "d5": "d5.json",
+}
+DEFAULT_VEHICLE = "swerve"
 
 
 def _flatten_config_sections(raw_config):
@@ -38,17 +46,29 @@ def _flatten_config_sections(raw_config):
     return config_dict
 
 
-def get_default_config():
-    """Load and flatten the library's default maneuver/config JSON.
+def get_vehicle_config_path(vehicle=DEFAULT_VEHICLE):
+    """Path to the bundled JSON config for a named vehicle (see VEHICLE_CONFIGS)."""
+    if vehicle not in VEHICLE_CONFIGS:
+        raise ValueError(
+            f"unknown vehicle {vehicle!r}; choose from {sorted(VEHICLE_CONFIGS)}"
+        )
+    return importlib.resources.files("pytrajlib.config").joinpath(
+        VEHICLE_CONFIGS[vehicle]
+    )
+
+
+def get_config(vehicle=DEFAULT_VEHICLE):
+    """Load and flatten the library's bundled config JSON for a vehicle.
+
+    Args
+        vehicle: name of a bundled vehicle config (see VEHICLE_CONFIGS);
+                 defaults to the maneuvering RV config.
 
     Returns
         dict: configuration dictionary with any sectioned fields flattened
               into a single run-parameter mapping.
     """
-    config_resource_root = importlib.resources.files("pytrajlib.config")
-    json_config = config_resource_root.joinpath("maneuv.json")
-
-    with open(json_config) as f:
+    with open(get_vehicle_config_path(vehicle)) as f:
         raw_config = json.load(f)
     config_dict = _flatten_config_sections(raw_config)
 

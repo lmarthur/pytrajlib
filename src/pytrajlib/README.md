@@ -12,7 +12,7 @@ We use `uv` to manage dependencies and build the package. [Install `uv`](https:/
 
 Dependencies and settings for building the Python package are set in [pyproject.toml](../../pyproject.toml). You don't need to change these.
 
-[maneuv.json](./config/maneuv.json) defines the default simulation parameters.
+[swerve.json](./config/swerve.json) defines the default simulation parameters.
 
 From the project directory, run 
 
