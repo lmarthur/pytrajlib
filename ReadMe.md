@@ -157,6 +157,9 @@ The default configuration is
     "rv": {
       "name": "SWERVE",
       "maneuverability_flag": 1,
+      # Whether the RV separates from the booster at burnout (1) or stays
+      # attached to the spent bus and final stage (0)
+      "is_detached": true,
       "rv_mass": 450.0,
       # Reference length is the tip to base length (m)
       "rv_length": 2.75,

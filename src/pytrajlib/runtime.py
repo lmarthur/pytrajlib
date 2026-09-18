@@ -181,6 +181,7 @@ def create_vehicle_struct(config_dict):
     rv_radius = float(rv_dict.get("rv_radius", 0.0))
     _set_fixed_string(rv.name, str(rv_dict.get("name", "")))
     rv.maneuverability_flag = int(rv_dict.get("maneuverability_flag", 0))
+    rv.is_detached = int(rv_dict.get("is_detached", 1))
     rv.rv_mass = float(rv_dict.get("rv_mass", 0.0))
     rv.rv_length = float(rv_dict.get("rv_length", 0.0))
     rv.rv_radius = rv_radius

@@ -22,6 +22,7 @@ static inline booster init_test_booster(void) {
 
 static inline rv init_test_rv(void) {
   rv rv = {0};
+  rv.is_detached = 1;
   rv.rv_mass = 50.0;
   return rv;
 }
@@ -63,4 +64,21 @@ TEST(mass, get_vehicle_mass) {
       REQUIRE_EQ(get_vehicle_mass(&vehicle, t), vehicle.rv.rv_mass);
     }
   }
+}
+
+TEST(mass, attached_booster_mass) {
+  vehicle vehicle;
+  vehicle.booster = init_test_booster();
+  vehicle.rv = init_test_rv();
+  vehicle.rv.is_detached = 0;
+  vehicle.booster.bus_mass = 20.0;
+  vehicle.booster.dry_mass[vehicle.booster.num_stages - 1] = 10.0;
+  vehicle.total_mass = vehicle.booster.total_mass + vehicle.rv.rv_mass;
+
+  // An attached reentry vehicle carries the bus and the final stage's dry
+  // mass past burnout instead of dropping to its own mass.
+  double t = vehicle.booster.total_burn_time + 1.0;
+  REQUIRE_EQ(get_vehicle_mass(&vehicle, t),
+             vehicle.rv.rv_mass + vehicle.booster.bus_mass +
+                 vehicle.booster.dry_mass[vehicle.booster.num_stages - 1]);
 }

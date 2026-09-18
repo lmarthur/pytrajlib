@@ -1,8 +1,31 @@
 # Vehicle
 
+## `get_spent_booster_mass`
+
+Booster hardware still attached once every stage has burned out.
+
+Earlier stages are jettisoned as they burn out, so only the bus and the dry
+mass of the final stage remain.
+
+### Parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `vehicle` | `vehicle *` | Pointer to vehicle struct. |
+
+### Returns
+
+| Type | Description |
+| --- | --- |
+| `static inline double` |  |
+
 ## `get_vehicle_mass`
 
 Updates vehicle mass based on stage burn timing.
+
+After burnout the mass is that of the reentry vehicle alone, unless the
+reentry vehicle never separates, in which case the spent booster mass is
+carried along with it.
 
 ### Parameters
 

@@ -92,6 +92,7 @@ ffibuilder.cdef(
     typedef struct rv {
         char name[32];
         int maneuverability_flag;
+        int is_detached;
         double rv_mass;
         double rv_length;
         double rv_radius;

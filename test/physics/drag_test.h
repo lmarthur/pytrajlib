@@ -3,6 +3,7 @@
 
 static inline rv init_simple_rv(void) {
   rv simple_rv = {0};
+  simple_rv.is_detached = 1;
   simple_rv.rv_mass = 1000.0;
   simple_rv.rv_area = 1.0;
   simple_rv.c_d_0 = 0.5;

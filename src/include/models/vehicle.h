@@ -43,6 +43,9 @@ typedef struct rv {
   char name[VEHICLE_NAME_LEN]; // name of the reentry vehicle
   int maneuverability_flag;    // flag to indicate if the reentry vehicle is
                                // maneuverable (1) or not (0)
+  int is_detached;             // flag to indicate if the reentry vehicle
+                               // separates from the booster at burnout (1) or
+                               // stays attached to it (0)
   double rv_mass;              // mass of the reentry vehicle in kg
   double rv_length;            // length of the reentry vehicle in meters
   double rv_radius;            // radius of the reentry vehicle in meters
@@ -81,7 +84,27 @@ typedef struct vehicle {
 } vehicle;
 
 /**
+ * Booster hardware still attached once every stage has burned out.
+ *
+ * Earlier stages are jettisoned as they burn out, so only the bus and the dry
+ * mass of the final stage remain.
+ *
+ * @param vehicle Pointer to vehicle struct.
+ */
+static inline double get_spent_booster_mass(vehicle *vehicle) {
+  if (vehicle->booster.num_stages <= 0) {
+    return 0.0;
+  }
+  return vehicle->booster.bus_mass +
+         vehicle->booster.dry_mass[vehicle->booster.num_stages - 1];
+}
+
+/**
  * Updates vehicle mass based on stage burn timing.
+ *
+ * After burnout the mass is that of the reentry vehicle alone, unless the
+ * reentry vehicle never separates, in which case the spent booster mass is
+ * carried along with it.
  *
  * @param vehicle Pointer to vehicle struct.
  * @param t Current simulation time in seconds.
@@ -102,7 +125,10 @@ double get_vehicle_mass(vehicle *vehicle, double t) {
   }
 
   if (t > vehicle->booster.total_burn_time) {
-    return vehicle->rv.rv_mass;
+    if (vehicle->rv.is_detached) {
+      return vehicle->rv.rv_mass;
+    }
+    return vehicle->rv.rv_mass + get_spent_booster_mass(vehicle);
   }
 
   printf("Warning: Unable to calculate vehicle mass\n");
