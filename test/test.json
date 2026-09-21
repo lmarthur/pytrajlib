@@ -4,6 +4,8 @@
     "num_runs": 10,
     "num_runs_optimizer": 1,
     "num_trials_optimizer": 200,
+    "t_des_final_min": 1000.0,
+    "t_des_final_max": 6000.0,
     "time_step_boost": 0.01,
     "time_step_lambert": 0.01,
     "time_step_midcourse": 1.0,
@@ -35,6 +37,7 @@
     "theta_long": 0.9634581923287147,
     "theta_lat": 0.0,
     "t_des_final": 1869.5101831808277,
+    "lambert_v_offset": 0.0,
     "max_deflection_angle": 1.2342546928282203, 
     "gearing_ratio": 27.119912893607165, 
     "nav_gain_0": 55.43646136810274, 
@@ -55,7 +58,8 @@
     "gnss_freq": 1.0,
     "stellar_noise": 0.0,
     "roll_gyro_error_factor": 1.0,
-    "burn_time_error": 0.0
+    "burn_time_error": 0.0,
+    "geoid_height_error": 0.0
   },
   "vehicle": {
     "booster": {

@@ -54,7 +54,6 @@ SENSITIVITY_SPECS = (
         "label": "Trajectory range",
         "sweep_factors": RANGE_SCALE_FACTORS,
         "optimize_boost": True,
-        # "optimize_reentry": True,
     },
     {
         "name": "initial_vel_error",
@@ -88,7 +87,7 @@ SENSITIVITY_SPECS = (
     },
     {
         "name": "geoid_height_error",
-        "label": "Geoid height error",
+        "label": "Gravity height error",
         "sweep_factors": DEFAULT_SCALE_FACTORS,
     },
     {
@@ -211,6 +210,10 @@ def make_case_config(
     ):
         case_config["optimize_reentry"] = 1
 
+        # Reduce number of trials for reentry optimization to ensure the script
+        # runs in a reasonable amount of time
+        case_config["num_trials_optimizer"] = 50
+
     return case_config
 
 
@@ -246,11 +249,10 @@ def run_case(
     case_config.pop("num_processes", None)
 
     impact_df = ptl.run(
-        config=None,
+        config=case_config,
         plot_trajectory=False,
         plot_impact=False,
         num_processes=num_processes,
-        **case_config,
     )
 
     miss_distance = impact_df["miss_distance"].to_numpy()
