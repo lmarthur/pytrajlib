@@ -46,7 +46,7 @@
     "initial_x_error": 0.0,
     "initial_pos_error": 1.0,
     "initial_vel_error": 0.02,
-    "initial_angle_error": 1e-06,
+    "initial_angle_error": 1e-05,
     "acc_scale_stability": 1e-06,
     "gyro_bias_stability": 1e-08,
     "gyro_noise": 1e-08,
