@@ -28,7 +28,7 @@ from pytrajlib.runtime import (
     get_config,
 )
 from pytrajlib.scripts.atm_plot import save_atm_plots
-from pytrajlib.scripts.sensitivity import run_sensitivity
+from pytrajlib.scripts.sensitivity import SENSITIVITY_SELECTORS, run_sensitivity
 from pytrajlib.utils import get_miss_distance
 
 np.random.seed(0)
@@ -148,6 +148,7 @@ def run(
     output_dir: str | None = "output",
     num_processes: int = max((os.cpu_count() * 5) // 8, 1),
     sensitivity: int = None,
+    sensitivity_groups: str | list[str] | None = None,
     return_config=False,
     return_trajectory=False,
     return_guidance=False,
@@ -169,6 +170,9 @@ def run(
         output_dir: path to save plots and run artifacts
         num_processes: number of concurrent processes on which to run simulation. Default is 5/8 of the number of cores available so if you have 16 cores, the number of concurrent processes will be 10.
         sensitivity: run error-parameter sensitivity sweep instead of a single simulation
+        sensitivity_groups: which sweeps to run, as group names (`navigation`,
+            `control`, `time_steps`, `gnss_freq`, `range`, or `all`) and/or
+            individual parameter names. Defaults to all groups.
         return_config: whether to return the config dict along with the impact DataFrame
         return_trajectory: whether to return the trajectory dataframe of the first run's mass, position, velocity, etc. over time.
         return_guidance: whether to return the reentry guidance dataframe of the first run's desired and achieved accelerations in reentry.
@@ -211,6 +215,7 @@ def run(
             base_config=config_dict,
             output_dir=output_dir_path,
             use_zero_baseline=sensitivity == 0,
+            groups=sensitivity_groups,
         )
         print(sensitivity_results)
 
@@ -374,6 +379,18 @@ def cli():
         help="Run the error-parameter sensitivity sweep instead of a single simulation. 0 indicates using zero error as baseline. 1 indicates using standard parameter values as baseline.",
     )
     parser.add_argument(
+        "--sensitivity-groups",
+        nargs="+",
+        metavar="GROUP",
+        default=None,
+        help=(
+            "Which sensitivity sweeps to run. Accepts group names ("
+            + ", ".join(SENSITIVITY_SELECTORS)
+            + "), individual parameter names (e.g. gyro_noise), or a"
+            " comma-separated list of either. Default: all."
+        ),
+    )
+    parser.add_argument(
         "--save-atm-plots",
         default=False,
         action="store_true",
@@ -405,6 +422,7 @@ def cli():
     plot_trajectory = kwargs.pop("plot_trajectory")
     plot_impact = kwargs.pop("plot_impact")
     sensitivity = kwargs.pop("sensitivity")
+    sensitivity_groups = kwargs.pop("sensitivity_groups")
     atm_plots = kwargs.pop("save_atm_plots")
     num_processes = int(kwargs.pop("num_processes", max((os.cpu_count() * 5) // 8, 1)))
 
@@ -426,9 +444,13 @@ def cli():
             output_dir=output_dir,
             num_processes=num_processes,
             sensitivity=sensitivity,
+            sensitivity_groups=sensitivity_groups,
             **kwargs,
         )
         return
+
+    if sensitivity_groups is not None:
+        parser.error("--sensitivity-groups requires --sensitivity")
 
     if output_dir is None:
         run_name = kwargs.get("run_name")

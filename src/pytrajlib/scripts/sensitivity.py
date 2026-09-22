@@ -1,4 +1,5 @@
 import tomllib
+from collections.abc import Iterable
 from copy import deepcopy
 from pathlib import Path
 
@@ -43,97 +44,168 @@ SENSITIVITY_SPECS = (
         "name": "initial_pos_error",
         "label": "Initial position error",
         "sweep_factors": DEFAULT_SCALE_FACTORS,
+        "group": "navigation",
     },
     {
         "name": "gnss_freq",
         "label": "GNSS update frequency",
         "sweep_factors": GNSS_FREQ_SCALE_FACTORS,
+        "group": "gnss_freq",
     },
     {
         "name": "range",
         "label": "Trajectory range",
         "sweep_factors": RANGE_SCALE_FACTORS,
         "optimize_boost": True,
+        "group": "range",
     },
     {
         "name": "initial_vel_error",
         "label": "Initial velocity error",
         "sweep_factors": DEFAULT_SCALE_FACTORS,
+        "group": "navigation",
     },
     {
         "name": "initial_angle_error",
         "label": "Initial angle error",
         "sweep_factors": DEFAULT_SCALE_FACTORS,
+        "group": "navigation",
     },
     {
         "name": "acc_scale_stability",
         "label": "Accelerometer scale stability",
         "sweep_factors": DEFAULT_SCALE_FACTORS,
+        "group": "navigation",
     },
     {
         "name": "gyro_bias_stability",
         "label": "Gyro bias stability",
         "sweep_factors": DEFAULT_SCALE_FACTORS,
+        "group": "navigation",
     },
     {
         "name": "gyro_noise",
         "label": "Gyroscope noise",
         "sweep_factors": DEFAULT_SCALE_FACTORS,
+        "group": "navigation",
     },
     {
         "name": "gnss_noise",
         "label": "GNSS error",
         "sweep_factors": DEFAULT_SCALE_FACTORS,
+        "group": "navigation",
     },
     {
         "name": "geoid_height_error",
         "label": "Gravity height error",
         "sweep_factors": DEFAULT_SCALE_FACTORS,
+        "group": "navigation",
     },
     {
         "name": "grav_error",
         "label": "Gravity perturbation",
         "sweep_factors": np.array([0.0, 1.0]),
+        "group": "navigation",
     },
     {
         "name": "actuator_force",
         "label": "Actuator force",
         "sweep_factors": CONTROL_SCALE_FACTORS,
         "optimize_reentry": True,
+        "group": "control",
     },
     {
         "name": "deflection_time",
         "label": "Actuator deflection time",
         "sweep_factors": CONTROL_SCALE_FACTORS,
         "optimize_reentry": True,
+        "group": "control",
     },
     {
         "name": "actuator_resolution",
         "label": "Actuator resolution",
         "sweep_factors": CONTROL_SCALE_FACTORS,
         "optimize_reentry": True,
+        "group": "control",
     },
     {
         "name": "time_step_boost",
         "label": "Boost-phase time step",
         "sweep_factors": TIME_STEP_SCALE_FACTORS,
+        "group": "time_steps",
     },
     {
         "name": "time_step_lambert",
         "label": "Lambert maneuver time step",
         "sweep_factors": TIME_STEP_SCALE_FACTORS,
+        "group": "time_steps",
     },
     {
         "name": "time_step_midcourse",
         "label": "Midcourse time step",
         "sweep_factors": TIME_STEP_SCALE_FACTORS,
+        "group": "time_steps",
     },
     {
         "name": "time_step_reentry",
         "label": "Reentry time step",
         "sweep_factors": TIME_STEP_SCALE_FACTORS,
+        "group": "time_steps",
     },
 )
+
+# Group names in the order they appear in SENSITIVITY_SPECS.
+SENSITIVITY_GROUPS = tuple(dict.fromkeys(spec["group"] for spec in SENSITIVITY_SPECS))
+SENSITIVITY_SELECTORS = ("all", *SENSITIVITY_GROUPS)
+
+
+def _normalize_selector(selector: str) -> str:
+    return str(selector).strip().lower().replace("-", "_")
+
+
+def resolve_specs(selectors: str | Iterable[str] | None = None) -> tuple[dict, ...]:
+    """Resolve group names and/or individual parameter names to the specs they select.
+
+    `None`, an empty selection, or "all" selects every spec. Selectors are
+    case-insensitive and accept hyphens in place of underscores; a
+    comma-separated string counts as several selectors.
+    """
+    if selectors is None:
+        return SENSITIVITY_SPECS
+    if isinstance(selectors, str):
+        selectors = [selectors]
+
+    requested = [
+        _normalize_selector(part)
+        for selector in selectors
+        for part in str(selector).split(",")
+        if part.strip()
+    ]
+    if not requested or "all" in requested:
+        return SENSITIVITY_SPECS
+
+    selected_names: set[str] = set()
+    for selector in requested:
+        matches = [
+            spec["name"]
+            for spec in SENSITIVITY_SPECS
+            if spec["group"] == selector or spec["name"] == selector
+        ]
+        if not matches:
+            valid = ", ".join(
+                dict.fromkeys(
+                    (
+                        *SENSITIVITY_SELECTORS,
+                        *(spec["name"] for spec in SENSITIVITY_SPECS),
+                    )
+                )
+            )
+            raise SystemExit(
+                f"Unknown sensitivity selection '{selector}'. Valid options: {valid}"
+            )
+        selected_names.update(matches)
+
+    return tuple(spec for spec in SENSITIVITY_SPECS if spec["name"] in selected_names)
 
 
 def _is_binary_spec(spec: dict) -> bool:
@@ -528,9 +600,21 @@ def run_sensitivity(
     base_config: dict | None = None,
     output_dir: Path | None = None,
     use_zero_baseline: bool = True,
+    groups: str | Iterable[str] | None = None,
 ) -> pd.DataFrame:
+    """Sweep the selected sensitivity parameters and write results and plots.
+
+    Args:
+        base_config: config to sweep around; defaults to the bundled config.
+        output_dir: directory for the results CSV and plots.
+        use_zero_baseline: zero out every other error source in each case.
+        groups: groups (`navigation`, `control`, `time_steps`, `gnss_freq`,
+            `range`) and/or individual parameter names to sweep. Defaults to all.
+    """
     if base_config is None:
         base_config = load_config(None)
+
+    selected_specs = resolve_specs(groups)
 
     output_dir = output_dir or Path()
     output_dir = output_dir.resolve()
@@ -541,7 +625,7 @@ def run_sensitivity(
     config_for_runs = {k: v for k, v in base_config.items() if k != "num_processes"}
 
     frames = []
-    for spec in SENSITIVITY_SPECS:
+    for spec in selected_specs:
         if (
             not _is_binary_spec(spec)
             and float(base_config.get(spec["name"], 0.0)) == 0.0
@@ -559,6 +643,12 @@ def run_sensitivity(
             sweep_parameter(
                 config_for_runs, spec, num_runs, num_processes, use_zero_baseline
             )
+        )
+
+    if not frames:
+        raise SystemExit(
+            "No sensitivity parameters left to sweep: every selected parameter was "
+            "skipped for this config."
         )
 
     results = pd.concat(frames, ignore_index=True)
