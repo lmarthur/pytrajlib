@@ -22,7 +22,7 @@ CONFIG_LABELS = {
     "scud": "Illustrative SRBM A",
     "scud-er": "Illustrative SRBM B",
     "d5": "Illustrative SLBM",
-    "swerve": "Default",
+    "swerve": "Default MMIII + SWERVE",
 }
 DEFAULT_NUM_RUNS = 1000
 

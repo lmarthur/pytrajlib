@@ -105,7 +105,7 @@ def create_impact_plot(
     ax_scatter.text(
         -0.6 * plotrange,
         0.8 * plotrange,
-        f"N = {len(miss_distance)}\nCEP = {cep:.1f} m",
+        f"N = {len(miss_distance)}\nCEP = {cep:.2f} m",
         fontsize=10,
         verticalalignment="top",
         horizontalalignment="center",
@@ -324,7 +324,7 @@ def create_traj_plots(
             reentry_mask,
             save_path,
         ),
-        "altitude": lambda: _plot_altitude(t, altitude, est_altitude, save_path),
+        "altitude": lambda: _plot_altitude(t, altitude, save_path),
         "altitude_error": lambda: _plot_altitude_error(
             t, altitude, est_altitude, save_path
         ),
@@ -771,23 +771,14 @@ def _plot_position_est(t, est_x, est_y, est_z, save_path) -> Optional[plt.Figure
     return fig
 
 
-def _plot_altitude(t, altitude, est_altitude, save_path) -> Optional[plt.Figure]:
+def _plot_altitude(t, altitude, save_path) -> Optional[plt.Figure]:
     """Altitude vs time."""
     fig = plt.figure(figsize=(10, 6))
-    (line_alt,) = plt.plot(t, altitude / 1000, linewidth=2, label="true")
-    plt.plot(
-        t,
-        est_altitude / 1000,
-        linewidth=2,
-        linestyle="--",
-        label="est",
-        color=line_alt.get_color(),
-    )
+    plt.plot(t, altitude / 1000, linewidth=2)
     plt.xlabel("Time (s)")
     plt.ylabel("Altitude (km)")
     plt.title("Altitude vs Time")
     plt.fill_between(t, altitude / 1000, 0, where=(altitude >= 0), alpha=0.2)
-    plt.legend()
     plt.grid(alpha=0.3)
     plt.gca().spines["top"].set_visible(False)
     plt.gca().spines["right"].set_visible(False)
