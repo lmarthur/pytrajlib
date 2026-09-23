@@ -80,53 +80,6 @@ $$\hat{\ell}\_B = \frac{(I-\hat{u}_B\hat{u}_B^T)(-\hat{e}\_{3,B})}
 | --- | --- |
 | `static inline cartvec` | Unit body-lift direction; zero vector if near singular. |
 
-## `get_post_shock_stagnation_pressure_ratio`
-
-Compute post-shock stagnation-pressure ratio p0,2/p_inf from normal-shock
-relations for a calorically perfect gas.
-
-$$\frac{p_{0,2}}{p_\infty} =
-\left(1+\frac{\gamma-1}{2}M_\infty^2\right)^{\frac{\gamma}{\gamma-1}}
-\left[\frac{\gamma+1}{2\gamma
-M_\infty^2-(\gamma-1)}\right]^{\frac{1}{\gamma-1}}
-\left[\frac{(\gamma+1)M_\infty^2}{(\gamma-1)M_\infty^2+2}\right]^{\frac{\gamma}{\gamma-1}}$$
-
-This implementation uses gamma = 1.4.
-
-### Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `mach` | `double` | Freestream Mach number M_inf. |
-
-### Returns
-
-| Type | Description |
-| --- | --- |
-| `static inline double` | p0,2 / p_inf ratio. |
-
-## `get_cp_max`
-
-Compute modified-Newtonian stagnation-point pressure coefficient C_p,max.
-
-$$C_{p,\max}(M_\infty)=\frac{2}{\gamma
-M_\infty^2}\left(\frac{p_{0,2}}{p_\infty}-1\right)$$
-
-This implementation uses gamma = 1.4.
-For this model configuration, Mach is fixed at M_inf = 12.
-
-### Parameters
-
-| Name | Type | Description |
-| --- | --- | --- |
-| (none) | - | - |
-
-### Returns
-
-| Type | Description |
-| --- | --- |
-| `static inline double` | Stagnation-point pressure coefficient C_p,max evaluated at Mach 12. |
-
 ## `get_undeflected_flap_normals`
 
 Compute the four inward-pointing undeflected flap normals in body coordinates

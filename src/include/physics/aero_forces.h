@@ -137,55 +137,6 @@ static inline cartvec get_body_force(state *current_state, atm_cond *atm_cond,
 }
 
 /**
- * Compute post-shock stagnation-pressure ratio p0,2/p_inf from normal-shock
- * relations for a calorically perfect gas.
- *
- * $$\frac{p_{0,2}}{p_\infty} =
- * \left(1+\frac{\gamma-1}{2}M_\infty^2\right)^{\frac{\gamma}{\gamma-1}}
- * \left[\frac{\gamma+1}{2\gamma
- * M_\infty^2-(\gamma-1)}\right]^{\frac{1}{\gamma-1}}
- * \left[\frac{(\gamma+1)M_\infty^2}{(\gamma-1)M_\infty^2+2}\right]^{\frac{\gamma}{\gamma-1}}$$
- *
- * This implementation uses gamma = 1.4.
- *
- * @param mach Freestream Mach number M_inf.
- * @return p0,2 / p_inf ratio.
- */
-static inline double get_post_shock_stagnation_pressure_ratio(double mach) {
-  const double gamma = 1.4;
-  const double m2 = mach * mach;
-  const double g_over_gm1 = gamma / (gamma - 1.0);
-  const double inv_gm1 = 1.0 / (gamma - 1.0);
-
-  double term1 = pow(1.0 + 0.5 * (gamma - 1.0) * m2, g_over_gm1);
-  double term2 =
-      pow((gamma + 1.0) / (2.0 * gamma * m2 - (gamma - 1.0)), inv_gm1);
-  double term3 =
-      pow(((gamma + 1.0) * m2) / (((gamma - 1.0) * m2) + 2.0), g_over_gm1);
-
-  return term1 * term2 * term3;
-}
-
-/**
- * Compute modified-Newtonian stagnation-point pressure coefficient C_p,max.
- *
- * $$C_{p,\max}(M_\infty)=\frac{2}{\gamma
- * M_\infty^2}\left(\frac{p_{0,2}}{p_\infty}-1\right)$$
- *
- * This implementation uses gamma = 1.4.
- * For this model configuration, Mach is fixed at M_inf = 12.
- *
- * @return Stagnation-point pressure coefficient C_p,max evaluated at Mach 12.
- */
-static inline double get_cp_max() {
-  const double gamma = 1.4;
-  const double mach_fixed = 12.0;
-
-  double p0_2_over_p_inf = get_post_shock_stagnation_pressure_ratio(mach_fixed);
-  return (2.0 / (gamma * mach_fixed * mach_fixed)) * (p0_2_over_p_inf - 1.0);
-}
-
-/**
  * Compute the four inward-pointing undeflected flap normals in body coordinates
  * for a conical reentry vehicle geometry.
  *
@@ -321,8 +272,8 @@ static inline void get_absolute_flap_force_magnitudes(
   // Calculate dynamic pressure
   double q_inf = 0.5 * atm_cond->density * v_rel_mag * v_rel_mag;
 
-  // Calculate the pressure scale factor
-  double K_f = get_cp_max();
+  // Newtonian stagnation-point pressure coefficient, C_p,max = 2
+  double K_f = 2.0;
 
   // Use the relative wind direction to get the incidence factor---how aligned
   // each flap is with the wind
