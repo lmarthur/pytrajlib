@@ -136,7 +136,7 @@ def write_range_cep_table(results, output_dir):
     ]
     latex = df.to_latex(column_format="l" * (len(df.columns) + 1))
 
-    tex_path = output_dir / "range_vs_cep.tex"
+    tex_path = output_dir / "vehicle_comparison.tex"
     tex_path.write_text(latex)
     print(latex)
     print(f"Wrote {tex_path}")
@@ -160,7 +160,7 @@ if __name__ == "__main__":
         default=DEFAULT_NUM_RUNS,
         help=f"Monte Carlo runs per vehicle (default: {DEFAULT_NUM_RUNS})",
     )
-    parser.add_argument("--output-dir", default="output/range_vs_cep")
+    parser.add_argument("--output-dir", default="output/comparison")
     parser.add_argument("--num-processes", type=int, default=None)
     args = parser.parse_args()
 
