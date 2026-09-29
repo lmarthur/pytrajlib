@@ -3,7 +3,7 @@
 
 TEST(atmosphere, init_exp_atm) {
   // Initialize the run parameters
-  runparams run_params;
+  runparams run_params = {0};
   run_params.atm_model = 0;
 
   // Initialize the atmospheric model
@@ -16,9 +16,10 @@ TEST(atmosphere, init_exp_atm) {
   REQUIRE_EQ(atm_model.scale_height, 8000);
 
   // Check the standard deviations and perturbations
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < ATM_PERT_BANDS; i++) {
     REQUIRE_EQ(atm_model.std_densities[i], 0);
-    REQUIRE_EQ(atm_model.std_winds[i], 0);
+    REQUIRE_EQ(atm_model.std_zonal_winds[i], 0);
+    REQUIRE_EQ(atm_model.std_meridional_winds[i], 0);
     REQUIRE_EQ(atm_model.std_vert_winds[i], 0);
     REQUIRE_EQ(atm_model.pert_densities[i], 0);
     REQUIRE_EQ(atm_model.pert_zonal_winds[i], 0);
@@ -30,16 +31,18 @@ TEST(atmosphere, init_exp_atm) {
   atm_model = init_exp_atm(&run_params);
 
   // Check the perturbations
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < ATM_PERT_BANDS; i++) {
     REQUIRE_GT(atm_model.std_densities[i], 0);
-    REQUIRE_GT(atm_model.std_winds[i], 0);
+    REQUIRE_GT(atm_model.std_zonal_winds[i], 0);
+    REQUIRE_GT(atm_model.std_meridional_winds[i], 0);
     REQUIRE_GT(atm_model.std_vert_winds[i], 0);
     REQUIRE_NE(atm_model.pert_densities[i], 0);
     REQUIRE_NE(atm_model.pert_densities[i], atm_model.std_densities[i]);
     REQUIRE_NE(atm_model.pert_zonal_winds[i], 0);
-    REQUIRE_NE(atm_model.pert_zonal_winds[i], atm_model.std_winds[i]);
+    REQUIRE_NE(atm_model.pert_zonal_winds[i], atm_model.std_zonal_winds[i]);
     REQUIRE_NE(atm_model.pert_meridional_winds[i], 0);
-    REQUIRE_NE(atm_model.pert_meridional_winds[i], atm_model.std_winds[i]);
+    REQUIRE_NE(atm_model.pert_meridional_winds[i],
+               atm_model.std_meridional_winds[i]);
     REQUIRE_NE(atm_model.pert_vert_winds[i], 0);
     REQUIRE_NE(atm_model.pert_vert_winds[i], atm_model.std_vert_winds[i]);
   }
@@ -47,7 +50,7 @@ TEST(atmosphere, init_exp_atm) {
 
 TEST(atmosphere, get_exp_atm_cond) {
   // Initialize the run parameters
-  runparams run_params;
+  runparams run_params = {0};
   run_params.atm_model = 0;
 
   // Initialize the atmospheric model
@@ -178,7 +181,7 @@ TEST(atmosphere, get_exp_atm_cond) {
 
 TEST(atmosphere, get_pert_atm_cond) {
   // Initialize the run parameters
-  runparams run_params;
+  runparams run_params = {0};
   run_params.atm_model = 0;
 
   // Initialize the atmospheric model
@@ -256,8 +259,8 @@ TEST(atmosphere, get_pert_atm_cond) {
   REQUIRE_NE(atm_conditions.vertical_wind, 0);
   REQUIRE_NE(atm_conditions.meridional_wind, atm_conditions.zonal_wind);
   REQUIRE_NE(atm_conditions.meridional_wind, atm_conditions.vertical_wind);
-  REQUIRE_NE(atm_model.std_winds[0], atm_conditions.meridional_wind);
-  REQUIRE_NE(atm_model.std_winds[0], atm_conditions.zonal_wind);
+  REQUIRE_NE(atm_model.std_meridional_winds[0], atm_conditions.meridional_wind);
+  REQUIRE_NE(atm_model.std_zonal_winds[0], atm_conditions.zonal_wind);
   REQUIRE_NE(atm_model.std_vert_winds[0], atm_conditions.vertical_wind);
 
   // Get the atmospheric conditions at 10 km
@@ -275,9 +278,9 @@ TEST(atmosphere, get_pert_atm_cond) {
   REQUIRE_NE(atm_conditions.vertical_wind, 0);
   REQUIRE_NE(atm_conditions.meridional_wind, atm_conditions.zonal_wind);
   REQUIRE_NE(atm_conditions.meridional_wind, atm_conditions.vertical_wind);
-  REQUIRE_NE(atm_model.std_winds[1], atm_conditions.meridional_wind);
-  REQUIRE_NE(atm_model.std_winds[1], atm_conditions.zonal_wind);
-  REQUIRE_NE(atm_model.std_vert_winds[1], atm_conditions.vertical_wind);
+  REQUIRE_NE(atm_model.std_meridional_winds[2], atm_conditions.meridional_wind);
+  REQUIRE_NE(atm_model.std_zonal_winds[2], atm_conditions.zonal_wind);
+  REQUIRE_NE(atm_model.std_vert_winds[2], atm_conditions.vertical_wind);
 
   // Get the atmospheric conditions at 100 km
   atm_conditions = get_pert_atm_cond(100000, &atm_model);
@@ -294,13 +297,73 @@ TEST(atmosphere, get_pert_atm_cond) {
   REQUIRE_NE(atm_conditions.vertical_wind, 0);
   REQUIRE_NE(atm_conditions.meridional_wind, atm_conditions.zonal_wind);
   REQUIRE_NE(atm_conditions.meridional_wind, atm_conditions.vertical_wind);
-  REQUIRE_NE(atm_model.std_winds[2], atm_conditions.meridional_wind);
-  REQUIRE_NE(atm_model.std_winds[2], atm_conditions.zonal_wind);
-  REQUIRE_NE(atm_model.std_vert_winds[2], atm_conditions.vertical_wind);
+  REQUIRE_NE(atm_model.std_meridional_winds[7], atm_conditions.meridional_wind);
+  REQUIRE_NE(atm_model.std_zonal_winds[7], atm_conditions.zonal_wind);
+  REQUIRE_NE(atm_model.std_vert_winds[7], atm_conditions.vertical_wind);
+}
+
+TEST(atmosphere, pert_atm_bands) {
+  runparams run_params = {0};
+  run_params.atm_model = 1;
+  atm_model atm_model = init_exp_atm(&run_params);
+
+  // Each altitude reads the perturbations of its own band, with band edges
+  // belonging to the band above
+  double altitudes[] = {0,     4999,  5000,  9999,  10000, 19999,
+                        20000, 45000, 50000, 69999, 70000, 1000000};
+  int bands[] = {0, 0, 1, 1, 2, 2, 3, 5, 6, 6, 7, 7};
+  for (int i = 0; i < 12; i++) {
+    atm_cond atm_conditions = get_pert_atm_cond(altitudes[i], &atm_model);
+    int band = bands[i];
+    double exp_density = atm_model.sea_level_density *
+                         exp(-altitudes[i] / atm_model.scale_height);
+    REQUIRE_LT(fabs(atm_conditions.density -
+                    exp_density * (1 + atm_model.pert_densities[band])),
+               1e-12);
+    REQUIRE_EQ(atm_conditions.zonal_wind, atm_model.pert_zonal_winds[band]);
+    REQUIRE_EQ(atm_conditions.meridional_wind,
+               atm_model.pert_meridional_winds[band]);
+    REQUIRE_EQ(atm_conditions.vertical_wind, atm_model.pert_vert_winds[band]);
+  }
+}
+
+TEST(atmosphere, atm_pert_scale) {
+  runparams run_params = {0};
+  run_params.atm_model = 1;
+
+  // Unset (0) and 1 give the same standard deviations
+  atm_model unscaled = init_exp_atm(&run_params);
+  run_params.atm_pert_scale = 1;
+  atm_model scale_one = init_exp_atm(&run_params);
+  run_params.atm_pert_scale = 3;
+  atm_model scaled = init_exp_atm(&run_params);
+
+  for (int i = 0; i < ATM_PERT_BANDS; i++) {
+    REQUIRE_EQ(unscaled.std_densities[i], scale_one.std_densities[i]);
+    REQUIRE_EQ(unscaled.std_zonal_winds[i], scale_one.std_zonal_winds[i]);
+    REQUIRE_LT(fabs(scaled.std_densities[i] - 3 * unscaled.std_densities[i]),
+               1e-12);
+    REQUIRE_LT(
+        fabs(scaled.std_zonal_winds[i] - 3 * unscaled.std_zonal_winds[i]),
+        1e-12);
+    REQUIRE_LT(fabs(scaled.std_meridional_winds[i] -
+                    3 * unscaled.std_meridional_winds[i]),
+               1e-12);
+    REQUIRE_LT(fabs(scaled.std_vert_winds[i] - 3 * unscaled.std_vert_winds[i]),
+               1e-12);
+  }
+
+  // The scale has no effect on the unperturbed model
+  run_params.atm_model = 0;
+  atm_model unperturbed = init_exp_atm(&run_params);
+  for (int i = 0; i < ATM_PERT_BANDS; i++) {
+    REQUIRE_EQ(unperturbed.std_densities[i], 0);
+    REQUIRE_EQ(unperturbed.pert_zonal_winds[i], 0);
+  }
 }
 
 TEST(atmosphere, get_atm_cond) {
-  runparams run_params;
+  runparams run_params = {0};
   run_params.atm_model = 0;
 
   // Initialize the atmospheric model

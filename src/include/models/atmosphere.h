@@ -26,22 +26,30 @@ typedef struct atm_cond {
   // General atmospheric parameters
 } atm_cond;
 
+// Altitude bands of the perturbed exponential model (atm_model == 1). Band i
+// spans [ATM_PERT_BAND_TOPS_M[i-1], ATM_PERT_BAND_TOPS_M[i]); the last band
+// extends upward indefinitely.
+#define ATM_PERT_BANDS 8
+static const double ATM_PERT_BAND_TOPS_M[ATM_PERT_BANDS - 1] = {
+    5000, 10000, 20000, 30000, 40000, 50000, 70000};
+
 // Define an atm_model struct to store the atmospheric model
 typedef struct atm_model {
   // Constants
   double scale_height;      // scale height in meters
   double sea_level_density; // sea level density in kg/m^3
 
-  // Standard deviations
-  double std_densities[4];
-  double std_winds[4];
-  double std_vert_winds[4];
+  // Standard deviations per altitude band
+  double std_densities[ATM_PERT_BANDS]; // fractional
+  double std_zonal_winds[ATM_PERT_BANDS];
+  double std_meridional_winds[ATM_PERT_BANDS];
+  double std_vert_winds[ATM_PERT_BANDS];
 
-  // Perturbations
-  double pert_densities[4];
-  double pert_zonal_winds[4];
-  double pert_meridional_winds[4];
-  double pert_vert_winds[4];
+  // Perturbations, drawn once per run per band
+  double pert_densities[ATM_PERT_BANDS];
+  double pert_zonal_winds[ATM_PERT_BANDS];
+  double pert_meridional_winds[ATM_PERT_BANDS];
+  double pert_vert_winds[ATM_PERT_BANDS];
 
 } atm_model;
 
@@ -173,47 +181,46 @@ atm_model init_exp_atm(runparams *run_params) {
   atm_model.scale_height = 8000;       // scale height in meters
   atm_model.sea_level_density = 1.225; // sea level density in kg/m^3
 
-  // Non-perturbed branch (atm_model == 0)
-  if (run_params->atm_model == 0) {
+  // Band standard deviations: RMS over the EarthGRAM 2016 profiles
+  // (atmprofiles.csv) within each band. Density is the fractional deviation
+  // from the per-altitude mean; winds are RMS rather than std so the zero-mean
+  // draws reproduce typical EarthGRAM wind speeds, including the mean wind.
+  static const double std_densities[ATM_PERT_BANDS] = {
+      0.0265, 0.0151, 0.0490, 0.0236, 0.0324, 0.0526, 0.0843, 0.1238};
+  static const double std_zonal_winds[ATM_PERT_BANDS] = {
+      8.00, 16.72, 21.92, 15.26, 28.17, 42.61, 48.18, 51.08};
+  static const double std_meridional_winds[ATM_PERT_BANDS] = {
+      4.93, 8.21, 8.92, 4.24, 7.02, 9.77, 13.93, 32.00};
+  static const double std_vert_winds[ATM_PERT_BANDS] = {3.24, 1.31, 0.60, 0.46,
+                                                        0.63, 0.90, 1.52, 3.96};
 
-    for (int i = 0; i < 4; i++) {
-      atm_model.std_densities[i] = 0;
-      atm_model.std_winds[i] = 0;
-      atm_model.std_vert_winds[i] = 0;
-      atm_model.pert_densities[i] = 0;
-      atm_model.pert_zonal_winds[i] = 0;
-      atm_model.pert_meridional_winds[i] = 0;
-      atm_model.pert_vert_winds[i] = 0;
-    }
+  // Perturbations are zero for the non-perturbed branch (atm_model == 0)
+  double pert_scale = 0.0;
+  if (run_params->atm_model != 0) {
+    // Optional multiplier on all standard deviations
+    pert_scale =
+        run_params->atm_pert_scale > 0 ? run_params->atm_pert_scale : 1.0;
+  }
 
-  } else {
-    // Perturbed branch (atm_model == 1)
-    // Density standard deviations
-    atm_model.std_densities[0] = 0.00009;
-    atm_model.std_densities[1] = 0.00001;
-    atm_model.std_densities[2] = 0.00262;
-    atm_model.std_densities[3] = 0.00662;
+  for (int i = 0; i < ATM_PERT_BANDS; i++) {
+    atm_model.std_densities[i] = pert_scale * std_densities[i];
+    atm_model.std_zonal_winds[i] = pert_scale * std_zonal_winds[i];
+    atm_model.std_meridional_winds[i] = pert_scale * std_meridional_winds[i];
+    atm_model.std_vert_winds[i] = pert_scale * std_vert_winds[i];
 
-    // Wind standard deviations
-    atm_model.std_winds[0] = 0.223;
-    atm_model.std_winds[1] = 0.098;
-    atm_model.std_winds[2] = 1.13;
-    atm_model.std_winds[3] = 2.23;
-
-    // Vertical wind standard deviations
-    atm_model.std_vert_winds[0] = 0.058;
-    atm_model.std_vert_winds[1] = 0.016;
-    atm_model.std_vert_winds[2] = 0.070;
-    atm_model.std_vert_winds[3] = 0.244;
-
-    for (int i = 0; i < 4; i++) {
+    atm_model.pert_densities[i] = 0;
+    atm_model.pert_zonal_winds[i] = 0;
+    atm_model.pert_meridional_winds[i] = 0;
+    atm_model.pert_vert_winds[i] = 0;
+    if (run_params->atm_model != 0) {
       // Generate perturbations, which are then used by the get_atm_cond
       // function to generate the true conditions
       atm_model.pert_densities[i] =
           atm_model.std_densities[i] * ran_gaussian(1);
-      atm_model.pert_zonal_winds[i] = atm_model.std_winds[i] * ran_gaussian(1);
+      atm_model.pert_zonal_winds[i] =
+          atm_model.std_zonal_winds[i] * ran_gaussian(1);
       atm_model.pert_meridional_winds[i] =
-          atm_model.std_winds[i] * ran_gaussian(1);
+          atm_model.std_meridional_winds[i] * ran_gaussian(1);
       atm_model.pert_vert_winds[i] =
           atm_model.std_vert_winds[i] * ran_gaussian(1);
     }
@@ -261,49 +268,19 @@ atm_cond get_pert_atm_cond(double altitude, atm_model *atm_model) {
   }
   atm_conditions.altitude = altitude;
 
-  // Use if statements to determine the standard deviations to use
-
-  // Density
-  if (altitude < 5000 && altitude >= 0) {
-    atm_conditions.density =
-        atm_model->sea_level_density * exp(-altitude / atm_model->scale_height);
-    atm_conditions.density +=
-        atm_model->pert_densities[0] * atm_conditions.density;
-  } else if (altitude < 50000) {
-    atm_conditions.density =
-        atm_model->sea_level_density * exp(-altitude / atm_model->scale_height);
-    atm_conditions.density +=
-        atm_model->pert_densities[1] * atm_conditions.density;
-  } else if (altitude < 100000) {
-    atm_conditions.density =
-        atm_model->sea_level_density * exp(-altitude / atm_model->scale_height);
-    atm_conditions.density +=
-        atm_model->pert_densities[2] * atm_conditions.density;
-  } else {
-    atm_conditions.density =
-        atm_model->sea_level_density * exp(-altitude / atm_model->scale_height);
-    atm_conditions.density +=
-        atm_model->pert_densities[3] * atm_conditions.density;
+  // Find the altitude band
+  int band = 0;
+  while (band < ATM_PERT_BANDS - 1 && altitude >= ATM_PERT_BAND_TOPS_M[band]) {
+    band++;
   }
 
-  // Wind
-  if (altitude < 5000 && altitude >= 0) {
-    atm_conditions.meridional_wind = atm_model->pert_meridional_winds[0];
-    atm_conditions.zonal_wind = atm_model->pert_zonal_winds[0];
-    atm_conditions.vertical_wind = atm_model->pert_vert_winds[0];
-  } else if (altitude < 50000) {
-    atm_conditions.meridional_wind = atm_model->pert_meridional_winds[1];
-    atm_conditions.zonal_wind = atm_model->pert_zonal_winds[1];
-    atm_conditions.vertical_wind = atm_model->pert_vert_winds[1];
-  } else if (altitude < 100000) {
-    atm_conditions.meridional_wind = atm_model->pert_meridional_winds[2];
-    atm_conditions.zonal_wind = atm_model->pert_zonal_winds[2];
-    atm_conditions.vertical_wind = atm_model->pert_vert_winds[2];
-  } else {
-    atm_conditions.meridional_wind = atm_model->pert_meridional_winds[3];
-    atm_conditions.zonal_wind = atm_model->pert_zonal_winds[3];
-    atm_conditions.vertical_wind = atm_model->pert_vert_winds[3];
-  }
+  atm_conditions.density =
+      atm_model->sea_level_density * exp(-altitude / atm_model->scale_height);
+  atm_conditions.density *= 1 + atm_model->pert_densities[band];
+
+  atm_conditions.meridional_wind = atm_model->pert_meridional_winds[band];
+  atm_conditions.zonal_wind = atm_model->pert_zonal_winds[band];
+  atm_conditions.vertical_wind = atm_model->pert_vert_winds[band];
 
   return atm_conditions;
 }

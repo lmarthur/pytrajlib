@@ -91,6 +91,7 @@ CLI_PARAM_HELP = {
     "stellar_noise": "Star tracker per-axis attitude error standard deviation, in radians.",
     "roll_gyro_error_factor": "Roll gyroscope error scaling factor.",
     "burn_time_error": "Burn time error magnitude in seconds.",
+    "atm_pert_scale": "Multiplier on the perturbed exponential atmosphere's density and wind standard deviations (atm_model 1); 0 or unset means 1.",
 }
 
 
