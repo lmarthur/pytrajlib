@@ -81,6 +81,10 @@ typedef struct runparams {
   // Booster burn time error standard deviation
   double burn_time_error; // Applied independently to each stage in seconds
 
+  // Multiplier on the perturbed exponential atmosphere's density and wind
+  // standard deviations (atm_model == 1). Values <= 0 are treated as 1.
+  double atm_pert_scale;
+
 } runparams;
 
 #endif

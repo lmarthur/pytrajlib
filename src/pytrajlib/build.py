@@ -75,6 +75,7 @@ ffibuilder.cdef(
         double geoid_height_error;
 
         double burn_time_error;
+        double atm_pert_scale;
     } runparams;
 
     typedef struct booster {
