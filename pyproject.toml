@@ -1,6 +1,6 @@
 [project]
 name = "pytrajlib"
-version = "1.0.0-alpha.52"
+version = "1.0.0-alpha.54"
 description = "Simulate the flight of a ballistic or maneuverable missile"
 readme = "README.md"
 authors = [
